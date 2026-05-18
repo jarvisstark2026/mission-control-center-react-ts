@@ -91,9 +91,27 @@
 **Step 3: Verify in the browser**
 - Expected: the primitives look like layered system parts, not generic cards.
 
-### Task 3: Add the spatial shell and role-aware navigation
+### Task 3: Build the widget host and fluid workspace layer
 
-**Objective:** Recreate the main shell with left rail navigation, central command surface, and role-based visibility.
+**Objective:** Create the base system that lets widgets live, move, dock, snap, and open across a multi-screen workspace without relying on scroll-down pages.
+
+**Files:**
+- Create: `src/features/workspace/Workspace.tsx`
+- Create: `src/features/workspace/WidgetHost.tsx`
+- Create: `src/features/workspace/layout.ts`
+- Create: `src/features/workspace/motion.ts`
+- Create: `src/features/workspace/workspace.css`
+
+**Step 1: Define the workspace contract**
+- Model panels/widgets as movable surfaces with position, size, depth, and visibility state.
+
+**Step 2: Implement docking and movement rules**
+- Support drag, resize, snap, open, close, fade, blink, and cross-screen placement.
+
+**Step 3: Verify**
+- Expected: the shell behaves like a living control surface, not a vertical page stack.
+
+### Task 4: Add the spatial shell and role-aware navigation
 
 **Files:**
 - Create: `src/features/shell/Shell.tsx`

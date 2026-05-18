@@ -20,8 +20,11 @@ export type WorkspaceWidget = {
   y: number;
   width: number;
   height: number;
-  depth: number;
-  hue: number;
+  zIndex: number;
+  surfaceAlpha: number;
+  lineAlpha: number;
   open: boolean;
+  minWidth: number;
+  minHeight: number;
   pinned?: boolean;
 };

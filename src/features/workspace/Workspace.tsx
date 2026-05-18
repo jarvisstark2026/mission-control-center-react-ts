@@ -4,22 +4,22 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 import type { WorkspaceWidget } from './workspaceTypes';
 import './workspace.css';
 
-const STAGE_WIDTH = 1440;
-const STAGE_HEIGHT = 780;
-
 const widgetPresets: WorkspaceWidget[] = [
   {
     id: 'overview',
     kind: 'overview',
     title: 'Command core',
-    subtitle: 'open / move / pin',
-    x: 36,
-    y: 34,
-    width: 410,
-    height: 250,
-    depth: 18,
-    hue: 210,
+    subtitle: 'open / move / stack',
+    x: 44,
+    y: 74,
+    width: 390,
+    height: 248,
+    zIndex: 6,
+    surfaceAlpha: 0.11,
+    lineAlpha: 0.18,
     open: true,
+    minWidth: 300,
+    minHeight: 180,
     pinned: true,
   },
   {
@@ -27,98 +27,125 @@ const widgetPresets: WorkspaceWidget[] = [
     kind: 'graph',
     title: 'Telemetry',
     subtitle: 'live curves',
-    x: 488,
-    y: 40,
-    width: 360,
-    height: 190,
-    depth: 24,
-    hue: 201,
+    x: 264,
+    y: 88,
+    width: 350,
+    height: 220,
+    zIndex: 5,
+    surfaceAlpha: 0.085,
+    lineAlpha: 0.16,
     open: true,
+    minWidth: 280,
+    minHeight: 170,
   },
   {
     id: 'preview',
     kind: '3d',
     title: '3D preview',
     subtitle: 'assets / projects',
-    x: 874,
-    y: 44,
-    width: 400,
-    height: 300,
-    depth: 34,
-    hue: 244,
+    x: 528,
+    y: 66,
+    width: 426,
+    height: 258,
+    zIndex: 4,
+    surfaceAlpha: 0.1,
+    lineAlpha: 0.16,
     open: true,
+    minWidth: 300,
+    minHeight: 190,
   },
   {
     id: 'map',
     kind: 'map',
     title: 'Map / routes',
     subtitle: 'locations / zones',
-    x: 470,
-    y: 262,
-    width: 290,
-    height: 250,
-    depth: 28,
-    hue: 188,
+    x: 246,
+    y: 286,
+    width: 300,
+    height: 218,
+    zIndex: 3,
+    surfaceAlpha: 0.08,
+    lineAlpha: 0.15,
     open: true,
+    minWidth: 250,
+    minHeight: 170,
   },
   {
     id: 'flow',
     kind: 'flow',
     title: 'Flow chart',
     subtitle: 'system logic',
-    x: 786,
-    y: 340,
-    width: 250,
+    x: 560,
+    y: 318,
+    width: 260,
     height: 188,
-    depth: 22,
-    hue: 226,
+    zIndex: 2,
+    surfaceAlpha: 0.075,
+    lineAlpha: 0.14,
     open: true,
+    minWidth: 220,
+    minHeight: 150,
   },
   {
     id: 'news',
     kind: 'news',
     title: 'News / market',
     subtitle: 'watchlist',
-    x: 1060,
-    y: 334,
-    width: 258,
-    height: 196,
-    depth: 20,
-    hue: 213,
+    x: 872,
+    y: 94,
+    width: 274,
+    height: 194,
+    zIndex: 1,
+    surfaceAlpha: 0.078,
+    lineAlpha: 0.14,
     open: true,
+    minWidth: 240,
+    minHeight: 150,
   },
   {
     id: 'audio',
     kind: 'audio',
     title: 'Audio surface',
     subtitle: 'hold / play / mix',
-    x: 58,
-    y: 318,
-    width: 360,
-    height: 200,
-    depth: 16,
-    hue: 198,
+    x: 60,
+    y: 330,
+    width: 344,
+    height: 194,
+    zIndex: 3,
+    surfaceAlpha: 0.1,
+    lineAlpha: 0.17,
     open: true,
+    minWidth: 260,
+    minHeight: 170,
   },
   {
     id: 'list',
     kind: 'list',
     title: 'Project list',
     subtitle: 'tasks / backlog',
-    x: 60,
-    y: 518,
-    width: 352,
+    x: 64,
+    y: 522,
+    width: 332,
     height: 174,
-    depth: 14,
-    hue: 218,
+    zIndex: 2,
+    surfaceAlpha: 0.075,
+    lineAlpha: 0.14,
     open: true,
+    minWidth: 260,
+    minHeight: 150,
   },
 ];
 
-type DragState = {
+type InteractionState = {
   id: string;
-  offsetX: number;
-  offsetY: number;
+  mode: 'drag' | 'resize';
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startLeft: number;
+  startTop: number;
+  startWidth: number;
+  startHeight: number;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -142,8 +169,8 @@ function OverviewWidget() {
         <strong>12</strong>
       </div>
       <div className="metric-tile metric-wide">
-        <span>multi-screen workspace</span>
-        <strong>drag / snap / fade / open</strong>
+        <span>workspace mode</span>
+        <strong>drag / resize / stack / fade</strong>
       </div>
     </div>
   );
@@ -277,11 +304,13 @@ function ListWidget() {
 
 function WorkspaceWidgetCard({
   widget,
-  onPointerDown,
+  onStartDrag,
+  onStartResize,
   onToggleOpen,
 }: {
   widget: WorkspaceWidget;
-  onPointerDown: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
+  onStartDrag: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
+  onStartResize: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
   onToggleOpen: (id: string) => void;
 }) {
   return (
@@ -289,28 +318,34 @@ function WorkspaceWidgetCard({
       className={`workspace-widget ${widget.open ? 'is-open' : 'is-closed'} kind-${widget.kind}`}
       style={
         {
-          '--widget-hue': widget.hue,
-          '--widget-depth': widget.depth,
           left: `${widget.x}px`,
           top: `${widget.y}px`,
           width: `${widget.width}px`,
           height: `${widget.height}px`,
+          zIndex: widget.zIndex,
+          '--widget-surface-alpha': widget.surfaceAlpha,
+          '--widget-line-alpha': widget.lineAlpha,
         } as CSSProperties
       }
-      onPointerDown={(event) => onPointerDown(event, widget.id)}
+      onPointerDown={(event) => onStartDrag(event, widget.id)}
     >
-      <header className="widget-chrome">
-        <div>
-          <p>{widget.title}</p>
-          <span>{widget.subtitle}</span>
-        </div>
-        <div className="chrome-actions">
-          <button type="button" onClick={() => onToggleOpen(widget.id)} aria-label={`Toggle ${widget.title}`}>
-            {widget.open ? 'collapse' : 'open'}
-          </button>
-          <span className="widget-depth">{widget.pinned ? 'pinned' : `z${widget.depth}`}</span>
-        </div>
-      </header>
+      <div className="widget-labels" aria-hidden="true">
+        <span className="widget-title">{widget.title}</span>
+        <span className="widget-subtitle">{widget.subtitle}</span>
+      </div>
+
+      <button
+        type="button"
+        className="widget-toggle"
+        onClick={(event) => {
+          event.stopPropagation();
+          onToggleOpen(widget.id);
+        }}
+        aria-label={widget.open ? `Collapse ${widget.title}` : `Open ${widget.title}`}
+      >
+        {widget.open ? '−' : '+'}
+      </button>
+
       <div className="widget-body">
         {widget.kind === 'overview' && <OverviewWidget />}
         {widget.kind === 'graph' && <GraphWidget />}
@@ -324,135 +359,238 @@ function WorkspaceWidgetCard({
         {widget.kind === 'flow' && <FlowWidget />}
         {widget.kind === 'list' && <ListWidget />}
       </div>
+
+      <button
+        type="button"
+        className="widget-resize-handle"
+        onPointerDown={(event) => onStartResize(event, widget.id)}
+        aria-label={`Resize ${widget.title}`}
+      />
     </article>
   );
 }
 
 export function Workspace() {
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const widgetsRef = useRef(widgetPresets);
+  const interactionRef = useRef<InteractionState | null>(null);
   const [widgets, setWidgets] = useState(widgetPresets);
-  const [scale, setScale] = useState(1);
-  const dragRef = useRef<DragState | null>(null);
+  const [bounds, setBounds] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    const updateScale = () => {
+    widgetsRef.current = widgets;
+  }, [widgets]);
+
+  useEffect(() => {
+    const updateBounds = () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const rect = canvas.getBoundingClientRect();
-      const nextScale = Math.min(rect.width / STAGE_WIDTH, rect.height / STAGE_HEIGHT, 1);
-      setScale(Number.isFinite(nextScale) ? nextScale : 1);
+      setBounds({ width: rect.width, height: rect.height });
     };
 
-    updateScale();
-    const observer = new ResizeObserver(updateScale);
+    updateBounds();
+
+    const observer = new ResizeObserver(updateBounds);
     if (canvasRef.current) observer.observe(canvasRef.current);
-    window.addEventListener('resize', updateScale);
+
+    window.addEventListener('resize', updateBounds);
     return () => {
       observer.disconnect();
-      window.removeEventListener('resize', updateScale);
+      window.removeEventListener('resize', updateBounds);
     };
   }, []);
 
-  const orderedWidgets = useMemo(() => [...widgets].sort((a, b) => a.depth - b.depth), [widgets]);
+  useEffect(() => {
+    if (!bounds.width || !bounds.height) return;
 
-  const onPointerDown = (event: ReactPointerEvent<HTMLElement>, id: string) => {
-    if ((event.target as HTMLElement).closest('button')) return;
-    const canvas = canvasRef.current;
-    const widgetElement = event.currentTarget as HTMLElement;
-    if (!canvas) return;
-    const canvasRect = canvas.getBoundingClientRect();
-    const widgetRect = widgetElement.getBoundingClientRect();
-    dragRef.current = {
-      id,
-      offsetX: (event.clientX - widgetRect.left) / scale,
-      offsetY: (event.clientY - widgetRect.top) / scale,
-    };
-    widgetElement.setPointerCapture?.(event.pointerId);
     setWidgets((current) =>
-      current.map((widget) =>
-        widget.id === id ? { ...widget, depth: Math.max(widget.depth, 40) } : widget,
-      ),
+      current.map((widget) => ({
+        ...widget,
+        x: clamp(widget.x, 0, Math.max(0, bounds.width - widget.width)),
+        y: clamp(widget.y, 0, Math.max(0, bounds.height - widget.height)),
+        width: clamp(widget.width, widget.minWidth, Math.max(widget.minWidth, bounds.width - widget.x)),
+        height: clamp(widget.height, widget.minHeight, Math.max(widget.minHeight, bounds.height - widget.y)),
+      })),
     );
+  }, [bounds.height, bounds.width]);
+
+  useEffect(() => {
+    const stopInteraction = () => {
+      interactionRef.current = null;
+    };
+
+    window.addEventListener('pointerup', stopInteraction);
+    window.addEventListener('pointercancel', stopInteraction);
+    window.addEventListener('blur', stopInteraction);
+
+    return () => {
+      window.removeEventListener('pointerup', stopInteraction);
+      window.removeEventListener('pointercancel', stopInteraction);
+      window.removeEventListener('blur', stopInteraction);
+    };
+  }, []);
+
+  const orderedWidgets = useMemo(() => [...widgets].sort((a, b) => a.zIndex - b.zIndex), [widgets]);
+
+  const raiseWidget = (id: string) => {
+    setWidgets((current) => {
+      const highest = current.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
+      return current.map((widget) => (widget.id === id ? { ...widget, zIndex: highest + 1 } : widget));
+    });
   };
 
-  const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (!dragRef.current || !canvasRef.current) return;
+  const startDrag = (event: ReactPointerEvent<HTMLElement>, id: string) => {
+    if (event.button !== 0) return;
+    if ((event.target as HTMLElement).closest('button.widget-toggle, button.widget-resize-handle')) return;
+
+    const widget = widgetsRef.current.find((item) => item.id === id);
     const canvas = canvasRef.current;
-    const canvasRect = canvas.getBoundingClientRect();
-    const currentWidget = widgets.find((widget) => widget.id === dragRef.current?.id);
+    if (!widget || !canvas) return;
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    raiseWidget(id);
+
+    interactionRef.current = {
+      id,
+      mode: 'drag',
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: widget.x,
+      startTop: widget.y,
+      startWidth: widget.width,
+      startHeight: widget.height,
+    };
+  };
+
+  const startResize = (event: ReactPointerEvent<HTMLElement>, id: string) => {
+    if (event.button !== 0) return;
+
+    const widget = widgetsRef.current.find((item) => item.id === id);
+    if (!widget) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    raiseWidget(id);
+
+    interactionRef.current = {
+      id,
+      mode: 'resize',
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      startLeft: widget.x,
+      startTop: widget.y,
+      startWidth: widget.width,
+      startHeight: widget.height,
+    };
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const interaction = interactionRef.current;
+    if (!interaction || !canvasRef.current) return;
+
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const currentWidget = widgetsRef.current.find((widget) => widget.id === interaction.id);
     if (!currentWidget) return;
 
-    const nextX = clamp(
-      (event.clientX - canvasRect.left) / scale - dragRef.current.offsetX,
-      0,
-      Math.max(0, STAGE_WIDTH - currentWidget.width),
+    const deltaX = event.clientX - interaction.startX;
+    const deltaY = event.clientY - interaction.startY;
+
+    if (interaction.mode === 'drag') {
+      const nextLeft = clamp(
+        interaction.startLeft + deltaX,
+        0,
+        Math.max(0, canvasRect.width - currentWidget.width),
+      );
+      const nextTop = clamp(
+        interaction.startTop + deltaY,
+        0,
+        Math.max(0, canvasRect.height - currentWidget.height),
+      );
+
+      setWidgets((current) =>
+        current.map((widget) =>
+          widget.id === interaction.id
+            ? {
+                ...widget,
+                x: nextLeft,
+                y: nextTop,
+              }
+            : widget,
+        ),
+      );
+      return;
+    }
+
+    const nextWidth = clamp(
+      interaction.startWidth + deltaX,
+      currentWidget.minWidth,
+      Math.max(currentWidget.minWidth, canvasRect.width - interaction.startLeft),
     );
-    const nextY = clamp(
-      (event.clientY - canvasRect.top) / scale - dragRef.current.offsetY,
-      0,
-      Math.max(0, STAGE_HEIGHT - currentWidget.height),
+    const nextHeight = clamp(
+      interaction.startHeight + deltaY,
+      currentWidget.minHeight,
+      Math.max(currentWidget.minHeight, canvasRect.height - interaction.startTop),
     );
 
     setWidgets((current) =>
       current.map((widget) =>
-        widget.id === dragRef.current?.id ? { ...widget, x: nextX, y: nextY } : widget,
+        widget.id === interaction.id
+          ? {
+              ...widget,
+              width: nextWidth,
+              height: nextHeight,
+            }
+          : widget,
       ),
     );
   };
 
-  const stopDrag = () => {
-    dragRef.current = null;
+  const stopInteraction = () => {
+    interactionRef.current = null;
   };
 
-  const onToggleOpen = (id: string) => {
+  const toggleWidget = (id: string) => {
+    raiseWidget(id);
     setWidgets((current) =>
       current.map((widget) =>
-        widget.id === id ? { ...widget, open: !widget.open, depth: Math.max(widget.depth, 45) } : widget,
+        widget.id === id ? { ...widget, open: !widget.open, zIndex: widget.zIndex + 1 } : widget,
       ),
     );
   };
 
   return (
     <section className="workspace-shell">
-      <header className="workspace-chrome">
-        <div>
-          <p className="workspace-eyebrow">Mission Control Center</p>
-          <h1>Fluid workspace. Free-moving widgets. No scroll prisons.</h1>
-        </div>
-        <div className="workspace-status">
-          <span className="status-dot" />
-          Tailscale link live
-        </div>
-      </header>
+      <div className="workspace-atmosphere workspace-atmosphere-a" aria-hidden="true" />
+      <div className="workspace-atmosphere workspace-atmosphere-b" aria-hidden="true" />
+      <div className="workspace-grid" aria-hidden="true" />
+
+      <div className="workspace-head">
+        <div className="workspace-brand">Mission Control Center</div>
+        <div className="workspace-chip">tailnet live · drag · resize · stack</div>
+      </div>
 
       <div
         className="workspace-canvas"
         ref={canvasRef}
-        onPointerMove={onPointerMove}
-        onPointerUp={stopDrag}
-        onPointerLeave={stopDrag}
+        onPointerMove={handlePointerMove}
+        onPointerUp={stopInteraction}
+        onPointerCancel={stopInteraction}
       >
-        <div
-          className="workspace-stage"
-          style={{
-            width: `${STAGE_WIDTH}px`,
-            height: `${STAGE_HEIGHT}px`,
-            transform: `scale(${scale})`,
-          }}
-        >
-          <div className="workspace-grid" aria-hidden="true" />
-          <div className="workspace-aurora workspace-aurora-a" aria-hidden="true" />
-          <div className="workspace-aurora workspace-aurora-b" aria-hidden="true" />
-          {orderedWidgets.map((widget) => (
-            <WorkspaceWidgetCard key={widget.id} widget={widget} onPointerDown={onPointerDown} onToggleOpen={onToggleOpen} />
-          ))}
-        </div>
+        {orderedWidgets.map((widget) => (
+          <WorkspaceWidgetCard
+            key={widget.id}
+            widget={widget}
+            onStartDrag={startDrag}
+            onStartResize={startResize}
+            onToggleOpen={toggleWidget}
+          />
+        ))}
       </div>
-
-      <footer className="workspace-footer">
-        <span>Drag widgets around. Open / close them. Move them across the surface like a live control room.</span>
-        <span>Base system first — then feature widgets.</span>
-      </footer>
     </section>
   );
 }

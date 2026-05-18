@@ -1,13 +1,25 @@
-# Mission Control Center (React + TypeScript)
+# Mission Control Center
 
-Fresh start for the Mission Control Center rebuild.
+Mission Control Center is a spatial, HUD-like control surface built with React + TypeScript.
 
-## Current state
-- Planning only
-- New stack: React + TypeScript
-- Visual target: spatial HUD / translucent 3D-style command surface
-- Verification stack: Vitest, React Testing Library, Playwright, ESLint, TypeScript strict mode
-- MVP boundary: shell, visual system, role-aware navigation, one 3D preview lane, and live placeholder telemetry first
+## Status
+- Active build: browser-first React + TypeScript
+- Visual direction: translucent, layered, semi-3D command surface
+- Preview: `npm run dev` or `npm run preview`
+
+## Development
+
+```bash
+npm install
+npm run dev
+```
+
+## Production build
+
+```bash
+npm run build
+npm run preview
+```
 
 ## Plan
 See `docs/plans/2026-05-18-mission-control-center-react-ts.md`.

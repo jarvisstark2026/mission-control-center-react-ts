@@ -136,6 +136,29 @@ const widgetPresets: WorkspaceWidget[] = [
   },
 ];
 
+function createCompactLayout(boundsWidth: number, boundsHeight: number): WorkspaceWidget[] {
+  const stageWidth = Math.max(320, Math.min(boundsWidth - 18, 420));
+  const stackWidth = Math.max(260, Math.min(stageWidth - 20, 384));
+  const usableHeight = Math.max(540, boundsHeight - 24);
+  const cardHeights = [184, 168, 196, 150, 138, 152, 158, 144];
+  const xOffsets = [12, 20, 14, 22, 28, 18, 16, 24];
+  const yOffsets = [70, 120, 168, 226, 278, 332, 386, 432];
+
+  return widgetPresets.map((widget, index) => {
+    const nextWidth = Math.min(stackWidth - (index % 3) * 14, boundsWidth - 18);
+    const nextHeight = Math.min(cardHeights[index] ?? 156, usableHeight - yOffsets[index]);
+    return {
+      ...widget,
+      x: Math.max(8, xOffsets[index] ?? 16),
+      y: Math.max(56, yOffsets[index] ?? 72),
+      width: Math.max(widget.minWidth, nextWidth),
+      height: Math.max(widget.minHeight, nextHeight),
+      zIndex: widgetPresets.length - index,
+      open: true,
+    };
+  });
+}
+
 type InteractionState = {
   id: string;
   mode: 'drag' | 'resize';
@@ -374,6 +397,7 @@ export function Workspace() {
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const widgetsRef = useRef(widgetPresets);
   const interactionRef = useRef<InteractionState | null>(null);
+  const compactLayoutAppliedRef = useRef(false);
   const [widgets, setWidgets] = useState(widgetPresets);
   const [bounds, setBounds] = useState({ width: 0, height: 0 });
 
@@ -413,6 +437,21 @@ export function Workspace() {
         height: clamp(widget.height, widget.minHeight, Math.max(widget.minHeight, bounds.height - widget.y)),
       })),
     );
+  }, [bounds.height, bounds.width]);
+
+  useEffect(() => {
+    if (!bounds.width || !bounds.height) return;
+
+    const isCompact = bounds.width < 860;
+    if (!isCompact) {
+      compactLayoutAppliedRef.current = false;
+      return;
+    }
+
+    if (compactLayoutAppliedRef.current || interactionRef.current) return;
+
+    compactLayoutAppliedRef.current = true;
+    setWidgets(createCompactLayout(bounds.width, bounds.height));
   }, [bounds.height, bounds.width]);
 
   useEffect(() => {

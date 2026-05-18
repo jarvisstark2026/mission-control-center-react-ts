@@ -2,15 +2,15 @@
 
 > **For Hermes:** Use `subagent-driven-development` to execute this plan task-by-task.
 
-**Goal:** Rebuild Mission Control Center as a spatial, HUD-like command surface in React + TypeScript with semi-transparent 3D-style panels, asset previews, role-aware navigation, chat/voice, notifications, and Tailscale-first private access.
+**Goal:** Rebuild Mission Control Center as a spatial, HUD-like command surface in React + TypeScript, but **start with the feel and visual language first**. The first job is to match the cinematic, translucent, layered, micro-detailed control surface shown in the reference videos: floating widgets, dense technical readouts, thin-line diagrams, glassy panels, depth, motion, and a premium cockpit-like composition. Features come after the visual language proves itself.
 
-**Architecture:** Build a browser-first React + TypeScript app with a strict design system, local state boundaries, and a render layer that can handle translucent surfaces, dense micro-detail, motion, and selective 3D previews. Use the web stack for the visual shell and interactive control surface, then wrap or package for desktop and mobile once the core experience is proven.
+**Architecture:** Build a browser-first React + TypeScript app with a strict design system, local state boundaries, and a render layer that can handle translucent surfaces, dense micro-detail, motion, and selective 3D previews. Use the web stack for the visual shell and interactive control surface first; only after the UI feels right should we expand into deeper features, backend wiring, desktop/mobile packaging, and richer agent workflows.
 
 **Tech Stack:** React, TypeScript, Vite, CSS variables / design tokens, Framer Motion, Three.js or React Three Fiber for 3D preview panes, Zustand for client state, TanStack Query for server state, WebSocket/SSE for live updates, Tauri for desktop packaging, Capacitor or a mobile wrapper later if needed.
 
 **Verification Stack:** Vitest, React Testing Library, Playwright, ESLint, TypeScript `--noEmit`.
 
-**MVP Boundary:** The first release proves the shell, visual system, role-aware navigation, one 3D preview lane, and live placeholder telemetry. Chat, voice, integrations, and packaging beyond browser are permitted only after the shell feels right in browser review.
+**MVP Boundary:** The first release proves the shell, visual system, and one convincing asset/3D preview lane. Chat, voice, integrations, and packaging beyond browser are permitted only after the shell feels right in browser review and the UI style is accepted.
 
 **Backend Contract Assumptions:** The UI should treat backend data as versioned contracts, not ad hoc blobs. Use a single auth/session model, role claims from the session token, and explicit endpoints or channels for status, commands, telemetry, and registry data. If SSE vs WebSocket is undecided, lock one transport per slice before implementation.
 
@@ -42,7 +42,7 @@
 **Step 4: Verify the plan is executable**
 - Expected: each later task has a known test path and no unresolved platform choice.
 
-## Phase 1: Re-establish the product skeleton
+## Phase 1: Re-establish the product skeleton and visual language first
 
 ### Task 1: Create the React + TypeScript workspace
 
@@ -112,7 +112,7 @@
 
 ### Task 4: Build the HUD stress-test screen
 
-**Objective:** Create the first demanding visual slice with semi-transparent 3D-like surfaces, dense micro-detail, and motion.
+**Objective:** Create the first demanding visual slice with semi-transparent 3D-like surfaces, dense micro-detail, and motion. Treat the reel-style reference as the target: layered glass, technical overlays, floating depth, and a cinematic control-room composition.
 
 **Files:**
 - Create: `src/features/visual-lab/VisualLab.tsx`

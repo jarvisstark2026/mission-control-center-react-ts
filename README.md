@@ -5,6 +5,7 @@ Mission Control Center is a spatial, HUD-like control surface built with React +
 ## Status
 - Active build: browser-first React + TypeScript
 - Visual direction: translucent, layered, semi-3D command surface
+- Priority: UI feel first, features second, with the reel/video references as the visual target
 - Preview: `npm run dev` or `npm run preview`
 
 ## Development

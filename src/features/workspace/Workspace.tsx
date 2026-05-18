@@ -137,25 +137,40 @@ const widgetPresets: WorkspaceWidget[] = [
 ];
 
 function createCompactLayout(boundsWidth: number, boundsHeight: number): WorkspaceWidget[] {
-  const stageWidth = Math.max(320, Math.min(boundsWidth - 18, 420));
-  const stackWidth = Math.max(260, Math.min(stageWidth - 20, 384));
-  const usableHeight = Math.max(540, boundsHeight - 24);
-  const cardHeights = [184, 168, 196, 150, 138, 152, 158, 144];
-  const xOffsets = [12, 20, 14, 22, 28, 18, 16, 24];
-  const yOffsets = [70, 120, 168, 226, 278, 332, 386, 432];
+  const stackWidth = Math.max(260, Math.min(boundsWidth - 16, 420));
+  const totalWidgets = widgetPresets.length;
+  const openCount = boundsHeight < 760 ? 2 : 3;
+  const topInset = 58;
+  const bottomInset = 12;
+  const gap = 8;
+  const closedHeight = 44;
+
+  const availableHeight = Math.max(0, boundsHeight - topInset - bottomInset - gap * (totalWidgets - 1));
+  const openHeightBudget = Math.max(0, availableHeight - closedHeight * (totalWidgets - openCount));
+  const openHeight = Math.max(112, Math.min(160, Math.floor(openHeightBudget / openCount)));
+
+  const openHeights =
+    openCount === 2
+      ? [openHeight + 10, Math.max(112, openHeight - 6)]
+      : [openHeight + 12, Math.max(112, openHeight + 2), Math.max(112, openHeight - 10)];
+
+  let nextY = topInset;
 
   return widgetPresets.map((widget, index) => {
-    const nextWidth = Math.min(stackWidth - (index % 3) * 14, boundsWidth - 18);
-    const nextHeight = Math.min(cardHeights[index] ?? 156, usableHeight - yOffsets[index]);
-    return {
+    const isOpen = index < openCount;
+    const height = isOpen ? openHeights[index] ?? openHeight : closedHeight;
+    const nextWidget = {
       ...widget,
-      x: Math.max(8, xOffsets[index] ?? 16),
-      y: Math.max(56, yOffsets[index] ?? 72),
-      width: Math.max(widget.minWidth, nextWidth),
-      height: Math.max(widget.minHeight, nextHeight),
-      zIndex: widgetPresets.length - index,
-      open: true,
+      x: 8,
+      y: nextY,
+      width: Math.max(widget.minWidth, stackWidth),
+      height,
+      zIndex: totalWidgets - index,
+      open: isOpen,
     };
+
+    nextY += height + gap;
+    return nextWidget;
   });
 }
 

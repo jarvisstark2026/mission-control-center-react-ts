@@ -1,0 +1,228 @@
+.visual-lab {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.visual-lab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(102, 154, 255, 0.12), transparent 34%),
+    radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.08), transparent 20%),
+    radial-gradient(circle at 84% 76%, rgba(255, 255, 255, 0.07), transparent 24%);
+  opacity: 0.95;
+  filter: blur(6px);
+}
+
+.visual-lab__grid {
+  position: absolute;
+  inset: -8% -2% -10%;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(93, 153, 255, 0.1), rgba(255, 255, 255, 0.02));
+  background-size: 90px 90px, 90px 90px, 100% 100%;
+  background-position: center;
+  opacity: 0.2;
+  transform: perspective(1200px) rotateX(58deg) translateY(17%);
+  transform-origin: center bottom;
+  mask-image: radial-gradient(circle at center, black 0%, black 58%, transparent 100%);
+  animation: visualLabDrift 18s ease-in-out infinite alternate;
+}
+
+.visual-lab__stage {
+  position: absolute;
+  inset: 18% 6% 12%;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(320px, 38vw) minmax(220px, 1fr);
+  align-items: center;
+  gap: clamp(12px, 2vw, 24px);
+}
+
+.visual-lab__panel {
+  display: grid;
+  gap: 10px;
+  padding: 20px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03)),
+    rgba(4, 10, 22, 0.42);
+  box-shadow:
+    0 24px 68px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(24px);
+}
+
+.visual-lab__panel--left {
+  justify-self: start;
+}
+
+.visual-lab__panel--right {
+  justify-self: end;
+}
+
+.visual-lab__eyebrow,
+.visual-lab__panel h2,
+.visual-lab__panel p,
+.visual-lab__panel dt,
+.visual-lab__panel dd,
+.visual-lab__panel li {
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.visual-lab__eyebrow {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.66rem;
+}
+
+.visual-lab__panel h2 {
+  font-size: clamp(1.1rem, 1.8vw, 1.5rem);
+}
+
+.visual-lab__panel p,
+.visual-lab__panel dd,
+.visual-lab__panel li,
+.visual-lab__panel dt {
+  color: rgba(240, 246, 255, 0.82);
+  font-size: 0.7rem;
+  line-height: 1.6;
+}
+
+.visual-lab__panel dl,
+.visual-lab__panel ul {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+}
+
+.visual-lab__panel dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.visual-lab__panel dd,
+.visual-lab__panel dt,
+.visual-lab__panel li {
+  list-style: none;
+}
+
+.visual-lab__orb {
+  display: grid;
+  place-items: center;
+}
+
+.visual-lab__orb-shell {
+  position: relative;
+  width: min(100%, 44rem);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+}
+
+.visual-lab__orb-halo,
+.visual-lab__orb-core,
+.visual-lab__orb-ring,
+.visual-lab__orb-glint {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.visual-lab__orb-halo {
+  inset: 10%;
+  background: radial-gradient(circle, rgba(105, 156, 255, 0.24), transparent 68%);
+  filter: blur(14px);
+  animation: visualLabPulse 7s ease-in-out infinite;
+}
+
+.visual-lab__orb-core {
+  inset: 24%;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.14) 24%, transparent 46%),
+    radial-gradient(circle at 50% 54%, rgba(100, 164, 255, 0.46), rgba(32, 59, 119, 0.24) 46%, rgba(2, 6, 16, 0.96) 68%);
+  box-shadow:
+    inset 0 0 42px rgba(255, 255, 255, 0.18),
+    0 0 44px rgba(107, 164, 255, 0.34);
+  animation: visualLabFloat 10s ease-in-out infinite alternate;
+}
+
+.visual-lab__orb-ring {
+  inset: 14%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 0 32px rgba(255, 255, 255, 0.04);
+}
+
+.visual-lab__orb-ring--a {
+  transform: rotateX(72deg) rotate(22deg);
+}
+
+.visual-lab__orb-ring--b {
+  inset: 18%;
+  transform: rotateX(72deg) rotate(-32deg);
+}
+
+.visual-lab__orb-glint {
+  inset: 20% 44% auto auto;
+  width: 12%;
+  aspect-ratio: 1;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9), transparent 70%);
+  filter: blur(1px);
+  opacity: 0.8;
+}
+
+@keyframes visualLabDrift {
+  from {
+    transform: perspective(1200px) rotateX(58deg) translateY(17%) translateX(-0.6%);
+  }
+
+  to {
+    transform: perspective(1200px) rotateX(58deg) translateY(15.5%) translateX(0.8%);
+  }
+}
+
+@keyframes visualLabPulse {
+  from,
+  to {
+    opacity: 0.76;
+    transform: scale(0.98);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes visualLabFloat {
+  from {
+    transform: translate3d(-1px, 6px, 0) scale(0.995);
+  }
+
+  to {
+    transform: translate3d(1px, -8px, 0) scale(1.01);
+  }
+}
+
+@media (max-width: 980px) {
+  .visual-lab__stage {
+    inset: 16% 3% 8%;
+    grid-template-columns: 1fr;
+  }
+
+  .visual-lab__panel--left,
+  .visual-lab__panel--right {
+    justify-self: stretch;
+  }
+
+  .visual-lab__orb-shell {
+    width: min(88vw, 36rem);
+  }
+}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 
 import type { WorkspaceWidget } from './workspaceTypes';
+import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
 
 const widgetPresets: WorkspaceWidget[] = [
@@ -622,6 +623,8 @@ export function Workspace() {
       <div className="workspace-atmosphere workspace-atmosphere-a" aria-hidden="true" />
       <div className="workspace-atmosphere workspace-atmosphere-b" aria-hidden="true" />
       <div className="workspace-grid" aria-hidden="true" />
+
+      <VisualLab />
 
       <div className="workspace-head">
         <div className="workspace-brand">Mission Control Center</div>

@@ -1,12 +1,110 @@
+import { useEffect } from 'react';
+
 import { Workspace } from '../workspace/Workspace';
+import type { WorkspaceWidget } from '../workspace/workspaceTypes';
 import { getVisibleShellNavItems } from './nav';
 import { shellScopes, type ShellRole } from './roles';
 import './shell.css';
 
 const defaultRole: ShellRole = 'support';
 
-export function Shell() {
+type ShellProps = {
+  panelKind?: string | null;
+};
+
+function getPanelLabel(panelKind: string | null | undefined) {
+  switch (panelKind) {
+    case 'overview':
+      return 'Command core';
+    case 'graph':
+      return 'Telemetry';
+    case 'audio':
+      return 'Audio surface';
+    case 'map':
+      return 'Map / routes';
+    case 'diagram':
+      return 'Diagram';
+    case 'project':
+      return 'Project list';
+    case 'news':
+      return 'News / market';
+    case 'video':
+      return 'Video';
+    case '3d':
+      return '3D preview';
+    case 'flow':
+      return 'Flow chart';
+    case 'list':
+      return 'List';
+    default:
+      return 'Window';
+  }
+}
+
+function normalizePanelKind(panelKind: string | null | undefined): WorkspaceWidget['kind'] | null {
+  switch (panelKind) {
+    case 'overview':
+    case 'graph':
+    case 'audio':
+    case 'map':
+    case 'diagram':
+    case 'project':
+    case 'news':
+    case 'video':
+    case '3d':
+    case 'flow':
+    case 'list':
+      return panelKind;
+    default:
+      return null;
+  }
+}
+
+export function Shell({ panelKind = null }: ShellProps) {
   const visibleItems = getVisibleShellNavItems(defaultRole);
+  const activePanelKind = normalizePanelKind(panelKind);
+
+  useEffect(() => {
+    document.title = activePanelKind
+      ? `Mission Control Center — ${getPanelLabel(activePanelKind)}`
+      : 'Mission Control Center';
+  }, [activePanelKind]);
+
+  if (activePanelKind) {
+    return (
+      <section className="shell-frame shell-frame-window" aria-label="Mission Control Center window">
+        <div className="shell-window">
+          <div className="shell-window-head">
+            <div className="shell-branding shell-branding-window">
+              <p className="shell-eyebrow">Mission Control Center</p>
+              <h1>{getPanelLabel(activePanelKind)}</h1>
+              <p className="shell-copy">
+                Detached page mode. The OS window can go wherever the desktop gods permit; the app merely keeps its hands clean.
+              </p>
+            </div>
+
+            <div className="shell-window-actions">
+              <button
+                type="button"
+                className="shell-window-button"
+                onClick={() => {
+                  const baseUrl = `${window.location.origin}${window.location.pathname}`;
+                  window.location.assign(baseUrl);
+                }}
+              >
+                Open hub
+              </button>
+              <button type="button" className="shell-window-button is-muted" onClick={() => window.close()}>
+                Close window
+              </button>
+            </div>
+          </div>
+
+          <Workspace panelKind={activePanelKind} />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="shell-frame" aria-label="Mission Control Center shell">
@@ -15,8 +113,7 @@ export function Shell() {
           <p className="shell-eyebrow">Mission Control Center</p>
           <h1>Spatial command surface</h1>
           <p className="shell-copy">
-            Role-aware navigation is now present in skeleton form. No grand theatrics yet; merely
-            the machinery necessary to avoid a menu bar pretending to be architecture.
+            Role-aware navigation is now present in skeleton form. No grand theatrics yet; merely the machinery necessary to avoid a menu bar pretending to be architecture.
           </p>
         </div>
 

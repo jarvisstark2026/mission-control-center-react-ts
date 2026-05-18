@@ -137,6 +137,60 @@ const widgetPresets: WorkspaceWidget[] = [
   },
 ];
 
+const launchableWindowKinds: WorkspaceWidget['kind'][] = [
+  'overview',
+  'graph',
+  'audio',
+  'map',
+  'diagram',
+  'project',
+  'news',
+  'video',
+  '3d',
+  'flow',
+  'list',
+];
+
+const widgetBlueprints: Record<WorkspaceWidget['kind'], { title: string; subtitle: string; surfaceAlpha: number; lineAlpha: number; minWidth: number; minHeight: number }> = {
+  overview: { title: 'Command core', subtitle: 'open / move / stack', surfaceAlpha: 0.11, lineAlpha: 0.18, minWidth: 300, minHeight: 180 },
+  graph: { title: 'Telemetry', subtitle: 'live curves', surfaceAlpha: 0.085, lineAlpha: 0.16, minWidth: 280, minHeight: 170 },
+  audio: { title: 'Audio surface', subtitle: 'hold / play / mix', surfaceAlpha: 0.1, lineAlpha: 0.17, minWidth: 260, minHeight: 170 },
+  map: { title: 'Map / routes', subtitle: 'locations / zones', surfaceAlpha: 0.08, lineAlpha: 0.15, minWidth: 250, minHeight: 170 },
+  diagram: { title: 'Diagram', subtitle: 'system structure', surfaceAlpha: 0.078, lineAlpha: 0.15, minWidth: 260, minHeight: 170 },
+  project: { title: 'Project list', subtitle: 'tasks / backlog', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 260, minHeight: 150 },
+  news: { title: 'News / market', subtitle: 'watchlist', surfaceAlpha: 0.078, lineAlpha: 0.14, minWidth: 240, minHeight: 150 },
+  video: { title: 'Video', subtitle: 'media frame', surfaceAlpha: 0.082, lineAlpha: 0.14, minWidth: 260, minHeight: 170 },
+  '3d': { title: '3D preview', subtitle: 'assets / projects', surfaceAlpha: 0.1, lineAlpha: 0.16, minWidth: 300, minHeight: 190 },
+  flow: { title: 'Flow chart', subtitle: 'system logic', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 220, minHeight: 150 },
+  list: { title: 'List', subtitle: 'inbox / next steps', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 260, minHeight: 150 },
+};
+
+function getWidgetLabel(kind: WorkspaceWidget['kind']) {
+  return widgetBlueprints[kind].title;
+}
+
+function getFocusedWidget(kind: WorkspaceWidget['kind'], width: number, height: number): WorkspaceWidget {
+  const blueprint = widgetBlueprints[kind];
+
+  return {
+    id: `panel-${kind}`,
+    kind,
+    title: blueprint.title,
+    subtitle: blueprint.subtitle,
+    x: 16,
+    y: 84,
+    width: Math.max(320, width - 32),
+    height: Math.max(220, height - 104),
+    zIndex: 9,
+    surfaceAlpha: blueprint.surfaceAlpha,
+    lineAlpha: blueprint.lineAlpha,
+    open: true,
+    minWidth: blueprint.minWidth,
+    minHeight: blueprint.minHeight,
+    pinned: true,
+  };
+}
+
 function createCompactLayout(boundsWidth: number, boundsHeight: number): WorkspaceWidget[] {
   const stackWidth = Math.max(260, Math.min(boundsWidth - 16, 420));
   const totalWidgets = widgetPresets.length;
@@ -346,11 +400,13 @@ function WorkspaceWidgetCard({
   onStartDrag,
   onStartResize,
   onToggleOpen,
+  showChrome = true,
 }: {
   widget: WorkspaceWidget;
   onStartDrag: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
   onStartResize: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
   onToggleOpen: (id: string) => void;
+  showChrome?: boolean;
 }) {
   return (
     <article
@@ -366,24 +422,28 @@ function WorkspaceWidgetCard({
           '--widget-line-alpha': widget.lineAlpha,
         } as CSSProperties
       }
-      onPointerDown={(event) => onStartDrag(event, widget.id)}
+      onPointerDown={showChrome ? (event) => onStartDrag(event, widget.id) : undefined}
     >
-      <div className="widget-labels" aria-hidden="true">
-        <span className="widget-title">{widget.title}</span>
-        <span className="widget-subtitle">{widget.subtitle}</span>
-      </div>
+      {showChrome ? (
+        <>
+          <div className="widget-labels" aria-hidden="true">
+            <span className="widget-title">{widget.title}</span>
+            <span className="widget-subtitle">{widget.subtitle}</span>
+          </div>
 
-      <button
-        type="button"
-        className="widget-toggle"
-        onClick={(event) => {
-          event.stopPropagation();
-          onToggleOpen(widget.id);
-        }}
-        aria-label={widget.open ? `Collapse ${widget.title}` : `Open ${widget.title}`}
-      >
-        {widget.open ? '−' : '+'}
-      </button>
+          <button
+            type="button"
+            className="widget-toggle"
+            onClick={(event) => {
+              event.stopPropagation();
+              onToggleOpen(widget.id);
+            }}
+            aria-label={widget.open ? `Collapse ${widget.title}` : `Open ${widget.title}`}
+          >
+            {widget.open ? '−' : '+'}
+          </button>
+        </>
+      ) : null}
 
       <div className="widget-body">
         {widget.kind === 'overview' && <OverviewWidget />}
@@ -399,23 +459,30 @@ function WorkspaceWidgetCard({
         {widget.kind === 'list' && <ListWidget />}
       </div>
 
-      <button
-        type="button"
-        className="widget-resize-handle"
-        onPointerDown={(event) => onStartResize(event, widget.id)}
-        aria-label={`Resize ${widget.title}`}
-      />
+      {showChrome ? (
+        <button
+          type="button"
+          className="widget-resize-handle"
+          onPointerDown={(event) => onStartResize(event, widget.id)}
+          aria-label={`Resize ${widget.title}`}
+        />
+      ) : null}
     </article>
   );
 }
 
-export function Workspace() {
+type WorkspaceProps = {
+  panelKind?: WorkspaceWidget['kind'] | null;
+};
+
+export function Workspace({ panelKind = null }: WorkspaceProps) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const widgetsRef = useRef(widgetPresets);
   const interactionRef = useRef<InteractionState | null>(null);
   const compactLayoutAppliedRef = useRef(false);
   const [widgets, setWidgets] = useState(widgetPresets);
   const [bounds, setBounds] = useState({ width: 0, height: 0 });
+  const [nextLaunchIndex, setNextLaunchIndex] = useState(0);
 
   useEffect(() => {
     widgetsRef.current = widgets;
@@ -487,6 +554,21 @@ export function Workspace() {
   }, []);
 
   const orderedWidgets = useMemo(() => [...widgets].sort((a, b) => a.zIndex - b.zIndex), [widgets]);
+  const nextLaunchKind = launchableWindowKinds[nextLaunchIndex % launchableWindowKinds.length];
+
+  const openPanelWindow = (kind: WorkspaceWidget['kind']) => {
+    if (typeof window === 'undefined') return;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('panel', kind);
+    const popup = window.open(url.toString(), '_blank', 'popup=yes,width=1280,height=900');
+    popup?.focus?.();
+    setNextLaunchIndex((current) => current + 1);
+  };
+
+  const openNextPanelWindow = () => {
+    openPanelWindow(nextLaunchKind);
+  };
 
   const raiseWidget = (id: string) => {
     setWidgets((current) => {
@@ -618,6 +700,45 @@ export function Workspace() {
     );
   };
 
+  if (panelKind) {
+    const focusedWidget = getFocusedWidget(panelKind, bounds.width || 1200, bounds.height || 800);
+
+    return (
+      <section className="workspace-shell workspace-shell-panel">
+        <div className="workspace-atmosphere workspace-atmosphere-a" aria-hidden="true" />
+        <div className="workspace-atmosphere workspace-atmosphere-b" aria-hidden="true" />
+        <div className="workspace-grid" aria-hidden="true" />
+
+        <div className="workspace-head workspace-head-panel">
+          <div className="workspace-brand">Mission Control Center</div>
+          <div className="workspace-chip">detached page · drag the OS window to another screen</div>
+          <div className="workspace-launcher">
+            <button
+              type="button"
+              className="workspace-launch-button"
+              onClick={() => window.location.assign(window.location.origin + window.location.pathname)}
+            >
+              Open hub
+            </button>
+            <button type="button" className="workspace-launch-button is-muted" onClick={() => openPanelWindow(nextLaunchKind)}>
+              Add next page
+            </button>
+          </div>
+        </div>
+
+        <div className="workspace-panel-stage">
+          <WorkspaceWidgetCard
+            widget={focusedWidget}
+            onStartDrag={startDrag}
+            onStartResize={startResize}
+            onToggleOpen={toggleWidget}
+            showChrome={false}
+          />
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="workspace-shell">
       <div className="workspace-atmosphere workspace-atmosphere-a" aria-hidden="true" />
@@ -629,6 +750,18 @@ export function Workspace() {
       <div className="workspace-head">
         <div className="workspace-brand">Mission Control Center</div>
         <div className="workspace-chip">tailnet live · drag · resize · stack</div>
+        <div className="workspace-launcher">
+          <button type="button" className="workspace-launch-button" onClick={openNextPanelWindow}>
+            Add page · {getWidgetLabel(nextLaunchKind)}
+          </button>
+          <div className="workspace-launch-pills" aria-label="Window launch shortcuts">
+            {launchableWindowKinds.slice(0, 4).map((kind) => (
+              <button key={kind} type="button" className="workspace-launch-pill" onClick={() => openPanelWindow(kind)}>
+                {getWidgetLabel(kind)}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
       <div

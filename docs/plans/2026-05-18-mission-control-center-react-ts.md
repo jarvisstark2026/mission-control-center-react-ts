@@ -14,6 +14,8 @@
 
 **Backend Contract Assumptions:** The UI should treat backend data as versioned contracts, not ad hoc blobs. Use a single auth/session model, role claims from the session token, and explicit endpoints or channels for status, commands, telemetry, and registry data. If SSE vs WebSocket is undecided, lock one transport per slice before implementation.
 
+**UI Principles:** The interface must be highly fluid, with no scroll-down pages as the primary interaction model. Screens should behave like movable workspaces: panels, widgets, and controls can be dragged, resized, snapped, and moved across multiple screens. When the user asks Jarvis to open something, it should appear immediately in the appropriate place rather than being buried in navigation. Multi-screen continuity is a core requirement, not a future enhancement.
+
 ---
 
 ## Phase 0: Lock the execution decisions
@@ -112,7 +114,7 @@
 
 ### Task 4: Build the HUD stress-test screen
 
-**Objective:** Create the first demanding visual slice with semi-transparent 3D-like surfaces, dense micro-detail, and motion. Treat the reel-style reference as the target: layered glass, technical overlays, floating depth, and a cinematic control-room composition.
+**Objective:** Create the first demanding visual slice with semi-transparent 3D-like surfaces, dense micro-detail, and motion. Treat the reel-style reference as the target: layered glass, technical overlays, floating depth, a cinematic control-room composition, and a fluid workspace that does not depend on scroll-down pages.
 
 **Files:**
 - Create: `src/features/visual-lab/VisualLab.tsx`
@@ -244,6 +246,8 @@
 
 - The app feels like a **spatial command surface**, not a generic dashboard.
 - The UI supports **semi-transparent layered panels** and **3D-like asset previews**.
+- The shell is **fluid and multi-screen aware**, with drag/move behavior instead of scroll-down page navigation as the primary model.
+- Jarvis can surface requested content immediately in the workspace rather than burying it behind menus.
 - The stack remains **React + TypeScript** as the single source of truth for the UI.
 - Browser access works first, then desktop and mobile packaging follow.
 - Role-aware navigation, command gates, chat, voice, notifications, and integration registry are visible.

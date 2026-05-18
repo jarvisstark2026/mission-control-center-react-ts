@@ -8,7 +8,39 @@
 
 **Tech Stack:** React, TypeScript, Vite, CSS variables / design tokens, Framer Motion, Three.js or React Three Fiber for 3D preview panes, Zustand for client state, TanStack Query for server state, WebSocket/SSE for live updates, Tauri for desktop packaging, Capacitor or a mobile wrapper later if needed.
 
+**Verification Stack:** Vitest, React Testing Library, Playwright, ESLint, TypeScript `--noEmit`.
+
+**MVP Boundary:** The first release proves the shell, visual system, role-aware navigation, one 3D preview lane, and live placeholder telemetry. Chat, voice, integrations, and packaging beyond browser are permitted only after the shell feels right in browser review.
+
+**Backend Contract Assumptions:** The UI should treat backend data as versioned contracts, not ad hoc blobs. Use a single auth/session model, role claims from the session token, and explicit endpoints or channels for status, commands, telemetry, and registry data. If SSE vs WebSocket is undecided, lock one transport per slice before implementation.
+
 ---
+
+## Phase 0: Lock the execution decisions
+
+### Task 0: Freeze the technical choices and success criteria
+
+**Objective:** Remove ambiguity before implementation starts so the stack and verification path are not re-decided mid-build.
+
+**Files:**
+- Modify: `README.md`
+- Modify: `docs/plans/2026-05-18-mission-control-center-react-ts.md`
+
+**Step 1: Record the chosen tooling**
+- Browser-first React + TypeScript + Vite.
+- Vitest + React Testing Library for unit/component tests.
+- Playwright for browser smoke and visual checks.
+- ESLint and TypeScript strict mode as blocking gates.
+
+**Step 2: Record the visual subsystem decision**
+- Use React Three Fiber or Three.js for the 3D preview lane, not the whole UI shell.
+
+**Step 3: Record the MVP boundary**
+- First prove shell + visual language + nav + role gating + preview lane.
+- Defer mobile packaging and live backend wiring if they threaten the first visual pass.
+
+**Step 4: Verify the plan is executable**
+- Expected: each later task has a known test path and no unresolved platform choice.
 
 ## Phase 1: Re-establish the product skeleton
 

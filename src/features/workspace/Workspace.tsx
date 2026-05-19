@@ -4,7 +4,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, ChangeEvent } fr
 import { StatusChip } from '../../components/ui/StatusChip';
 import { readShellLocationFromSearch } from '../shell/location';
 import type { ShellRole } from '../shell/roles';
-import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, WorkspaceMetricGrid, WorkspaceRowList } from './workspaceBlocks';
+import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, WorkspaceMetricGrid, WorkspaceRowList, WorkspaceWidgetFrame } from './workspaceBlocks';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from './workspaceTypes';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
@@ -2984,7 +2984,8 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
         </>
       ) : null}
 
-      <div
+      <WorkspaceWidgetFrame
+        kind={widget.kind}
         className={`widget-body ${widget.kind === 'file-explorer' ? 'widget-body-file-explorer' : ''} ${widget.kind === 'window-manager' ? 'widget-body-window-manager' : ''}`}
       >
         {widget.kind === 'file-explorer' && (
@@ -3030,7 +3031,7 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
             {widget.kind === 'list' && <ListWidget />}
           </div>
         )}
-      </div>
+      </WorkspaceWidgetFrame>
 
       <WidgetResizeHandles widget={widget} onStartResize={onStartResize} showChrome={showChrome} />
     </article>

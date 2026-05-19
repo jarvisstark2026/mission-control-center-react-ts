@@ -1,4 +1,17 @@
 import type { ReactNode } from 'react';
+import type { WorkspaceWidget } from './workspaceTypes';
+
+export function WorkspaceWidgetFrame({
+  kind,
+  className,
+  children,
+}: {
+  kind: WorkspaceWidget['kind'];
+  className?: string;
+  children: ReactNode;
+}) {
+  return <div className={["workspace-widget-frame", `kind-${kind}`, className].filter(Boolean).join(' ')}>{children}</div>;
+}
 
 export type WorkspaceMetric = {
   label: string;

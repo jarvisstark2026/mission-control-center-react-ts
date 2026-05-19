@@ -374,6 +374,15 @@
   flex-direction: column;
 }
 
+.workspace-widget-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 .widget-scroll-pane {
   position: relative;
   flex: 1 1 auto;

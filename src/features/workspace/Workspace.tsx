@@ -680,7 +680,10 @@ function ImageWidget() {
   return (
     <div className="image-surface">
       <div className="image-frame">
-        <div className="image-placeholder">image preview</div>
+        <div className="image-placeholder">
+          <span>no asset loaded</span>
+          <small>drop / annotate / crop</small>
+        </div>
       </div>
       <div className="image-footer">
         <span>image</span>
@@ -1077,11 +1080,11 @@ function NativeAppWidget() {
       <div className="native-app-panel">
         <span>desktop bridge</span>
         <strong>open installed app / external window</strong>
-        <p>Type the app name or executable path. The bridge remains a placeholder for the real OS integration layer.</p>
+        <p>Type the app name or executable path. The bridge is still the polite fiction standing in for the real OS integration layer.</p>
       </div>
       <label className="native-app-input">
         <span>App or command</span>
-        <input type="text" placeholder="e.g. explorer.exe, notepad.exe, obsidian" />
+        <input type="text" placeholder="e.g. obsidian, explorer.exe, notepad.exe" />
       </label>
       <div className="native-app-list">
         {apps.map((app) => (

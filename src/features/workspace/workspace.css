@@ -1568,10 +1568,21 @@
   inset: 0;
   display: grid;
   place-items: center;
+  gap: 4px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 0.62rem;
   color: rgba(255, 255, 255, 0.72);
+  text-align: center;
+}
+
+.image-placeholder span {
+  font-size: 0.64rem;
+}
+
+.image-placeholder small {
+  font-size: 0.54rem;
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .image-footer,

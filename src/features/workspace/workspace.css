@@ -680,7 +680,8 @@
 .launcher-surface,
 .browser-surface,
 .watch-video-surface,
-.file-explorer-surface {
+.file-explorer-surface,
+.native-app-surface {
   display: grid;
   gap: 10px;
   align-content: start;
@@ -871,6 +872,72 @@
   list-style: none;
   padding-top: 6px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.native-app-panel {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.native-app-panel span,
+.native-app-input span,
+.native-app-item span {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.62rem;
+}
+
+.native-app-panel strong {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.native-app-panel p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.native-app-input {
+  display: grid;
+  gap: 6px;
+}
+
+.native-app-input input {
+  width: 100%;
+  min-height: 38px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.native-app-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.native-app-item {
+  display: grid;
+  gap: 4px;
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.92);
+  text-align: left;
+  border-radius: 4px;
+}
+
+.native-app-item small {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.56rem;
 }
 
 .widget-resize-handle {

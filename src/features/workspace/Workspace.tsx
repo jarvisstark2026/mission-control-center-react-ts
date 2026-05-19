@@ -184,6 +184,22 @@ const widgetPresets: WorkspaceWidget[] = [
     minHeight: 200,
   },
   {
+    id: 'native-app',
+    kind: 'native-app',
+    title: 'Native app bridge',
+    subtitle: 'installed apps / external windows',
+    x: 420,
+    y: 320,
+    width: 392,
+    height: 238,
+    zIndex: 4,
+    surfaceAlpha: 0.08,
+    lineAlpha: 0.15,
+    open: true,
+    minWidth: 320,
+    minHeight: 200,
+  },
+  {
     id: 'audio',
     kind: 'audio',
     title: 'Audio surface',
@@ -230,6 +246,7 @@ const launchableWindowKinds: WorkspaceWidget['kind'][] = [
   'browser',
   'watch-video',
   'file-explorer',
+  'native-app',
   'video',
   '3d',
   'flow',
@@ -249,6 +266,7 @@ const widgetBlueprints: Record<WorkspaceWidget['kind'], { title: string; subtitl
   browser: { title: 'Browser', subtitle: 'pages / tabs', surfaceAlpha: 0.074, lineAlpha: 0.14, minWidth: 320, minHeight: 220 },
   'watch-video': { title: 'Watch video', subtitle: 'player / playback', surfaceAlpha: 0.078, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
   'file-explorer': { title: 'File explorer', subtitle: 'folders / files', surfaceAlpha: 0.076, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
+  'native-app': { title: 'Native app bridge', subtitle: 'installed apps / external windows', surfaceAlpha: 0.08, lineAlpha: 0.15, minWidth: 320, minHeight: 200 },
   video: { title: 'Video', subtitle: 'media frame', surfaceAlpha: 0.082, lineAlpha: 0.14, minWidth: 260, minHeight: 170 },
   '3d': { title: '3D preview', subtitle: 'assets / projects', surfaceAlpha: 0.1, lineAlpha: 0.16, minWidth: 300, minHeight: 190 },
   flow: { title: 'Flow chart', subtitle: 'system logic', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 220, minHeight: 150 },
@@ -529,6 +547,7 @@ function LauncherWidget() {
     { label: 'Browser', kind: 'browser' as const },
     { label: 'Watch video', kind: 'watch-video' as const },
     { label: 'File explorer', kind: 'file-explorer' as const },
+    { label: 'Native app bridge', kind: 'native-app' as const },
     { label: 'Video', kind: 'video' as const },
     { label: '3D preview', kind: '3d' as const },
     { label: 'Flow chart', kind: 'flow' as const },
@@ -634,6 +653,39 @@ function FileExplorerWidget() {
   );
 }
 
+
+function NativeAppWidget() {
+  const apps = [
+    { name: 'Mission Control Center', note: 'primary desktop hub' },
+    { name: 'DailyForge', note: 'separate planning surface' },
+    { name: 'Browser', note: 'external web window' },
+    { name: 'Files', note: 'native file manager' },
+    { name: 'Terminal', note: 'command-line session' },
+  ];
+
+  return (
+    <div className="native-app-surface">
+      <div className="native-app-panel">
+        <span>desktop bridge</span>
+        <strong>open installed app / external window</strong>
+        <p>Type the app name or executable path. The bridge remains a placeholder for the real OS integration layer.</p>
+      </div>
+      <label className="native-app-input">
+        <span>App or command</span>
+        <input type="text" placeholder="e.g. explorer.exe, notepad.exe, obsidian" />
+      </label>
+      <div className="native-app-list">
+        {apps.map((app) => (
+          <button key={app.name} type="button" className="native-app-item">
+            <span>{app.name}</span>
+            <small>{app.note}</small>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function WorkspaceWidgetCard({
   widget,
   onStartDrag,
@@ -697,6 +749,7 @@ function WorkspaceWidgetCard({
         {widget.kind === 'browser' && <BrowserWidget />}
         {widget.kind === 'watch-video' && <WatchVideoWidget />}
         {widget.kind === 'file-explorer' && <FileExplorerWidget />}
+        {widget.kind === 'native-app' && <NativeAppWidget />}
         {widget.kind === 'video' && <VideoWidget />}
         {widget.kind === '3d' && <PreviewWidget />}
         {widget.kind === 'flow' && <FlowWidget />}

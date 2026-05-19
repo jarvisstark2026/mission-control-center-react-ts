@@ -38,6 +38,8 @@ function getPanelLabel(panelKind: string | null | undefined) {
       return 'Watch video';
     case 'file-explorer':
       return 'File explorer';
+    case 'native-app':
+      return 'Native app bridge';
     case 'video':
       return 'Video';
     case '3d':
@@ -65,6 +67,7 @@ function normalizePanelKind(panelKind: string | null | undefined): WorkspaceWidg
     case 'browser':
     case 'watch-video':
     case 'file-explorer':
+    case 'native-app':
     case 'video':
     case '3d':
     case 'flow':

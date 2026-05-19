@@ -11,6 +11,7 @@ export type WidgetKind =
   | 'browser'
   | 'watch-video'
   | 'file-explorer'
+  | 'native-app'
   | 'video'
   | '3d'
   | 'flow'

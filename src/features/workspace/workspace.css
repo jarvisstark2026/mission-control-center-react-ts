@@ -125,7 +125,7 @@
   position: absolute;
   top: 10px;
   left: 12px;
-  right: 42px;
+  right: 72px;
   z-index: 2;
   display: grid;
   gap: 2px;
@@ -150,10 +150,6 @@
 }
 
 .widget-toggle {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 3;
   width: 26px;
   height: 26px;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -163,8 +159,28 @@
   cursor: pointer;
 }
 
-.widget-toggle:hover {
+.widget-toggle:hover,
+.widget-close:hover {
   background: rgba(255, 255, 255, 0.12);
+}
+
+.widget-chrome-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+  display: flex;
+  gap: 6px;
+}
+
+.widget-close {
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
 }
 
 .widget-body {

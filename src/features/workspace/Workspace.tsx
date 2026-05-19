@@ -1003,12 +1003,14 @@ function WorkspaceWidgetCard({
   onStartDrag,
   onStartResize,
   onToggleOpen,
+  onClose,
   showChrome = true,
 }: {
   widget: WorkspaceWidget;
   onStartDrag: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
   onStartResize: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
   onToggleOpen: (id: string) => void;
+  onClose: (id: string) => void;
   showChrome?: boolean;
 }) {
   return (
@@ -1018,7 +1020,7 @@ function WorkspaceWidgetCard({
         {
           left: `${widget.x}px`,
           top: `${widget.y}px`,
-          width: `${widget.open ? widget.width : Math.max(220, Math.min(widget.width, 320))}px`,
+          width: `${widget.width}px`,
           height: `${widget.open ? widget.height : 58}px`,
           zIndex: widget.zIndex,
           '--widget-surface-alpha': widget.surfaceAlpha,
@@ -1034,17 +1036,32 @@ function WorkspaceWidgetCard({
             <span className="widget-subtitle">{widget.subtitle}</span>
           </div>
 
-          <button
-            type="button"
-            className="widget-toggle"
-            onClick={(event) => {
-              event.stopPropagation();
-              onToggleOpen(widget.id);
-            }}
-            aria-label={widget.open ? `Collapse ${widget.title}` : `Open ${widget.title}`}
-          >
-            {widget.open ? '−' : '+'}
-          </button>
+          <div className="widget-chrome-actions" aria-label={`${widget.title} window controls`}>
+            <button
+              type="button"
+              className="widget-toggle"
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggleOpen(widget.id);
+              }}
+              aria-label={widget.open ? `Minimize ${widget.title}` : `Restore ${widget.title}`}
+              title={widget.open ? `Minimize ${widget.title}` : `Restore ${widget.title}`}
+            >
+              {widget.open ? '−' : '+'}
+            </button>
+            <button
+              type="button"
+              className="widget-close"
+              onClick={(event) => {
+                event.stopPropagation();
+                onClose(widget.id);
+              }}
+              aria-label={`Close ${widget.title}`}
+              title={`Close ${widget.title}`}
+            >
+              ×
+            </button>
+          </div>
         </>
       ) : null}
 
@@ -1316,6 +1333,11 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     );
   };
 
+  const closeWidget = (id: string) => {
+    setWidgets((current) => current.filter((widget) => widget.id !== id));
+    widgetsRef.current = widgetsRef.current.filter((widget) => widget.id !== id);
+  };
+
   if (panelKind) {
     const focusedWidget = getFocusedWidget(panelKind, bounds.width || 1200, bounds.height || 800);
 
@@ -1348,6 +1370,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             onStartDrag={startDrag}
             onStartResize={startResize}
             onToggleOpen={toggleWidget}
+            onClose={closeWidget}
             showChrome={false}
           />
         </div>
@@ -1394,6 +1417,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             onStartDrag={startDrag}
             onStartResize={startResize}
             onToggleOpen={toggleWidget}
+            onClose={closeWidget}
           />
         ))}
       </div>

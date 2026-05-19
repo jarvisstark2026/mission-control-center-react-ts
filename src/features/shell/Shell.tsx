@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { SectionHeader } from '../../components/ui/SectionHeader';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { Workspace } from '../workspace/Workspace';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from '../workspace/workspaceTypes';
@@ -280,7 +281,11 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
         </div>
 
         <div className="shell-scope-group">
-          <p className="shell-section-label">Scopes</p>
+          <SectionHeader
+            eyebrow="Access"
+            title="Scopes"
+            description="Choose the operating band before opening a surface."
+          />
           <ul className="shell-scope-list">
             {shellScopes.map((scope) => (
               <li key={scope.id} className={scope.id === activeRole ? 'is-active' : undefined}>
@@ -299,7 +304,11 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
         </div>
 
         <div className="shell-nav-group">
-          <p className="shell-section-label">Navigation</p>
+          <SectionHeader
+            eyebrow="Routing"
+            title="Navigation"
+            description="Open the relevant control surface without the usual detour through a menu maze."
+          />
           <ul className="shell-nav-list">
             {visibleItems.map((item) => (
               <li key={item.id}>

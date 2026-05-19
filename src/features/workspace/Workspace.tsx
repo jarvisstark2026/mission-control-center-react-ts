@@ -2737,7 +2737,15 @@ function FileExplorerWidget({
         <button type="button" className="file-explorer-button is-muted" onClick={onClearFiles} disabled={!files.length && !folderEntries.length}>
           Clear loaded files
         </button>
-        <input ref={fileInputRef} className="file-explorer-input" type="file" multiple onChange={handleFileChange} />
+        <input
+          ref={fileInputRef}
+          className="file-explorer-input"
+          type="file"
+          multiple
+          aria-hidden="true"
+          tabIndex={-1}
+          onChange={handleFileChange}
+        />
       </div>
 
       <div className="file-explorer-body">

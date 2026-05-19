@@ -154,13 +154,25 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
       : `Mission Control Center — ${shellScopes.find((scope) => scope.id === activeRole)?.label ?? 'Support'}`;
   }, [activePanelKind, activeRole]);
 
-  const navigateToPanel = (target: WorkspaceWidget['kind'] | null) => {
+  const navigateWithParams = (update: (url: URL) => void) => {
     if (typeof window === 'undefined') return;
 
     const url = new URL(window.location.href);
-    if (target) url.searchParams.set('panel', target);
-    else url.searchParams.delete('panel');
+    update(url);
     window.location.assign(url.toString());
+  };
+
+  const navigateToPanel = (target: WorkspaceWidget['kind'] | null) => {
+    navigateWithParams((url) => {
+      if (target) url.searchParams.set('panel', target);
+      else url.searchParams.delete('panel');
+    });
+  };
+
+  const navigateToRole = (targetRole: ShellRole) => {
+    navigateWithParams((url) => {
+      url.searchParams.set('role', targetRole);
+    });
   };
 
   if (activePanelKind) {
@@ -235,8 +247,15 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
           <ul className="shell-scope-list">
             {shellScopes.map((scope) => (
               <li key={scope.id} className={scope.id === activeRole ? 'is-active' : undefined}>
-                <span>{scope.label}</span>
-                <small>{scope.description}</small>
+                <button
+                  type="button"
+                  className={`shell-nav-button shell-scope-button ${scope.id === activeRole ? 'is-active' : ''}`}
+                  aria-pressed={scope.id === activeRole}
+                  onClick={() => navigateToRole(scope.id)}
+                >
+                  <span>{scope.label}</span>
+                  <small>{scope.description}</small>
+                </button>
               </li>
             ))}
           </ul>

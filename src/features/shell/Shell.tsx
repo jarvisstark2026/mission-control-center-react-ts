@@ -40,6 +40,8 @@ function getPanelLabel(panelKind: string | null | undefined) {
       return 'Video preview';
     case 'image':
       return 'Image preview';
+    case 'pdf':
+      return 'PDF';
     case 'file-explorer':
       return 'File explorer';
     case 'native-app':
@@ -82,6 +84,7 @@ function normalizePanelKind(panelKind: string | null | undefined): WorkspaceWidg
     case 'launcher':
     case 'browser':
     case 'watch-video':
+    case 'pdf':
     case 'file-explorer':
     case 'native-app':
     case 'window-manager':

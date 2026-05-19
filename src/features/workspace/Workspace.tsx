@@ -3102,8 +3102,16 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     const deltaY = event.clientY - interaction.startY;
 
     if (interaction.mode === 'drag') {
-      const nextLeft = interaction.startLeft + deltaX;
-      const nextTop = interaction.startTop + deltaY;
+      const nextLeft = clamp(
+        interaction.startLeft + deltaX,
+        0,
+        Math.max(0, canvasRect.width - currentWidget.width),
+      );
+      const nextTop = clamp(
+        interaction.startTop + deltaY,
+        0,
+        Math.max(0, canvasRect.height - currentWidget.height),
+      );
 
       setWidgets((current) =>
         current.map((widget) =>
@@ -3122,7 +3130,6 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     const isClosed = !currentWidget.open;
     const edge = interaction.edge ?? 'corner';
     let nextLeft = interaction.startLeft;
-    let nextTop = interaction.startTop;
     let nextWidth = interaction.startWidth;
     let nextHeight = interaction.startHeight;
 
@@ -3141,7 +3148,6 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     if (isClosed) {
       nextHeight = interaction.startHeight;
       if (edge !== 'left') nextLeft = interaction.startLeft;
-      if (edge === 'left') nextTop = interaction.startTop;
     }
 
     nextWidth = Math.max(currentWidget.minWidth, nextWidth);

@@ -1434,6 +1434,7 @@ function FileExplorerWidget({
   onClearFiles: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const activeFile = files.find((record) => record.id === activeFileId) ?? null;
 
   const handleBrowseClick = () => {
     fileInputRef.current?.click();
@@ -1456,7 +1457,7 @@ function FileExplorerWidget({
         </div>
         <div className="file-explorer-head-meta">
           <span>{files.length} selected</span>
-          <small>browser access is limited to files you pick, regrettably</small>
+          <small>{activeFile ? `previewing ${activeFile.path}` : 'browser access is limited to files you pick, regrettably'}</small>
         </div>
       </div>
 
@@ -1478,7 +1479,7 @@ function FileExplorerWidget({
 
               return (
                 <li key={record.id} className={`file-explorer-item ${isActive ? 'is-active' : ''}`}>
-                  <button type="button" className="file-explorer-item-button" onClick={() => onOpenPreview(record)}>
+                  <button type="button" className="file-explorer-item-button" onClick={() => onOpenPreview(record)} aria-pressed={isActive}>
                     <span className="file-explorer-item-name">{record.path}</span>
                     <span className="file-explorer-item-meta">
                       <small>{record.previewKind}</small>

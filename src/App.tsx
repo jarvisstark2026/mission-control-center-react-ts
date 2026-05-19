@@ -2,27 +2,24 @@ import { useEffect, useState } from 'react';
 
 import { Shell } from './features/shell/Shell';
 import { isShellPanelAccessible } from './features/shell/nav';
-import { isShellRole, type ShellRole } from './features/shell/roles';
+import {
+  getCanonicalShellLocationHref as buildShellLocationHref,
+  readShellLocationFromSearch,
+  type ShellLocationState,
+} from './features/shell/location';
+import type { ShellRole } from './features/shell/roles';
 import type { WorkspaceWidget } from './features/workspace/workspaceTypes';
 import { isWorkspaceWidgetKind } from './features/workspace/workspaceTypes';
 import './styles/app.css';
 
 const defaultShellRole: ShellRole = 'support';
 
-type ShellLocationState = {
-  panelKind: WorkspaceWidget['kind'] | null;
-  role: ShellRole;
-};
-
 function readShellLocation(): ShellLocationState {
   if (typeof window === 'undefined') {
     return { panelKind: null, role: defaultShellRole };
   }
 
-  const searchParams = new URLSearchParams(window.location.search);
-  const panelKind = searchParams.get('panel');
-  const roleParam = searchParams.get('role');
-  const role = roleParam && isShellRole(roleParam) ? roleParam : defaultShellRole;
+  const { panelKind, role } = readShellLocationFromSearch(window.location.search, defaultShellRole);
 
   return {
     panelKind: panelKind && isWorkspaceWidgetKind(panelKind) && isShellPanelAccessible(role, panelKind) ? panelKind : null,
@@ -30,18 +27,12 @@ function readShellLocation(): ShellLocationState {
   };
 }
 
-function getCanonicalShellLocationHref(locationState: ShellLocationState) {
+function getCanonicalHref(locationState: ShellLocationState) {
   if (typeof window === 'undefined') {
     return '';
   }
 
-  const url = new URL(window.location.href);
-  url.searchParams.set('role', locationState.role);
-
-  if (locationState.panelKind) url.searchParams.set('panel', locationState.panelKind);
-  else url.searchParams.delete('panel');
-
-  return url.toString();
+  return buildShellLocationHref(window.location.href, locationState);
 }
 
 export default function App() {
@@ -57,7 +48,7 @@ export default function App() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    const canonicalHref = getCanonicalShellLocationHref(shellLocation);
+    const canonicalHref = getCanonicalHref(shellLocation);
     if (canonicalHref && canonicalHref !== window.location.href) {
       window.history.replaceState({}, '', canonicalHref);
     }
@@ -66,12 +57,7 @@ export default function App() {
   const handleNavigate = (nextLocation: { panelKind: WorkspaceWidget['kind'] | null; role: ShellRole }) => {
     if (typeof window === 'undefined') return;
 
-    const url = new URL(window.location.href);
-
-    url.searchParams.set('role', nextLocation.role);
-
-    if (nextLocation.panelKind) url.searchParams.set('panel', nextLocation.panelKind);
-    else url.searchParams.delete('panel');
+    const url = new URL(buildShellLocationHref(window.location.href, nextLocation));
 
     if (url.toString() !== window.location.href) {
       window.history.pushState({}, '', url);

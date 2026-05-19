@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ChangeEvent } from 'react';
 
 import { StatusChip } from '../../components/ui/StatusChip';
-import { isShellRole, type ShellRole } from '../shell/roles';
+import { readShellLocationFromSearch } from '../shell/location';
+import type { ShellRole } from '../shell/roles';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from './workspaceTypes';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
@@ -947,14 +948,13 @@ const workspaceStorageKey = 'mission-control-center.workspace.layout.v1';
 function getCurrentShellRole(): ShellRole {
   if (typeof window === 'undefined') return 'support';
 
-  const roleParam = new URLSearchParams(window.location.search).get('role');
-  return roleParam && isShellRole(roleParam) ? roleParam : 'support';
+  return readShellLocationFromSearch(window.location.search, 'support').role;
 }
 
 function buildPanelWindowUrl(kind: WorkspaceWidget['kind']) {
   const url = new URL(window.location.href);
-  url.searchParams.set('panel', kind);
   url.searchParams.set('role', getCurrentShellRole());
+  url.searchParams.set('panel', kind);
   return url;
 }
 
@@ -3038,7 +3038,9 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
         </>
       ) : null}
 
-      <div className={`widget-body ${widget.kind === 'file-explorer' ? 'widget-body-file-explorer' : ''}`}>
+      <div
+        className={`widget-body ${widget.kind === 'file-explorer' ? 'widget-body-file-explorer' : ''} ${widget.kind === 'window-manager' ? 'widget-body-window-manager' : ''}`}
+      >
         {widget.kind === 'overview' && <OverviewWidget />}
         {widget.kind === 'graph' && <GraphWidget />}
         {widget.kind === 'trading-graph' && <TradingGraphWidget graph={activeMarketGraph} />}

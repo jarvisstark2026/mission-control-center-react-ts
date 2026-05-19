@@ -1598,6 +1598,18 @@
   align-content: start;
 }
 
+.widget-body-window-manager {
+  overflow: hidden;
+}
+
+.window-manager-surface {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 100%;
+  height: 100%;
+}
+
 .browser-surface {
   display: flex;
   flex-direction: column;
@@ -2315,6 +2327,13 @@
 .window-manager-list {
   display: grid;
   gap: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 2px;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
 .window-manager-empty {

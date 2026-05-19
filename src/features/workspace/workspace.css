@@ -190,6 +190,13 @@
     animation: none;
     transition: none;
   }
+
+  .workspace-widget:hover,
+  .workspace-launch-button:hover,
+  .workspace-launch-pill:hover,
+  .workspace-widget:active {
+    transform: none;
+  }
 }
 
 .widget-labels {

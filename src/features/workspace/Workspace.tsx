@@ -1184,12 +1184,13 @@ function WorkspaceWidgetCard({
             <button
               type="button"
               className="widget-close"
+              disabled={Boolean(widget.pinned)}
               onClick={(event) => {
                 event.stopPropagation();
                 onClose(widget.id);
               }}
-              aria-label={`Close ${widget.title}`}
-              title={`Close ${widget.title}`}
+              aria-label={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
+              title={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
             >
               ×
             </button>
@@ -1448,8 +1449,8 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   };
 
   const closeWidget = (id: string) => {
-    setWidgets((current) => current.filter((widget) => widget.id !== id));
-    widgetsRef.current = widgetsRef.current.filter((widget) => widget.id !== id);
+    setWidgets((current) => current.filter((widget) => widget.id !== id || widget.pinned));
+    widgetsRef.current = widgetsRef.current.filter((widget) => widget.id !== id || widget.pinned);
   };
 
   if (panelKind) {

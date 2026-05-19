@@ -369,6 +369,15 @@
   width: 100%;
   flex: 1 1 auto;
   min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.widget-scroll-pane {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
   padding: var(--widget-chrome-top) 14px var(--widget-chrome-bottom);
   box-sizing: border-box;
   overflow-y: auto;
@@ -391,7 +400,7 @@
   min-height: 0;
 }
 
-.widget-body::-webkit-scrollbar,
+.widget-scroll-pane::-webkit-scrollbar,
 .preview-media-text::-webkit-scrollbar,
 .file-explorer-list::-webkit-scrollbar,
 .workflow-saved-list::-webkit-scrollbar {
@@ -399,14 +408,14 @@
   height: 6px;
 }
 
-.widget-body::-webkit-scrollbar-track,
+.widget-scroll-pane::-webkit-scrollbar-track,
 .preview-media-text::-webkit-scrollbar-track,
 .file-explorer-list::-webkit-scrollbar-track,
 .workflow-saved-list::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.widget-body::-webkit-scrollbar-thumb,
+.widget-scroll-pane::-webkit-scrollbar-thumb,
 .preview-media-text::-webkit-scrollbar-thumb,
 .file-explorer-list::-webkit-scrollbar-thumb,
 .workflow-saved-list::-webkit-scrollbar-thumb {
@@ -416,14 +425,14 @@
   background-clip: padding-box;
 }
 
-.widget-body:hover::-webkit-scrollbar-thumb,
+.widget-scroll-pane:hover::-webkit-scrollbar-thumb,
 .preview-media-text:hover::-webkit-scrollbar-thumb,
 .file-explorer-list:hover::-webkit-scrollbar-thumb,
 .workflow-saved-list:hover::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.28);
 }
 
-.widget-body::-webkit-scrollbar-thumb:active,
+.widget-scroll-pane::-webkit-scrollbar-thumb:active,
 .preview-media-text::-webkit-scrollbar-thumb:active,
 .file-explorer-list::-webkit-scrollbar-thumb:active,
 .workflow-saved-list::-webkit-scrollbar-thumb:active {

@@ -3049,23 +3049,6 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
       <div
         className={`widget-body ${widget.kind === 'file-explorer' ? 'widget-body-file-explorer' : ''} ${widget.kind === 'window-manager' ? 'widget-body-window-manager' : ''}`}
       >
-        {widget.kind === 'overview' && <OverviewWidget />}
-        {widget.kind === 'graph' && <GraphWidget />}
-        {widget.kind === 'trading-graph' && <TradingGraphWidget graph={activeMarketGraph} />}
-        {widget.kind === 'sheet' && <SpreadsheetWidget />}
-        {widget.kind === 'docs' && <DocsWidget />}
-        {widget.kind === 'slides' && <SlidesWidget />}
-        {widget.kind === 'image' && <ImageWidget />}
-        {widget.kind === 'pdf' && <PdfWidget />}
-        {widget.kind === 'audio' && <AudioWidget />}
-        {widget.kind === 'map' && <MapWidget />}
-        {widget.kind === 'diagram' && <DiagramWidget />}
-        {widget.kind === 'project' && <ProjectWidget />}
-        {widget.kind === 'news' && <NewsWidget activeGraph={activeMarketGraph} onSelectGraph={onSelectMarketGraph} />}
-        {widget.kind === 'schedule' && <ScheduleWidget />}
-        {widget.kind === 'launcher' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />}
-        {widget.kind === 'browser' && <BrowserWidget />}
-        {widget.kind === 'watch-video' && <LiveTvWidget />}
         {widget.kind === 'file-explorer' && (
           <FileExplorerWidget
             files={localFiles}
@@ -3081,13 +3064,34 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
             onClearFiles={onClearFiles}
           />
         )}
-        {widget.kind === 'native-app' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />}
         {widget.kind === 'window-manager' && <WindowManagerWidget widgets={workspaceWidgets} onFocusWidget={onFocusWidget} onCloseWidget={onCloseWidget} />}
-        {widget.kind === 'video' && <VideoWidget />}
-        {widget.kind === '3d' && <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} />}
-        {widget.kind === '3d-studio' && <ModelStudioWidget />}
-        {widget.kind === 'flow' && <WorkflowWidget />}
-        {widget.kind === 'list' && <ListWidget />}
+        {widget.kind !== 'file-explorer' && widget.kind !== 'window-manager' && (
+          <div className="widget-scroll-pane">
+            {widget.kind === 'overview' && <OverviewWidget />}
+            {widget.kind === 'graph' && <GraphWidget />}
+            {widget.kind === 'trading-graph' && <TradingGraphWidget graph={activeMarketGraph} />}
+            {widget.kind === 'sheet' && <SpreadsheetWidget />}
+            {widget.kind === 'docs' && <DocsWidget />}
+            {widget.kind === 'slides' && <SlidesWidget />}
+            {widget.kind === 'image' && <ImageWidget />}
+            {widget.kind === 'pdf' && <PdfWidget />}
+            {widget.kind === 'audio' && <AudioWidget />}
+            {widget.kind === 'map' && <MapWidget />}
+            {widget.kind === 'diagram' && <DiagramWidget />}
+            {widget.kind === 'project' && <ProjectWidget />}
+            {widget.kind === 'news' && <NewsWidget activeGraph={activeMarketGraph} onSelectGraph={onSelectMarketGraph} />}
+            {widget.kind === 'schedule' && <ScheduleWidget />}
+            {widget.kind === 'launcher' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />}
+            {widget.kind === 'browser' && <BrowserWidget />}
+            {widget.kind === 'watch-video' && <LiveTvWidget />}
+            {widget.kind === 'native-app' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />}
+            {widget.kind === 'video' && <VideoWidget />}
+            {widget.kind === '3d' && <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} />}
+            {widget.kind === '3d-studio' && <ModelStudioWidget />}
+            {widget.kind === 'flow' && <WorkflowWidget />}
+            {widget.kind === 'list' && <ListWidget />}
+          </div>
+        )}
       </div>
 
       <WidgetResizeHandles widget={widget} onStartResize={onStartResize} showChrome={showChrome} />

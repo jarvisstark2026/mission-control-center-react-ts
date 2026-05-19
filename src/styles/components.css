@@ -95,3 +95,59 @@
   color: rgba(255, 255, 255, 0.62);
   line-height: 1.45;
 }
+
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.88);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    background 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.action-button:hover,
+.action-button:focus-visible {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.action-button:active {
+  transform: translateY(1px);
+}
+
+.action-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.56;
+  transform: none;
+}
+
+.action-button--primary {
+  border-color: rgba(140, 182, 255, 0.24);
+  background: rgba(140, 182, 255, 0.1);
+}
+
+.action-button--primary:hover,
+.action-button--primary:focus-visible {
+  border-color: rgba(140, 182, 255, 0.34);
+  background: rgba(140, 182, 255, 0.14);
+}
+
+.action-button--secondary {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.action-button--ghost {
+  background: transparent;
+}

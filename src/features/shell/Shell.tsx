@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { ActionButton } from '../../components/ui/ActionButton';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { Workspace } from '../workspace/Workspace';
@@ -225,16 +226,16 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
             </div>
 
             <div className="shell-window-actions">
-              <button type="button" className="shell-window-button" onClick={() => navigateToPanel(null)}>
+              <ActionButton variant="secondary" className="shell-window-button" onClick={() => navigateToPanel(null)}>
                 Open hub
-              </button>
-              <button
-                type="button"
+              </ActionButton>
+              <ActionButton
+                variant="ghost"
                 className="shell-window-button is-muted"
                 onClick={() => closeDetachedWindow(navigateToPanel)}
               >
                 {canCloseDetachedWindow ? 'Close window' : 'Return to hub'}
-              </button>
+              </ActionButton>
             </div>
           </div>
 
@@ -246,8 +247,8 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
 
   return (
     <section className="shell-frame" aria-label="Mission Control Center shell">
-      <button
-        type="button"
+      <ActionButton
+        variant="ghost"
         className="shell-menu-toggle"
         aria-label={isRailOpen ? 'Close navigation menu' : 'Open navigation menu'}
         aria-controls="shell-rail"
@@ -255,7 +256,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
         onClick={() => setIsRailOpen((current) => !current)}
       >
         ☰
-      </button>
+      </ActionButton>
 
       <div
         className={`shell-backdrop ${isRailOpen ? 'is-visible' : ''}`}

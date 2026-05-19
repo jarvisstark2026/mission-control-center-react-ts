@@ -4,6 +4,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, ChangeEvent } fr
 import { StatusChip } from '../../components/ui/StatusChip';
 import { readShellLocationFromSearch } from '../shell/location';
 import type { ShellRole } from '../shell/roles';
+import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, WorkspaceMetricGrid, WorkspaceRowList } from './workspaceBlocks';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from './workspaceTypes';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
@@ -1245,25 +1246,17 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function OverviewWidget() {
+  const stats = [
+    { label: 'system', value: '98%' },
+    { label: 'devices', value: '24' },
+    { label: 'alerts', value: '12' },
+    { label: 'workspace mode', value: 'drag / resize / stack / fade', wide: true },
+  ];
+
   return (
     <div className="widget-grid overview-grid">
       <div className="stats-arc" />
-      <div className="metric-tile">
-        <span>system</span>
-        <strong>98%</strong>
-      </div>
-      <div className="metric-tile">
-        <span>devices</span>
-        <strong>24</strong>
-      </div>
-      <div className="metric-tile">
-        <span>alerts</span>
-        <strong>12</strong>
-      </div>
-      <div className="metric-tile metric-wide">
-        <span>workspace mode</span>
-        <strong>drag / resize / stack / fade</strong>
-      </div>
+      <WorkspaceMetricGrid metrics={stats} />
     </div>
   );
 }
@@ -1358,6 +1351,12 @@ function getMarketGraph(graphId: string) {
 }
 
 function TradingGraphWidget({ graph }: { graph: MarketGraph }) {
+  const summary = [
+    { label: 'horizon', value: graph.horizon },
+    { label: 'signal', value: graph.change },
+    { label: 'notes', value: graph.note, wide: true },
+  ];
+
   return (
     <div className="trading-graph-surface">
       <div className="trading-graph-header">
@@ -1370,20 +1369,7 @@ function TradingGraphWidget({ graph }: { graph: MarketGraph }) {
           <small>{graph.category}</small>
         </div>
       </div>
-      <div className="trading-graph-summary">
-        <div className="trading-graph-stat">
-          <span>horizon</span>
-          <strong>{graph.horizon}</strong>
-        </div>
-        <div className="trading-graph-stat">
-          <span>signal</span>
-          <strong>{graph.change}</strong>
-        </div>
-        <div className="trading-graph-stat trading-graph-stat-wide">
-          <span>notes</span>
-          <small>{graph.note}</small>
-        </div>
-      </div>
+      <WorkspaceMetricGrid className="trading-graph-summary" metrics={summary} />
       <div className="trading-graph-body">
         <div className="trading-graph-grid" />
         <div className="trading-graph-line trading-a" />
@@ -1428,24 +1414,23 @@ function MarketsWidget({
               </div>
               <small>{category.graphs.length} graphs</small>
             </div>
-            <div className="market-graph-list">
-              {category.graphs.map((graph) => {
-                const isActive = graph.id === activeGraph.id;
-                return (
-                  <button
-                    key={graph.id}
-                    type="button"
-                    className={`market-graph-item ${isActive ? 'is-active' : ''}`}
-                    onClick={() => onSelectGraph(graph)}
-                    aria-pressed={isActive}
-                  >
-                    <span>{graph.label}</span>
-                    <strong>{graph.ticker}</strong>
-                    <small>{graph.horizon} · {graph.change}</small>
-                  </button>
-                );
-              })}
-            </div>
+            <WorkspaceCatalogGrid
+              className="market-graph-list"
+              variant="market"
+              ariaLabel={`${category.label} graphs`}
+              items={category.graphs.map((graph) => ({
+                id: graph.id,
+                label: graph.label,
+                note: `${graph.horizon} · ${graph.change}`,
+                badge: graph.ticker,
+                active: graph.id === activeGraph.id,
+                state: graph.category,
+              }))}
+              onSelect={(item) => {
+                const graph = getMarketGraph(item.id);
+                onSelectGraph(graph);
+              }}
+            />
           </section>
         ))}
       </div>
@@ -2202,16 +2187,13 @@ function WorkflowWidget() {
 }
 
 function ListWidget() {
-  return (
-    <div className="list-surface">
-      {['inbox', 'next action', 'blocked', 'archive'].map((item) => (
-        <div className="list-item" key={item}>
-          <span>{item}</span>
-          <span>open</span>
-        </div>
-      ))}
-    </div>
-  );
+  const rows = ['inbox', 'next action', 'blocked', 'archive'].map((item) => ({
+    id: item,
+    primary: item,
+    secondary: 'open',
+  }));
+
+  return <WorkspaceRowList className="list-surface" rows={rows} ariaLabel="Workspace list" />;
 }
 
 function ScheduleWidget() {
@@ -2222,26 +2204,14 @@ function ScheduleWidget() {
     { time: '21:00', label: 'Wrap-up', note: 'handoff / tidy / plan' },
   ];
 
-  return (
-    <div className="schedule-surface">
-      <div className="schedule-head">
-        <span>Today</span>
-        <strong>4 blocks</strong>
-      </div>
-      {slots.map((slot, index) => (
-        <div className="schedule-slot" key={slot.time}>
-          <div className="schedule-time">{slot.time}</div>
-          <div className="schedule-content">
-            <span>{slot.label}</span>
-            <small>{slot.note}</small>
-          </div>
-          <div className="schedule-bar">
-            <i style={{ width: `${38 + index * 14}%` }} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+  const rows = slots.map((slot) => ({
+    id: slot.time,
+    primary: slot.time,
+    secondary: slot.label,
+    meta: slot.note,
+  }));
+
+  return <WorkspaceRowList className="schedule-surface" rows={rows} ariaLabel="Today schedule" />;
 }
 
 type LauncherWidgetProps = {
@@ -2259,7 +2229,7 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
     { name: 'Terminal', note: 'command-line session' },
   ]);
 
-  const apps = [
+  const workspaceApps = [
     { label: 'Command core', kind: 'overview' as const, note: 'open in workspace' },
     { label: 'Telemetry', kind: 'graph' as const, note: 'open in workspace' },
     { label: 'Audio preview', kind: 'audio' as const, note: 'open in workspace' },
@@ -2302,62 +2272,42 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
     return widget.open ? 'open' : 'closed';
   };
 
+  const workspaceCards = workspaceApps.map((app) => ({
+    id: app.kind,
+    label: app.label,
+    note: app.note,
+    badge: getAppState(app.kind),
+    active: getAppState(app.kind) === 'open',
+    state: getAppState(app.kind),
+  }));
+
   return (
     <div className="launcher-surface">
-      <div className="launcher-desktop-bridge">
-        <div className="launcher-desktop-head">
-          <span>desktop hooks</span>
-          <strong>load installed apps into memory</strong>
-          <p>Command line stays. The bridge now lives beside the workspace launcher rather than impersonating a separate universe.</p>
+      <DesktopBridgePanel
+        eyebrow="desktop hooks"
+        title="load installed apps into memory"
+        description="Command line stays. The bridge now lives beside the workspace launcher rather than impersonating a separate universe."
+        inputLabel="Installed app or command"
+        inputValue={desktopCommand}
+        inputPlaceholder="e.g. explorer.exe, obsidian, notepad.exe"
+        submitLabel="Open installed app"
+        apps={desktopApps}
+        onChangeInput={setDesktopCommand}
+        onSubmit={openInstalledApp}
+      >
+        <div className="launcher-summary">
+          <span>workspace hooks</span>
+          <strong>open / focus / stay in the workspace</strong>
         </div>
-        <div className="launcher-desktop-controls">
-          <label className="launcher-desktop-input">
-            <span>Installed app or command</span>
-            <input
-              type="text"
-              value={desktopCommand}
-              onChange={(event) => setDesktopCommand(event.target.value)}
-              onKeyDown={(event) => event.key === 'Enter' && openInstalledApp()}
-              placeholder="e.g. explorer.exe, obsidian, notepad.exe"
-            />
-          </label>
-          <button type="button" className="launcher-desktop-button" onClick={openInstalledApp} disabled={!hasDesktopCommand}>
-            Open installed app
-          </button>
-        </div>
-        <div className="launcher-desktop-list" role="group" aria-label="Loaded desktop apps">
-          {desktopApps.map((app) => (
-            <button key={app.name} type="button" className="launcher-desktop-item">
-              <span>{app.name}</span>
-              <small>{app.note}</small>
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="launcher-summary">
-        <span>workspace hooks</span>
-        <strong>open / focus / stay in the workspace</strong>
-      </div>
-      <div className="launcher-grid">
-        {apps.map((app) => {
-          const state = getAppState(app.kind);
-
-          return (
-            <button
-              key={app.kind}
-              type="button"
-              className="launcher-app"
-              data-state={state}
-              aria-label={`${app.label}, ${state === 'open' ? 'open and ready to focus' : 'closed'}`}
-              onClick={() => onLaunchWorkspaceWidget(app.kind)}
-            >
-              <span>{app.label}</span>
-              <small>{state === 'open' ? 'open · click to focus' : app.note}</small>
-            </button>
-          );
-        })}
-      </div>
-      <p className="launcher-note">The launcher now opens widgets where they belong: in the workspace, not as a separate browser tantrum.</p>
+        <WorkspaceCatalogGrid
+          className="launcher-grid"
+          variant="launcher"
+          ariaLabel="Workspace launch shortcuts"
+          items={workspaceCards}
+          onSelect={(item) => onLaunchWorkspaceWidget(item.id as WorkspaceWidget['kind'])}
+        />
+        <p className="launcher-note">The launcher now opens widgets where they belong: in the workspace, not as a separate browser tantrum.</p>
+      </DesktopBridgePanel>
     </div>
   );
 }
@@ -2858,30 +2808,19 @@ function NativeAppWidget() {
   ];
 
   return (
-    <div className="launcher-desktop-bridge native-app-surface">
-      <div className="launcher-desktop-head">
-        <span>desktop bridge</span>
-        <strong>open installed app / external window</strong>
-        <p>Bridge installed apps and external windows without pretending the browser can do an operating system’s job on its own.</p>
-      </div>
-      <div className="launcher-desktop-controls">
-        <label className="launcher-desktop-input">
-          <span>App or command</span>
-          <input type="text" placeholder="e.g. obsidian, explorer.exe, notepad.exe" />
-        </label>
-        <button type="button" className="launcher-desktop-button">
-          Open app
-        </button>
-      </div>
-      <div className="launcher-desktop-list" aria-label="Loaded desktop apps">
-        {apps.map((app) => (
-          <button key={app.name} type="button" className="launcher-desktop-item">
-            <span>{app.name}</span>
-            <small>{app.note}</small>
-          </button>
-        ))}
-      </div>
-    </div>
+    <DesktopBridgePanel
+      eyebrow="desktop bridge"
+      title="open installed app / external window"
+      description="Bridge installed apps and external windows without pretending the browser can do an operating system’s job on its own."
+      inputLabel="App or command"
+      inputValue=""
+      inputPlaceholder="e.g. obsidian, explorer.exe, notepad.exe"
+      submitLabel="Open app"
+      apps={apps}
+      onChangeInput={() => undefined}
+      onSubmit={() => undefined}
+      className="native-app-surface"
+    />
   );
 }
 
@@ -2910,30 +2849,23 @@ function WindowManagerWidget({
           </small>
         </div>
       </div>
-      <div className="window-manager-list" role="list" aria-label="Open widgets">
-        {openWidgets.length > 0 ? (
-          openWidgets.map((widget) => (
-            <div key={widget.id} className="window-manager-item" role="listitem">
-              <button type="button" className="window-manager-item-button" onClick={() => onFocusWidget(widget.id)}>
-                <span>{widget.title}</span>
-                <small>{widget.kind} · z{widget.zIndex}</small>
-              </button>
-              <button
-                type="button"
-                className="window-manager-close"
-                onClick={() => onCloseWidget(widget.id)}
-                disabled={Boolean(widget.pinned)}
-                aria-label={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
-                title={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
-              >
-                ×
-              </button>
-            </div>
-          ))
-        ) : (
-          <p className="window-manager-empty">No windows are open. Remarkably, the machine is being tidy on its own.</p>
-        )}
-      </div>
+      {openWidgets.length > 0 ? (
+        <WorkspaceActionRowList
+          className="window-manager-list"
+          ariaLabel="Open widgets"
+          rows={openWidgets.map((widget) => ({
+            id: widget.id,
+            primary: widget.title,
+            secondary: widget.kind,
+            meta: `z${widget.zIndex}${widget.pinned ? ' · pinned' : ''}`,
+            pinned: widget.pinned,
+          }))}
+          onFocusRow={onFocusWidget}
+          onCloseRow={onCloseWidget}
+        />
+      ) : (
+        <p className="window-manager-empty">No windows are open. Remarkably, the machine is being tidy on its own.</p>
+      )}
       <p className="window-manager-note">Open surfaces stay listed here. Pinned windows cannot be closed.</p>
     </div>
   );

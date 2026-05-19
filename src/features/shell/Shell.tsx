@@ -11,12 +11,12 @@ const defaultRole: ShellRole = 'support';
 const railBreakpoint = 900;
 
 type ShellProps = {
-  panelKind?: string | null;
+  panelKind?: WorkspaceWidget['kind'] | null;
   role?: ShellRole;
-  onNavigate: (nextLocation: { panelKind: string | null; role: ShellRole }) => void;
+  onNavigate: (nextLocation: { panelKind: WorkspaceWidget['kind'] | null; role: ShellRole }) => void;
 };
 
-function getPanelLabel(panelKind: string | null | undefined) {
+function getPanelLabel(panelKind: WorkspaceWidget['kind'] | null | undefined) {
   switch (panelKind) {
     case 'overview':
       return 'Command core';

@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react';
 import { Shell } from './features/shell/Shell';
 import { isShellPanelAccessible } from './features/shell/nav';
 import { isShellRole, type ShellRole } from './features/shell/roles';
+import type { WorkspaceWidget } from './features/workspace/workspaceTypes';
 import { isWorkspaceWidgetKind } from './features/workspace/workspaceTypes';
 import './styles/app.css';
 
 const defaultShellRole: ShellRole = 'support';
 
 type ShellLocationState = {
-  panelKind: string | null;
+  panelKind: WorkspaceWidget['kind'] | null;
   role: ShellRole;
 };
 
@@ -39,7 +40,7 @@ export default function App() {
     return () => window.removeEventListener('popstate', syncShellLocation);
   }, []);
 
-  const handleNavigate = (nextLocation: { panelKind: string | null; role: ShellRole }) => {
+  const handleNavigate = (nextLocation: { panelKind: WorkspaceWidget['kind'] | null; role: ShellRole }) => {
     if (typeof window === 'undefined') return;
 
     const url = new URL(window.location.href);

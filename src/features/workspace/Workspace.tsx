@@ -2241,7 +2241,7 @@ function FileExplorerWidget({
         </div>
         <div className="file-explorer-head-meta">
           <span>{files.length} selected</span>
-          <small>{activeFile ? `previewing ${activeFile.path}` : 'browser access is limited to files you pick, regrettably'}</small>
+          <small>{activeFile ? `previewing ${activeFile.path}` : 'selection stays local; preview a file to inspect it'}</small>
         </div>
       </div>
 

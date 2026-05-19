@@ -2432,12 +2432,14 @@ function LiveTvWidget() {
     const nextUrl = draftUrl.trim();
     if (!nextUrl) return;
 
+    const isHlsFeed = /\.m3u8($|\?)/i.test(nextUrl);
+
     setActiveSource({
       name: 'Custom feed',
-      badge: nextUrl.includes('.m3u8') ? 'HLS' : 'URL',
+      badge: isHlsFeed ? 'HLS' : 'URL',
       description: 'your chosen internet TV source',
       url: nextUrl,
-      streamType: nextUrl.includes('.m3u8') ? 'hls' : 'mp4',
+      streamType: isHlsFeed ? 'hls' : 'mp4',
     });
   };
 

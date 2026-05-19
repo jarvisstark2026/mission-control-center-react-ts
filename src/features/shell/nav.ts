@@ -75,12 +75,6 @@ export const shellNavItems: ShellNavItem[] = [
     allowedRoles: ['admin', 'home', 'support'],
   },
   {
-    id: 'project',
-    label: 'Project list',
-    hint: 'tasks and backlog',
-    allowedRoles: ['admin', 'home', 'support'],
-  },
-  {
     id: 'news',
     label: 'News / market',
     hint: 'watchlist and market context',

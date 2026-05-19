@@ -771,14 +771,14 @@ const widgetPresets: WorkspaceWidget[] = [
     subtitle: 'folders / files',
     x: 60,
     y: 330,
-    width: 344,
-    height: 204,
+    width: 380,
+    height: 420,
     zIndex: 3,
     surfaceAlpha: 0.076,
     lineAlpha: 0.14,
     open: true,
-    minWidth: 300,
-    minHeight: 200,
+    minWidth: 360,
+    minHeight: 380,
   },
   {
     id: 'native-app',
@@ -980,15 +980,17 @@ function loadStoredWidgetState(): WorkspaceWidget[] | null {
 
       const minWidth = clampNumber(typeof stored.minWidth === 'number' ? stored.minWidth : preset.minWidth, preset.minWidth, 120, 1920);
       const minHeight = clampNumber(typeof stored.minHeight === 'number' ? stored.minHeight : preset.minHeight, preset.minHeight, 120, 1080);
+      const effectiveMinWidth = preset.kind === 'file-explorer' ? Math.max(minWidth, 360) : minWidth;
+      const effectiveMinHeight = preset.kind === 'file-explorer' ? Math.max(minHeight, 320) : minHeight;
 
       return {
         ...preset,
         ...stored,
         open: typeof stored.open === 'boolean' ? stored.open : defaultOpenKinds.has(preset.kind),
-        minWidth,
-        minHeight,
-        width: clampNumber(stored.width, preset.width, minWidth, 4096),
-        height: clampNumber(stored.height, preset.height, minHeight, 4096),
+        minWidth: effectiveMinWidth,
+        minHeight: effectiveMinHeight,
+        width: clampNumber(stored.width, preset.width, effectiveMinWidth, 4096),
+        height: clampNumber(stored.height, preset.height, effectiveMinHeight, 4096),
         x: clampNumber(stored.x, preset.x, -8192, 8192),
         y: clampNumber(stored.y, preset.y, -8192, 8192),
         zIndex: clampNumber(stored.zIndex, preset.zIndex, 0, 999),
@@ -2588,6 +2590,7 @@ function FileExplorerWidget({
           },
         ];
   const visibleFolderPath = folderPath ?? generalUseFolderLabel;
+  const loadedEntryCount = hasRealFolderEntries ? folderEntries.length : files.length;
 
   const handleBrowseFilesClick = () => {
     fileInputRef.current?.click();
@@ -2718,6 +2721,11 @@ function FileExplorerWidget({
             <p>Select files or open a folder from your PC, then single-click an item to select it and double-click to open it in the preview panel. The browser cannot rummage through the drive uninvited, which is arguably for the best.</p>
           </div>
         )}
+      </div>
+
+      <div className="file-explorer-footer">
+        <span>{loadedEntryCount ? `${loadedEntryCount} ${loadedEntryCount === 1 ? 'entry' : 'entries'}` : 'No entries loaded'}</span>
+        <small>single-click selects · double-click opens · the list scrolls without eating the chrome</small>
       </div>
     </div>
   );
@@ -2918,7 +2926,7 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
         </>
       ) : null}
 
-      <div className="widget-body">
+      <div className={`widget-body ${widget.kind === 'file-explorer' ? 'widget-body-file-explorer' : ''}`}>
         {widget.kind === 'overview' && <OverviewWidget />}
         {widget.kind === 'graph' && <GraphWidget />}
         {widget.kind === 'trading-graph' && <TradingGraphWidget graph={activeMarketGraph} />}
@@ -2961,14 +2969,40 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
       </div>
 
       {showChrome && widget.open ? (
-        <button
-          type="button"
-          className="widget-resize-handle widget-resize-handle-bottom-right"
-          onPointerDown={(event) => onStartResize(event, widget.id, 'corner')}
-          aria-label={`Resize ${widget.title}`}
-        >
-          <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-corner">⤡</span>
-        </button>
+        <>
+          <button
+            type="button"
+            className="widget-resize-handle widget-resize-handle-bottom-right"
+            onPointerDown={(event) => onStartResize(event, widget.id, 'corner')}
+            aria-label={`Resize ${widget.title}`}
+          >
+            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-corner">⤡</span>
+          </button>
+          <button
+            type="button"
+            className="widget-resize-handle widget-resize-handle-left"
+            onPointerDown={(event) => onStartResize(event, widget.id, 'left')}
+            aria-label={`Resize ${widget.title} from left edge`}
+          >
+            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-vertical">⋮</span>
+          </button>
+          <button
+            type="button"
+            className="widget-resize-handle widget-resize-handle-right"
+            onPointerDown={(event) => onStartResize(event, widget.id, 'right')}
+            aria-label={`Resize ${widget.title} from right edge`}
+          >
+            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-vertical">⋮</span>
+          </button>
+          <button
+            type="button"
+            className="widget-resize-handle widget-resize-handle-bottom"
+            onPointerDown={(event) => onStartResize(event, widget.id, 'bottom')}
+            aria-label={`Resize ${widget.title} from bottom edge`}
+          >
+            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-horizontal">⋯</span>
+          </button>
+        </>
       ) : null}
     </article>
   );

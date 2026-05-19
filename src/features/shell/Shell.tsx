@@ -297,7 +297,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
                 <button
                   type="button"
                   className={`shell-nav-button ${isNavItemActive(item.id) ? 'is-active' : ''}`}
-                  aria-current={item.id === activeNavId ? 'page' : undefined}
+                  aria-current={isNavItemActive(item.id) ? 'page' : undefined}
                   onClick={() => navigateToPanel(navPanelById[item.id] ?? null)}
                 >
                   <span>{item.label}</span>

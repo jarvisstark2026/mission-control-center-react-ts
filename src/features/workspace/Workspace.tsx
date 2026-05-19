@@ -3223,6 +3223,18 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     setNextLaunchIndex((current) => current + 1);
   };
 
+  const returnToHub = () => {
+    if (typeof window === 'undefined') return;
+
+    const url = new URL(window.location.href);
+    url.searchParams.delete('panel');
+
+    if (url.toString() === window.location.href) return;
+
+    window.history.replaceState({}, '', url.toString());
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  };
+
   const openNextPanelWindow = () => {
     openPanelWindow(nextLaunchKind);
   };
@@ -3571,15 +3583,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
           <div className="workspace-brand">Mission Control Center</div>
           <StatusChip tone="ice">detached page · drag the OS window to another screen</StatusChip>
           <div className="workspace-launcher">
-            <button
-              type="button"
-              className="workspace-launch-button"
-              onClick={() => {
-                const url = new URL(window.location.href);
-                url.searchParams.delete('panel');
-                window.location.assign(url.toString());
-              }}
-            >
+            <button type="button" className="workspace-launch-button" onClick={returnToHub}>
               Open hub
             </button>
             <button type="button" className="workspace-launch-button is-muted" onClick={() => openPanelWindow(nextLaunchKind)}>

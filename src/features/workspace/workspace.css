@@ -992,7 +992,7 @@
 .schedule-surface,
 .launcher-surface,
 .browser-surface,
-.watch-video-surface,
+.live-tv-surface,
 .file-explorer-surface,
 .native-app-surface,
 .window-manager-surface,
@@ -1012,6 +1012,127 @@
   flex-direction: column;
   min-height: 100%;
 }
+
+.live-tv-surface {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  grid-template-rows: auto auto auto minmax(160px, 1fr);
+}
+
+.live-tv-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.live-tv-now-playing,
+.live-tv-status {
+  display: grid;
+  gap: 2px;
+}
+
+.live-tv-now-playing span,
+.live-tv-status span,
+.live-tv-preset span,
+.live-tv-input span {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.64rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.live-tv-now-playing strong,
+.live-tv-status strong {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.live-tv-now-playing p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.58rem;
+  line-height: 1.5;
+}
+
+.live-tv-preset-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.live-tv-preset {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.92);
+  text-align: left;
+  cursor: pointer;
+}
+
+.live-tv-preset:hover,
+.live-tv-preset.is-active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.live-tv-preset small {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.56rem;
+}
+
+.live-tv-input {
+  display: grid;
+  gap: 6px;
+}
+
+.live-tv-input input {
+  width: 100%;
+  min-height: 38px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.live-tv-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.live-tv-actions button {
+  padding: 0 12px;
+  min-height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+}
+
+.live-tv-actions button:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.live-tv-actions small {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.56rem;
+}
+
+.live-tv-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  object-fit: cover;
+}
+
 .schedule-head,
 .launcher-summary,
 .file-explorer-path,
@@ -1056,8 +1177,7 @@
 .schedule-content small,
 .file-explorer-folder-head small,
 .file-explorer-folder li small,
-.launcher-app small,
-.watch-video-caption small {
+.launcher-app small {
   color: rgba(255, 255, 255, 0.62);
   font-size: 0.56rem;
 }
@@ -1155,19 +1275,6 @@
   min-height: 0;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.02);
-}
-
-.watch-video-surface {
-  grid-template-rows: minmax(0, 1fr) auto;
-}
-
-.watch-video-surface video {
-  width: 100%;
-  height: 100%;
-  min-height: 120px;
-  object-fit: cover;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .file-explorer-folder {

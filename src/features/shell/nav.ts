@@ -58,8 +58,8 @@ export const shellNavItems: ShellNavItem[] = [
   },
   {
     id: 'watch-video',
-    label: 'Video preview',
-    hint: 'player and playback',
+    label: 'Live TV',
+    hint: 'official streams and local tuners',
     allowedRoles: ['admin', 'home', 'support'],
   },
   {

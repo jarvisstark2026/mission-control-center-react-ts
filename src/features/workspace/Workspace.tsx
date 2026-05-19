@@ -172,8 +172,8 @@ const widgetPresets: WorkspaceWidget[] = [
   {
     id: 'watch-video',
     kind: 'watch-video',
-    title: 'Video preview',
-    subtitle: 'player / playback',
+    title: 'Live TV',
+    subtitle: 'channels / streams',
     x: 986,
     y: 536,
     width: 276,
@@ -462,7 +462,7 @@ const widgetBlueprints: Record<WorkspaceWidget['kind'], { title: string; subtitl
   schedule: { title: 'Schedule', subtitle: 'day / week / next', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 280, minHeight: 170 },
   launcher: { title: 'App launcher', subtitle: 'apps / desktop hooks', surfaceAlpha: 0.082, lineAlpha: 0.15, minWidth: 280, minHeight: 180 },
   browser: { title: 'Browser', subtitle: 'pages / tabs', surfaceAlpha: 0.074, lineAlpha: 0.14, minWidth: 320, minHeight: 220 },
-  'watch-video': { title: 'Video preview', subtitle: 'player / playback', surfaceAlpha: 0.078, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
+  'watch-video': { title: 'Live TV', subtitle: 'channels / streams', surfaceAlpha: 0.078, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
   'file-explorer': { title: 'File explorer', subtitle: 'folders / files', surfaceAlpha: 0.076, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
   'native-app': { title: 'Native app bridge', subtitle: 'installed apps / external windows', surfaceAlpha: 0.08, lineAlpha: 0.15, minWidth: 320, minHeight: 200 },
   'window-manager': { title: 'Window manager', subtitle: 'open / spawn / route', surfaceAlpha: 0.08, lineAlpha: 0.15, minWidth: 300, minHeight: 200 },
@@ -959,7 +959,7 @@ function LauncherWidget() {
     { label: 'Schedule', kind: 'schedule' as const },
     { label: 'App launcher', kind: 'launcher' as const },
     { label: 'Browser', kind: 'browser' as const },
-    { label: 'Video preview', kind: 'watch-video' as const },
+    { label: 'Live TV', kind: 'watch-video' as const },
     { label: 'File explorer', kind: 'file-explorer' as const },
     { label: 'Native app bridge', kind: 'native-app' as const },
     { label: 'Window manager', kind: 'window-manager' as const },
@@ -1038,14 +1038,199 @@ function BrowserWidget() {
   );
 }
 
-function WatchVideoWidget() {
+type LiveTvSource = {
+  name: string;
+  badge: string;
+  description: string;
+  url: string;
+  streamType: 'hls' | 'mp4';
+};
+
+const liveTvSources: LiveTvSource[] = [
+  {
+    name: 'Home tuner',
+    badge: 'LAN',
+    description: 'your local internet TV feed',
+    url: 'http://192.168.1.50/live.m3u8',
+    streamType: 'hls',
+  },
+  {
+    name: 'Mux demo',
+    badge: 'DEMO',
+    description: 'public HLS test stream',
+    url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+    streamType: 'hls',
+  },
+  {
+    name: 'Fallback clip',
+    badge: 'MP4',
+    description: 'basic playback fallback',
+    url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+    streamType: 'mp4',
+  },
+];
+
+const defaultLiveTvSource = liveTvSources[0] as LiveTvSource;
+
+function LiveTvWidget() {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<{ destroy: () => void } | null>(null);
+  const [draftUrl, setDraftUrl] = useState(defaultLiveTvSource.url);
+  const [activeSource, setActiveSource] = useState<LiveTvSource>(defaultLiveTvSource);
+  const [status, setStatus] = useState('Ready');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const video = videoRef.current;
+    if (!video) return;
+
+    const cleanupPlayer = () => {
+      hlsRef.current?.destroy();
+      hlsRef.current = null;
+      video.pause();
+      video.removeAttribute('src');
+      video.load();
+    };
+
+    const source = activeSource;
+    const sourceUrl = source.url.trim();
+    if (!sourceUrl) {
+      setStatus('No stream URL loaded');
+      return;
+    }
+
+    setIsLoading(true);
+    setStatus(`Tuning ${source.name}`);
+    cleanupPlayer();
+
+    const finishReady = () => {
+      if (cancelled) return;
+      setIsLoading(false);
+      setStatus(`Live on ${source.name}`);
+      void video.play().catch(() => undefined);
+    };
+
+    const attachDirectSource = () => {
+      video.src = sourceUrl;
+      video.load();
+      finishReady();
+    };
+
+    const looksLikeHls = source.streamType === 'hls' || /\.m3u8($|\?)/i.test(sourceUrl);
+    if (!looksLikeHls) {
+      attachDirectSource();
+      return () => {
+        cancelled = true;
+        cleanupPlayer();
+      };
+    }
+
+    const canPlayHlsNatively = Boolean(video.canPlayType('application/vnd.apple.mpegurl'));
+    if (canPlayHlsNatively) {
+      attachDirectSource();
+      return () => {
+        cancelled = true;
+        cleanupPlayer();
+      };
+    }
+
+    void import('hls.js')
+      .then(({ default: Hls }) => {
+        if (cancelled) return;
+        if (!Hls.isSupported()) {
+          setIsLoading(false);
+          setStatus('This browser cannot play HLS streams');
+          return;
+        }
+
+        const player = new Hls({ lowLatencyMode: true, enableWorker: true });
+        hlsRef.current = player;
+        player.attachMedia(video);
+        player.loadSource(sourceUrl);
+        player.on(Hls.Events.MANIFEST_PARSED, () => finishReady());
+        player.on(Hls.Events.ERROR, (_, data) => {
+          if (cancelled) return;
+          setIsLoading(false);
+          setStatus(`Stream issue on ${source.name}: ${data?.details ?? 'unknown error'}`);
+        });
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setIsLoading(false);
+        setStatus(`Failed to load HLS engine: ${error instanceof Error ? error.message : 'unknown error'}`);
+      });
+
+    return () => {
+      cancelled = true;
+      cleanupPlayer();
+    };
+  }, [activeSource]);
+
+  const tuneCustomFeed = () => {
+    const nextUrl = draftUrl.trim();
+    if (!nextUrl) return;
+
+    setActiveSource({
+      name: 'Custom feed',
+      badge: nextUrl.includes('.m3u8') ? 'HLS' : 'URL',
+      description: 'your chosen internet TV source',
+      url: nextUrl,
+      streamType: nextUrl.includes('.m3u8') ? 'hls' : 'mp4',
+    });
+  };
+
   return (
-    <div className="watch-video-surface">
-      <video controls preload="metadata" src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" />
-      <div className="watch-video-caption">
-        <span>watch video</span>
-        <small>stream / scrub / fullscreen</small>
+    <div className="live-tv-surface">
+      <div className="live-tv-header">
+        <div className="live-tv-now-playing">
+          <span>Live TV</span>
+          <strong>{activeSource.name}</strong>
+          <p>{activeSource.description}</p>
+        </div>
+        <div className="live-tv-status">
+          <span>{isLoading ? 'Tuning' : 'On air'}</span>
+          <strong>{status}</strong>
+        </div>
       </div>
+
+      <div className="live-tv-preset-list" role="list" aria-label="Live TV sources">
+        {liveTvSources.map((source) => (
+          <button
+            key={source.name}
+            type="button"
+            className={`live-tv-preset ${source.name === activeSource.name ? 'is-active' : ''}`}
+            onClick={() => {
+              setDraftUrl(source.url);
+              setActiveSource(source);
+            }}
+          >
+            <span>{source.badge}</span>
+            <strong>{source.name}</strong>
+            <small>{source.description}</small>
+          </button>
+        ))}
+      </div>
+
+      <label className="live-tv-input">
+        <span>Channel or stream URL</span>
+        <input
+          type="text"
+          value={draftUrl}
+          onChange={(event) => setDraftUrl(event.target.value)}
+          onKeyDown={(event) => event.key === 'Enter' && tuneCustomFeed()}
+          placeholder="Paste an official HLS / MP4 source"
+        />
+      </label>
+
+      <div className="live-tv-actions">
+        <button type="button" onClick={tuneCustomFeed}>
+          Tune feed
+        </button>
+        <small>Best with official HLS (.m3u8) feeds from your provider or home tuner.</small>
+      </div>
+
+      <video ref={videoRef} className="live-tv-frame" controls autoPlay playsInline preload="metadata" />
     </div>
   );
 }
@@ -1229,7 +1414,7 @@ function WorkspaceWidgetCard({
         {widget.kind === 'schedule' && <ScheduleWidget />}
         {widget.kind === 'launcher' && <LauncherWidget />}
         {widget.kind === 'browser' && <BrowserWidget />}
-        {widget.kind === 'watch-video' && <WatchVideoWidget />}
+        {widget.kind === 'watch-video' && <LiveTvWidget />}
         {widget.kind === 'file-explorer' && <FileExplorerWidget />}
         {widget.kind === 'native-app' && <NativeAppWidget />}
         {widget.kind === 'window-manager' && <WindowManagerWidget />}

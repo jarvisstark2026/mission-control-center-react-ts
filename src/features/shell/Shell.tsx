@@ -39,7 +39,7 @@ function getPanelLabel(panelKind: WorkspaceWidget['kind'] | null | undefined) {
     case 'browser':
       return 'Browser';
     case 'watch-video':
-      return 'Video preview';
+      return 'Live TV';
     case 'image':
       return 'Image preview';
     case 'pdf':

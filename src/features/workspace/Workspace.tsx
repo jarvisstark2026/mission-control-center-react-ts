@@ -345,6 +345,22 @@ const widgetPresets: WorkspaceWidget[] = [
   },
 ];
 
+const defaultOpenKinds = new Set<WorkspaceWidget['kind']>([
+  'overview',
+  'graph',
+  'trading-graph',
+  'browser',
+  'schedule',
+  'launcher',
+  'file-explorer',
+  'sheet',
+]);
+
+const initialWidgetState = widgetPresets.map((widget) => ({
+  ...widget,
+  open: defaultOpenKinds.has(widget.kind),
+}));
+
 const launchableWindowKinds: WorkspaceWidget['kind'][] = [
   'overview',
   'graph',
@@ -1002,8 +1018,8 @@ function WorkspaceWidgetCard({
         {
           left: `${widget.x}px`,
           top: `${widget.y}px`,
-          width: `${widget.width}px`,
-          height: `${widget.height}px`,
+          width: `${widget.open ? widget.width : Math.max(220, Math.min(widget.width, 320))}px`,
+          height: `${widget.open ? widget.height : 58}px`,
           zIndex: widget.zIndex,
           '--widget-surface-alpha': widget.surfaceAlpha,
           '--widget-line-alpha': widget.lineAlpha,
@@ -1077,10 +1093,10 @@ type WorkspaceProps = {
 
 export function Workspace({ panelKind = null }: WorkspaceProps) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
-  const widgetsRef = useRef(widgetPresets);
+  const widgetsRef = useRef(initialWidgetState);
   const interactionRef = useRef<InteractionState | null>(null);
   const compactLayoutAppliedRef = useRef(false);
-  const [widgets, setWidgets] = useState(widgetPresets);
+  const [widgets, setWidgets] = useState(initialWidgetState);
   const [bounds, setBounds] = useState({ width: 0, height: 0 });
   const [nextLaunchIndex, setNextLaunchIndex] = useState(0);
 

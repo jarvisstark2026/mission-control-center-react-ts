@@ -183,6 +183,14 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
+  const closeRailOnMobile = () => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+
+    if (window.matchMedia(`(max-width: ${railBreakpoint}px)`).matches) {
+      setIsRailOpen(false);
+    }
+  };
+
   useEffect(() => {
     document.title = isDetachedWindow
       ? `Mission Control Center — ${getPanelLabel(activePanelKind)}`
@@ -190,10 +198,12 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
   }, [activePanelKind, activeRole, isDetachedWindow]);
 
   const navigateToPanel = (target: WorkspaceWidget['kind'] | null) => {
+    closeRailOnMobile();
     onNavigate({ panelKind: target, role: activeRole });
   };
 
   const navigateToRole = (targetRole: ShellRole) => {
+    closeRailOnMobile();
     onNavigate({
       panelKind: activePanelKind && !isShellPanelAccessible(targetRole, activePanelKind) ? null : activePanelKind,
       role: targetRole,

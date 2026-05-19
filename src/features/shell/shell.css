@@ -83,7 +83,7 @@
   margin-top: 12px;
 }
 
-.shell-meta span {
+.shell-meta .status-chip {
   padding: 4px 9px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;

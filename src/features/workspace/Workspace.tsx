@@ -2536,12 +2536,13 @@ function LiveTvWidget() {
         </div>
       </div>
 
-      <div className="live-tv-preset-list" role="list" aria-label="Live TV sources">
+      <div className="live-tv-preset-list" role="group" aria-label="Live TV sources">
         {liveTvSources.map((source) => (
           <button
             key={source.name}
             type="button"
             className={`live-tv-preset ${source.name === activeSource.name ? 'is-active' : ''}`}
+            aria-pressed={source.name === activeSource.name}
             onClick={() => {
               setDraftUrl(source.url);
               setActiveSource(source);

@@ -183,9 +183,11 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
 
   useEffect(() => {
     document.title = isDetachedWindow
-      ? `Mission Control Center — ${activePanelLabel}`
-      : `Mission Control Center — ${activeRoleLabel}`;
-  }, [activePanelLabel, activeRoleLabel, isDetachedWindow]);
+      ? `Mission Control Center — ${activePanelLabel} · ${activeRoleLabel}`
+      : activePanelKind
+        ? `Mission Control Center — ${activeRoleLabel} · ${activePanelLabel}`
+        : `Mission Control Center — ${activeRoleLabel}`;
+  }, [activePanelLabel, activePanelKind, activeRoleLabel, isDetachedWindow]);
 
   const navigateToPanel = (target: WorkspaceWidget['kind'] | null) => {
     closeRailOnMobile();

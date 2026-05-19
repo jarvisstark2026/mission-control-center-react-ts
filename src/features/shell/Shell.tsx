@@ -49,7 +49,7 @@ function getPanelLabel(panelKind: string | null | undefined) {
     case 'native-app':
       return 'Native app bridge';
     case 'window-manager':
-      return 'Window manager';
+      return 'Registry';
     case 'sheet':
       return 'Spreadsheet';
     case 'docs':

@@ -1116,30 +1116,30 @@ function NativeAppWidget() {
 
 function WindowManagerWidget() {
   const items = [
-    { kind: 'overview', label: 'Command core', state: 'pinned', action: 'raise' },
-    { kind: 'launcher', label: 'App launcher', state: 'spawnable', action: 'open' },
-    { kind: 'browser', label: 'Browser', state: 'web panel', action: 'open' },
-    { kind: 'schedule', label: 'Schedule', state: 'today', action: 'open' },
-    { kind: 'native-app', label: 'Native bridge', state: 'desktop handoff', action: 'open' },
-    { kind: 'file-explorer', label: 'File explorer', state: 'local files', action: 'open' },
-    { kind: 'video', label: 'Media frame', state: 'preview panel', action: 'open' },
+    { kind: 'overview', label: 'Command core', state: 'pinned', scope: 'core' },
+    { kind: 'launcher', label: 'App launcher', state: 'spawnable', scope: 'admin' },
+    { kind: 'browser', label: 'Browser', state: 'web panel', scope: 'all' },
+    { kind: 'schedule', label: 'Schedule', state: 'today', scope: 'all' },
+    { kind: 'native-app', label: 'Native bridge', state: 'desktop handoff', scope: 'support' },
+    { kind: 'file-explorer', label: 'File explorer', state: 'local files', scope: 'all' },
+    { kind: 'video', label: 'Media frame', state: 'preview panel', scope: 'all' },
   ];
 
   return (
     <div className="window-manager-surface">
       <div className="window-manager-head">
-        <span>window state</span>
-        <strong>{items.length} tracked surfaces</strong>
+        <span>registry state</span>
+        <strong>{items.length} connected surfaces</strong>
       </div>
       <div className="window-manager-list">
         {items.map((item) => (
           <button key={item.kind} type="button" className="window-manager-item">
             <span>{item.label}</span>
-            <small>{item.state}</small>
+            <small>{item.state} · {item.scope}</small>
           </button>
         ))}
       </div>
-      <p className="window-manager-note">This is the first pass at the desktop traffic controller. A little less decorative, a little more useful.</p>
+      <p className="window-manager-note">A registry-first view of connected surfaces. Less theatrical than a full traffic controller, which is arguably for the best.</p>
     </div>
   );
 }

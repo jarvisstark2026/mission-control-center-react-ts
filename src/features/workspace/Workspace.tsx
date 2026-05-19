@@ -2898,7 +2898,6 @@ function WindowManagerWidget({
           <span>live registry</span>
           <strong>{openWidgets.length} open · {widgets.length} total</strong>
         </div>
-        <small>Focus or close a surface.</small>
       </div>
       <div className="window-manager-list" role="list" aria-label="Open widgets">
         {openWidgets.length > 0 ? (
@@ -2924,7 +2923,7 @@ function WindowManagerWidget({
           <p className="window-manager-empty">No windows are open. Remarkably, the machine is being tidy on its own.</p>
         )}
       </div>
-      <p className="window-manager-note">Open surfaces stay listed here. Less theatre, fewer stray windows, and marginally more dignity for everyone involved.</p>
+      <p className="window-manager-note">Open surfaces stay listed here. Pinned windows remain focused, not closed. Less theatre, fewer stray windows, and marginally more dignity for everyone involved.</p>
     </div>
   );
 }

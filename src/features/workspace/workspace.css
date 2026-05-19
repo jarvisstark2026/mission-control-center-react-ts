@@ -2327,11 +2327,9 @@
 }
 
 .window-manager-head {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: start;
-  justify-content: space-between;
-  gap: 6px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   padding-bottom: 8px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -2357,19 +2355,6 @@
 .window-manager-head strong {
   font-size: 0.66rem;
   color: rgba(255, 255, 255, 0.9);
-}
-
-.window-manager-head small {
-  font-size: 0.58rem;
-  line-height: 1.4;
-  color: rgba(255, 255, 255, 0.66);
-  max-width: 24ch;
-  justify-self: end;
-  align-self: start;
-  text-align: right;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .window-manager-list {

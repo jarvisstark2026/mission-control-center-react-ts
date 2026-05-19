@@ -44,6 +44,11 @@
 **Step 4: Verify the plan is executable**
 - Expected: each later task has a known test path and no unresolved platform choice.
 
+**Completion note**
+- Decision set is now frozen for the current build slice: React + TypeScript + Vite, Vitest + React Testing Library, Playwright, ESLint, and strict TypeScript gates.
+- The 3D rendering lane is limited to React Three Fiber or Three.js for the preview surface only; the shell remains conventional React UI.
+- MVP boundary remains shell + visual language + nav + role gating + preview lane before packaging or live backend wiring.
+
 ## Phase 1: Re-establish the product skeleton and visual language first
 
 ### Task 1: Create the React + TypeScript workspace

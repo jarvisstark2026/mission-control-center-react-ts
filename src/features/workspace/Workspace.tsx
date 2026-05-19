@@ -31,6 +31,22 @@ type LocalFolderEntry = {
   file?: File;
 };
 
+type FileSystemFileHandleLike = {
+  kind: 'file';
+  name: string;
+  getFile: () => Promise<File>;
+};
+
+type FileSystemDirectoryHandleLike = {
+  kind: 'directory';
+  name: string;
+  values: () => AsyncIterableIterator<FileSystemHandleLike>;
+};
+
+type FileSystemHandleLike = FileSystemFileHandleLike | FileSystemDirectoryHandleLike;
+
+type ShowDirectoryPickerFn = (options?: { mode?: 'read'; startIn?: string }) => Promise<FileSystemDirectoryHandleLike>;
+
 const localFilesStoreName = 'files';
 const localFilesDbName = 'mission-control-center-local-files';
 
@@ -190,7 +206,12 @@ function clampWidgetSize(value: number, fallback: number, min: number, max: numb
   return Math.min(max, Math.max(min, value));
 }
 
-async function readFolderEntries(rootHandle: any, rootPath = '', depth = 0, entries: LocalFolderEntry[] = []): Promise<LocalFolderEntry[]> {
+async function readFolderEntries(
+  rootHandle: FileSystemDirectoryHandleLike | null | undefined,
+  rootPath = '',
+  depth = 0,
+  entries: LocalFolderEntry[] = [],
+): Promise<LocalFolderEntry[]> {
   if (!rootHandle || typeof rootHandle.values !== 'function') return entries;
 
   for await (const handle of rootHandle.values()) {
@@ -3146,7 +3167,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   };
 
   const browseFolder = async () => {
-    const picker = (window as Window & { showDirectoryPicker?: (options?: { mode?: 'read'; startIn?: string }) => Promise<any> }).showDirectoryPicker;
+    const picker = (window as Window & { showDirectoryPicker?: ShowDirectoryPickerFn }).showDirectoryPicker;
     if (!picker) return;
 
     try {

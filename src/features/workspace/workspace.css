@@ -1135,8 +1135,7 @@
 
 .schedule-head,
 .launcher-summary,
-.file-explorer-path,
-.watch-video-caption {
+.file-explorer-path {
   display: flex;
   align-items: center;
   justify-content: space-between;

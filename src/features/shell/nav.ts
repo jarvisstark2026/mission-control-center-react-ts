@@ -57,6 +57,36 @@ export const shellNavItems: ShellNavItem[] = [
     allowedRoles: ['admin', 'home', 'support'],
   },
   {
+    id: 'audio',
+    label: 'Audio preview',
+    hint: 'hold, play, and mix',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
+    id: 'diagram',
+    label: 'Diagram preview',
+    hint: 'system structure',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
+    id: 'project',
+    label: 'Project list',
+    hint: 'tasks and backlog',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
+    id: 'video',
+    label: 'Video preview',
+    hint: 'media frame',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
+    id: 'list',
+    label: 'List',
+    hint: 'inbox and next steps',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
     id: 'file-explorer',
     label: 'File explorer',
     hint: 'folders and files',

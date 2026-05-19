@@ -984,6 +984,32 @@
   line-height: 1.45;
 }
 
+.preview-empty-button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.56rem;
+  cursor: pointer;
+}
+
+.preview-empty-button:hover,
+.preview-empty-button:focus-visible {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.preview-empty-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .preview-file-head,
 .preview-file-foot {
   display: flex;

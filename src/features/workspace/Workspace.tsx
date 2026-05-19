@@ -1525,7 +1525,14 @@ function VideoWidget() {
   );
 }
 
-function PreviewWidget({ file }: { file: LocalFileRecord | null }) {
+function PreviewWidget({
+  file,
+  onBrowseFiles,
+}: {
+  file: LocalFileRecord | null;
+  onBrowseFiles: (files: FileList | File[]) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const [textPreview, setTextPreview] = useState('');
   const [status, setStatus] = useState('Select a local file to preview it.');
@@ -1567,6 +1574,17 @@ function PreviewWidget({ file }: { file: LocalFileRecord | null }) {
     };
   }, [file]);
 
+  const handleBrowsePreviewFiles = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handlePreviewFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = event.target.files;
+    if (!selectedFiles || selectedFiles.length === 0) return;
+    void onBrowseFiles(selectedFiles);
+    event.target.value = '';
+  };
+
   if (!file) {
     return (
       <div className="preview-surface">
@@ -1576,8 +1594,12 @@ function PreviewWidget({ file }: { file: LocalFileRecord | null }) {
         <div className="preview-scan" />
         <div className="preview-empty-state">
           <span>Preview</span>
-          <strong>pick a file from the explorer</strong>
+          <strong>pick a file to inspect</strong>
           <small>images, audio, video, pdf, and text files will render here. The rest will be handled with less glamour, but still gracefully.</small>
+          <button type="button" className="preview-empty-button" onClick={handleBrowsePreviewFiles}>
+            Preview a file
+          </button>
+          <input ref={fileInputRef} className="preview-empty-input" type="file" multiple onChange={handlePreviewFileChange} />
         </div>
       </div>
     );
@@ -1638,6 +1660,10 @@ function PreviewWidget({ file }: { file: LocalFileRecord | null }) {
 
       <div className="preview-file-foot">
         <span>{status}</span>
+        <button type="button" className="preview-empty-button" onClick={handleBrowsePreviewFiles}>
+          Preview another file
+        </button>
+        <input ref={fileInputRef} className="preview-empty-input" type="file" multiple onChange={handlePreviewFileChange} />
       </div>
     </div>
   );
@@ -2827,7 +2853,7 @@ function WorkspaceWidgetCard({
         {widget.kind === 'native-app' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />}
         {widget.kind === 'window-manager' && <WindowManagerWidget widgets={workspaceWidgets} onFocusWidget={onFocusWidget} onCloseWidget={onCloseWidget} />}
         {widget.kind === 'video' && <VideoWidget />}
-        {widget.kind === '3d' && <PreviewWidget file={activeLocalFile} />}
+        {widget.kind === '3d' && <PreviewWidget file={activeLocalFile} onBrowseFiles={onBrowseFiles} />}
         {widget.kind === '3d-studio' && <ModelStudioWidget />}
         {widget.kind === 'flow' && <WorkflowWidget />}
         {widget.kind === 'list' && <ListWidget />}
@@ -2876,8 +2902,8 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     void readPersistedLocalFiles().then((records) => {
       if (cancelled) return;
       setLocalFiles(records);
-      setSelectedLocalFileId((current) => current ?? records[0]?.id ?? null);
-      setActiveLocalFileId((current) => current ?? records[0]?.id ?? null);
+      setSelectedLocalFileId(null);
+      setActiveLocalFileId(null);
       persistedLocalFilesLoadedRef.current = true;
     });
 

@@ -61,7 +61,7 @@ function getPanelLabel(panelKind: WorkspaceWidget['kind'] | null | undefined) {
     case 'video':
       return 'Media frame';
     case '3d':
-      return '3D model preview';
+      return 'Preview';
     case '3d-studio':
       return '3D studio';
     case 'flow':

@@ -88,8 +88,8 @@ export const shellNavItems: ShellNavItem[] = [
   },
   {
     id: '3d',
-    label: '3D model preview',
-    hint: 'assets and project models',
+    label: 'Preview',
+    hint: 'files and project models',
     allowedRoles: ['admin', 'home', 'support'],
   },
   {

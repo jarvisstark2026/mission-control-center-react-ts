@@ -1,11 +1,89 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
+import type { CSSProperties, PointerEvent as ReactPointerEvent, ChangeEvent } from 'react';
 
 import { StatusChip } from '../../components/ui/StatusChip';
 import { isShellRole, type ShellRole } from '../shell/roles';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
+
+type LocalPreviewKind = 'image' | 'audio' | 'video' | 'pdf' | 'text' | 'unsupported';
+
+type LocalFileRecord = {
+  id: string;
+  file: File;
+  path: string;
+  previewKind: LocalPreviewKind;
+};
+
+function getLocalFilePath(file: File): string {
+  return file.webkitRelativePath || file.name;
+}
+
+function getLocalFileExtension(fileName: string): string {
+  const index = fileName.lastIndexOf('.');
+  return index >= 0 ? fileName.slice(index + 1).toLowerCase() : '';
+}
+
+function classifyLocalFile(file: File): LocalPreviewKind {
+  const extension = getLocalFileExtension(file.name);
+  const type = file.type.toLowerCase();
+
+  if (type.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'avif', 'svg'].includes(extension)) {
+    return 'image';
+  }
+  if (type.startsWith('audio/') || ['mp3', 'wav', 'm4a', 'aac', 'flac', 'ogg', 'oga'].includes(extension)) {
+    return 'audio';
+  }
+  if (type.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v', 'mkv', 'ogv'].includes(extension)) {
+    return 'video';
+  }
+  if (type === 'application/pdf' || extension === 'pdf') {
+    return 'pdf';
+  }
+  if (
+    type.startsWith('text/') ||
+    [
+      'txt',
+      'md',
+      'markdown',
+      'json',
+      'csv',
+      'ts',
+      'tsx',
+      'js',
+      'jsx',
+      'css',
+      'html',
+      'xml',
+      'yaml',
+      'yml',
+      'log',
+    ].includes(extension)
+  ) {
+    return 'text';
+  }
+
+  return 'unsupported';
+}
+
+function createLocalFileRecord(file: File): LocalFileRecord {
+  const path = getLocalFilePath(file);
+  const fingerprint = `${path}:${file.size}:${file.lastModified}`;
+
+  return {
+    id: fingerprint,
+    file,
+    path,
+    previewKind: classifyLocalFile(file),
+  };
+}
+
+function formatLocalFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 const widgetPresets: WorkspaceWidget[] = [
   {
@@ -60,8 +138,8 @@ const widgetPresets: WorkspaceWidget[] = [
   {
     id: 'preview',
     kind: '3d',
-    title: '3D model preview',
-    subtitle: 'assets / projects',
+    title: 'Preview',
+    subtitle: 'files / models',
     x: 528,
     y: 66,
     width: 426,
@@ -473,7 +551,7 @@ const widgetBlueprints: Record<WorkspaceWidget['kind'], { title: string; subtitl
   image: { title: 'Image preview', subtitle: 'preview / annotate', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 240, minHeight: 190 },
   pdf: { title: 'PDF', subtitle: 'read / scan / print', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 260, minHeight: 200 },
   video: { title: 'Media frame', subtitle: 'preview panel', surfaceAlpha: 0.082, lineAlpha: 0.14, minWidth: 260, minHeight: 170 },
-  '3d': { title: '3D model preview', subtitle: 'assets / projects', surfaceAlpha: 0.1, lineAlpha: 0.16, minWidth: 300, minHeight: 190 },
+  '3d': { title: 'Preview', subtitle: 'files / models', surfaceAlpha: 0.1, lineAlpha: 0.16, minWidth: 300, minHeight: 190 },
   '3d-studio': { title: '3D studio', subtitle: 'gesture / simulate / sculpt', surfaceAlpha: 0.11, lineAlpha: 0.18, minWidth: 360, minHeight: 240 },
   flow: { title: 'Chat preview', subtitle: 'system logic', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 220, minHeight: 150 },
   list: { title: 'List', subtitle: 'inbox / next steps', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 260, minHeight: 150 },
@@ -808,13 +886,120 @@ function VideoWidget() {
   );
 }
 
-function PreviewWidget() {
+function PreviewWidget({ file }: { file: LocalFileRecord | null }) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [textPreview, setTextPreview] = useState('');
+  const [status, setStatus] = useState('Select a local file to preview it.');
+
+  useEffect(() => {
+    if (!file) {
+      setObjectUrl(null);
+      setTextPreview('');
+      setStatus('Select a local file to preview it.');
+      return undefined;
+    }
+
+    const nextUrl = URL.createObjectURL(file.file);
+    let cancelled = false;
+    setObjectUrl(nextUrl);
+    setStatus(`Opening ${file.previewKind} preview…`);
+    setTextPreview('');
+
+    if (file.previewKind === 'text') {
+      void file.file
+        .text()
+        .then((content) => {
+          if (cancelled) return;
+          setTextPreview(content.slice(0, 16000));
+          setStatus(`Text preview ready · ${formatLocalFileSize(file.file.size)}`);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setTextPreview('');
+          setStatus('Text preview unavailable for this file.');
+        });
+    } else {
+      setStatus(`Ready · ${formatLocalFileSize(file.file.size)}`);
+    }
+
+    return () => {
+      cancelled = true;
+      URL.revokeObjectURL(nextUrl);
+    };
+  }, [file]);
+
+  if (!file) {
+    return (
+      <div className="preview-surface">
+        <div className="preview-orb preview-orb-a" />
+        <div className="preview-orb preview-orb-b" />
+        <div className="preview-ring" />
+        <div className="preview-scan" />
+        <div className="preview-empty-state">
+          <span>Preview</span>
+          <strong>pick a file from the explorer</strong>
+          <small>images, audio, video, pdf, and text files will render here. The rest will be handled with less glamour, but still gracefully.</small>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="preview-surface">
-      <div className="preview-orb preview-orb-a" />
-      <div className="preview-orb preview-orb-b" />
-      <div className="preview-ring" />
-      <div className="preview-scan" />
+    <div className="preview-surface preview-file-surface">
+      <div className="preview-file-head">
+        <div>
+          <span>{file.previewKind}</span>
+          <strong>{file.path}</strong>
+        </div>
+        <div className="preview-file-head-meta">
+          <small>{file.file.type || 'unknown type'}</small>
+          <small>{formatLocalFileSize(file.file.size)}</small>
+        </div>
+      </div>
+
+      <div className="preview-file-stage">
+        {file.previewKind === 'image' && objectUrl ? (
+          <figure className="preview-media preview-media-image">
+            <img src={objectUrl} alt={file.path} />
+          </figure>
+        ) : null}
+
+        {file.previewKind === 'video' && objectUrl ? (
+          <div className="preview-media preview-media-video">
+            <video controls src={objectUrl} />
+          </div>
+        ) : null}
+
+        {file.previewKind === 'audio' && objectUrl ? (
+          <div className="preview-media preview-media-audio">
+            <audio controls src={objectUrl} />
+          </div>
+        ) : null}
+
+        {file.previewKind === 'pdf' && objectUrl ? (
+          <iframe className="preview-media preview-media-pdf" src={objectUrl} title={file.path} />
+        ) : null}
+
+        {file.previewKind === 'text' ? (
+          <pre className="preview-media preview-media-text">{textPreview || 'Loading text preview…'}</pre>
+        ) : null}
+
+        {file.previewKind === 'unsupported' ? (
+          <div className="preview-media preview-media-unsupported">
+            <strong>No native preview for this file.</strong>
+            <p>{status}</p>
+            {objectUrl ? (
+              <a className="preview-download-link" href={objectUrl} download={file.file.name}>
+                Open / download
+              </a>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+
+      <div className="preview-file-foot">
+        <span>{status}</span>
+      </div>
     </div>
   );
 }
@@ -970,7 +1155,7 @@ function LauncherWidget() {
     { label: 'Image preview', kind: 'image' as const },
     { label: 'PDF', kind: 'pdf' as const },
     { label: 'Media frame', kind: 'video' as const },
-    { label: '3D model preview', kind: '3d' as const },
+    { label: 'Preview', kind: '3d' as const },
     { label: '3D studio', kind: '3d-studio' as const },
     { label: 'Chat preview', kind: 'flow' as const },
     { label: 'List', kind: 'list' as const },
@@ -1235,32 +1420,83 @@ function LiveTvWidget() {
   );
 }
 
-function FileExplorerWidget() {
-  const folders = [
-    { name: 'Projects', files: ['mission-control-center', 'dailyforge', 'design-assets'] },
-    { name: 'Documents', files: ['briefs', 'notes', 'exports'] },
-    { name: 'Media', files: ['video', 'audio', 'screens'] },
-  ];
+function FileExplorerWidget({
+  files,
+  activeFileId,
+  onBrowseFiles,
+  onOpenPreview,
+  onClearFiles,
+}: {
+  files: LocalFileRecord[];
+  activeFileId: string | null;
+  onBrowseFiles: (files: FileList | File[]) => void;
+  onOpenPreview: (file: LocalFileRecord) => void;
+  onClearFiles: () => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleBrowseClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = event.target.files;
+    if (!selectedFiles || selectedFiles.length === 0) return;
+
+    onBrowseFiles(selectedFiles);
+    event.target.value = '';
+  };
 
   return (
     <div className="file-explorer-surface">
-      <div className="file-explorer-path">/home/jarvis</div>
-      {folders.map((folder) => (
-        <section key={folder.name} className="file-explorer-folder">
-          <div className="file-explorer-folder-head">
-            <span>{folder.name}</span>
-            <small>{folder.files.length} items</small>
-          </div>
-          <ul>
-            {folder.files.map((file) => (
-              <li key={file}>
-                <span>{file}</span>
-                <small>open</small>
-              </li>
-            ))}
+      <div className="file-explorer-head">
+        <div>
+          <span>Local file browser</span>
+          <strong>choose files from this PC</strong>
+        </div>
+        <div className="file-explorer-head-meta">
+          <span>{files.length} selected</span>
+          <small>browser access is limited to files you pick, regrettably</small>
+        </div>
+      </div>
+
+      <div className="file-explorer-toolbar">
+        <button type="button" className="file-explorer-button" onClick={handleBrowseClick}>
+          Browse files
+        </button>
+        <button type="button" className="file-explorer-button is-muted" onClick={onClearFiles} disabled={!files.length}>
+          Clear selection
+        </button>
+        <input ref={fileInputRef} className="file-explorer-input" type="file" multiple onChange={handleFileChange} />
+      </div>
+
+      <div className="file-explorer-body">
+        {files.length ? (
+          <ul className="file-explorer-list" aria-label="Selected local files">
+            {files.map((record) => {
+              const isActive = record.id === activeFileId;
+
+              return (
+                <li key={record.id} className={`file-explorer-item ${isActive ? 'is-active' : ''}`}>
+                  <button type="button" className="file-explorer-item-button" onClick={() => onOpenPreview(record)}>
+                    <span className="file-explorer-item-name">{record.path}</span>
+                    <span className="file-explorer-item-meta">
+                      <small>{record.previewKind}</small>
+                      <small>{formatLocalFileSize(record.file.size)}</small>
+                      <small>{record.file.type || 'unknown type'}</small>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
-        </section>
-      ))}
+        ) : (
+          <div className="file-explorer-empty">
+            <strong>No local files loaded yet.</strong>
+            <p>Select files from your PC, then click one to send it to the preview panel. The browser cannot rummage through the drive uninvited.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1336,6 +1572,12 @@ function WorkspaceWidgetCard({
   onToggleOpen,
   onClose,
   showChrome = true,
+  localFiles,
+  activeLocalFile,
+  activeLocalFileId,
+  onBrowseFiles,
+  onOpenPreview,
+  onClearFiles,
 }: {
   widget: WorkspaceWidget;
   onStartDrag: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
@@ -1343,6 +1585,12 @@ function WorkspaceWidgetCard({
   onToggleOpen: (id: string) => void;
   onClose: (id: string) => void;
   showChrome?: boolean;
+  localFiles: LocalFileRecord[];
+  activeLocalFile: LocalFileRecord | null;
+  activeLocalFileId: string | null;
+  onBrowseFiles: (files: FileList | File[]) => void;
+  onOpenPreview: (file: LocalFileRecord) => void;
+  onClearFiles: () => void;
 }) {
   return (
     <article
@@ -1415,11 +1663,11 @@ function WorkspaceWidgetCard({
         {widget.kind === 'launcher' && <LauncherWidget />}
         {widget.kind === 'browser' && <BrowserWidget />}
         {widget.kind === 'watch-video' && <LiveTvWidget />}
-        {widget.kind === 'file-explorer' && <FileExplorerWidget />}
+        {widget.kind === 'file-explorer' && <FileExplorerWidget files={localFiles} activeFileId={activeLocalFileId} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} onClearFiles={onClearFiles} />}
         {widget.kind === 'native-app' && <NativeAppWidget />}
         {widget.kind === 'window-manager' && <WindowManagerWidget />}
         {widget.kind === 'video' && <VideoWidget />}
-        {widget.kind === '3d' && <PreviewWidget />}
+        {widget.kind === '3d' && <PreviewWidget file={activeLocalFile} />}
         {widget.kind === '3d-studio' && <ModelStudioWidget />}
         {widget.kind === 'flow' && <FlowWidget />}
         {widget.kind === 'list' && <ListWidget />}
@@ -1450,6 +1698,8 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   const [widgets, setWidgets] = useState(storedWidgets ?? initialWidgetState);
   const [bounds, setBounds] = useState({ width: 0, height: 0 });
   const [nextLaunchIndex, setNextLaunchIndex] = useState(0);
+  const [localFiles, setLocalFiles] = useState<LocalFileRecord[]>([]);
+  const [activeLocalFileId, setActiveLocalFileId] = useState<string | null>(null);
 
   useEffect(() => {
     widgetsRef.current = widgets;
@@ -1651,6 +1901,53 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     widgetsRef.current = widgetsRef.current.filter((widget) => widget.id !== id || widget.pinned);
   };
 
+  const focusWidget = (id: string, open = true) => {
+    raiseWidget(id);
+    if (!open) return;
+
+    setWidgets((current) =>
+      current.map((widget) =>
+        widget.id === id
+          ? {
+              ...widget,
+              open: true,
+              zIndex: widget.zIndex + 1,
+            }
+          : widget,
+      ),
+    );
+  };
+
+  const importLocalFiles = (selected: FileList | File[]) => {
+    const imported = Array.from(selected, createLocalFileRecord);
+    if (!imported.length) return;
+
+    setLocalFiles((current) => {
+      const byId = new Map(current.map((record) => [record.id, record]));
+      imported.forEach((record) => {
+        byId.set(record.id, record);
+      });
+      return Array.from(byId.values()).sort((left, right) => left.path.localeCompare(right.path));
+    });
+    setActiveLocalFileId(imported[0].id);
+    focusWidget('preview');
+  };
+
+  const openLocalPreview = (file: LocalFileRecord) => {
+    setActiveLocalFileId(file.id);
+    focusWidget('preview');
+  };
+
+  const clearLocalFiles = () => {
+    setLocalFiles([]);
+    setActiveLocalFileId(null);
+  };
+
+  const activeLocalFile = useMemo(
+    () => localFiles.find((record) => record.id === activeLocalFileId) ?? null,
+    [activeLocalFileId, localFiles],
+  );
+
   if (panelKind) {
     const focusedWidget = getFocusedWidget(panelKind, bounds.width || 1200, bounds.height || 800);
 
@@ -1689,6 +1986,12 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             onToggleOpen={toggleWidget}
             onClose={closeWidget}
             showChrome={panelKind === 'browser'}
+            localFiles={localFiles}
+            activeLocalFile={activeLocalFile}
+            activeLocalFileId={activeLocalFileId}
+            onBrowseFiles={importLocalFiles}
+            onOpenPreview={openLocalPreview}
+            onClearFiles={clearLocalFiles}
           />
         </div>
       </section>
@@ -1735,6 +2038,12 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             onStartResize={startResize}
             onToggleOpen={toggleWidget}
             onClose={closeWidget}
+            localFiles={localFiles}
+            activeLocalFile={activeLocalFile}
+            activeLocalFileId={activeLocalFileId}
+            onBrowseFiles={importLocalFiles}
+            onOpenPreview={openLocalPreview}
+            onClearFiles={clearLocalFiles}
           />
         ))}
       </div>

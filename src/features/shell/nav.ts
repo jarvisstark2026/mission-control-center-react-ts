@@ -87,12 +87,6 @@ export const shellNavItems: ShellNavItem[] = [
     allowedRoles: ['admin', 'home', 'support'],
   },
   {
-    id: 'video',
-    label: 'Media frame',
-    hint: 'preview panel',
-    allowedRoles: ['admin', 'home', 'support'],
-  },
-  {
     id: '3d',
     label: '3D model preview',
     hint: 'assets and project models',

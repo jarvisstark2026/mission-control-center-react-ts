@@ -10,6 +10,7 @@ const defaultRole: ShellRole = 'support';
 
 type ShellProps = {
   panelKind?: string | null;
+  role?: ShellRole;
 };
 
 function getPanelLabel(panelKind: string | null | undefined) {
@@ -78,15 +79,16 @@ function normalizePanelKind(panelKind: string | null | undefined): WorkspaceWidg
   }
 }
 
-export function Shell({ panelKind = null }: ShellProps) {
-  const visibleItems = getVisibleShellNavItems(defaultRole);
+export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
+  const activeRole = role ?? defaultRole;
+  const visibleItems = getVisibleShellNavItems(activeRole);
   const activePanelKind = normalizePanelKind(panelKind);
 
   useEffect(() => {
     document.title = activePanelKind
       ? `Mission Control Center — ${getPanelLabel(activePanelKind)}`
-      : 'Mission Control Center';
-  }, [activePanelKind]);
+      : `Mission Control Center — ${shellScopes.find((scope) => scope.id === activeRole)?.label ?? 'Support'}`;
+  }, [activePanelKind, activeRole]);
 
   if (activePanelKind) {
     return (
@@ -131,7 +133,7 @@ export function Shell({ panelKind = null }: ShellProps) {
           <p className="shell-eyebrow">Mission Control Center</p>
           <h1>Spatial command surface</h1>
           <p className="shell-copy">
-            Role-aware navigation is now present in skeleton form. No grand theatrics yet; merely the machinery necessary to avoid a menu bar pretending to be architecture.
+            {shellScopes.find((scope) => scope.id === activeRole)?.description ?? 'Support'}
           </p>
         </div>
 
@@ -139,7 +141,7 @@ export function Shell({ panelKind = null }: ShellProps) {
           <p className="shell-section-label">Scopes</p>
           <ul className="shell-scope-list">
             {shellScopes.map((scope) => (
-              <li key={scope.id} className={scope.id === defaultRole ? 'is-active' : undefined}>
+              <li key={scope.id} className={scope.id === activeRole ? 'is-active' : undefined}>
                 <span>{scope.label}</span>
                 <small>{scope.description}</small>
               </li>

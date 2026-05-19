@@ -178,6 +178,20 @@
   opacity: 0.86;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .workspace-atmosphere-a,
+  .workspace-atmosphere-b,
+  .workspace-widget,
+  .workspace-launch-button,
+  .workspace-launch-pill,
+  .widget-toggle,
+  .widget-close,
+  .widget-resize-handle {
+    animation: none;
+    transition: none;
+  }
+}
+
 .widget-labels {
   position: absolute;
   top: 10px;

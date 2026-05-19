@@ -142,3 +142,10 @@
     width: min(88vw, 36rem);
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .visual-lab__grid,
+  .visual-lab__orb-halo,
+  .visual-lab__orb-core {
+    animation: none;
+  }
+}

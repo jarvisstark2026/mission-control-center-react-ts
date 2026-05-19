@@ -111,7 +111,7 @@
 
 @media (max-width: 1200px) {
   .shell-frame {
-    grid-template-columns: clamp(220px, 30vw, 320px) minmax(0, 1fr);
+    grid-template-columns: clamp(220px, 26vw, 300px) minmax(0, 1fr);
   }
 
   .shell-rail {
@@ -126,17 +126,35 @@
 
 @media (max-width: 900px) {
   .shell-frame {
-    grid-template-columns: 1fr;
+    grid-template-columns: clamp(200px, 24vw, 250px) minmax(0, 1fr);
   }
 
   .shell-rail {
-    border-right: 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    max-height: 34vh;
+    padding: 16px 14px;
+    gap: 12px;
+    min-width: 200px;
+  }
+
+  .shell-branding h1 {
+    font-size: clamp(1.45rem, 3.4vw, 2.2rem);
+  }
+
+  .shell-copy {
+    max-width: 26ch;
+    font-size: 0.92rem;
+  }
+
+  .shell-scope-list,
+  .shell-nav-list {
+    gap: 8px;
+  }
+
+  .shell-nav-button {
+    padding: 10px 12px;
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 640px) {
   .shell-rail {
     padding: 16px 14px 12px;
     gap: 12px;

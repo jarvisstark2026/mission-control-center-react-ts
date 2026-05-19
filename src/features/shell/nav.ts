@@ -117,12 +117,6 @@ export const shellNavItems: ShellNavItem[] = [
     allowedRoles: ['admin', 'support'],
   },
   {
-    id: 'window-manager',
-    label: 'Window manager',
-    hint: 'devices, integrations, and scopes',
-    allowedRoles: ['admin', 'support'],
-  },
-  {
     id: 'sheet',
     label: 'Spreadsheet',
     hint: 'cells and formulas',

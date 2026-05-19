@@ -101,7 +101,6 @@ const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
   list: 'list',
   'file-explorer': 'file-explorer',
   'native-app': 'native-app',
-  'window-manager': 'window-manager',
   sheet: 'sheet',
   docs: 'docs',
   slides: 'slides',

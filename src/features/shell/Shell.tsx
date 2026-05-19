@@ -93,6 +93,7 @@ const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
   audio: 'audio',
   diagram: 'diagram',
   project: 'project',
+  news: 'news',
   video: 'video',
   '3d': '3d',
   list: 'list',

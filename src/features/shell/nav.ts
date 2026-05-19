@@ -118,7 +118,7 @@ export const shellNavItems: ShellNavItem[] = [
   },
   {
     id: 'window-manager',
-    label: 'Registry',
+    label: 'Window manager',
     hint: 'devices, integrations, and scopes',
     allowedRoles: ['admin', 'support'],
   },

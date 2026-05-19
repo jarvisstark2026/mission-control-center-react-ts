@@ -981,7 +981,7 @@ function loadStoredWidgetState(): WorkspaceWidget[] | null {
       const minWidth = clampNumber(typeof stored.minWidth === 'number' ? stored.minWidth : preset.minWidth, preset.minWidth, 120, 1920);
       const minHeight = clampNumber(typeof stored.minHeight === 'number' ? stored.minHeight : preset.minHeight, preset.minHeight, 120, 1080);
       const effectiveMinWidth = preset.kind === 'file-explorer' ? Math.max(minWidth, 360) : minWidth;
-      const effectiveMinHeight = preset.kind === 'file-explorer' ? Math.max(minHeight, 320) : minHeight;
+      const effectiveMinHeight = preset.kind === 'file-explorer' ? Math.max(minHeight, 380) : minHeight;
 
       return {
         ...preset,
@@ -2178,7 +2178,7 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
     { label: 'Browser', kind: 'browser' as const, note: 'open in workspace' },
     { label: 'Live TV', kind: 'watch-video' as const, note: 'open in workspace' },
     { label: 'File explorer', kind: 'file-explorer' as const, note: 'open in workspace' },
-    { label: 'Registry', kind: 'window-manager' as const, note: 'track open widgets' },
+    { label: 'Window manager', kind: 'window-manager' as const, note: 'track open widgets' },
     { label: 'Spreadsheet', kind: 'sheet' as const, note: 'open in workspace' },
     { label: 'Docs', kind: 'docs' as const, note: 'open in workspace' },
     { label: 'Presentation', kind: 'slides' as const, note: 'open in workspace' },

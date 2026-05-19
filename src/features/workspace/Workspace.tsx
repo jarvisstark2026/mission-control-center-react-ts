@@ -2894,11 +2894,11 @@ function WindowManagerWidget({
   return (
     <div className="window-manager-surface">
       <div className="window-manager-head">
-        <div>
-          <span>open windows</span>
-          <strong>{openWidgets.length} active · {widgets.length} total</strong>
+        <div className="window-manager-head-copy">
+          <span>live registry</span>
+          <strong>{openWidgets.length} open · {widgets.length} total</strong>
         </div>
-        <small>focus or close them from here</small>
+        <small>Focus or close a surface.</small>
       </div>
       <div className="window-manager-list" role="list" aria-label="Open widgets">
         {openWidgets.length > 0 ? (
@@ -2924,7 +2924,7 @@ function WindowManagerWidget({
           <p className="window-manager-empty">No windows are open. Remarkably, the machine is being tidy on its own.</p>
         )}
       </div>
-      <p className="window-manager-note">A registry-first view of the current workspace. Less theatrical than a traffic controller, which is arguably for the best.</p>
+      <p className="window-manager-note">Open surfaces stay listed here. Less theatre, fewer stray windows, and marginally more dignity for everyone involved.</p>
     </div>
   );
 }

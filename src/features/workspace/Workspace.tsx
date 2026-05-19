@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 
 import { StatusChip } from '../../components/ui/StatusChip';
+import { isShellRole, type ShellRole } from '../shell/roles';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
@@ -363,6 +364,20 @@ const initialWidgetState = widgetPresets.map((widget) => ({
 }));
 
 const workspaceStorageKey = 'mission-control-center.workspace.layout.v1';
+
+function getCurrentShellRole(): ShellRole {
+  if (typeof window === 'undefined') return 'support';
+
+  const roleParam = new URLSearchParams(window.location.search).get('role');
+  return roleParam && isShellRole(roleParam) ? roleParam : 'support';
+}
+
+function buildPanelWindowUrl(kind: WorkspaceWidget['kind']) {
+  const url = new URL(window.location.href);
+  url.searchParams.set('panel', kind);
+  url.searchParams.set('role', getCurrentShellRole());
+  return url;
+}
 
 function clampNumber(value: unknown, fallback: number, min: number, max: number) {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
@@ -962,8 +977,7 @@ function LauncherWidget() {
   ];
 
   const launch = (kind: (typeof apps)[number]['kind']) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('panel', kind);
+    const url = buildPanelWindowUrl(kind);
     const popup = window.open(url.toString(), '_blank', 'popup=yes,width=1280,height=900');
     if (!popup) {
       window.location.assign(url.toString());
@@ -1318,8 +1332,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   const openPanelWindow = (kind: WorkspaceWidget['kind']) => {
     if (typeof window === 'undefined') return;
 
-    const url = new URL(window.location.href);
-    url.searchParams.set('panel', kind);
+    const url = buildPanelWindowUrl(kind);
     const popup = window.open(url.toString(), '_blank', 'popup=yes,width=1280,height=900');
     if (!popup) {
       window.location.assign(url.toString());

@@ -991,7 +991,6 @@ const launchableWindowKinds: WorkspaceWidget['kind'][] = [
   'browser',
   'watch-video',
   'file-explorer',
-  'native-app',
   'window-manager',
   'sheet',
   'docs',
@@ -2074,6 +2073,15 @@ type LauncherWidgetProps = {
 };
 
 function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherWidgetProps) {
+  const [desktopCommand, setDesktopCommand] = useState('');
+  const [desktopApps, setDesktopApps] = useState([
+    { name: 'Mission Control Center', note: 'primary desktop hub' },
+    { name: 'DailyForge', note: 'separate planning surface' },
+    { name: 'Browser', note: 'external web window' },
+    { name: 'Files', note: 'native file manager' },
+    { name: 'Terminal', note: 'command-line session' },
+  ]);
+
   const apps = [
     { label: 'Command core', kind: 'overview' as const, note: 'open in workspace' },
     { label: 'Telemetry', kind: 'graph' as const, note: 'open in workspace' },
@@ -2086,7 +2094,6 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
     { label: 'Browser', kind: 'browser' as const, note: 'open in workspace' },
     { label: 'Live TV', kind: 'watch-video' as const, note: 'open in workspace' },
     { label: 'File explorer', kind: 'file-explorer' as const, note: 'open in workspace' },
-    { label: 'Native app bridge', kind: 'native-app' as const, note: 'open in workspace' },
     { label: 'Registry', kind: 'window-manager' as const, note: 'track open widgets' },
     { label: 'Spreadsheet', kind: 'sheet' as const, note: 'open in workspace' },
     { label: 'Docs', kind: 'docs' as const, note: 'open in workspace' },
@@ -2100,6 +2107,16 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
     { label: 'Workflows', kind: 'flow' as const, note: 'open in workspace' },
     { label: 'List', kind: 'list' as const, note: 'open in workspace' },
   ];
+
+  const openInstalledApp = () => {
+    const nextName = desktopCommand.trim();
+    if (!nextName) return;
+    setDesktopApps((current) => {
+      const next = [{ name: nextName, note: 'loaded into desktop memory' }, ...current.filter((app) => app.name !== nextName)];
+      return next.slice(0, 8);
+    });
+    setDesktopCommand('');
+  };
 
   const getAppState = (kind: WorkspaceWidget['kind']) => {
     const widget = workspaceWidgets.find((item) => item.kind === kind);
@@ -2131,6 +2148,36 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
             </button>
           );
         })}
+      </div>
+      <div className="launcher-desktop-bridge">
+        <div className="launcher-desktop-head">
+          <span>desktop bridge</span>
+          <strong>load installed apps into memory</strong>
+          <p>Command line stays. The bridge now lives beside the workspace launcher rather than impersonating a separate universe.</p>
+        </div>
+        <div className="launcher-desktop-controls">
+          <label className="launcher-desktop-input">
+            <span>Installed app or command</span>
+            <input
+              type="text"
+              value={desktopCommand}
+              onChange={(event) => setDesktopCommand(event.target.value)}
+              onKeyDown={(event) => event.key === 'Enter' && openInstalledApp()}
+              placeholder="e.g. explorer.exe, obsidian, notepad.exe"
+            />
+          </label>
+          <button type="button" className="launcher-desktop-button" onClick={openInstalledApp}>
+            Open installed app
+          </button>
+        </div>
+        <div className="launcher-desktop-list" aria-label="Loaded desktop apps">
+          {desktopApps.map((app) => (
+            <button key={app.name} type="button" className="launcher-desktop-item">
+              <span>{app.name}</span>
+              <small>{app.note}</small>
+            </button>
+          ))}
+        </div>
       </div>
       <p className="launcher-note">The launcher now opens widgets where they belong: in the workspace, not as a separate browser tantrum.</p>
     </div>
@@ -2366,23 +2413,68 @@ function LiveTvWidget() {
   );
 }
 
+function LocalFileMiniPreview({ file }: { file: LocalFileRecord }) {
+  const [objectUrl, setObjectUrl] = useState<string | null>(null);
+  const [textSnippet, setTextSnippet] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    setObjectUrl(null);
+    setTextSnippet('');
+
+    if (file.previewKind === 'image') {
+      const nextUrl = URL.createObjectURL(file.file);
+      setObjectUrl(nextUrl);
+      return () => {
+        cancelled = true;
+        URL.revokeObjectURL(nextUrl);
+      };
+    }
+
+    if (file.previewKind === 'text') {
+      void file.file.text().then((content) => {
+        if (cancelled) return;
+        setTextSnippet(content.slice(0, 96).replace(/\s+/g, ' ').trim());
+      });
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [file]);
+
+  if (file.previewKind === 'image' && objectUrl) {
+    return <img className="file-explorer-item-preview-image" src={objectUrl} alt="" aria-hidden="true" />;
+  }
+
+  if (file.previewKind === 'text') {
+    return <span className="file-explorer-item-preview-text">{textSnippet || 'Text file'}</span>;
+  }
+
+  return <span className={`file-explorer-item-preview-badge kind-${file.previewKind}`}>{file.previewKind}</span>;
+}
+
 function FileExplorerWidget({
   files,
   activeFileId,
+  selectedFileId,
   folderEntries,
   folderPath,
   onBrowseFiles,
   onBrowseFolder,
   onOpenPreview,
+  onSelectFile,
   onClearFiles,
 }: {
   files: LocalFileRecord[];
   activeFileId: string | null;
+  selectedFileId: string | null;
   folderEntries: LocalFolderEntry[];
   folderPath: string | null;
   onBrowseFiles: (files: FileList | File[]) => void;
   onBrowseFolder: () => void;
   onOpenPreview: (file: LocalFileRecord) => void;
+  onSelectFile: (id: string | null) => void;
   onClearFiles: () => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -2443,13 +2535,28 @@ function FileExplorerWidget({
                   <button
                     type="button"
                     className="file-explorer-item-button"
-                    onClick={() => entry.file && void onBrowseFiles([entry.file])}
+                    onClick={() => {
+                      if (!entry.file) return;
+                      void onBrowseFiles([entry.file]);
+                      onSelectFile(createLocalFileRecord(entry.file).id);
+                    }}
+                    onDoubleClick={() => {
+                      if (!entry.file) return;
+                      void onBrowseFiles([entry.file]);
+                      onSelectFile(createLocalFileRecord(entry.file).id);
+                      void onOpenPreview(createLocalFileRecord(entry.file));
+                    }}
                     aria-disabled={!entry.file}
                   >
-                    <span className="file-explorer-item-name">{entry.path}</span>
-                    <span className="file-explorer-item-meta">
-                      <small>{entry.kind}</small>
-                      {entry.file ? <small>{formatLocalFileSize(entry.file.size)}</small> : null}
+                    <span className="file-explorer-item-preview">
+                      <span className={`file-explorer-item-preview-badge kind-${entry.kind}`}>{entry.kind}</span>
+                    </span>
+                    <span className="file-explorer-item-copy">
+                      <span className="file-explorer-item-name">{entry.path}</span>
+                      <span className="file-explorer-item-meta">
+                        <small>{entry.kind}</small>
+                        {entry.file ? <small>{formatLocalFileSize(entry.file.size)}</small> : null}
+                      </span>
                     </span>
                   </button>
                 </li>
@@ -2461,16 +2568,29 @@ function FileExplorerWidget({
         {files.length ? (
           <ul className="file-explorer-list" aria-label="Selected local files">
             {files.map((record) => {
+              const isSelected = record.id === selectedFileId;
               const isActive = record.id === activeFileId;
 
               return (
-                <li key={record.id} className={`file-explorer-item ${isActive ? 'is-active' : ''}`}>
-                  <button type="button" className="file-explorer-item-button" onClick={() => void onOpenPreview(record)} aria-pressed={isActive}>
-                    <span className="file-explorer-item-name">{record.path}</span>
-                    <span className="file-explorer-item-meta">
-                      <small>{record.previewKind}</small>
-                      <small>{formatLocalFileSize(record.file.size)}</small>
-                      <small>{record.file.type || 'unknown type'}</small>
+                <li key={record.id} className={`file-explorer-item ${isActive ? 'is-active' : ''} ${isSelected ? 'is-selected' : ''}`}>
+                  <button
+                    type="button"
+                    className="file-explorer-item-button"
+                    onClick={() => onSelectFile(record.id)}
+                    onDoubleClick={() => void onOpenPreview(record)}
+                    aria-pressed={isSelected}
+                    title="Single click to select, double click to open"
+                  >
+                    <span className="file-explorer-item-preview">
+                      <LocalFileMiniPreview file={record} />
+                    </span>
+                    <span className="file-explorer-item-copy">
+                      <span className="file-explorer-item-name">{record.path}</span>
+                      <span className="file-explorer-item-meta">
+                        <small>{record.previewKind}</small>
+                        <small>{formatLocalFileSize(record.file.size)}</small>
+                        <small>{record.file.type || 'unknown type'}</small>
+                      </span>
                     </span>
                   </button>
                 </li>
@@ -2480,7 +2600,7 @@ function FileExplorerWidget({
         ) : (
           <div className="file-explorer-empty">
             <strong>No local files loaded yet.</strong>
-            <p>Select files or a folder from your PC, then click one to send it to the preview panel. The browser cannot rummage through the drive uninvited.</p>
+            <p>Select files or a folder from your PC, then single-click an item to select it and double-click to open it in the preview panel. The browser cannot rummage through the drive uninvited.</p>
           </div>
         )}
       </div>
@@ -2579,12 +2699,14 @@ function WorkspaceWidgetCard({
   localFiles,
   activeLocalFile,
   activeLocalFileId,
+  selectedLocalFileId,
   folderEntries,
   folderPath,
   activeMarketGraph,
   onBrowseFiles,
   onBrowseFolder,
   onOpenPreview,
+  onSelectFile,
   onClearFiles,
   onLaunchWorkspaceWidget,
   onSelectMarketGraph,
@@ -2601,12 +2723,14 @@ function WorkspaceWidgetCard({
   localFiles: LocalFileRecord[];
   activeLocalFile: LocalFileRecord | null;
   activeLocalFileId: string | null;
+  selectedLocalFileId: string | null;
   folderEntries: LocalFolderEntry[];
   folderPath: string | null;
   activeMarketGraph: MarketGraph;
   onBrowseFiles: (files: FileList | File[]) => void;
   onBrowseFolder: () => void;
   onOpenPreview: (file: LocalFileRecord) => void;
+  onSelectFile: (id: string | null) => void;
   onClearFiles: () => void;
   onLaunchWorkspaceWidget: (kind: WorkspaceWidget['kind']) => void;
   onSelectMarketGraph: (graph: MarketGraph) => void;
@@ -2689,15 +2813,17 @@ function WorkspaceWidgetCard({
           <FileExplorerWidget
             files={localFiles}
             activeFileId={activeLocalFileId}
+            selectedFileId={selectedLocalFileId}
             folderEntries={folderEntries}
             folderPath={folderPath}
             onBrowseFiles={onBrowseFiles}
             onBrowseFolder={onBrowseFolder}
             onOpenPreview={onOpenPreview}
+            onSelectFile={onSelectFile}
             onClearFiles={onClearFiles}
           />
         )}
-        {widget.kind === 'native-app' && <NativeAppWidget />}
+        {widget.kind === 'native-app' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />}
         {widget.kind === 'window-manager' && <WindowManagerWidget widgets={workspaceWidgets} onFocusWidget={onFocusWidget} onCloseWidget={onCloseWidget} />}
         {widget.kind === 'video' && <VideoWidget />}
         {widget.kind === '3d' && <PreviewWidget file={activeLocalFile} />}
@@ -2732,6 +2858,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   const [bounds, setBounds] = useState({ width: 0, height: 0 });
   const [nextLaunchIndex, setNextLaunchIndex] = useState(0);
   const [localFiles, setLocalFiles] = useState<LocalFileRecord[]>([]);
+  const [selectedLocalFileId, setSelectedLocalFileId] = useState<string | null>(null);
   const [activeLocalFileId, setActiveLocalFileId] = useState<string | null>(null);
   const [folderEntries, setFolderEntries] = useState<LocalFolderEntry[]>([]);
   const [folderPath, setFolderPath] = useState<string | null>(null);
@@ -2748,6 +2875,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     void readPersistedLocalFiles().then((records) => {
       if (cancelled) return;
       setLocalFiles(records);
+      setSelectedLocalFileId((current) => current ?? records[0]?.id ?? null);
       setActiveLocalFileId((current) => current ?? records[0]?.id ?? null);
       persistedLocalFilesLoadedRef.current = true;
     });
@@ -3062,23 +3190,20 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     });
 
     const first = enriched[0];
-    setActiveLocalFileId(first.id);
-    focusWidget('preview');
-    if (first.previewKind === 'image') {
-      resizePreviewWidgetForImage(first.imageDimensions ?? null);
-    }
+    setSelectedLocalFileId(first.id);
   };
 
   const openLocalPreview = async (file: LocalFileRecord) => {
+    setSelectedLocalFileId(file.id);
     setActiveLocalFileId(file.id);
     focusWidget('preview');
     if (file.previewKind === 'image') {
       resizePreviewWidgetForImage(file.imageDimensions ?? (await measureImageDimensions(file.file)));
     }
   };
-
   const clearLocalFiles = () => {
     setLocalFiles([]);
+    setSelectedLocalFileId(null);
     setActiveLocalFileId(null);
     setFolderEntries([]);
     setFolderPath(null);
@@ -3132,12 +3257,14 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             localFiles={localFiles}
             activeLocalFile={activeLocalFile}
             activeLocalFileId={activeLocalFileId}
+            selectedLocalFileId={selectedLocalFileId}
             folderEntries={folderEntries}
             folderPath={folderPath}
             activeMarketGraph={activeMarketGraph}
             onBrowseFiles={importLocalFiles}
             onBrowseFolder={browseFolder}
             onOpenPreview={openLocalPreview}
+            onSelectFile={setSelectedLocalFileId}
             onClearFiles={clearLocalFiles}
             onLaunchWorkspaceWidget={openWorkspaceWidget}
             onSelectMarketGraph={openMarketGraph}
@@ -3193,12 +3320,14 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             localFiles={localFiles}
             activeLocalFile={activeLocalFile}
             activeLocalFileId={activeLocalFileId}
+            selectedLocalFileId={selectedLocalFileId}
             folderEntries={folderEntries}
             folderPath={folderPath}
             activeMarketGraph={activeMarketGraph}
             onBrowseFiles={importLocalFiles}
             onBrowseFolder={browseFolder}
             onOpenPreview={openLocalPreview}
+            onSelectFile={setSelectedLocalFileId}
             onClearFiles={clearLocalFiles}
             onLaunchWorkspaceWidget={openWorkspaceWidget}
             onSelectMarketGraph={openMarketGraph}

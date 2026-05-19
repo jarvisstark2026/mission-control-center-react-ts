@@ -1920,40 +1920,53 @@
   line-height: 1.45;
 }
 
-.native-app-panel {
+.launcher-desktop-bridge {
   display: grid;
-  gap: 4px;
+  gap: 10px;
   padding: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.035);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.native-app-panel span,
-.native-app-input span,
-.native-app-item span {
+.launcher-desktop-head {
+  display: grid;
+  gap: 4px;
+}
+
+.launcher-desktop-head span,
+.launcher-desktop-input span,
+.launcher-desktop-item span {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 0.62rem;
 }
 
-.native-app-panel strong {
+.launcher-desktop-head strong {
   font-size: 0.82rem;
   color: rgba(255, 255, 255, 0.94);
 }
 
-.native-app-panel p {
+.launcher-desktop-head p {
   margin: 0;
   color: rgba(255, 255, 255, 0.64);
   font-size: 0.7rem;
   line-height: 1.5;
 }
 
-.native-app-input {
+.launcher-desktop-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.launcher-desktop-input {
   display: grid;
   gap: 6px;
 }
 
-.native-app-input input {
+.launcher-desktop-input input {
   width: 100%;
   min-height: 38px;
   padding: 10px 12px;
@@ -1963,13 +1976,28 @@
   color: rgba(255, 255, 255, 0.92);
 }
 
-.native-app-list {
+.launcher-desktop-button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+}
+
+.launcher-desktop-button:hover,
+.launcher-desktop-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.launcher-desktop-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 
-.native-app-item {
+.launcher-desktop-item {
   display: grid;
   gap: 4px;
   min-height: 64px;
@@ -1981,9 +2009,74 @@
   border-radius: 4px;
 }
 
-.native-app-item small {
+.launcher-desktop-item small {
   color: rgba(255, 255, 255, 0.62);
   font-size: 0.56rem;
+}
+
+.file-explorer-item-button {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.file-explorer-item.is-selected .file-explorer-item-button {
+  background: rgba(180, 255, 194, 0.08);
+  border-color: rgba(180, 255, 194, 0.4);
+}
+
+.file-explorer-item-preview {
+  width: 62px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  flex: 0 0 auto;
+}
+
+.file-explorer-item-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.file-explorer-item-preview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.file-explorer-item-preview-text,
+.file-explorer-item-preview-badge {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  font-size: 0.54rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.72);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-align: center;
+  padding: 4px;
+}
+
+.file-explorer-item-preview-badge {
+  align-items: center;
+  justify-content: center;
+}
+
+.file-explorer-item-preview-badge.kind-image,
+.file-explorer-item-preview-badge.kind-file,
+.file-explorer-item-preview-badge.kind-directory {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.file-explorer-item-meta {
+  gap: 6px;
 }
 
 .window-manager-head {

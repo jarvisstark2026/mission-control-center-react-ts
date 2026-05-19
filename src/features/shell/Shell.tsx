@@ -113,13 +113,13 @@ const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
 function getActiveNavId(panelKind: WorkspaceWidget['kind'] | null) {
   if (!panelKind) return 'workspace';
 
+  if (Object.prototype.hasOwnProperty.call(navPanelById, panelKind)) {
+    return panelKind;
+  }
+
   const mappedEntry = Object.entries(navPanelById).find(([, mappedPanelKind]) => mappedPanelKind === panelKind);
   if (mappedEntry) {
     return mappedEntry[0];
-  }
-
-  if (Object.prototype.hasOwnProperty.call(navPanelById, panelKind)) {
-    return panelKind;
   }
 
   return 'workspace';

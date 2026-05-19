@@ -74,6 +74,30 @@ export const shellNavItems: ShellNavItem[] = [
     hint: 'open surfaces and routing',
     allowedRoles: ['admin', 'support'],
   },
+  {
+    id: 'sheet',
+    label: 'Spreadsheet',
+    hint: 'cells and formulas',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
+    id: 'docs',
+    label: 'Docs',
+    hint: 'writing and outline',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
+    id: 'slides',
+    label: 'Presentation',
+    hint: 'deck and speaking notes',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
+    id: 'trading-graph',
+    label: 'Trading graph',
+    hint: 'market curves and price action',
+    allowedRoles: ['admin', 'support'],
+  },
 ];
 
 export function getVisibleShellNavItems(role: ShellRole) {

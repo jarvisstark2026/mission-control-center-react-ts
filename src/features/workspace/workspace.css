@@ -682,7 +682,11 @@
 .watch-video-surface,
 .file-explorer-surface,
 .native-app-surface,
-.window-manager-surface {
+.window-manager-surface,
+.sheet-surface,
+.docs-surface,
+.slides-surface,
+.trading-graph-surface {
   display: grid;
   gap: 10px;
   align-content: start;
@@ -989,6 +993,227 @@
   letter-spacing: 0.1em;
   font-size: 0.56rem;
   line-height: 1.5;
+}
+
+.trading-graph-surface {
+  display: grid;
+  gap: 8px;
+}
+
+.trading-graph-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.trading-graph-header strong {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.trading-graph-body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+}
+
+.trading-graph-grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 30px 30px;
+  opacity: 0.45;
+}
+
+.trading-graph-line {
+  position: absolute;
+  inset: 18% 10% 22% 10%;
+  border-left: 2px solid rgba(255, 255, 255, 0.82);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.82);
+  clip-path: polygon(0 68%, 14% 46%, 28% 52%, 41% 30%, 55% 39%, 68% 18%, 84% 28%, 100% 8%, 100% 100%, 0 100%);
+}
+
+.trading-graph-line.trading-b {
+  inset: 24% 14% 28% 14%;
+  border-color: rgba(255, 255, 255, 0.5);
+  opacity: 0.7;
+  clip-path: polygon(0 48%, 10% 52%, 24% 38%, 39% 42%, 51% 24%, 66% 30%, 78% 16%, 100% 20%, 100% 100%, 0 100%);
+}
+
+.trading-graph-volume {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 28%;
+  background: linear-gradient(180deg, transparent, rgba(255, 255, 255, 0.12));
+  mask-image: linear-gradient(90deg, rgba(0,0,0,0.05), black 10%, black 90%, rgba(0,0,0,0.05));
+}
+
+.sheet-surface {
+  display: grid;
+  gap: 10px;
+}
+
+.sheet-toolbar, .docs-sidebar, .slides-stage {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.sheet-toolbar, .docs-outline-item, .docs-title, .slides-canvas, .slides-thumb {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.sheet-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  font-size: 0.62rem;
+}
+
+.sheet-grid {
+  display: grid;
+  grid-template-columns: 1.15fr repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sheet-corner, .sheet-head, .sheet-row-label, .sheet-cell {
+  min-height: 34px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.58rem;
+}
+
+.sheet-row {
+  display: contents;
+}
+
+.sheet-head, .sheet-row-label {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.sheet-cell {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.docs-surface {
+  display: grid;
+  grid-template-columns: 92px minmax(0, 1fr);
+  gap: 10px;
+  min-height: 100%;
+}
+
+.docs-sidebar {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  padding: 10px;
+}
+
+.docs-outline-item {
+  padding: 8px;
+  font-size: 0.56rem;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.docs-page {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.docs-title {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.docs-page p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 0.67rem;
+  line-height: 1.6;
+}
+
+.docs-lines {
+  display: grid;
+  gap: 8px;
+}
+
+.docs-lines span {
+  display: block;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.docs-lines span:nth-child(1) { width: 100%; }
+.docs-lines span:nth-child(2) { width: 92%; }
+.docs-lines span:nth-child(3) { width: 84%; }
+.docs-lines span:nth-child(4) { width: 60%; }
+
+.slides-surface {
+  display: grid;
+  gap: 10px;
+}
+
+.slides-stage {
+  padding: 10px;
+}
+
+.slides-canvas {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 110px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.72rem;
+}
+
+.slides-canvas p {
+  margin: 0;
+  color: rgba(255,255,255,0.68);
+  text-transform: none;
+  letter-spacing: 0.04em;
+  font-size: 0.64rem;
+}
+
+.slides-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.slides-thumb {
+  display: grid;
+  gap: 4px;
+  min-height: 56px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.92);
+  text-align: left;
+}
+
+.slides-thumb small {
+  color: rgba(255,255,255,0.62);
+  font-size: 0.54rem;
 }
 
 .widget-resize-handle {

@@ -43,6 +43,14 @@ function getPanelLabel(panelKind: string | null | undefined) {
       return 'Native app bridge';
     case 'window-manager':
       return 'Window manager';
+    case 'sheet':
+      return 'Spreadsheet';
+    case 'docs':
+      return 'Docs';
+    case 'slides':
+      return 'Presentation';
+    case 'trading-graph':
+      return 'Trading graph';
     case 'video':
       return 'Video';
     case '3d':
@@ -72,6 +80,10 @@ function normalizePanelKind(panelKind: string | null | undefined): WorkspaceWidg
     case 'file-explorer':
     case 'native-app':
     case 'window-manager':
+    case 'sheet':
+    case 'docs':
+    case 'slides':
+    case 'trading-graph':
     case 'video':
     case '3d':
     case 'flow':

@@ -40,6 +40,22 @@ const widgetPresets: WorkspaceWidget[] = [
     minHeight: 170,
   },
   {
+    id: 'market-telemetry',
+    kind: 'trading-graph',
+    title: 'Trading graph',
+    subtitle: 'market curves',
+    x: 620,
+    y: 90,
+    width: 378,
+    height: 224,
+    zIndex: 5,
+    surfaceAlpha: 0.09,
+    lineAlpha: 0.17,
+    open: true,
+    minWidth: 300,
+    minHeight: 180,
+  },
+  {
     id: 'preview',
     kind: '3d',
     title: '3D preview',
@@ -216,6 +232,54 @@ const widgetPresets: WorkspaceWidget[] = [
     minHeight: 200,
   },
   {
+    id: 'sheet',
+    kind: 'sheet',
+    title: 'Spreadsheet',
+    subtitle: 'cells / formulas',
+    x: 120,
+    y: 772,
+    width: 408,
+    height: 246,
+    zIndex: 2,
+    surfaceAlpha: 0.082,
+    lineAlpha: 0.15,
+    open: true,
+    minWidth: 320,
+    minHeight: 220,
+  },
+  {
+    id: 'docs',
+    kind: 'docs',
+    title: 'Docs',
+    subtitle: 'writing / outline',
+    x: 548,
+    y: 786,
+    width: 342,
+    height: 232,
+    zIndex: 2,
+    surfaceAlpha: 0.08,
+    lineAlpha: 0.14,
+    open: true,
+    minWidth: 300,
+    minHeight: 200,
+  },
+  {
+    id: 'slides',
+    kind: 'slides',
+    title: 'Presentation',
+    subtitle: 'deck / speaker notes',
+    x: 912,
+    y: 790,
+    width: 330,
+    height: 230,
+    zIndex: 2,
+    surfaceAlpha: 0.082,
+    lineAlpha: 0.15,
+    open: true,
+    minWidth: 280,
+    minHeight: 200,
+  },
+  {
     id: 'audio',
     kind: 'audio',
     title: 'Audio surface',
@@ -264,6 +328,10 @@ const launchableWindowKinds: WorkspaceWidget['kind'][] = [
   'file-explorer',
   'native-app',
   'window-manager',
+  'sheet',
+  'docs',
+  'slides',
+  'trading-graph',
   'video',
   '3d',
   'flow',
@@ -285,6 +353,10 @@ const widgetBlueprints: Record<WorkspaceWidget['kind'], { title: string; subtitl
   'file-explorer': { title: 'File explorer', subtitle: 'folders / files', surfaceAlpha: 0.076, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
   'native-app': { title: 'Native app bridge', subtitle: 'installed apps / external windows', surfaceAlpha: 0.08, lineAlpha: 0.15, minWidth: 320, minHeight: 200 },
   'window-manager': { title: 'Window manager', subtitle: 'open / spawn / route', surfaceAlpha: 0.08, lineAlpha: 0.15, minWidth: 300, minHeight: 200 },
+  sheet: { title: 'Spreadsheet', subtitle: 'cells / formulas', surfaceAlpha: 0.082, lineAlpha: 0.15, minWidth: 320, minHeight: 220 },
+  docs: { title: 'Docs', subtitle: 'writing / outline', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
+  slides: { title: 'Presentation', subtitle: 'deck / speaker notes', surfaceAlpha: 0.082, lineAlpha: 0.15, minWidth: 280, minHeight: 200 },
+  'trading-graph': { title: 'Trading graph', subtitle: 'market curves', surfaceAlpha: 0.09, lineAlpha: 0.17, minWidth: 300, minHeight: 180 },
   video: { title: 'Video', subtitle: 'media frame', surfaceAlpha: 0.082, lineAlpha: 0.14, minWidth: 260, minHeight: 170 },
   '3d': { title: '3D preview', subtitle: 'assets / projects', surfaceAlpha: 0.1, lineAlpha: 0.16, minWidth: 300, minHeight: 190 },
   flow: { title: 'Flow chart', subtitle: 'system logic', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 220, minHeight: 150 },
@@ -403,6 +475,103 @@ function GraphWidget() {
       <div className="spark-line spark-c" />
       <div className="spark-grid" />
       <div className="spark-axis" />
+    </div>
+  );
+}
+
+function TradingGraphWidget() {
+  return (
+    <div className="trading-graph-surface">
+      <div className="trading-graph-header">
+        <span>market graph</span>
+        <strong>price / volume / signal</strong>
+      </div>
+      <div className="trading-graph-body">
+        <div className="trading-graph-grid" />
+        <div className="trading-graph-line trading-a" />
+        <div className="trading-graph-line trading-b" />
+        <div className="trading-graph-volume" />
+      </div>
+    </div>
+  );
+}
+
+function SpreadsheetWidget() {
+  const columns = ['Q1', 'Q2', 'Q3', 'Q4'];
+  const rows = [
+    ['Revenue', '18.2', '21.5', '24.0', '26.8'],
+    ['Costs', '9.1', '9.6', '10.3', '11.4'],
+    ['Margin', '50%', '55%', '57%', '58%'],
+    ['Forecast', '14', '16', '18', '20'],
+  ];
+
+  return (
+    <div className="sheet-surface">
+      <div className="sheet-toolbar">
+        <span>spreadsheet</span>
+        <small>formula bar / grid / cells</small>
+      </div>
+      <div className="sheet-grid">
+        <div className="sheet-corner" />
+        {columns.map((col) => (
+          <div className="sheet-head" key={col}>{col}</div>
+        ))}
+        {rows.map((row) => (
+          <div className="sheet-row" key={row[0]}>
+            <div className="sheet-row-label">{row[0]}</div>
+            {row.slice(1).map((cell, index) => (
+              <div className="sheet-cell" key={`${row[0]}-${index}`}>{cell}</div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DocsWidget() {
+  const outline = ['Title', 'Abstract', 'Sections', 'Appendix'];
+  return (
+    <div className="docs-surface">
+      <div className="docs-sidebar">
+        {outline.map((item) => (
+          <div className="docs-outline-item" key={item}>
+            <span>{item}</span>
+          </div>
+        ))}
+      </div>
+      <div className="docs-page">
+        <div className="docs-title">Mission Control Center Brief</div>
+        <p>Operational note. This panel behaves like a writing surface: clean sections, careful emphasis, and no unnecessary spectacle.</p>
+        <div className="docs-lines">
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SlidesWidget() {
+  const slides = ['Vision', 'Stack', 'Workflows', 'Launch'];
+  return (
+    <div className="slides-surface">
+      <div className="slides-stage">
+        <div className="slides-canvas">
+          <strong>Presentation</strong>
+          <p>Deck / speaker notes / command story</p>
+        </div>
+      </div>
+      <div className="slides-strip">
+        {slides.map((slide, index) => (
+          <button key={slide} type="button" className="slides-thumb">
+            <span>{index + 1}</span>
+            <small>{slide}</small>
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -567,6 +736,10 @@ function LauncherWidget() {
     { label: 'File explorer', kind: 'file-explorer' as const },
     { label: 'Native app bridge', kind: 'native-app' as const },
     { label: 'Window manager', kind: 'window-manager' as const },
+    { label: 'Spreadsheet', kind: 'sheet' as const },
+    { label: 'Docs', kind: 'docs' as const },
+    { label: 'Presentation', kind: 'slides' as const },
+    { label: 'Trading graph', kind: 'trading-graph' as const },
     { label: 'Video', kind: 'video' as const },
     { label: '3D preview', kind: '3d' as const },
     { label: 'Flow chart', kind: 'flow' as const },
@@ -789,6 +962,10 @@ function WorkspaceWidgetCard({
       <div className="widget-body">
         {widget.kind === 'overview' && <OverviewWidget />}
         {widget.kind === 'graph' && <GraphWidget />}
+        {widget.kind === 'trading-graph' && <TradingGraphWidget />}
+        {widget.kind === 'sheet' && <SpreadsheetWidget />}
+        {widget.kind === 'docs' && <DocsWidget />}
+        {widget.kind === 'slides' && <SlidesWidget />}
         {widget.kind === 'audio' && <AudioWidget />}
         {widget.kind === 'map' && <MapWidget />}
         {widget.kind === 'diagram' && <DiagramWidget />}

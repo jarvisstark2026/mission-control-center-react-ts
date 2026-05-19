@@ -281,7 +281,6 @@
 
 @media (max-width: 560px) {
   .shell-rail {
-    max-height: 22vh;
     padding: 14px 12px 10px;
     gap: 10px;
   }

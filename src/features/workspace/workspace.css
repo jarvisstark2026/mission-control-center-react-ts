@@ -999,7 +999,7 @@
   min-height: 0;
   flex: 1;
   display: grid;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .preview-media {
@@ -1016,20 +1016,19 @@
 .preview-media-pdf,
 .preview-media-unsupported {
   display: grid;
+  place-items: center;
 }
 
 .preview-media-image {
-  align-items: flex-start;
-  justify-items: flex-start;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .preview-media-image img {
   width: auto;
   height: auto;
-  max-width: none;
-  max-height: none;
-  object-fit: none;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
   display: block;
 }
 
@@ -1788,6 +1787,8 @@
 
 .file-explorer-body {
   min-height: 0;
+  display: grid;
+  gap: 10px;
 }
 
 .file-explorer-list {
@@ -1849,13 +1850,56 @@
   letter-spacing: 0.12em;
 }
 
-.file-explorer-empty {
+.file-explorer-chooser {
   display: grid;
-  gap: 6px;
+  gap: 10px;
   padding: 12px;
-  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 4px;
-  background: rgba(255, 255, 255, 0.025);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.file-explorer-chooser-head,
+.file-explorer-folder-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.file-explorer-chooser-head strong,
+.file-explorer-folder-head span,
+.file-explorer-head strong {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.62rem;
+}
+
+.file-explorer-chooser-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.file-explorer-chooser-note {
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.file-explorer-folder-tree {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.file-explorer-list-tree {
+  gap: 6px;
 }
 
 .file-explorer-empty strong {

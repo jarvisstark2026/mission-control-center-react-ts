@@ -48,15 +48,6 @@
   display: grid;
   gap: 10px;
   padding: 20px 18px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.03)),
-    rgba(4, 10, 22, 0.42);
-  box-shadow:
-    0 24px 68px rgba(0, 0, 0, 0.34),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(24px);
 }
 
 .visual-lab__panel--left {

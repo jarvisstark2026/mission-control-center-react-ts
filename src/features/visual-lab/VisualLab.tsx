@@ -1,5 +1,6 @@
 import { BackdropGrid } from './BackdropGrid';
 import { OrbPreview } from './OrbPreview';
+import { GlassPanel } from '../../components/ui/GlassPanel';
 import './visualLab.css';
 
 export function VisualLab() {
@@ -8,7 +9,7 @@ export function VisualLab() {
       <BackdropGrid />
 
       <div className="visual-lab__stage">
-        <aside className="visual-lab__panel visual-lab__panel--left">
+        <GlassPanel className="visual-lab__panel visual-lab__panel--left" tone="cool" depth="mid">
           <p className="visual-lab__eyebrow">Layer 01</p>
           <h2>Translucent shell</h2>
           <p>
@@ -25,11 +26,11 @@ export function VisualLab() {
               <dd>subtle drift</dd>
             </div>
           </dl>
-        </aside>
+        </GlassPanel>
 
         <OrbPreview />
 
-        <aside className="visual-lab__panel visual-lab__panel--right">
+        <GlassPanel className="visual-lab__panel visual-lab__panel--right" tone="ice" depth="mid" borderStrength="soft">
           <p className="visual-lab__eyebrow">Layer 02</p>
           <h2>Preview lane</h2>
           <p>
@@ -41,7 +42,7 @@ export function VisualLab() {
             <li>thin-line geometry</li>
             <li>controlled bloom</li>
           </ul>
-        </aside>
+        </GlassPanel>
       </div>
     </section>
   );

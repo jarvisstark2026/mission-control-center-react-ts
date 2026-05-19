@@ -1809,15 +1809,14 @@
   .workspace-launch-pills {
     width: 100%;
     max-width: none;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding-bottom: 2px;
-    scrollbar-width: thin;
+    flex-wrap: wrap;
+    overflow: visible;
+    padding-bottom: 0;
+    scrollbar-width: auto;
   }
 
   .workspace-launch-pill {
-    flex: 0 0 auto;
+    flex: 1 1 132px;
     white-space: nowrap;
   }
 

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Workspace } from '../workspace/Workspace';
 import type { WorkspaceWidget } from '../workspace/workspaceTypes';
@@ -7,6 +7,7 @@ import { shellScopes, type ShellRole } from './roles';
 import './shell.css';
 
 const defaultRole: ShellRole = 'support';
+const railBreakpoint = 900;
 
 type ShellProps = {
   panelKind?: string | null;
@@ -122,6 +123,28 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
   const activeRole = role ?? defaultRole;
   const visibleItems = getVisibleShellNavItems(activeRole);
   const activePanelKind = normalizePanelKind(panelKind);
+  const [isRailOpen, setIsRailOpen] = useState(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true;
+
+    return !window.matchMedia(`(max-width: ${railBreakpoint}px)`).matches;
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
+
+    const media = window.matchMedia(`(max-width: ${railBreakpoint}px)`);
+    const syncRailState = () => setIsRailOpen(!media.matches);
+
+    syncRailState();
+
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', syncRailState);
+      return () => media.removeEventListener('change', syncRailState);
+    }
+
+    media.addListener(syncRailState);
+    return () => media.removeListener(syncRailState);
+  }, []);
 
   useEffect(() => {
     document.title = activePanelKind
@@ -179,7 +202,24 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
 
   return (
     <section className="shell-frame" aria-label="Mission Control Center shell">
-      <aside className="shell-rail" aria-label="Role navigation">
+      <button
+        type="button"
+        className="shell-menu-toggle"
+        aria-label={isRailOpen ? 'Close navigation menu' : 'Open navigation menu'}
+        aria-controls="shell-rail"
+        aria-expanded={isRailOpen}
+        onClick={() => setIsRailOpen((current) => !current)}
+      >
+        ☰
+      </button>
+
+      <div
+        className={`shell-backdrop ${isRailOpen ? 'is-visible' : ''}`}
+        aria-hidden="true"
+        onClick={() => setIsRailOpen(false)}
+      />
+
+      <aside id="shell-rail" className={`shell-rail ${isRailOpen ? 'is-open' : 'is-closed'}`} aria-label="Role navigation">
         <div className="shell-branding">
           <p className="shell-eyebrow">Mission Control Center</p>
           <h1>Spatial command surface</h1>

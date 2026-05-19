@@ -2870,24 +2870,28 @@ function WindowManagerWidget({
         <small>focus or close them from here</small>
       </div>
       <div className="window-manager-list" role="list" aria-label="Open widgets">
-        {openWidgets.map((widget) => (
-          <div key={widget.id} className="window-manager-item" role="listitem">
-            <button type="button" className="window-manager-item-button" onClick={() => onFocusWidget(widget.id)}>
-              <span>{widget.title}</span>
-              <small>{widget.kind} · z{widget.zIndex}</small>
-            </button>
-            <button
-              type="button"
-              className="window-manager-close"
-              onClick={() => onCloseWidget(widget.id)}
-              disabled={Boolean(widget.pinned)}
-              aria-label={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
-              title={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
-            >
-              ×
-            </button>
-          </div>
-        ))}
+        {openWidgets.length > 0 ? (
+          openWidgets.map((widget) => (
+            <div key={widget.id} className="window-manager-item" role="listitem">
+              <button type="button" className="window-manager-item-button" onClick={() => onFocusWidget(widget.id)}>
+                <span>{widget.title}</span>
+                <small>{widget.kind} · z{widget.zIndex}</small>
+              </button>
+              <button
+                type="button"
+                className="window-manager-close"
+                onClick={() => onCloseWidget(widget.id)}
+                disabled={Boolean(widget.pinned)}
+                aria-label={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
+                title={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
+              >
+                ×
+              </button>
+            </div>
+          ))
+        ) : (
+          <p className="window-manager-empty">No windows are open. Remarkably, the machine is being tidy on its own.</p>
+        )}
       </div>
       <p className="window-manager-note">A registry-first view of the current workspace. Less theatrical than a traffic controller, which is arguably for the best.</p>
     </div>

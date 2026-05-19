@@ -2317,6 +2317,18 @@
   gap: 8px;
 }
 
+.window-manager-empty {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.62);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.56rem;
+  line-height: 1.5;
+}
+
 .window-manager-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

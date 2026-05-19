@@ -2755,80 +2755,82 @@ function FileExplorerWidget({
       </div>
 
       <div className="file-explorer-body">
-        {folderTreeEntries.length ? (
-          <section className="file-explorer-folder-tree" aria-label="Folder contents">
-            <div className="file-explorer-folder-head">
-              <span>{hasRealFolderEntries ? 'Folder tree' : 'General use folder'}</span>
-              <small>{folderTreeEntries.length} items · depth {Math.max(...folderTreeEntries.map((entry) => entry.depth), 0)}</small>
-            </div>
-            <ul className="file-explorer-list file-explorer-list-tree">
-              {folderTreeEntries.map((entry) => (
-                <li key={entry.id} className={`file-explorer-item file-explorer-item-${entry.kind}`} style={{ paddingLeft: `${entry.depth * 12}px` }}>
-                  <button
-                    type="button"
-                    className="file-explorer-item-button"
-                    onClick={() => {
-                      if (!entry.file) return;
-                      void onBrowseFiles([entry.file]);
-                      onSelectFile(createLocalFileRecord(entry.file).id);
-                    }}
-                    onDoubleClick={() => {
-                      if (!entry.file) return;
-                      void onBrowseFiles([entry.file]);
-                      onSelectFile(createLocalFileRecord(entry.file).id);
-                      void onOpenPreview(createLocalFileRecord(entry.file));
-                    }}
-                    aria-disabled={!entry.file}
-                  >
-                    <span className="file-explorer-item-preview">
-                      <span className={`file-explorer-item-preview-badge kind-${entry.kind}`}>{entry.kind}</span>
-                    </span>
-                    <span className="file-explorer-item-copy">
-                      <span className="file-explorer-item-name">{entry.path}</span>
-                      <span className="file-explorer-item-meta">
-                        <small>{entry.kind}</small>
-                        {entry.file ? <small>{formatLocalFileSize(entry.file.size)}</small> : null}
+        {hasRealFolderEntries || files.length ? (
+          <>
+            <section className="file-explorer-folder-tree" aria-label="Folder contents">
+              <div className="file-explorer-folder-head">
+                <span>{hasRealFolderEntries ? 'Folder tree' : 'Selected files'}</span>
+                <small>{folderTreeEntries.length} items · depth {Math.max(...folderTreeEntries.map((entry) => entry.depth), 0)}</small>
+              </div>
+              <ul className="file-explorer-list file-explorer-list-tree">
+                {folderTreeEntries.map((entry) => (
+                  <li key={entry.id} className={`file-explorer-item file-explorer-item-${entry.kind}`} style={{ paddingLeft: `${entry.depth * 12}px` }}>
+                    <button
+                      type="button"
+                      className="file-explorer-item-button"
+                      onClick={() => {
+                        if (!entry.file) return;
+                        void onBrowseFiles([entry.file]);
+                        onSelectFile(createLocalFileRecord(entry.file).id);
+                      }}
+                      onDoubleClick={() => {
+                        if (!entry.file) return;
+                        void onBrowseFiles([entry.file]);
+                        onSelectFile(createLocalFileRecord(entry.file).id);
+                        void onOpenPreview(createLocalFileRecord(entry.file));
+                      }}
+                      aria-disabled={!entry.file}
+                    >
+                      <span className="file-explorer-item-preview">
+                        <span className={`file-explorer-item-preview-badge kind-${entry.kind}`}>{entry.kind}</span>
                       </span>
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
-
-        {hasRealFolderEntries && files.length ? (
-          <ul className="file-explorer-list" aria-label="Selected local files">
-            {files.map((record) => {
-              const isSelected = record.id === selectedFileId;
-              const isActive = record.id === activeFileId;
-
-              return (
-                <li key={record.id} className={`file-explorer-item ${isActive ? 'is-active' : ''} ${isSelected ? 'is-selected' : ''}`}>
-                  <button
-                    type="button"
-                    className="file-explorer-item-button"
-                    onClick={() => onSelectFile(record.id)}
-                    onDoubleClick={() => void onOpenPreview(record)}
-                    aria-pressed={isSelected}
-                    title="Single click to select, double click to open"
-                  >
-                    <span className="file-explorer-item-preview">
-                      <LocalFileMiniPreview file={record} />
-                    </span>
-                    <span className="file-explorer-item-copy">
-                      <span className="file-explorer-item-name">{record.path}</span>
-                      <span className="file-explorer-item-meta">
-                        <small>{record.previewKind}</small>
-                        <small>{formatLocalFileSize(record.file.size)}</small>
-                        <small>{record.file.type || 'unknown type'}</small>
+                      <span className="file-explorer-item-copy">
+                        <span className="file-explorer-item-name">{entry.path}</span>
+                        <span className="file-explorer-item-meta">
+                          <small>{entry.kind}</small>
+                          {entry.file ? <small>{formatLocalFileSize(entry.file.size)}</small> : null}
+                        </span>
                       </span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+
+            {hasRealFolderEntries && files.length ? (
+              <ul className="file-explorer-list" aria-label="Selected local files">
+                {files.map((record) => {
+                  const isSelected = record.id === selectedFileId;
+                  const isActive = record.id === activeFileId;
+
+                  return (
+                    <li key={record.id} className={`file-explorer-item ${isActive ? 'is-active' : ''} ${isSelected ? 'is-selected' : ''}`}>
+                      <button
+                        type="button"
+                        className="file-explorer-item-button"
+                        onClick={() => onSelectFile(record.id)}
+                        onDoubleClick={() => void onOpenPreview(record)}
+                        aria-pressed={isSelected}
+                        title="Single click to select, double click to open"
+                      >
+                        <span className="file-explorer-item-preview">
+                          <LocalFileMiniPreview file={record} />
+                        </span>
+                        <span className="file-explorer-item-copy">
+                          <span className="file-explorer-item-name">{record.path}</span>
+                          <span className="file-explorer-item-meta">
+                            <small>{record.previewKind}</small>
+                            <small>{formatLocalFileSize(record.file.size)}</small>
+                            <small>{record.file.type || 'unknown type'}</small>
+                          </span>
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
+          </>
         ) : (
           <div className="file-explorer-empty">
             <strong>General use folder ready.</strong>

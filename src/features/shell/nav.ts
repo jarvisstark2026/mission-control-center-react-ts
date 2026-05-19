@@ -27,10 +27,10 @@ export const shellNavItems: ShellNavItem[] = [
     allowedRoles: ['admin', 'home', 'support'],
   },
   {
-    id: 'approvals',
-    label: 'Approvals',
-    hint: 'gated actions and queue review',
-    allowedRoles: ['admin', 'support'],
+    id: 'project',
+    label: 'Project list',
+    hint: 'tasks, review, and deploy',
+    allowedRoles: ['admin', 'home', 'support'],
   },
   {
     id: 'registry',

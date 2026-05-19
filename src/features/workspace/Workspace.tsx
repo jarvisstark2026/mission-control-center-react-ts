@@ -1176,8 +1176,8 @@ function WorkspaceWidgetCard({
                 event.stopPropagation();
                 onToggleOpen(widget.id);
               }}
-              aria-label={widget.open ? `Collapse ${widget.title}` : `Expand ${widget.title}`}
-              title={widget.open ? `Collapse ${widget.title}` : `Expand ${widget.title}`}
+              aria-label={widget.open ? `Minimize ${widget.title}` : `Maximize ${widget.title}`}
+              title={widget.open ? `Minimize ${widget.title}` : `Maximize ${widget.title}`}
             >
               {widget.open ? '▴' : '▾'}
             </button>

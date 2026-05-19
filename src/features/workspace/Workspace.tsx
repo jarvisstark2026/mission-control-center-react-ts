@@ -3016,7 +3016,7 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
             <span className="widget-subtitle">{widget.subtitle}</span>
           </div>
 
-          <div className="widget-chrome-actions" aria-label={`${widget.title} window controls`}>
+          <div className="widget-chrome-actions" role="toolbar" aria-label={`${widget.title} window controls`}>
             <button
               type="button"
               className="widget-toggle"

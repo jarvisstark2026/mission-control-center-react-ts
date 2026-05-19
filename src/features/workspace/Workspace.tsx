@@ -456,7 +456,7 @@ const widgetBlueprints: Record<WorkspaceWidget['kind'], { title: string; subtitl
   'trading-graph': { title: 'Trading graph', subtitle: 'market curves', surfaceAlpha: 0.09, lineAlpha: 0.17, minWidth: 300, minHeight: 180 },
   image: { title: 'Image preview', subtitle: 'preview / annotate', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 240, minHeight: 190 },
   pdf: { title: 'PDF', subtitle: 'read / scan / print', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 260, minHeight: 200 },
-  video: { title: 'Video preview', subtitle: 'media frame', surfaceAlpha: 0.082, lineAlpha: 0.14, minWidth: 260, minHeight: 170 },
+  video: { title: 'Media frame', subtitle: 'preview panel', surfaceAlpha: 0.082, lineAlpha: 0.14, minWidth: 260, minHeight: 170 },
   '3d': { title: '3D model preview', subtitle: 'assets / projects', surfaceAlpha: 0.1, lineAlpha: 0.16, minWidth: 300, minHeight: 190 },
   '3d-studio': { title: '3D studio', subtitle: 'gesture / simulate / sculpt', surfaceAlpha: 0.11, lineAlpha: 0.18, minWidth: 360, minHeight: 240 },
   flow: { title: 'Chat preview', subtitle: 'system logic', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 220, minHeight: 150 },
@@ -950,7 +950,7 @@ function LauncherWidget() {
     { label: 'Trading graph', kind: 'trading-graph' as const },
     { label: 'Image preview', kind: 'image' as const },
     { label: 'PDF', kind: 'pdf' as const },
-    { label: 'Video preview', kind: 'video' as const },
+    { label: 'Media frame', kind: 'video' as const },
     { label: '3D model preview', kind: '3d' as const },
     { label: '3D studio', kind: '3d-studio' as const },
     { label: 'Chat preview', kind: 'flow' as const },
@@ -1098,7 +1098,7 @@ function WindowManagerWidget() {
     { kind: 'schedule', label: 'Schedule', state: 'today', action: 'open' },
     { kind: 'native-app', label: 'Native bridge', state: 'desktop handoff', action: 'open' },
     { kind: 'file-explorer', label: 'File explorer', state: 'local files', action: 'open' },
-    { kind: 'watch-video', label: 'Video preview', state: 'playback', action: 'open' },
+    { kind: 'video', label: 'Media frame', state: 'preview panel', action: 'open' },
   ];
 
   return (

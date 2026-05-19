@@ -58,7 +58,7 @@ function getPanelLabel(panelKind: string | null | undefined) {
     case 'trading-graph':
       return 'Trading graph';
     case 'video':
-      return 'Video preview';
+      return 'Media frame';
     case '3d':
       return '3D model preview';
     case '3d-studio':

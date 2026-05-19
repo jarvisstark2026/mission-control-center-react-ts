@@ -2070,9 +2070,10 @@ function ScheduleWidget() {
 
 type LauncherWidgetProps = {
   onLaunchWorkspaceWidget: (kind: WorkspaceWidget['kind']) => void;
+  workspaceWidgets: WorkspaceWidget[];
 };
 
-function LauncherWidget({ onLaunchWorkspaceWidget }: LauncherWidgetProps) {
+function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherWidgetProps) {
   const apps = [
     { label: 'Command core', kind: 'overview' as const, note: 'open in workspace' },
     { label: 'Telemetry', kind: 'graph' as const, note: 'open in workspace' },
@@ -2100,6 +2101,12 @@ function LauncherWidget({ onLaunchWorkspaceWidget }: LauncherWidgetProps) {
     { label: 'List', kind: 'list' as const, note: 'open in workspace' },
   ];
 
+  const getAppState = (kind: WorkspaceWidget['kind']) => {
+    const widget = workspaceWidgets.find((item) => item.kind === kind);
+    if (!widget) return 'closed';
+    return widget.open ? 'open' : 'closed';
+  };
+
   return (
     <div className="launcher-surface">
       <div className="launcher-summary">
@@ -2107,12 +2114,23 @@ function LauncherWidget({ onLaunchWorkspaceWidget }: LauncherWidgetProps) {
         <strong>open / focus / stay in the workspace</strong>
       </div>
       <div className="launcher-grid">
-        {apps.map((app) => (
-          <button key={app.kind} type="button" className="launcher-app" onClick={() => onLaunchWorkspaceWidget(app.kind)}>
-            <span>{app.label}</span>
-            <small>{app.note}</small>
-          </button>
-        ))}
+        {apps.map((app) => {
+          const state = getAppState(app.kind);
+
+          return (
+            <button
+              key={app.kind}
+              type="button"
+              className="launcher-app"
+              data-state={state}
+              aria-label={`${app.label}, ${state === 'open' ? 'open and ready to focus' : 'closed'}`}
+              onClick={() => onLaunchWorkspaceWidget(app.kind)}
+            >
+              <span>{app.label}</span>
+              <small>{state === 'open' ? 'open · click to focus' : app.note}</small>
+            </button>
+          );
+        })}
       </div>
       <p className="launcher-note">The launcher now opens widgets where they belong: in the workspace, not as a separate browser tantrum.</p>
     </div>
@@ -2664,7 +2682,7 @@ function WorkspaceWidgetCard({
         {widget.kind === 'project' && <ProjectWidget />}
         {widget.kind === 'news' && <NewsWidget activeGraph={activeMarketGraph} onSelectGraph={onSelectMarketGraph} />}
         {widget.kind === 'schedule' && <ScheduleWidget />}
-        {widget.kind === 'launcher' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} />}
+        {widget.kind === 'launcher' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />}
         {widget.kind === 'browser' && <BrowserWidget />}
         {widget.kind === 'watch-video' && <LiveTvWidget />}
         {widget.kind === 'file-explorer' && (

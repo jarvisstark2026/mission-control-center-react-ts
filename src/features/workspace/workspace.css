@@ -357,16 +357,19 @@
   letter-spacing: 0.02em;
 }
 
+.preview-surface::before,
+.markets-surface::before {
+  content: none;
+}
+
 .spark-panel::before,
 .map-surface::before,
 .diagram-surface::before,
-.preview-surface::before,
 .model-studio-surface::before,
 .flow-surface::before,
 .list-surface::before,
 .video-surface::before,
 .news-surface::before,
-.markets-surface::before,
 .audio-surface::before,
 .project-surface::before {
   content: '';
@@ -1092,13 +1095,7 @@
 }
 
 .preview-scan {
-  position: absolute;
-  inset: auto 14px 18px 14px;
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.9), transparent);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
-  animation: sweep 4.8s linear infinite;
+  display: none;
 }
 
 .flow-surface {
@@ -1623,8 +1620,16 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.92);
-  text-align: left;
   cursor: pointer;
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  align-content: start;
+}
+
+.launcher-app[data-state='open'] {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.09);
 }
 
 .launcher-app:hover {

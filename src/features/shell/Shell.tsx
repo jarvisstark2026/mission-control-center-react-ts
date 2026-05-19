@@ -230,6 +230,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
                 onClick={() => {
                   if (window.opener) {
                     window.close();
+                    navigateToPanel(null);
                     return;
                   }
                   navigateToPanel(null);

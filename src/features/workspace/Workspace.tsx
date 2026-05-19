@@ -384,15 +384,15 @@ function loadStoredWidgetState(): WorkspaceWidget[] | null {
       const stored = byId.get(preset.id);
       if (!stored) return { ...preset, open: defaultOpenKinds.has(preset.kind) };
 
-      const minWidth = typeof stored.minWidth === 'number' ? stored.minWidth : preset.minWidth;
-      const minHeight = typeof stored.minHeight === 'number' ? stored.minHeight : preset.minHeight;
+      const minWidth = clampNumber(typeof stored.minWidth === 'number' ? stored.minWidth : preset.minWidth, preset.minWidth, 120, 1920);
+      const minHeight = clampNumber(typeof stored.minHeight === 'number' ? stored.minHeight : preset.minHeight, preset.minHeight, 120, 1080);
 
       return {
         ...preset,
         ...stored,
         open: typeof stored.open === 'boolean' ? stored.open : defaultOpenKinds.has(preset.kind),
-        minWidth: clampNumber(minWidth, preset.minWidth, 120, 1920),
-        minHeight: clampNumber(minHeight, preset.minHeight, 120, 1080),
+        minWidth,
+        minHeight,
         width: clampNumber(stored.width, preset.width, minWidth, 4096),
         height: clampNumber(stored.height, preset.height, minHeight, 4096),
         x: clampNumber(stored.x, preset.x, -8192, 8192),

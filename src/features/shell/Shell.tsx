@@ -5,7 +5,7 @@ import { SectionHeader } from '../../components/ui/SectionHeader';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { Workspace } from '../workspace/Workspace';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from '../workspace/workspaceTypes';
-import { getVisibleShellNavItems, isShellPanelAccessible } from './nav';
+import { getShellNavPanelKind, getVisibleShellNavItems, isShellPanelAccessible, shellNavItems } from './nav';
 import { shellScopes, type ShellRole } from './roles';
 import './shell.css';
 
@@ -88,44 +88,12 @@ function closeDetachedWindow(navigateToPanel: (target: WorkspaceWidget['kind'] |
   navigateToPanel(null);
 }
 
-const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
-  workspace: null,
-  telemetry: 'graph',
-  map: 'map',
-  project: 'project',
-  registry: 'window-manager',
-  schedule: 'schedule',
-  launcher: 'launcher',
-  browser: 'browser',
-  'watch-video': 'watch-video',
-  audio: 'audio',
-  diagram: 'diagram',
-  news: 'news',
-  flow: 'flow',
-  video: 'video',
-  '3d': '3d',
-  list: 'list',
-  'file-explorer': 'file-explorer',
-  'native-app': 'native-app',
-  sheet: 'sheet',
-  docs: 'docs',
-  slides: 'slides',
-  'trading-graph': 'trading-graph',
-  image: 'image',
-  pdf: 'pdf',
-  '3d-studio': '3d-studio',
-};
-
 function getActiveNavId(panelKind: WorkspaceWidget['kind'] | null) {
   if (!panelKind) return 'workspace';
 
-  const visibleNavEntry = Object.entries(navPanelById).find(([, mappedPanelKind]) => mappedPanelKind === panelKind);
+  const visibleNavEntry = shellNavItems.find((item) => getShellNavPanelKind(item) === panelKind);
   if (visibleNavEntry) {
-    return visibleNavEntry[0];
-  }
-
-  if (Object.prototype.hasOwnProperty.call(navPanelById, panelKind)) {
-    return panelKind;
+    return visibleNavEntry.id;
   }
 
   return 'workspace';
@@ -316,7 +284,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
                   type="button"
                   className={`shell-nav-button ${isNavItemActive(item.id) ? 'is-active' : ''}`}
                   aria-current={isNavItemActive(item.id) ? 'page' : undefined}
-                  onClick={() => navigateToPanel(navPanelById[item.id] ?? null)}
+                  onClick={() => navigateToPanel(getShellNavPanelKind(item))}
                 >
                   <span>{item.label}</span>
                   <small>{item.hint}</small>

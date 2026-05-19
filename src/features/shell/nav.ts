@@ -1,3 +1,4 @@
+import type { WidgetKind } from '../workspace/workspaceTypes';
 import type { ShellRole } from './roles';
 
 export type ShellNavItem = {
@@ -5,6 +6,7 @@ export type ShellNavItem = {
   label: string;
   hint: string;
   allowedRoles: ShellRole[];
+  panelKind?: WidgetKind | null;
 };
 
 export const shellNavItems: ShellNavItem[] = [
@@ -13,12 +15,14 @@ export const shellNavItems: ShellNavItem[] = [
     label: 'Workspace',
     hint: 'open surfaces and moving panels',
     allowedRoles: ['admin', 'home', 'guest', 'support'],
+    panelKind: null,
   },
   {
     id: 'telemetry',
     label: 'Telemetry',
     hint: 'live system readouts',
     allowedRoles: ['admin', 'home', 'support'],
+    panelKind: 'graph',
   },
   {
     id: 'map',
@@ -37,6 +41,7 @@ export const shellNavItems: ShellNavItem[] = [
     label: 'Registry',
     hint: 'devices, integrations, and scopes',
     allowedRoles: ['admin', 'support'],
+    panelKind: 'window-manager',
   },
   {
     id: 'schedule',
@@ -164,8 +169,12 @@ export function getVisibleShellNavItems(role: ShellRole) {
   return shellNavItems.filter((item) => item.allowedRoles.includes(role));
 }
 
+export function getShellNavPanelKind(item: ShellNavItem): WidgetKind | null {
+  return item.panelKind === undefined ? (item.id as WidgetKind) : item.panelKind;
+}
+
 export function isShellPanelAccessible(role: ShellRole, panelKind: string | null | undefined) {
   if (!panelKind) return false;
 
-  return shellNavItems.some((item) => item.id === panelKind && item.allowedRoles.includes(role));
+  return shellNavItems.some((item) => getShellNavPanelKind(item) === panelKind && item.allowedRoles.includes(role));
 }

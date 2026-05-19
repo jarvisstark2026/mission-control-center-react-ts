@@ -17,61 +17,36 @@ type ShellProps = {
   onNavigate: (nextLocation: { panelKind: WorkspaceWidget['kind'] | null; role: ShellRole }) => void;
 };
 
+const panelLabels: Partial<Record<WorkspaceWidget['kind'], string>> = {
+  overview: 'Command core',
+  graph: 'Telemetry',
+  audio: 'Audio preview',
+  map: 'Map / routes',
+  diagram: 'Diagram preview',
+  project: 'Project list',
+  news: 'Markets',
+  schedule: 'Schedule',
+  launcher: 'App launcher',
+  browser: 'Browser',
+  'watch-video': 'Live TV',
+  image: 'Image preview',
+  pdf: 'PDF',
+  'file-explorer': 'File explorer',
+  'native-app': 'Native app bridge',
+  'window-manager': 'Registry',
+  sheet: 'Spreadsheet',
+  docs: 'Docs',
+  slides: 'Presentation',
+  'trading-graph': 'Trading graph',
+  video: 'Media frame',
+  '3d': 'Preview',
+  '3d-studio': '3D studio',
+  flow: 'Workflows',
+  list: 'List',
+};
+
 function getPanelLabel(panelKind: WorkspaceWidget['kind'] | null | undefined) {
-  switch (panelKind) {
-    case 'overview':
-      return 'Command core';
-    case 'graph':
-      return 'Telemetry';
-    case 'audio':
-      return 'Audio preview';
-    case 'map':
-      return 'Map / routes';
-    case 'diagram':
-      return 'Diagram preview';
-    case 'project':
-      return 'Project list';
-    case 'news':
-      return 'Markets';
-    case 'schedule':
-      return 'Schedule';
-    case 'launcher':
-      return 'App launcher';
-    case 'browser':
-      return 'Browser';
-    case 'watch-video':
-      return 'Live TV';
-    case 'image':
-      return 'Image preview';
-    case 'pdf':
-      return 'PDF';
-    case 'file-explorer':
-      return 'File explorer';
-    case 'native-app':
-      return 'Native app bridge';
-    case 'window-manager':
-      return 'Registry';
-    case 'sheet':
-      return 'Spreadsheet';
-    case 'docs':
-      return 'Docs';
-    case 'slides':
-      return 'Presentation';
-    case 'trading-graph':
-      return 'Trading graph';
-    case 'video':
-      return 'Media frame';
-    case '3d':
-      return 'Preview';
-    case '3d-studio':
-      return '3D studio';
-    case 'flow':
-      return 'Workflows';
-    case 'list':
-      return 'List';
-    default:
-      return 'Window';
-  }
+  return (panelKind && panelLabels[panelKind]) || 'Window';
 }
 
 function normalizePanelKind(panelKind: string | null | undefined): WorkspaceWidget['kind'] | null {

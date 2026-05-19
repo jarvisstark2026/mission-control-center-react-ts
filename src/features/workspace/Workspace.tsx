@@ -2691,6 +2691,12 @@ function FileExplorerWidget({
         ];
   const visibleFolderPath = folderPath ?? generalUseFolderLabel;
   const loadedEntryCount = hasRealFolderEntries ? folderEntries.length : files.length;
+  const selectedCountLabel = `${files.length} ${files.length === 1 ? 'item' : 'items'} loaded`;
+  const explorerStatusLabel = activeFile
+    ? `Previewing ${activeFile.path}`
+    : folderEntries.length
+      ? `Folder: ${visibleFolderPath}`
+      : 'General use folder ready';
 
   const handleBrowseFilesClick = () => {
     fileInputRef.current?.click();
@@ -2713,6 +2719,10 @@ function FileExplorerWidget({
       <div className="file-explorer-head">
         <span>Local file browser</span>
         <strong>Choose files or folders from this PC.</strong>
+        <div className="file-explorer-head-meta" role="status" aria-live="polite" aria-atomic="true">
+          <span>{selectedCountLabel}</span>
+          <small>{explorerStatusLabel}</small>
+        </div>
       </div>
 
       <div className="file-explorer-toolbar">

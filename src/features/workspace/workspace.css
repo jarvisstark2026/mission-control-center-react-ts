@@ -1933,8 +1933,11 @@
 }
 
 .file-explorer-head {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px 12px;
 }
 
 .file-explorer-head span,
@@ -1947,6 +1950,30 @@
 .file-explorer-head strong {
   margin-top: 4px;
   font-size: 0.76rem;
+}
+
+.file-explorer-head-meta {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+  text-align: right;
+}
+
+.file-explorer-head-meta span,
+.file-explorer-head-meta small {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.file-explorer-head-meta span {
+  font-size: 0.58rem;
+}
+
+.file-explorer-head-meta small {
+  font-size: 0.52rem;
+  color: rgba(255, 255, 255, 0.54);
 }
 
 .file-explorer-toolbar {

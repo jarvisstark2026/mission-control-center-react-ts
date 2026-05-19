@@ -110,6 +110,12 @@ export const shellNavItems: ShellNavItem[] = [
     hint: 'read and scan documents',
     allowedRoles: ['admin', 'home', 'support'],
   },
+  {
+    id: '3d-studio',
+    label: '3D studio',
+    hint: 'gesture sculpting and engineering sims',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
 ];
 
 export function getVisibleShellNavItems(role: ShellRole) {

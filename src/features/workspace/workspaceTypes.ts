@@ -21,6 +21,7 @@ export type WidgetKind =
   | 'pdf'
   | 'video'
   | '3d'
+  | '3d-studio'
   | 'flow'
   | 'list';
 

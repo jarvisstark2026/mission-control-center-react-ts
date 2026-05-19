@@ -55,6 +55,8 @@ function getPanelLabel(panelKind: string | null | undefined) {
       return 'Video';
     case '3d':
       return '3D preview';
+    case '3d-studio':
+      return '3D studio';
     case 'flow':
       return 'Flow chart';
     case 'list':
@@ -86,6 +88,7 @@ function normalizePanelKind(panelKind: string | null | undefined): WorkspaceWidg
     case 'trading-graph':
     case 'video':
     case '3d':
+    case '3d-studio':
     case 'flow':
     case 'list':
       return panelKind;
@@ -112,6 +115,7 @@ const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
   'trading-graph': 'trading-graph',
   image: 'image',
   pdf: 'pdf',
+  '3d-studio': '3d-studio',
 };
 
 export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {

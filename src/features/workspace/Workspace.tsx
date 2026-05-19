@@ -418,6 +418,7 @@ const launchableWindowKinds: WorkspaceWidget['kind'][] = [
   'pdf',
   'video',
   '3d',
+  '3d-studio',
   'flow',
   'list',
 ];
@@ -445,6 +446,7 @@ const widgetBlueprints: Record<WorkspaceWidget['kind'], { title: string; subtitl
   pdf: { title: 'PDF', subtitle: 'read / scan / print', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 260, minHeight: 200 },
   video: { title: 'Video', subtitle: 'media frame', surfaceAlpha: 0.082, lineAlpha: 0.14, minWidth: 260, minHeight: 170 },
   '3d': { title: '3D preview', subtitle: 'assets / projects', surfaceAlpha: 0.1, lineAlpha: 0.16, minWidth: 300, minHeight: 190 },
+  '3d-studio': { title: '3D studio', subtitle: 'gesture / simulate / sculpt', surfaceAlpha: 0.11, lineAlpha: 0.18, minWidth: 360, minHeight: 240 },
   flow: { title: 'Flow chart', subtitle: 'system logic', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 220, minHeight: 150 },
   list: { title: 'List', subtitle: 'inbox / next steps', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 260, minHeight: 150 },
 };
@@ -786,6 +788,79 @@ function PreviewWidget() {
   );
 }
 
+function ModelStudioWidget() {
+  const simulationCards = [
+    { label: 'Structural integrity', value: '92%', note: 'frame / joints / load paths' },
+    { label: 'Bend response', value: '0.18 mm', note: 'deformation under torque' },
+    { label: 'Stress hotspots', value: '03', note: 'redline zones and stress peaks' },
+    { label: 'Heat map', value: '64°C', note: 'thermal climb under runtime load' },
+  ];
+
+  const gestureChips = ['drag', 'pinch', 'orbit', 'slice', 'measure', 'simulate'];
+
+  return (
+    <div className="model-studio-surface">
+      <div className="model-studio-head">
+        <div>
+          <span>3D asset authoring</span>
+          <strong>sculpt / gesture / simulate</strong>
+        </div>
+        <div className="model-studio-head-meta">
+          <span>real-time engineering</span>
+          <small>structures · bending · heat · stress</small>
+        </div>
+      </div>
+
+      <div className="model-studio-layout">
+        <section className="model-studio-canvas">
+          <div className="model-studio-grid" />
+          <div className="model-studio-rig">
+            <div className="model-studio-shell model-studio-shell-a" />
+            <div className="model-studio-shell model-studio-shell-b" />
+            <div className="model-studio-shell model-studio-shell-c" />
+          </div>
+          <div className="model-studio-axis model-studio-axis-x" />
+          <div className="model-studio-axis model-studio-axis-y" />
+          <div className="model-studio-axis model-studio-axis-z" />
+          <div className="model-studio-canvas-caption">
+            <span>touch / stylus / spatial capture ready</span>
+            <small>future support for real 3D-space input can slot in here when the hardware catches up.</small>
+          </div>
+        </section>
+
+        <aside className="model-studio-panel">
+          <div className="model-studio-tools">
+            {gestureChips.map((chip) => (
+              <button type="button" key={chip} className="model-studio-chip">
+                {chip}
+              </button>
+            ))}
+          </div>
+
+          <div className="model-studio-simulations">
+            {simulationCards.map((card, index) => (
+              <article className="model-studio-sim" key={card.label}>
+                <div className="model-studio-sim-head">
+                  <span>{card.label}</span>
+                  <strong>{card.value}</strong>
+                </div>
+                <div className="model-studio-sim-bar">
+                  <i style={{ width: `${58 - index * 9}%` }} />
+                </div>
+                <small>{card.note}</small>
+              </article>
+            ))}
+          </div>
+
+          <div className="model-studio-footer">
+            <p>Designed as a fluid creation surface first, with engineering-grade simulation bolted on rather than the other way round.</p>
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
+
 function FlowWidget() {
   return (
     <div className="flow-surface">
@@ -865,6 +940,7 @@ function LauncherWidget() {
     { label: 'PDF', kind: 'pdf' as const },
     { label: 'Video', kind: 'video' as const },
     { label: '3D preview', kind: '3d' as const },
+    { label: '3D studio', kind: '3d-studio' as const },
     { label: 'Flow chart', kind: 'flow' as const },
     { label: 'List', kind: 'list' as const },
   ];
@@ -1078,10 +1154,10 @@ function WorkspaceWidgetCard({
                 event.stopPropagation();
                 onToggleOpen(widget.id);
               }}
-              aria-label={widget.open ? `Minimize ${widget.title}` : `Maximize ${widget.title}`}
-              title={widget.open ? `Minimize ${widget.title}` : `Maximize ${widget.title}`}
+              aria-label={widget.open ? `Collapse ${widget.title}` : `Expand ${widget.title}`}
+              title={widget.open ? `Collapse ${widget.title}` : `Expand ${widget.title}`}
             >
-              {widget.open ? '↑' : '↓'}
+              {widget.open ? '▴' : '▾'}
             </button>
             <button
               type="button"
@@ -1122,6 +1198,7 @@ function WorkspaceWidgetCard({
         {widget.kind === 'window-manager' && <WindowManagerWidget />}
         {widget.kind === 'video' && <VideoWidget />}
         {widget.kind === '3d' && <PreviewWidget />}
+        {widget.kind === '3d-studio' && <ModelStudioWidget />}
         {widget.kind === 'flow' && <FlowWidget />}
         {widget.kind === 'list' && <ListWidget />}
       </div>

@@ -148,4 +148,8 @@
   .visual-lab__orb-core {
     animation: none;
   }
+
+  .visual-lab::before {
+    filter: none;
+  }
 }

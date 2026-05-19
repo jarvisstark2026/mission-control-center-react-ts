@@ -315,3 +315,17 @@
     max-width: 34ch;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .shell-menu-toggle,
+  .shell-backdrop,
+  .shell-rail,
+  .shell-nav-button,
+  .shell-scope-button {
+    transition: none;
+  }
+
+  .shell-backdrop {
+    backdrop-filter: none;
+  }
+}

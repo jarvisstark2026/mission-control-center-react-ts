@@ -475,6 +475,89 @@
   gap: 10px;
 }
 
+.workspace-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.workspace-catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 10px;
+}
+
+.workspace-row-list,
+.workspace-action-row-list {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.workspace-row,
+.workspace-action-row {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.workspace-row span,
+.workspace-action-row span {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.64rem;
+}
+
+.workspace-row strong,
+.workspace-action-row strong {
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 0.8rem;
+}
+
+.workspace-row small,
+.workspace-action-row small {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.workspace-action-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.workspace-action-row-button {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.workspace-action-row-button:focus-visible,
+.workspace-action-row-close:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.28);
+  outline-offset: 2px;
+}
+
+.workspace-action-row-close {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: inherit;
+}
+
+.workspace-action-row-close:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .stats-arc {
   position: absolute;
   inset: 8px 16% auto 16%;

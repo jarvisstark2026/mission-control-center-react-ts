@@ -1254,7 +1254,7 @@ function OverviewWidget() {
   ];
 
   return (
-    <div className="widget-grid overview-grid">
+    <div className="widget-grid">
       <div className="stats-arc" />
       <WorkspaceMetricGrid metrics={stats} />
     </div>
@@ -2272,14 +2272,18 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
     return widget.open ? 'open' : 'closed';
   };
 
-  const workspaceCards = workspaceApps.map((app) => ({
-    id: app.kind,
-    label: app.label,
-    note: app.note,
-    badge: getAppState(app.kind),
-    active: getAppState(app.kind) === 'open',
-    state: getAppState(app.kind),
-  }));
+  const workspaceCards = workspaceApps.map((app) => {
+    const state = getAppState(app.kind);
+
+    return {
+      id: app.kind,
+      label: app.label,
+      note: state === 'open' ? 'open · click to focus' : app.note,
+      badge: state,
+      active: state === 'open',
+      state,
+    };
+  });
 
   return (
     <div className="launcher-surface">
@@ -2508,24 +2512,24 @@ function LiveTvWidget() {
         </div>
       </div>
 
-      <div className="live-tv-preset-list" role="group" aria-label="Live TV sources">
-        {liveTvSources.map((source) => (
-          <button
-            key={source.name}
-            type="button"
-            className={`live-tv-preset ${source.name === activeSource.name ? 'is-active' : ''}`}
-            aria-pressed={source.name === activeSource.name}
-            onClick={() => {
-              setDraftUrl(source.url);
-              setActiveSource(source);
-            }}
-          >
-            <span>{source.badge}</span>
-            <strong>{source.name}</strong>
-            <small>{source.description}</small>
-          </button>
-        ))}
-      </div>
+      <WorkspaceCatalogGrid
+        className="live-tv-preset-list"
+        variant="live-tv"
+        ariaLabel="Live TV sources"
+        items={liveTvSources.map((source) => ({
+          id: source.name,
+          label: source.name,
+          note: source.description,
+          badge: source.badge,
+          active: source.name === activeSource.name,
+          state: source.streamType,
+        }))}
+        onSelect={(item) => {
+          const source = liveTvSources.find((candidate) => candidate.name === item.id) ?? defaultLiveTvSource;
+          setDraftUrl(source.url);
+          setActiveSource(source);
+        }}
+      />
 
       <label className="live-tv-input">
         <span>Channel or stream URL</span>

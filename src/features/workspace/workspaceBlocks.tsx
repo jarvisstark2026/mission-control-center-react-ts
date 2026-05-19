@@ -1,7 +1,5 @@
 import type { ReactNode } from 'react';
 
-import '../../styles/components.css';
-
 export type WorkspaceMetric = {
   label: string;
   value: ReactNode;
@@ -57,7 +55,9 @@ export function WorkspaceCatalogGrid({
       {items.map((item) => {
         const content = (
           <>
-            {item.badge ? <span>{item.badge}</span> : <span>{item.active ? 'open' : item.state ?? 'ready'}</span>}
+            {item.badge || item.active || item.state ? (
+              <span>{item.badge ?? (item.active ? 'open' : item.state ?? 'ready')}</span>
+            ) : null}
             <strong>{item.label}</strong>
             <small>{item.note}</small>
           </>
@@ -198,7 +198,14 @@ export function DesktopBridgePanel({
   children?: ReactNode;
 }) {
   const hasInput = inputValue.trim().length > 0;
-  const isAppSelectable = typeof onSelectApp === 'function';
+  const isAppSelectable = typeof onSelectApp === 'function' && apps.length > 0;
+  const handleSelectApp = (item: WorkspaceCatalogCard) => {
+    const selectedApp = apps.find((app) => app.name === item.id);
+
+    if (selectedApp) {
+      onSelectApp?.(selectedApp);
+    }
+  };
 
   return (
     <div className={["launcher-desktop-bridge", className].filter(Boolean).join(' ')}>
@@ -222,21 +229,17 @@ export function DesktopBridgePanel({
           {submitLabel}
         </button>
       </div>
-      <div className="launcher-desktop-list" role="group" aria-label={`${eyebrow} apps`}>
-        {apps.map((app) =>
-          isAppSelectable ? (
-            <button key={app.name} type="button" className="launcher-desktop-item" onClick={() => onSelectApp(app)}>
-              <span>{app.name}</span>
-              <small>{app.note}</small>
-            </button>
-          ) : (
-            <div key={app.name} className="launcher-desktop-item">
-              <span>{app.name}</span>
-              <small>{app.note}</small>
-            </div>
-          ),
-        )}
-      </div>
+      <WorkspaceCatalogGrid
+        className="launcher-desktop-list"
+        variant="desktop"
+        ariaLabel={`${eyebrow} apps`}
+        items={apps.map((app) => ({
+          id: app.name,
+          label: app.name,
+          note: app.note,
+        }))}
+        onSelect={isAppSelectable ? handleSelectApp : undefined}
+      />
       {children}
     </div>
   );

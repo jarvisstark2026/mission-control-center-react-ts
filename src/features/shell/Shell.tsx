@@ -217,7 +217,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
             <div className="shell-branding shell-branding-window">
               <p className="shell-eyebrow">Mission Control Center</p>
               <h1>{getPanelLabel(activePanelKind)}</h1>
-              <div className="shell-meta" aria-label="Window context">
+              <div className="shell-meta" aria-label="Window context" role="status" aria-live="polite" aria-atomic="true">
                 <StatusChip tone="cool">{activeRoleLabel}</StatusChip>
                 <StatusChip tone="ice">{activePanelLabel}</StatusChip>
               </div>
@@ -267,7 +267,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
         <div className="shell-branding">
           <p className="shell-eyebrow">Mission Control Center</p>
           <h1>Spatial command surface</h1>
-          <div className="shell-meta" aria-label="Current context">
+          <div className="shell-meta" aria-label="Current context" role="status" aria-live="polite" aria-atomic="true">
             <StatusChip tone="cool">{activeRoleLabel}</StatusChip>
             <StatusChip tone="ice">{activePanelLabel}</StatusChip>
           </div>

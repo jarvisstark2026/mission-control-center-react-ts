@@ -135,7 +135,7 @@
 
 ## Phase 2: Prove the visual language
 
-### Task 4: Build the HUD stress-test screen
+### Task 5: Build the HUD stress-test screen
 
 **Objective:** Create the first demanding visual slice with semi-transparent 3D-like surfaces, dense micro-detail, and motion. Treat the reel-style reference as the target: layered glass, technical overlays, floating depth, a cinematic control-room composition, and a fluid workspace that does not depend on scroll-down pages.
 
@@ -154,7 +154,7 @@
 **Step 3: Verify performance and feel**
 - Expected: the UI reads as a new control surface, not a standard dashboard.
 
-### Task 5: Build the 3D asset preview lane
+### Task 6: Build the 3D asset preview lane
 
 **Objective:** Prove React can handle the 3D-like asset preview requirement cleanly.
 
@@ -172,7 +172,7 @@
 **Step 3: Verify**
 - Expected: the preview feels cinematic enough without contaminating the rest of the app.
 
-### Task 6: Establish live telemetry and data surfaces
+### Task 7: Establish live telemetry and data surfaces
 
 **Objective:** Add charts, system state, and notification streams so the UI feels alive.
 
@@ -192,7 +192,7 @@
 
 ## Phase 3: Make it usable as Mission Control Center
 
-### Task 7: Implement command surfaces and approvals
+### Task 8: Implement command surfaces and approvals
 
 **Objective:** Add the manager-agent style inbox, approval gates, and action queue.
 
@@ -209,7 +209,7 @@
 **Step 3: Verify**
 - Expected: actions are clearly gated before execution.
 
-### Task 8: Add chat, voice, and gesture entry points
+### Task 9: Add chat, voice, and gesture entry points
 
 **Objective:** Restore the human input surface across chat, voice, and touch gestures.
 
@@ -227,7 +227,7 @@
 **Step 3: Verify**
 - Expected: the UI supports hands-free and touch-first use.
 
-### Task 9: Add the integration registry and household inventory
+### Task 10: Add the integration registry and household inventory
 
 **Objective:** Surface connected systems, devices, and permissions in a durable registry.
 
@@ -245,7 +245,7 @@
 **Step 3: Verify**
 - Expected: the user can see what is connected and what is still stubbed.
 
-### Task 10: Package for desktop and mobile
+### Task 11: Package for desktop and mobile
 
 **Objective:** Prove the React stack can escape the browser without falling apart.
 

@@ -380,9 +380,7 @@ function buildWorkflowHandoutHtml(workflow: WorkflowDraft, selectedSkills: Workf
           <span class="chip">Template: ${escapeHtml(template.title)}</span>
           <span class="chip">Steps: ${steps.length}</span>
           <span class="chip">Skills: ${selectedSkills.length}</span>
-        </div>
-        <div class="skill-chips">
-          ${skillChips || '<span class="chip">No helper skills selected</span>'}
+          ${skillChips}
         </div>
       </header>
       <section class="grid">
@@ -1450,7 +1448,7 @@ function WorkflowWidget() {
       templateId: nextTemplate.id,
       name: current.name.trim() ? current.name : `${nextTemplate.title} workflow`,
       note: current.note.trim() ? current.note : nextTemplate.summary,
-      skillIds: Array.from(new Set([...nextTemplate.skillIds, ...current.skillIds])),
+      skillIds: [...nextTemplate.skillIds],
     }));
     setStatus(`Loaded ${nextTemplate.title} template.`);
   };
@@ -1498,14 +1496,16 @@ function WorkflowWidget() {
   const saveWorkflow = () => {
     const workflowId = draft.id ?? `workflow-${Date.now()}`;
     const existing = savedWorkflows.find((item) => item.id === workflowId);
+    const workflowName = draft.name.trim() || `${template.title} workflow`;
     const nextWorkflow: SavedWorkflow = {
       ...draft,
+      name: workflowName,
       id: workflowId,
       createdAt: existing?.createdAt ?? new Date().toISOString(),
     };
 
     setSavedWorkflows((current) => [nextWorkflow, ...current.filter((item) => item.id !== workflowId)].slice(0, 12));
-    setDraft((current) => ({ ...current, id: workflowId }));
+    setDraft((current) => ({ ...current, id: workflowId, name: workflowName }));
     setStatus(`Saved ${nextWorkflow.name}.`);
   };
 
@@ -1523,14 +1523,16 @@ function WorkflowWidget() {
   };
 
   const printWorkflow = () => {
-    const success = openWorkflowHandout(draft);
-    setStatus(success ? `Print handout opened for ${draft.name}.` : 'Popup blocked. Allow popups to print or export as PDF.');
+    const printableDraft = { ...draft, name: draft.name.trim() || `${template.title} workflow` };
+    const success = openWorkflowHandout(printableDraft);
+    setStatus(success ? `Print handout opened for ${printableDraft.name}.` : 'Popup blocked. Allow popups to print or export as PDF.');
   };
 
   const copySteps = async () => {
+    const workflowName = draft.name.trim() || `${template.title} workflow`;
     const instructions = steps.map((step, index) => `${index + 1}. ${step}`).join('\n');
     try {
-      await navigator.clipboard.writeText(`${draft.name}\n\n${instructions}`);
+      await navigator.clipboard.writeText(`${workflowName}\n\n${instructions}`);
       setStatus('Workflow instructions copied to clipboard.');
     } catch {
       setStatus('Clipboard access was unavailable.');

@@ -1123,11 +1123,270 @@
   transform: rotate(-26deg);
 }
 
+.workflow-surface {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.workflow-head,
+.workflow-group-head {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workflow-head span,
+.workflow-group-head span,
+.workflow-step span,
+.workflow-card small,
+.workflow-skill small,
+.workflow-saved-card small,
+.workflow-saved-card span {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.62rem;
+}
+
+.workflow-head span,
+.workflow-group-head span {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.workflow-head strong,
+.workflow-head-meta small {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.workflow-head,
+.workflow-actions,
+.workflow-layout,
+.workflow-step-list,
+.workflow-template-list,
+.workflow-skill-list,
+.workflow-saved-list {
+  min-width: 0;
+}
+
+.workflow-head-meta {
+  display: grid;
+  justify-items: end;
+  gap: 2px;
+}
+
+.workflow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workflow-action {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+}
+
+.workflow-action:hover,
+.workflow-card:hover,
+.workflow-skill:hover,
+.workflow-saved-card:hover {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.workflow-action.is-muted {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.workflow-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.92fr) minmax(0, 1.25fr) minmax(280px, 0.88fr);
+  gap: 10px;
+  min-height: 0;
+}
+
+.workflow-column {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.workflow-group {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.workflow-group-head {
+  align-items: center;
+}
+
+.workflow-group-head small,
+.workflow-card p,
+.workflow-skill-list small,
+.workflow-empty,
+.workflow-status,
+.workflow-step strong,
+.workflow-step-remove,
+.workflow-field span,
+.workflow-diagram svg text {
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.workflow-template-list,
+.workflow-skill-list,
+.workflow-saved-list {
+  display: grid;
+  gap: 8px;
+}
+
+.workflow-card,
+.workflow-skill,
+.workflow-saved-card {
+  display: grid;
+  gap: 5px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.92);
+  text-align: left;
+  cursor: pointer;
+}
+
+.workflow-card.is-active,
+.workflow-skill.is-active,
+.workflow-saved-card.is-active {
+  border-color: rgba(180, 255, 194, 0.5);
+  background: rgba(180, 255, 194, 0.08);
+}
+
+.workflow-card strong,
+.workflow-skill strong,
+.workflow-saved-card strong,
+.workflow-step strong {
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.workflow-card p,
+.workflow-skill small,
+.workflow-saved-card small,
+.workflow-saved-card span {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.workflow-diagram {
+  min-height: 190px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  overflow-x: auto;
+}
+
+.workflow-diagram svg {
+  display: block;
+  min-width: 100%;
+}
+
+.workflow-step-list {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.workflow-step {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.workflow-step-remove {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.56rem;
+}
+
+.workflow-status {
+  min-height: 38px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  line-height: 1.5;
+}
+
+.workflow-field {
+  display: grid;
+  gap: 6px;
+}
+
+.workflow-field input,
+.workflow-field textarea {
+  width: 100%;
+  min-height: 36px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.workflow-field textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+
+.workflow-inline-input {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.workflow-inline-input button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.92);
+  cursor: pointer;
+}
+
+.workflow-empty {
+  padding: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.02);
+  line-height: 1.5;
+}
+
+@media (max-width: 1260px) {
+  .workflow-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
 .list-surface {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
 }
 
-.schedule-surface,
 .launcher-surface,
 .browser-surface,
 .live-tv-surface,
@@ -1139,7 +1398,8 @@
 .slides-surface,
 .trading-graph-surface,
 .image-surface,
-.pdf-surface {
+.pdf-surface,
+.workflow-surface {
   display: grid;
   gap: 10px;
   align-content: start;

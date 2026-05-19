@@ -3635,7 +3635,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
           <button type="button" className="workspace-launch-button" onClick={openNextPanelWindow}>
             Add page · {getWidgetLabel(nextLaunchKind)}
           </button>
-          <div className="workspace-launch-pills" aria-label="Window launch shortcuts">
+          <div className="workspace-launch-pills" role="group" aria-label="Window launch shortcuts">
             {launchableWindowKinds.map((kind) => (
               <button key={kind} type="button" className="workspace-launch-pill" onClick={() => openPanelWindow(kind)}>
                 {getWidgetLabel(kind)}

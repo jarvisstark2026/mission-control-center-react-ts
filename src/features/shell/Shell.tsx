@@ -111,7 +111,7 @@ const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
 function getActiveNavId(panelKind: WorkspaceWidget['kind'] | null) {
   if (!panelKind) return 'workspace';
 
-  if (Object.prototype.hasOwnProperty.call(navPanelById, panelKind) && navPanelById[panelKind] === panelKind) {
+  if (Object.prototype.hasOwnProperty.call(navPanelById, panelKind)) {
     return panelKind;
   }
 
@@ -124,7 +124,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
   const visibleItems = getVisibleShellNavItems(activeRole);
   const activePanelKind = normalizePanelKind(panelKind);
   const activeNavId = getActiveNavId(activePanelKind);
-  const isNavItemActive = (itemId: string) => itemId === activeNavId || navPanelById[itemId] === activePanelKind;
+  const isNavItemActive = (itemId: string) => itemId === activeNavId;
   const canOpenPanel = isShellPanelAccessible(activeRole, activePanelKind);
   const isDetachedWindow = Boolean(activePanelKind && canOpenPanel);
   const activeRoleLabel = getRoleLabel(activeRole);

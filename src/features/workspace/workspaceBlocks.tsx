@@ -9,8 +9,11 @@ export type WorkspaceMetric = {
 export function WorkspaceMetricGrid({ metrics, className }: { metrics: WorkspaceMetric[]; className?: string }) {
   return (
     <div className={["workspace-metric-grid", className].filter(Boolean).join(' ')}>
-      {metrics.map((metric) => (
-        <div key={metric.label} className={["metric-tile", metric.wide ? 'metric-wide' : null].filter(Boolean).join(' ')}>
+      {metrics.map((metric, index) => (
+        <div
+          key={`${metric.label}-${index}`}
+          className={["metric-tile", metric.wide ? 'metric-wide' : null].filter(Boolean).join(' ')}
+        >
           <span>{metric.label}</span>
           <strong>{metric.value}</strong>
         </div>

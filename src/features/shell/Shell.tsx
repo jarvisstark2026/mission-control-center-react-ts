@@ -201,6 +201,10 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
   const navigateToRole = (targetRole: ShellRole) => {
     navigateWithParams((url) => {
       url.searchParams.set('role', targetRole);
+
+      if (activePanelKind && !isShellPanelAccessible(targetRole, activePanelKind)) {
+        url.searchParams.delete('panel');
+      }
     });
   };
 

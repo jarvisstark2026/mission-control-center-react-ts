@@ -88,8 +88,8 @@ export const shellNavItems: ShellNavItem[] = [
   },
   {
     id: 'video',
-    label: 'Video preview',
-    hint: 'media frame',
+    label: 'Media frame',
+    hint: 'preview panel',
     allowedRoles: ['admin', 'home', 'support'],
   },
   {

@@ -2363,7 +2363,13 @@ function BrowserWidget() {
   return (
     <div className="browser-surface">
       <div className="browser-bar">
-        <input value={url} onChange={(event) => setUrl(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && submitUrl()} />
+        <input
+          value={url}
+          onChange={(event) => setUrl(event.target.value)}
+          onKeyDown={(event) => event.key === 'Enter' && submitUrl()}
+          aria-label="Browser URL"
+          placeholder="Enter a website or data URL"
+        />
         <button type="button" onClick={submitUrl}>Go</button>
       </div>
       <div className="browser-bookmarks">

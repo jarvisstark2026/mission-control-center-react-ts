@@ -1118,9 +1118,12 @@ function createCompactLayout(boundsWidth: number, boundsHeight: number): Workspa
   });
 }
 
+type ResizeEdge = 'corner' | 'left' | 'right' | 'bottom';
+
 type InteractionState = {
   id: string;
   mode: 'drag' | 'resize';
+  edge?: ResizeEdge;
   pointerId: number;
   startX: number;
   startY: number;
@@ -2764,7 +2767,7 @@ function WorkspaceWidgetCard({
 }: {
   widget: WorkspaceWidget;
   onStartDrag: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
-  onStartResize: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
+  onStartResize: (event: ReactPointerEvent<HTMLElement>, id: string, edge: ResizeEdge) => void;
   onToggleOpen: (id: string) => void;
   onClose: (id: string) => void;
   showChrome?: boolean;
@@ -2881,12 +2884,32 @@ function WorkspaceWidgetCard({
       </div>
 
       {showChrome ? (
-        <button
-          type="button"
-          className="widget-resize-handle"
-          onPointerDown={(event) => onStartResize(event, widget.id)}
-          aria-label={`Resize ${widget.title}`}
-        />
+        <>
+          <button
+            type="button"
+            className="widget-resize-handle widget-resize-handle-bottom-right"
+            onPointerDown={(event) => onStartResize(event, widget.id, 'corner')}
+            aria-label={`Resize ${widget.title}`}
+          />
+          <button
+            type="button"
+            className="widget-resize-handle widget-resize-handle-left"
+            onPointerDown={(event) => onStartResize(event, widget.id, 'left')}
+            aria-label={`Resize ${widget.title} from left edge`}
+          />
+          <button
+            type="button"
+            className="widget-resize-handle widget-resize-handle-right"
+            onPointerDown={(event) => onStartResize(event, widget.id, 'right')}
+            aria-label={`Resize ${widget.title} from right edge`}
+          />
+          <button
+            type="button"
+            className="widget-resize-handle widget-resize-handle-bottom"
+            onPointerDown={(event) => onStartResize(event, widget.id, 'bottom')}
+            aria-label={`Resize ${widget.title} from bottom edge`}
+          />
+        </>
       ) : null}
     </article>
   );
@@ -3042,7 +3065,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     };
   };
 
-  const startResize = (event: ReactPointerEvent<HTMLElement>, id: string) => {
+  const startResize = (event: ReactPointerEvent<HTMLElement>, id: string, edge: ResizeEdge) => {
     if (event.button !== 0) return;
 
     const widget = widgetsRef.current.find((item) => item.id === id);
@@ -3056,6 +3079,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     interactionRef.current = {
       id,
       mode: 'resize',
+      edge,
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
@@ -3095,14 +3119,45 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
       return;
     }
 
-    const nextWidth = Math.max(currentWidget.minWidth, interaction.startWidth + deltaX);
-    const nextHeight = Math.max(currentWidget.minHeight, interaction.startHeight + deltaY);
+    const isClosed = !currentWidget.open;
+    const edge = interaction.edge ?? 'corner';
+    let nextLeft = interaction.startLeft;
+    let nextTop = interaction.startTop;
+    let nextWidth = interaction.startWidth;
+    let nextHeight = interaction.startHeight;
+
+    if (edge === 'left') {
+      nextLeft = interaction.startLeft + deltaX;
+      nextWidth = interaction.startWidth - deltaX;
+    } else if (edge === 'right') {
+      nextWidth = interaction.startWidth + deltaX;
+    } else if (edge === 'bottom') {
+      nextHeight = interaction.startHeight + deltaY;
+    } else {
+      nextWidth = interaction.startWidth + deltaX;
+      nextHeight = interaction.startHeight + deltaY;
+    }
+
+    if (isClosed) {
+      nextHeight = interaction.startHeight;
+      if (edge !== 'left') nextLeft = interaction.startLeft;
+      if (edge === 'left') nextTop = interaction.startTop;
+    }
+
+    nextWidth = Math.max(currentWidget.minWidth, nextWidth);
+    nextHeight = Math.max(currentWidget.minHeight, nextHeight);
+
+    if (edge === 'left' && nextWidth === currentWidget.minWidth) {
+      nextLeft = interaction.startLeft + (interaction.startWidth - currentWidget.minWidth);
+    }
 
     setWidgets((current) =>
       current.map((widget) =>
         widget.id === interaction.id
           ? {
               ...widget,
+              x: edge === 'left' ? nextLeft : widget.x,
+              y: widget.y,
               width: nextWidth,
               height: nextHeight,
             }

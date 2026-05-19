@@ -268,6 +268,48 @@
   height: 100%;
   padding: 46px 14px 14px;
   overflow: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.widget-body::-webkit-scrollbar,
+.preview-media-text::-webkit-scrollbar,
+.file-explorer-list::-webkit-scrollbar,
+.workflow-saved-list::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.widget-body::-webkit-scrollbar-track,
+.preview-media-text::-webkit-scrollbar-track,
+.file-explorer-list::-webkit-scrollbar-track,
+.workflow-saved-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.widget-body::-webkit-scrollbar-thumb,
+.preview-media-text::-webkit-scrollbar-thumb,
+.file-explorer-list::-webkit-scrollbar-thumb,
+.workflow-saved-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background-clip: padding-box;
+}
+
+.widget-body:hover::-webkit-scrollbar-thumb,
+.preview-media-text:hover::-webkit-scrollbar-thumb,
+.file-explorer-list:hover::-webkit-scrollbar-thumb,
+.workflow-saved-list:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.widget-body::-webkit-scrollbar-thumb:active,
+.preview-media-text::-webkit-scrollbar-thumb:active,
+.file-explorer-list::-webkit-scrollbar-thumb:active,
+.workflow-saved-list::-webkit-scrollbar-thumb:active {
+  background: rgba(255, 255, 255, 0.42);
 }
 
 .workspace-widget.is-closed .widget-body {
@@ -2709,39 +2751,107 @@
 
 .widget-resize-handle {
   position: absolute;
-  right: 6px;
-  bottom: 6px;
   z-index: 4;
   width: 12px;
   height: 12px;
   border: 0;
   background: transparent;
-  cursor: nwse-resize;
   touch-action: none;
-  opacity: 0.68;
+  opacity: 0.55;
+  transition: opacity 120ms ease;
+}
+
+.widget-resize-handle:hover,
+.widget-resize-handle:focus-visible,
+.widget-resize-handle:active {
+  opacity: 0.88;
+}
+
+.widget-resize-handle-bottom-right {
+  right: 6px;
+  bottom: 6px;
+  cursor: nwse-resize;
+}
+
+.widget-resize-handle-left,
+.widget-resize-handle-right {
+  top: 28px;
+  bottom: 12px;
+  width: 8px;
+  height: auto;
+  cursor: ew-resize;
+}
+
+.widget-resize-handle-left {
+  left: 2px;
+}
+
+.widget-resize-handle-right {
+  right: 2px;
+}
+
+.widget-resize-handle-bottom {
+  left: 28px;
+  right: 28px;
+  bottom: 2px;
+  width: auto;
+  height: 8px;
+  cursor: ns-resize;
 }
 
 .widget-resize-handle::before,
 .widget-resize-handle::after {
   content: '';
   position: absolute;
-  background: rgba(255, 255, 255, 0.56);
+  background: rgba(255, 255, 255, 0.48);
 }
 
-.widget-resize-handle::before {
+.widget-resize-handle-bottom-right::before {
   right: 0;
   bottom: 0;
   width: 8px;
   height: 1px;
-  box-shadow: 0 -3px 0 rgba(255, 255, 255, 0.42), 0 -6px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 -3px 0 rgba(255, 255, 255, 0.34), 0 -6px 0 rgba(255, 255, 255, 0.16);
 }
 
-.widget-resize-handle::after {
+.widget-resize-handle-bottom-right::after {
   right: 0;
   bottom: 0;
   width: 1px;
   height: 8px;
-  box-shadow: -3px 0 0 rgba(255, 255, 255, 0.42), -6px 0 0 rgba(255, 255, 255, 0.2);
+  box-shadow: -3px 0 0 rgba(255, 255, 255, 0.34), -6px 0 0 rgba(255, 255, 255, 0.16);
+}
+
+.widget-resize-handle-left::before,
+.widget-resize-handle-right::before,
+.widget-resize-handle-bottom::before {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.widget-resize-handle-left::before,
+.widget-resize-handle-right::before {
+  width: 2px;
+  height: 18px;
+}
+
+.widget-resize-handle-left::after,
+.widget-resize-handle-right::after {
+  width: 10px;
+  height: 1px;
+  box-shadow: 0 -4px 0 rgba(255, 255, 255, 0.24), 0 4px 0 rgba(255, 255, 255, 0.24);
+}
+
+.widget-resize-handle-bottom::before {
+  width: 18px;
+  height: 2px;
+}
+
+.widget-resize-handle-bottom::after {
+  width: 1px;
+  height: 10px;
+  box-shadow: -4px 0 0 rgba(255, 255, 255, 0.24), 4px 0 0 rgba(255, 255, 255, 0.24);
 }
 
 @keyframes spin {

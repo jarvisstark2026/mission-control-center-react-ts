@@ -1250,17 +1250,28 @@ function DocsWidget() {
 
 function SlidesWidget() {
   const slides = ['Vision', 'Stack', 'Workflows', 'Launch'];
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+  const activeSlide = slides[activeSlideIndex] ?? slides[0];
   return (
     <div className="slides-surface">
       <div className="slides-stage">
         <div className="slides-canvas">
           <strong>Presentation</strong>
-          <p>Deck / speaker notes / command story</p>
+          <p>{activeSlide}</p>
+          <small>
+            Slide {activeSlideIndex + 1} of {slides.length} · deck / speaker notes / command story
+          </small>
         </div>
       </div>
       <div className="slides-strip">
         {slides.map((slide, index) => (
-          <button key={slide} type="button" className="slides-thumb">
+          <button
+            key={slide}
+            type="button"
+            className={`slides-thumb ${index === activeSlideIndex ? 'is-active' : ''}`}
+            aria-pressed={index === activeSlideIndex}
+            onClick={() => setActiveSlideIndex(index)}
+          >
             <span>{index + 1}</span>
             <small>{slide}</small>
           </button>
@@ -2712,11 +2723,17 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   };
 
   const closeWidget = (id: string) => {
-    setWidgets((current) => {
-      const next = current.filter((widget) => widget.id !== id || widget.pinned);
-      widgetsRef.current = next;
-      return next;
-    });
+    setWidgets((current) =>
+      current.map((widget) =>
+        widget.id === id
+          ? {
+              ...widget,
+              open: false,
+              zIndex: widget.zIndex + 1,
+            }
+          : widget,
+      ),
+    );
   };
 
   const focusWidget = (id: string, open = true) => {

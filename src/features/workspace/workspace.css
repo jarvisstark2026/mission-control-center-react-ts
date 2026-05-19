@@ -58,6 +58,63 @@
   pointer-events: none;
 }
 
+.workspace-launcher {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  pointer-events: auto;
+}
+
+.workspace-launch-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: min(100%, 1120px);
+  pointer-events: auto;
+}
+
+.workspace-launch-button,
+.workspace-launch-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+.workspace-launch-button {
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.64rem;
+}
+
+.workspace-launch-pill {
+  min-height: 28px;
+  padding: 6px 9px;
+  font-size: 0.61rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.workspace-launch-button:hover,
+.workspace-launch-button:focus-visible,
+.workspace-launch-pill:hover,
+.workspace-launch-pill:focus-visible {
+  border-color: rgba(255, 255, 255, 0.24);
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
 .workspace-brand,
 .workspace-chip {
   display: inline-flex;
@@ -1554,38 +1611,39 @@
 
 .widget-resize-handle {
   position: absolute;
-  right: 8px;
-  bottom: 8px;
+  right: 6px;
+  bottom: 6px;
   z-index: 4;
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   border: 0;
   background: transparent;
   cursor: nwse-resize;
   touch-action: none;
+  opacity: 0.68;
 }
 
 .widget-resize-handle::before,
 .widget-resize-handle::after {
   content: '';
   position: absolute;
-  background: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.56);
 }
 
 .widget-resize-handle::before {
   right: 0;
   bottom: 0;
-  width: 12px;
+  width: 8px;
   height: 1px;
-  box-shadow: 0 -4px 0 rgba(255, 255, 255, 0.45), 0 -8px 0 rgba(255, 255, 255, 0.28);
+  box-shadow: 0 -3px 0 rgba(255, 255, 255, 0.42), 0 -6px 0 rgba(255, 255, 255, 0.2);
 }
 
 .widget-resize-handle::after {
   right: 0;
   bottom: 0;
   width: 1px;
-  height: 12px;
-  box-shadow: -4px 0 0 rgba(255, 255, 255, 0.45), -8px 0 0 rgba(255, 255, 255, 0.28);
+  height: 8px;
+  box-shadow: -3px 0 0 rgba(255, 255, 255, 0.42), -6px 0 0 rgba(255, 255, 255, 0.2);
 }
 
 @keyframes spin {
@@ -1753,5 +1811,37 @@
   .widget-resize-handle {
     right: 6px;
     bottom: 6px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .workspace-shell {
+    background-size: 88px 88px;
+  }
+
+  .workspace-head {
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    gap: 12px;
+  }
+
+  .workspace-brand,
+  .workspace-chip {
+    min-height: 36px;
+    padding: 9px 13px;
+  }
+
+  .workspace-launcher {
+    gap: 10px;
+  }
+
+  .workspace-launch-pills {
+    max-width: min(100%, 1320px);
+  }
+
+  .workspace-launch-button,
+  .workspace-launch-pill {
+    min-height: 32px;
   }
 }

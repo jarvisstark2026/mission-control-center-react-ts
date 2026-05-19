@@ -1779,9 +1779,11 @@
     left: 10px;
     right: 10px;
     top: 10px;
-    flex-wrap: wrap;
+    width: calc(100vw - 20px);
     max-width: calc(100vw - 20px);
-    gap: 6px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
   }
 
   .workspace-brand,
@@ -1789,6 +1791,34 @@
     min-height: 30px;
     padding: 7px 10px;
     font-size: 0.58rem;
+  }
+
+  .workspace-launcher {
+    width: 100%;
+    margin-left: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .workspace-launch-button {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .workspace-launch-pills {
+    width: 100%;
+    max-width: none;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+  }
+
+  .workspace-launch-pill {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   .widget-labels {
@@ -1813,6 +1843,13 @@
     bottom: 6px;
   }
 }
+
+@media (max-width: 1280px) {
+  .workspace-launch-pills {
+    max-width: min(100%, 880px);
+  }
+}
+
 
 @media (min-width: 1800px) {
   .workspace-head {

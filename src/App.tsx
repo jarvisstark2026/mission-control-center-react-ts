@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { Shell } from './features/shell/Shell';
 import { isShellRole, type ShellRole } from './features/shell/roles';
+import { isWorkspaceWidgetKind } from './features/workspace/workspaceTypes';
 import './styles/app.css';
 
 type ShellLocationState = {
@@ -19,7 +20,7 @@ function readShellLocation(): ShellLocationState {
   const roleParam = searchParams.get('role');
 
   return {
-    panelKind,
+    panelKind: panelKind && isWorkspaceWidgetKind(panelKind) ? panelKind : null,
     role: roleParam && isShellRole(roleParam) ? roleParam : undefined,
   };
 }

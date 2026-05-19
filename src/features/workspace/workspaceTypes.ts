@@ -42,3 +42,35 @@ export type WorkspaceWidget = {
   minHeight: number;
   pinned?: boolean;
 };
+
+export const workspaceWidgetKinds: WidgetKind[] = [
+  'overview',
+  'graph',
+  'audio',
+  'map',
+  'diagram',
+  'project',
+  'news',
+  'schedule',
+  'launcher',
+  'browser',
+  'watch-video',
+  'file-explorer',
+  'native-app',
+  'window-manager',
+  'sheet',
+  'docs',
+  'slides',
+  'trading-graph',
+  'image',
+  'pdf',
+  'video',
+  '3d',
+  '3d-studio',
+  'flow',
+  'list',
+];
+
+export function isWorkspaceWidgetKind(value: string): value is WidgetKind {
+  return workspaceWidgetKinds.includes(value as WidgetKind);
+}

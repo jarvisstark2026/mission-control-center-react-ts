@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { Workspace } from '../workspace/Workspace';
-import type { WorkspaceWidget } from '../workspace/workspaceTypes';
+import { isWorkspaceWidgetKind, type WorkspaceWidget } from '../workspace/workspaceTypes';
 import { getVisibleShellNavItems, isShellPanelAccessible } from './nav';
 import { shellScopes, type ShellRole } from './roles';
 import './shell.css';
@@ -73,35 +73,7 @@ function getPanelLabel(panelKind: string | null | undefined) {
 }
 
 function normalizePanelKind(panelKind: string | null | undefined): WorkspaceWidget['kind'] | null {
-  switch (panelKind) {
-    case 'overview':
-    case 'graph':
-    case 'audio':
-    case 'map':
-    case 'diagram':
-    case 'project':
-    case 'news':
-    case 'schedule':
-    case 'launcher':
-    case 'browser':
-    case 'watch-video':
-    case 'pdf':
-    case 'file-explorer':
-    case 'native-app':
-    case 'window-manager':
-    case 'sheet':
-    case 'docs':
-    case 'slides':
-    case 'trading-graph':
-    case 'video':
-    case '3d':
-    case '3d-studio':
-    case 'flow':
-    case 'list':
-      return panelKind;
-    default:
-      return null;
-  }
+  return panelKind && isWorkspaceWidgetKind(panelKind) ? panelKind : null;
 }
 
 const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {

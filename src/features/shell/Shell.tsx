@@ -124,10 +124,18 @@ const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
   '3d-studio': '3d-studio',
 };
 
+function getActiveNavId(panelKind: WorkspaceWidget['kind'] | null) {
+  if (!panelKind) return 'workspace';
+
+  const entry = Object.entries(navPanelById).find(([, mappedPanelKind]) => mappedPanelKind === panelKind);
+  return entry?.[0] ?? 'workspace';
+}
+
 export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
   const activeRole = role ?? defaultRole;
   const visibleItems = getVisibleShellNavItems(activeRole);
   const activePanelKind = normalizePanelKind(panelKind);
+  const activeNavId = getActiveNavId(activePanelKind);
   const [isRailOpen, setIsRailOpen] = useState(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true;
 
@@ -287,7 +295,8 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
               <li key={item.id}>
                 <button
                   type="button"
-                  className="shell-nav-button"
+                  className={`shell-nav-button ${item.id === activeNavId ? 'is-active' : ''}`}
+                  aria-current={item.id === activeNavId ? 'page' : undefined}
                   onClick={() => navigateToPanel(navPanelById[item.id] ?? null)}
                 >
                   <span>{item.label}</span>

@@ -57,6 +57,24 @@ function getRoleLabel(role: ShellRole) {
   return shellScopes.find((scope) => scope.id === role)?.label ?? 'Support';
 }
 
+function getRoleDescription(role: ShellRole) {
+  return shellScopes.find((scope) => scope.id === role)?.description ?? 'Support';
+}
+
+function getShellCopy(role: ShellRole, panelKind: WorkspaceWidget['kind'] | null, detached: boolean) {
+  const roleDescription = getRoleDescription(role);
+
+  if (detached && panelKind) {
+    return `Detached page mode. ${getPanelLabel(panelKind)} is operating independently while I keep the paperwork in order.`;
+  }
+
+  if (panelKind) {
+    return `${roleDescription} Current surface: ${getPanelLabel(panelKind)}.`;
+  }
+
+  return `${roleDescription} Open a surface when you are ready.`;
+}
+
 const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
   workspace: null,
   telemetry: 'graph',
@@ -190,9 +208,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
                 <StatusChip tone="cool">{activeRoleLabel}</StatusChip>
                 <StatusChip tone="ice">{activePanelLabel}</StatusChip>
               </div>
-              <p className="shell-copy">
-                Detached page mode. The OS window can go wherever the desktop gods permit; the app merely keeps its hands clean.
-              </p>
+              <p className="shell-copy">{getShellCopy(activeRole, activePanelKind, true)}</p>
             </div>
 
             <div className="shell-window-actions">
@@ -249,9 +265,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
             <StatusChip tone="cool">{activeRoleLabel}</StatusChip>
             <StatusChip tone="ice">{activePanelLabel}</StatusChip>
           </div>
-          <p className="shell-copy">
-            {shellScopes.find((scope) => scope.id === activeRole)?.description ?? 'Support'}
-          </p>
+          <p className="shell-copy">{getShellCopy(activeRole, activePanelKind, false)}</p>
         </div>
 
         <div className="shell-scope-group">

@@ -686,7 +686,9 @@
 .sheet-surface,
 .docs-surface,
 .slides-surface,
-.trading-graph-surface {
+.trading-graph-surface,
+.image-surface,
+.pdf-surface {
   display: grid;
   gap: 10px;
   align-content: start;
@@ -1215,6 +1217,101 @@
   color: rgba(255,255,255,0.62);
   font-size: 0.54rem;
 }
+
+.image-surface {
+  display: grid;
+  gap: 10px;
+}
+
+.image-frame {
+  position: relative;
+  min-height: 130px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02));
+  overflow: hidden;
+}
+
+.image-frame::before,
+.image-frame::after {
+  content: '';
+  position: absolute;
+  inset: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.image-frame::after {
+  inset: 28px 20px 20px;
+  border-style: dashed;
+  opacity: 0.45;
+}
+
+.image-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.62rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.image-footer,
+.pdf-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.image-footer small,
+.pdf-toolbar small {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.pdf-surface {
+  display: grid;
+  gap: 10px;
+}
+
+.pdf-page {
+  position: relative;
+  min-height: 132px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+  overflow: hidden;
+}
+
+.pdf-ribbon {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 42%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.pdf-lines {
+  position: absolute;
+  inset: 36px 14px 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.pdf-lines span {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.pdf-lines span:nth-child(1) { width: 100%; }
+.pdf-lines span:nth-child(2) { width: 88%; }
+.pdf-lines span:nth-child(3) { width: 95%; }
+.pdf-lines span:nth-child(4) { width: 74%; }
+.pdf-lines span:nth-child(5) { width: 52%; }
 
 .widget-resize-handle {
   position: absolute;

@@ -98,6 +98,18 @@ export const shellNavItems: ShellNavItem[] = [
     hint: 'market curves and price action',
     allowedRoles: ['admin', 'support'],
   },
+  {
+    id: 'image',
+    label: 'Image',
+    hint: 'preview and annotate',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
+    id: 'pdf',
+    label: 'PDF',
+    hint: 'read and scan documents',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
 ];
 
 export function getVisibleShellNavItems(role: ShellRole) {

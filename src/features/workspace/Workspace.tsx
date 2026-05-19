@@ -280,6 +280,38 @@ const widgetPresets: WorkspaceWidget[] = [
     minHeight: 200,
   },
   {
+    id: 'image',
+    kind: 'image',
+    title: 'Image',
+    subtitle: 'preview / annotate',
+    x: 1260,
+    y: 778,
+    width: 286,
+    height: 224,
+    zIndex: 2,
+    surfaceAlpha: 0.08,
+    lineAlpha: 0.14,
+    open: true,
+    minWidth: 240,
+    minHeight: 190,
+  },
+  {
+    id: 'pdf',
+    kind: 'pdf',
+    title: 'PDF',
+    subtitle: 'read / scan / print',
+    x: 1580,
+    y: 782,
+    width: 300,
+    height: 224,
+    zIndex: 2,
+    surfaceAlpha: 0.08,
+    lineAlpha: 0.14,
+    open: true,
+    minWidth: 260,
+    minHeight: 200,
+  },
+  {
     id: 'audio',
     kind: 'audio',
     title: 'Audio surface',
@@ -332,6 +364,8 @@ const launchableWindowKinds: WorkspaceWidget['kind'][] = [
   'docs',
   'slides',
   'trading-graph',
+  'image',
+  'pdf',
   'video',
   '3d',
   'flow',
@@ -357,6 +391,8 @@ const widgetBlueprints: Record<WorkspaceWidget['kind'], { title: string; subtitl
   docs: { title: 'Docs', subtitle: 'writing / outline', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
   slides: { title: 'Presentation', subtitle: 'deck / speaker notes', surfaceAlpha: 0.082, lineAlpha: 0.15, minWidth: 280, minHeight: 200 },
   'trading-graph': { title: 'Trading graph', subtitle: 'market curves', surfaceAlpha: 0.09, lineAlpha: 0.17, minWidth: 300, minHeight: 180 },
+  image: { title: 'Image', subtitle: 'preview / annotate', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 240, minHeight: 190 },
+  pdf: { title: 'PDF', subtitle: 'read / scan / print', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 260, minHeight: 200 },
   video: { title: 'Video', subtitle: 'media frame', surfaceAlpha: 0.082, lineAlpha: 0.14, minWidth: 260, minHeight: 170 },
   '3d': { title: '3D preview', subtitle: 'assets / projects', surfaceAlpha: 0.1, lineAlpha: 0.16, minWidth: 300, minHeight: 190 },
   flow: { title: 'Flow chart', subtitle: 'system logic', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 220, minHeight: 150 },
@@ -576,6 +612,41 @@ function SlidesWidget() {
   );
 }
 
+function ImageWidget() {
+  return (
+    <div className="image-surface">
+      <div className="image-frame">
+        <div className="image-placeholder">image preview</div>
+      </div>
+      <div className="image-footer">
+        <span>image</span>
+        <small>preview / annotate / crop</small>
+      </div>
+    </div>
+  );
+}
+
+function PdfWidget() {
+  return (
+    <div className="pdf-surface">
+      <div className="pdf-toolbar">
+        <span>pdf</span>
+        <small>read / search / export</small>
+      </div>
+      <div className="pdf-page">
+        <div className="pdf-ribbon" />
+        <div className="pdf-lines">
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AudioWidget() {
   return (
     <div className="audio-surface">
@@ -740,6 +811,8 @@ function LauncherWidget() {
     { label: 'Docs', kind: 'docs' as const },
     { label: 'Presentation', kind: 'slides' as const },
     { label: 'Trading graph', kind: 'trading-graph' as const },
+    { label: 'Image', kind: 'image' as const },
+    { label: 'PDF', kind: 'pdf' as const },
     { label: 'Video', kind: 'video' as const },
     { label: '3D preview', kind: '3d' as const },
     { label: 'Flow chart', kind: 'flow' as const },
@@ -966,6 +1039,8 @@ function WorkspaceWidgetCard({
         {widget.kind === 'sheet' && <SpreadsheetWidget />}
         {widget.kind === 'docs' && <DocsWidget />}
         {widget.kind === 'slides' && <SlidesWidget />}
+        {widget.kind === 'image' && <ImageWidget />}
+        {widget.kind === 'pdf' && <PdfWidget />}
         {widget.kind === 'audio' && <AudioWidget />}
         {widget.kind === 'map' && <MapWidget />}
         {widget.kind === 'diagram' && <DiagramWidget />}

@@ -17,6 +17,8 @@ export type WidgetKind =
   | 'docs'
   | 'slides'
   | 'trading-graph'
+  | 'image'
+  | 'pdf'
   | 'video'
   | '3d'
   | 'flow'

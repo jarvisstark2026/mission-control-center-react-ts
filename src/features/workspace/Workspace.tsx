@@ -2711,14 +2711,8 @@ function FileExplorerWidget({
   return (
     <div className="file-explorer-surface">
       <div className="file-explorer-head">
-        <div>
-          <span>Local file browser</span>
-          <strong>choose files or folders from this PC</strong>
-        </div>
-        <div className="file-explorer-head-meta">
-          <span>{files.length} selected</span>
-          <small>{folderTreeEntries.length ? `folder: ${visibleFolderPath}` : activeFile ? `previewing ${activeFile.path}` : 'general use folder is ready; preview a file to inspect it'}</small>
-        </div>
+        <span>Local file browser</span>
+        <strong>Choose files or folders from this PC.</strong>
       </div>
 
       <div className="file-explorer-toolbar">
@@ -2833,7 +2827,7 @@ function FileExplorerWidget({
 
       <div className="file-explorer-footer">
         <span>{loadedEntryCount ? `${loadedEntryCount} ${loadedEntryCount === 1 ? 'entry' : 'entries'}` : 'No entries loaded'}</span>
-        <small>single-click selects · double-click opens · the list scrolls without eating the chrome</small>
+        <small>Single-click selects · double-click opens.</small>
       </div>
     </div>
   );
@@ -2854,7 +2848,7 @@ function NativeAppWidget() {
       <div className="launcher-desktop-head">
         <span>desktop bridge</span>
         <strong>open installed app / external window</strong>
-        <p>The bridge remains the polite fiction standing in for real OS integration. Its job is to look ready, not to improvise ambition.</p>
+        <p>Bridge installed apps and external windows without pretending the browser can do an operating system’s job on its own.</p>
       </div>
       <div className="launcher-desktop-controls">
         <label className="launcher-desktop-input">
@@ -2923,7 +2917,7 @@ function WindowManagerWidget({
           <p className="window-manager-empty">No windows are open. Remarkably, the machine is being tidy on its own.</p>
         )}
       </div>
-      <p className="window-manager-note">Open surfaces stay listed here. Pinned windows remain focused, not closed. Less theatre, fewer stray windows, and marginally more dignity for everyone involved.</p>
+      <p className="window-manager-note">Open surfaces stay listed here. Pinned windows cannot be closed.</p>
     </div>
   );
 }

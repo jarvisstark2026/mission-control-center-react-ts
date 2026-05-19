@@ -1933,16 +1933,12 @@
 }
 
 .file-explorer-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  display: grid;
+  gap: 2px;
 }
 
 .file-explorer-head span,
-.file-explorer-head strong,
-.file-explorer-head-meta span,
-.file-explorer-head-meta small {
+.file-explorer-head strong {
   display: block;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -1951,10 +1947,6 @@
 .file-explorer-head strong {
   margin-top: 4px;
   font-size: 0.76rem;
-}
-
-.file-explorer-head-meta {
-  text-align: right;
 }
 
 .file-explorer-toolbar {

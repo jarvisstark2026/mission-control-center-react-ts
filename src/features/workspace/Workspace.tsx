@@ -206,6 +206,8 @@ function clampWidgetSize(value: number, fallback: number, min: number, max: numb
   return Math.min(max, Math.max(min, value));
 }
 
+const generalUseFolderLabel = 'General use';
+
 async function readFolderEntries(
   rootHandle: FileSystemDirectoryHandleLike | null | undefined,
   rootPath = '',
@@ -2541,6 +2543,7 @@ function FileExplorerWidget({
   selectedFileId,
   folderEntries,
   folderPath,
+  canBrowseFolder,
   onBrowseFiles,
   onBrowseFolder,
   onOpenPreview,
@@ -2552,6 +2555,7 @@ function FileExplorerWidget({
   selectedFileId: string | null;
   folderEntries: LocalFolderEntry[];
   folderPath: string | null;
+  canBrowseFolder: boolean;
   onBrowseFiles: (files: FileList | File[]) => Promise<LocalFileRecord[]>;
   onBrowseFolder: () => void;
   onOpenPreview: (file: LocalFileRecord) => void;
@@ -2560,6 +2564,28 @@ function FileExplorerWidget({
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const activeFile = files.find((record) => record.id === activeFileId) ?? null;
+  const hasRealFolderEntries = folderEntries.length > 0;
+  const folderTreeEntries = hasRealFolderEntries
+    ? folderEntries
+    : files.length
+      ? files.map((record) => ({
+          id: record.id,
+          name: record.file.name,
+          path: record.path,
+          kind: 'file' as const,
+          depth: 0,
+          file: record.file,
+        }))
+      : [
+          {
+            id: 'general-use-folder',
+            name: generalUseFolderLabel,
+            path: generalUseFolderLabel,
+            kind: 'directory' as const,
+            depth: 0,
+          },
+        ];
+  const visibleFolderPath = folderPath ?? generalUseFolderLabel;
 
   const handleBrowseFilesClick = () => {
     fileInputRef.current?.click();
@@ -2586,7 +2612,7 @@ function FileExplorerWidget({
         </div>
         <div className="file-explorer-head-meta">
           <span>{files.length} selected</span>
-          <small>{folderPath ? `folder: ${folderPath}` : activeFile ? `previewing ${activeFile.path}` : 'selection stays local; preview a file to inspect it'}</small>
+          <small>{folderTreeEntries.length ? `folder: ${visibleFolderPath}` : activeFile ? `previewing ${activeFile.path}` : 'general use folder is ready; preview a file to inspect it'}</small>
         </div>
       </div>
 
@@ -2594,24 +2620,30 @@ function FileExplorerWidget({
         <button type="button" className="file-explorer-button" onClick={handleBrowseFilesClick}>
           Browse items
         </button>
-        <button type="button" className="file-explorer-button is-muted" onClick={handleBrowseFolderClick}>
+        <button
+          type="button"
+          className="file-explorer-button is-muted"
+          onClick={handleBrowseFolderClick}
+          disabled={!canBrowseFolder}
+          title={canBrowseFolder ? 'Open a general-use folder picker' : 'Folder picker is not available in this browser'}
+        >
           Open folder
         </button>
         <button type="button" className="file-explorer-button is-muted" onClick={onClearFiles} disabled={!files.length && !folderEntries.length}>
-          Clear selection
+          Clear loaded files
         </button>
         <input ref={fileInputRef} className="file-explorer-input" type="file" multiple onChange={handleFileChange} />
       </div>
 
       <div className="file-explorer-body">
-        {folderEntries.length ? (
+        {folderTreeEntries.length ? (
           <section className="file-explorer-folder-tree" aria-label="Folder contents">
             <div className="file-explorer-folder-head">
-              <span>Folder tree</span>
-              <small>{folderEntries.length} items · depth {Math.max(...folderEntries.map((entry) => entry.depth), 0)}</small>
+              <span>{hasRealFolderEntries ? 'Folder tree' : 'General use folder'}</span>
+              <small>{folderTreeEntries.length} items · depth {Math.max(...folderTreeEntries.map((entry) => entry.depth), 0)}</small>
             </div>
             <ul className="file-explorer-list file-explorer-list-tree">
-              {folderEntries.map((entry) => (
+              {folderTreeEntries.map((entry) => (
                 <li key={entry.id} className={`file-explorer-item file-explorer-item-${entry.kind}`} style={{ paddingLeft: `${entry.depth * 12}px` }}>
                   <button
                     type="button"
@@ -2646,7 +2678,7 @@ function FileExplorerWidget({
           </section>
         ) : null}
 
-        {files.length ? (
+        {hasRealFolderEntries && files.length ? (
           <ul className="file-explorer-list" aria-label="Selected local files">
             {files.map((record) => {
               const isSelected = record.id === selectedFileId;
@@ -2680,8 +2712,8 @@ function FileExplorerWidget({
           </ul>
         ) : (
           <div className="file-explorer-empty">
-            <strong>No local files loaded yet.</strong>
-            <p>Select files or a folder from your PC, then single-click an item to select it and double-click to open it in the preview panel. The browser cannot rummage through the drive uninvited.</p>
+            <strong>General use folder ready.</strong>
+            <p>Select files or open a folder from your PC, then single-click an item to select it and double-click to open it in the preview panel. The browser cannot rummage through the drive uninvited, which is arguably for the best.</p>
           </div>
         )}
       </div>
@@ -2775,31 +2807,7 @@ function WindowManagerWidget({
   );
 }
 
-function WorkspaceWidgetCard({
-  widget,
-  onStartDrag,
-  onStartResize,
-  onToggleOpen,
-  onClose,
-  showChrome = true,
-  localFiles,
-  activeLocalFile,
-  activeLocalFileId,
-  selectedLocalFileId,
-  folderEntries,
-  folderPath,
-  activeMarketGraph,
-  onBrowseFiles,
-  onBrowseFolder,
-  onOpenPreview,
-  onSelectFile,
-  onClearFiles,
-  onLaunchWorkspaceWidget,
-  onSelectMarketGraph,
-  workspaceWidgets,
-  onFocusWidget,
-  onCloseWidget,
-}: {
+type WorkspaceWidgetCardProps = {
   widget: WorkspaceWidget;
   onStartDrag: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
   onStartResize: (event: ReactPointerEvent<HTMLElement>, id: string, edge: ResizeEdge) => void;
@@ -2812,6 +2820,7 @@ function WorkspaceWidgetCard({
   selectedLocalFileId: string | null;
   folderEntries: LocalFolderEntry[];
   folderPath: string | null;
+  canBrowseFolder: boolean;
   activeMarketGraph: MarketGraph;
   onBrowseFiles: (files: FileList | File[]) => Promise<LocalFileRecord[]>;
   onBrowseFolder: () => void;
@@ -2823,7 +2832,35 @@ function WorkspaceWidgetCard({
   workspaceWidgets: WorkspaceWidget[];
   onFocusWidget: (id: string) => void;
   onCloseWidget: (id: string) => void;
-}) {
+};
+
+function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
+  const {
+    widget,
+    onStartDrag,
+    onStartResize,
+    onToggleOpen,
+    onClose,
+    showChrome = true,
+    localFiles,
+    activeLocalFile,
+    activeLocalFileId,
+    selectedLocalFileId,
+    folderEntries,
+    folderPath,
+    canBrowseFolder,
+    activeMarketGraph,
+    onBrowseFiles,
+    onBrowseFolder,
+    onOpenPreview,
+    onSelectFile,
+    onClearFiles,
+    onLaunchWorkspaceWidget,
+    onSelectMarketGraph,
+    workspaceWidgets,
+    onFocusWidget,
+    onCloseWidget,
+  } = props;
   const previewFile = widget.previewFileId ? localFiles.find((record) => record.id === widget.previewFileId) ?? null : null;
 
   return (
@@ -2904,6 +2941,7 @@ function WorkspaceWidgetCard({
             selectedFileId={selectedLocalFileId}
             folderEntries={folderEntries}
             folderPath={folderPath}
+            canBrowseFolder={canBrowseFolder}
             onBrowseFiles={onBrowseFiles}
             onBrowseFolder={onBrowseFolder}
             onOpenPreview={onOpenPreview}
@@ -2928,7 +2966,7 @@ function WorkspaceWidgetCard({
             onPointerDown={(event) => onStartResize(event, widget.id, 'corner')}
             aria-label={`Resize ${widget.title}`}
           >
-            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-corner">⋰</span>
+            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-corner">⤡</span>
           </button>
           <button
             type="button"
@@ -2952,7 +2990,7 @@ function WorkspaceWidgetCard({
             onPointerDown={(event) => onStartResize(event, widget.id, 'bottom')}
             aria-label={`Resize ${widget.title} from bottom edge`}
           >
-            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-horizontal">...</span>
+            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-horizontal">⋯</span>
           </button>
         </>
       ) : null}
@@ -2977,9 +3015,10 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   const [selectedLocalFileId, setSelectedLocalFileId] = useState<string | null>(null);
   const [activeLocalFileId, setActiveLocalFileId] = useState<string | null>(null);
   const [folderEntries, setFolderEntries] = useState<LocalFolderEntry[]>([]);
-  const [folderPath, setFolderPath] = useState<string | null>(null);
+  const [folderPath, setFolderPath] = useState<string | null>(generalUseFolderLabel);
   const persistedLocalFilesLoadedRef = useRef(false);
   const [activeMarketGraphId, setActiveMarketGraphId] = useState(defaultMarketGraph.id);
+  const canBrowseFolder = typeof window !== 'undefined' && typeof (window as Window & { showDirectoryPicker?: ShowDirectoryPickerFn }).showDirectoryPicker === 'function';
 
   useEffect(() => {
     widgetsRef.current = widgets;
@@ -3300,8 +3339,8 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     if (!picker) return;
 
     try {
-      const handle = await picker({ mode: 'read' });
-      setFolderPath(handle.name ?? 'Selected folder');
+      const handle = await picker({ mode: 'read', startIn: 'documents' });
+      setFolderPath(handle.name ?? generalUseFolderLabel);
       const entries = await readFolderEntries(handle);
       setFolderEntries(entries);
       const files = entries.flatMap((entry) => (entry.file ? [entry.file] : []));
@@ -3407,7 +3446,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     setSelectedLocalFileId(null);
     setActiveLocalFileId(null);
     setFolderEntries([]);
-    setFolderPath(null);
+    setFolderPath(generalUseFolderLabel);
     setWidgets((current) => {
       const next = current.map((widget) => (widget.kind === '3d' ? { ...widget, previewFileId: null } : widget));
       widgetsRef.current = next;
@@ -3466,6 +3505,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             selectedLocalFileId={selectedLocalFileId}
             folderEntries={folderEntries}
             folderPath={folderPath}
+            canBrowseFolder={canBrowseFolder}
             activeMarketGraph={activeMarketGraph}
             onBrowseFiles={importLocalFiles}
             onBrowseFolder={browseFolder}
@@ -3529,6 +3569,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             selectedLocalFileId={selectedLocalFileId}
             folderEntries={folderEntries}
             folderPath={folderPath}
+            canBrowseFolder={canBrowseFolder}
             activeMarketGraph={activeMarketGraph}
             onBrowseFiles={importLocalFiles}
             onBrowseFolder={browseFolder}

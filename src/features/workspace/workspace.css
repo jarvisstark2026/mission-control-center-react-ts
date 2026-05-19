@@ -257,33 +257,37 @@
 
 .widget-resize-handle:hover,
 .widget-resize-handle:focus-visible {
-  opacity: 0.72;
-  color: rgba(255, 255, 255, 0.42);
+  opacity: 1;
+  color: rgba(255, 255, 255, 1);
 }
 
 .widget-resize-grip {
   pointer-events: none;
   line-height: 1;
   letter-spacing: 0.04em;
-  font-size: 10px;
+  font-size: 13px;
+  font-weight: 800;
   user-select: none;
+  text-shadow: 0 0 6px rgba(0, 0, 0, 0.34);
 }
 
 .widget-resize-grip-corner {
-  font-size: 9px;
-  transform: translate(1px, 1px);
+  font-size: 15px;
+  transform: translateY(-1px);
 }
 
 .widget-resize-grip-vertical {
-  font-size: 12px;
+  font-size: 16px;
   writing-mode: vertical-rl;
   text-orientation: mixed;
-  transform: scale(0.95);
+  transform: none;
+  letter-spacing: -0.08em;
 }
 
 .widget-resize-grip-horizontal {
-  font-size: 11px;
-  letter-spacing: 0.1em;
+  font-size: 15px;
+  letter-spacing: 0.2em;
+  transform: translateY(-1px);
 }
 
 .widget-chrome-actions {
@@ -2800,35 +2804,40 @@
 .widget-resize-handle {
   position: absolute;
   z-index: 4;
-  width: 12px;
-  height: 12px;
-  border: 0;
-  background: transparent;
+  width: 18px;
+  height: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18), 0 0 10px rgba(255, 255, 255, 0.03);
   touch-action: none;
-  opacity: 0.55;
-  transition: opacity 120ms ease;
+  opacity: 0.92;
+  transition: opacity 120ms ease, background-color 120ms ease, border-color 120ms ease, color 120ms ease;
 }
 
 .widget-resize-handle:hover,
 .widget-resize-handle:focus-visible,
 .widget-resize-handle:active {
-  opacity: 0.65;
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.38);
 }
 
 .widget-resize-handle-bottom-right {
-  right: 8px;
-  bottom: 8px;
-  width: 18px;
-  height: 18px;
+  right: 6px;
+  bottom: 6px;
+  width: 24px;
+  height: 24px;
   cursor: nwse-resize;
 }
 
 .widget-resize-handle-left,
 .widget-resize-handle-right {
-  top: 30px;
-  bottom: 16px;
-  width: 10px;
+  top: 26px;
+  bottom: 12px;
+  width: 16px;
   height: auto;
+  border-radius: 999px;
 }
 
 .widget-resize-handle-left {
@@ -2842,11 +2851,12 @@
 }
 
 .widget-resize-handle-bottom {
-  left: 36px;
-  right: 36px;
-  bottom: 4px;
+  left: 30px;
+  right: 30px;
+  bottom: 5px;
   width: auto;
-  height: 10px;
+  height: 16px;
+  border-radius: 999px;
   cursor: ns-resize;
 }
 

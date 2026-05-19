@@ -517,10 +517,22 @@ function ScheduleWidget() {
 
 function LauncherWidget() {
   const apps = [
-    { label: 'Browser', kind: 'browser' as const },
-    { label: 'Files', kind: 'file-explorer' as const },
+    { label: 'Command core', kind: 'overview' as const },
+    { label: 'Telemetry', kind: 'graph' as const },
+    { label: 'Audio surface', kind: 'audio' as const },
+    { label: 'Map / routes', kind: 'map' as const },
+    { label: 'Diagram', kind: 'diagram' as const },
+    { label: 'Project list', kind: 'project' as const },
+    { label: 'News / market', kind: 'news' as const },
     { label: 'Schedule', kind: 'schedule' as const },
+    { label: 'App launcher', kind: 'launcher' as const },
+    { label: 'Browser', kind: 'browser' as const },
     { label: 'Watch video', kind: 'watch-video' as const },
+    { label: 'File explorer', kind: 'file-explorer' as const },
+    { label: 'Video', kind: 'video' as const },
+    { label: '3D preview', kind: '3d' as const },
+    { label: 'Flow chart', kind: 'flow' as const },
+    { label: 'List', kind: 'list' as const },
   ];
 
   const launch = (kind: (typeof apps)[number]['kind']) => {
@@ -987,7 +999,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             Add page · {getWidgetLabel(nextLaunchKind)}
           </button>
           <div className="workspace-launch-pills" aria-label="Window launch shortcuts">
-            {launchableWindowKinds.slice(0, 4).map((kind) => (
+            {launchableWindowKinds.map((kind) => (
               <button key={kind} type="button" className="workspace-launch-pill" onClick={() => openPanelWindow(kind)}>
                 {getWidgetLabel(kind)}
               </button>

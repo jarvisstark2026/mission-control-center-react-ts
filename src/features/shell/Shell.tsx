@@ -21,11 +21,11 @@ function getPanelLabel(panelKind: string | null | undefined) {
     case 'graph':
       return 'Telemetry';
     case 'audio':
-      return 'Audio surface';
+      return 'Audio preview';
     case 'map':
       return 'Map / routes';
     case 'diagram':
-      return 'Diagram';
+      return 'Diagram preview';
     case 'project':
       return 'Project list';
     case 'news':
@@ -37,7 +37,9 @@ function getPanelLabel(panelKind: string | null | undefined) {
     case 'browser':
       return 'Browser';
     case 'watch-video':
-      return 'Watch video';
+      return 'Video preview';
+    case 'image':
+      return 'Image preview';
     case 'file-explorer':
       return 'File explorer';
     case 'native-app':
@@ -53,13 +55,13 @@ function getPanelLabel(panelKind: string | null | undefined) {
     case 'trading-graph':
       return 'Trading graph';
     case 'video':
-      return 'Video';
+      return 'Video preview';
     case '3d':
-      return '3D preview';
+      return '3D model preview';
     case '3d-studio':
       return '3D studio';
     case 'flow':
-      return 'Flow chart';
+      return 'Chat preview';
     case 'list':
       return 'List';
     default:

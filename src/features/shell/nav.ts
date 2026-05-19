@@ -52,7 +52,7 @@ export const shellNavItems: ShellNavItem[] = [
   },
   {
     id: 'watch-video',
-    label: 'Watch video',
+    label: 'Video preview',
     hint: 'player and playback',
     allowedRoles: ['admin', 'home', 'support'],
   },
@@ -100,7 +100,7 @@ export const shellNavItems: ShellNavItem[] = [
   },
   {
     id: 'image',
-    label: 'Image',
+    label: 'Image preview',
     hint: 'preview and annotate',
     allowedRoles: ['admin', 'home', 'support'],
   },

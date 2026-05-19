@@ -2961,40 +2961,14 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
       </div>
 
       {showChrome && widget.open ? (
-        <>
-          <button
-            type="button"
-            className="widget-resize-handle widget-resize-handle-bottom-right"
-            onPointerDown={(event) => onStartResize(event, widget.id, 'corner')}
-            aria-label={`Resize ${widget.title}`}
-          >
-            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-corner">⤡</span>
-          </button>
-          <button
-            type="button"
-            className="widget-resize-handle widget-resize-handle-left"
-            onPointerDown={(event) => onStartResize(event, widget.id, 'left')}
-            aria-label={`Resize ${widget.title} from left edge`}
-          >
-            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-vertical">⋮</span>
-          </button>
-          <button
-            type="button"
-            className="widget-resize-handle widget-resize-handle-right"
-            onPointerDown={(event) => onStartResize(event, widget.id, 'right')}
-            aria-label={`Resize ${widget.title} from right edge`}
-          >
-            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-vertical">⋮</span>
-          </button>
-          <button
-            type="button"
-            className="widget-resize-handle widget-resize-handle-bottom"
-            onPointerDown={(event) => onStartResize(event, widget.id, 'bottom')}
-            aria-label={`Resize ${widget.title} from bottom edge`}
-          >
-            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-horizontal">⋯</span>
-          </button>
-        </>
+        <button
+          type="button"
+          className="widget-resize-handle widget-resize-handle-bottom-right"
+          onPointerDown={(event) => onStartResize(event, widget.id, 'corner')}
+          aria-label={`Resize ${widget.title}`}
+        >
+          <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-corner">⤡</span>
+        </button>
       ) : null}
     </article>
   );

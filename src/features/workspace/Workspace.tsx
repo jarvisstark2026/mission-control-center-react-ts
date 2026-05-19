@@ -1144,25 +1144,17 @@ type WorkspaceProps = {
 
 export function Workspace({ panelKind = null }: WorkspaceProps) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
-  const widgetsRef = useRef(initialWidgetState);
+  const storedWidgets = useMemo(() => loadStoredWidgetState(), []);
+  const widgetsRef = useRef(storedWidgets ?? initialWidgetState);
   const interactionRef = useRef<InteractionState | null>(null);
-  const compactLayoutAppliedRef = useRef(false);
-  const [widgets, setWidgets] = useState(initialWidgetState);
+  const compactLayoutAppliedRef = useRef(Boolean(storedWidgets));
+  const [widgets, setWidgets] = useState(storedWidgets ?? initialWidgetState);
   const [bounds, setBounds] = useState({ width: 0, height: 0 });
   const [nextLaunchIndex, setNextLaunchIndex] = useState(0);
 
   useEffect(() => {
     widgetsRef.current = widgets;
   }, [widgets]);
-
-  useEffect(() => {
-    const stored = loadStoredWidgetState();
-    if (!stored) return;
-
-    widgetsRef.current = stored;
-    compactLayoutAppliedRef.current = true;
-    setWidgets(stored);
-  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

@@ -363,6 +363,11 @@ const initialWidgetState = widgetPresets.map((widget) => ({
 
 const workspaceStorageKey = 'mission-control-center.workspace.layout.v1';
 
+function clampNumber(value: unknown, fallback: number, min: number, max: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
+}
+
 function loadStoredWidgetState(): WorkspaceWidget[] | null {
   if (typeof window === 'undefined') return null;
 
@@ -379,15 +384,22 @@ function loadStoredWidgetState(): WorkspaceWidget[] | null {
       const stored = byId.get(preset.id);
       if (!stored) return { ...preset, open: defaultOpenKinds.has(preset.kind) };
 
+      const minWidth = typeof stored.minWidth === 'number' ? stored.minWidth : preset.minWidth;
+      const minHeight = typeof stored.minHeight === 'number' ? stored.minHeight : preset.minHeight;
+
       return {
         ...preset,
         ...stored,
         open: typeof stored.open === 'boolean' ? stored.open : defaultOpenKinds.has(preset.kind),
-        width: typeof stored.width === 'number' ? stored.width : preset.width,
-        height: typeof stored.height === 'number' ? stored.height : preset.height,
-        x: typeof stored.x === 'number' ? stored.x : preset.x,
-        y: typeof stored.y === 'number' ? stored.y : preset.y,
-        zIndex: typeof stored.zIndex === 'number' ? stored.zIndex : preset.zIndex,
+        minWidth: clampNumber(minWidth, preset.minWidth, 120, 1920),
+        minHeight: clampNumber(minHeight, preset.minHeight, 120, 1080),
+        width: clampNumber(stored.width, preset.width, minWidth, 4096),
+        height: clampNumber(stored.height, preset.height, minHeight, 4096),
+        x: clampNumber(stored.x, preset.x, -8192, 8192),
+        y: clampNumber(stored.y, preset.y, -8192, 8192),
+        zIndex: clampNumber(stored.zIndex, preset.zIndex, 0, 999),
+        surfaceAlpha: clampNumber(stored.surfaceAlpha, preset.surfaceAlpha, 0, 1),
+        lineAlpha: clampNumber(stored.lineAlpha, preset.lineAlpha, 0, 1),
       };
     });
   } catch {

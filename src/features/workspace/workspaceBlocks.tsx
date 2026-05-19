@@ -120,10 +120,12 @@ export function WorkspaceRowList({
   className?: string;
   ariaLabel?: string;
 }) {
+  const itemRole = ariaLabel ? 'listitem' : undefined;
+
   return (
     <div className={["workspace-row-list", className].filter(Boolean).join(' ')} role={ariaLabel ? 'list' : undefined} aria-label={ariaLabel}>
       {rows.map((row) => (
-        <div key={row.id} className="workspace-row" role="listitem">
+        <div key={row.id} className="workspace-row" role={itemRole}>
           <span>{row.primary}</span>
           {row.secondary ? <strong>{row.secondary}</strong> : null}
           {row.meta ? <small>{row.meta}</small> : null}
@@ -154,10 +156,12 @@ export function WorkspaceActionRowList({
   onFocusRow: (rowId: string) => void;
   onCloseRow: (rowId: string) => void;
 }) {
+  const itemRole = ariaLabel ? 'listitem' : undefined;
+
   return (
     <div className={["workspace-action-row-list", className].filter(Boolean).join(' ')} role={ariaLabel ? 'list' : undefined} aria-label={ariaLabel}>
       {rows.map((row) => (
-        <div key={row.id} className="workspace-action-row" role="listitem">
+        <div key={row.id} className="workspace-action-row" role={itemRole}>
           <button type="button" className="workspace-action-row-button" onClick={() => onFocusRow(row.id)}>
             <span>{row.primary}</span>
             {row.secondary ? <strong>{row.secondary}</strong> : null}

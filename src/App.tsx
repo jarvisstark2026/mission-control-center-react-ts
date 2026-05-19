@@ -68,10 +68,10 @@ export default function App() {
 
     const url = new URL(window.location.href);
 
+    url.searchParams.set('role', nextLocation.role);
+
     if (nextLocation.panelKind) url.searchParams.set('panel', nextLocation.panelKind);
     else url.searchParams.delete('panel');
-
-    url.searchParams.set('role', nextLocation.role);
 
     if (url.toString() !== window.location.href) {
       window.history.pushState({}, '', url);

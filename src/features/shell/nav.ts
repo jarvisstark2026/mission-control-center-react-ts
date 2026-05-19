@@ -118,8 +118,8 @@ export const shellNavItems: ShellNavItem[] = [
   },
   {
     id: 'window-manager',
-    label: 'Window manager',
-    hint: 'open surfaces and routing',
+    label: 'Registry',
+    hint: 'devices, integrations, and scopes',
     allowedRoles: ['admin', 'support'],
   },
   {

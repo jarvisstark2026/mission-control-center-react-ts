@@ -124,6 +124,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
   const visibleItems = getVisibleShellNavItems(activeRole);
   const activePanelKind = normalizePanelKind(panelKind);
   const activeNavId = getActiveNavId(activePanelKind);
+  const isNavItemActive = (itemId: string) => itemId === activeNavId || navPanelById[itemId] === activePanelKind;
   const canOpenPanel = isShellPanelAccessible(activeRole, activePanelKind);
   const isDetachedWindow = Boolean(activePanelKind && canOpenPanel);
   const activeRoleLabel = getRoleLabel(activeRole);
@@ -295,7 +296,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
               <li key={item.id}>
                 <button
                   type="button"
-                  className={`shell-nav-button ${item.id === activeNavId ? 'is-active' : ''}`}
+                  className={`shell-nav-button ${isNavItemActive(item.id) ? 'is-active' : ''}`}
                   aria-current={item.id === activeNavId ? 'page' : undefined}
                   onClick={() => navigateToPanel(navPanelById[item.id] ?? null)}
                 >

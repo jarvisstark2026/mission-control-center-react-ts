@@ -6,7 +6,6 @@ export function OrbPreview() {
         <div className="visual-lab__orb-core" />
         <div className="visual-lab__orb-ring visual-lab__orb-ring--a" />
         <div className="visual-lab__orb-ring visual-lab__orb-ring--b" />
-        <div className="visual-lab__orb-glint" />
       </div>
     </div>
   );

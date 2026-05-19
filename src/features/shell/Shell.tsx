@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { Workspace } from '../workspace/Workspace';
 import type { WorkspaceWidget } from '../workspace/workspaceTypes';
-import { getVisibleShellNavItems } from './nav';
+import { getVisibleShellNavItems, isShellPanelAccessible } from './nav';
 import { shellScopes, type ShellRole } from './roles';
 import './shell.css';
 
@@ -136,6 +136,8 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
   const visibleItems = getVisibleShellNavItems(activeRole);
   const activePanelKind = normalizePanelKind(panelKind);
   const activeNavId = getActiveNavId(activePanelKind);
+  const canOpenPanel = isShellPanelAccessible(activeRole, activePanelKind);
+  const isDetachedWindow = Boolean(activePanelKind && canOpenPanel);
   const [isRailOpen, setIsRailOpen] = useState(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true;
 
@@ -176,10 +178,10 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
   }, []);
 
   useEffect(() => {
-    document.title = activePanelKind
+    document.title = isDetachedWindow
       ? `Mission Control Center — ${getPanelLabel(activePanelKind)}`
       : `Mission Control Center — ${shellScopes.find((scope) => scope.id === activeRole)?.label ?? 'Support'}`;
-  }, [activePanelKind, activeRole]);
+  }, [activePanelKind, activeRole, isDetachedWindow]);
 
   const navigateWithParams = (update: (url: URL) => void) => {
     if (typeof window === 'undefined') return;
@@ -202,7 +204,7 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
     });
   };
 
-  if (activePanelKind) {
+  if (isDetachedWindow && activePanelKind) {
     return (
       <section className="shell-frame shell-frame-window" aria-label="Mission Control Center window">
         <div className="shell-window">

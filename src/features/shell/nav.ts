@@ -121,3 +121,9 @@ export const shellNavItems: ShellNavItem[] = [
 export function getVisibleShellNavItems(role: ShellRole) {
   return shellNavItems.filter((item) => item.allowedRoles.includes(role));
 }
+
+export function isShellPanelAccessible(role: ShellRole, panelKind: string | null | undefined) {
+  if (!panelKind) return false;
+
+  return shellNavItems.some((item) => item.id === panelKind && item.allowedRoles.includes(role));
+}

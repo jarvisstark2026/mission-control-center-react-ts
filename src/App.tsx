@@ -1,27 +1,31 @@
 import { useEffect, useState } from 'react';
 
 import { Shell } from './features/shell/Shell';
+import { isShellPanelAccessible } from './features/shell/nav';
 import { isShellRole, type ShellRole } from './features/shell/roles';
 import { isWorkspaceWidgetKind } from './features/workspace/workspaceTypes';
 import './styles/app.css';
 
+const defaultShellRole: ShellRole = 'support';
+
 type ShellLocationState = {
   panelKind: string | null;
-  role: ShellRole | undefined;
+  role: ShellRole;
 };
 
 function readShellLocation(): ShellLocationState {
   if (typeof window === 'undefined') {
-    return { panelKind: null, role: undefined };
+    return { panelKind: null, role: defaultShellRole };
   }
 
   const searchParams = new URLSearchParams(window.location.search);
   const panelKind = searchParams.get('panel');
   const roleParam = searchParams.get('role');
+  const role = roleParam && isShellRole(roleParam) ? roleParam : defaultShellRole;
 
   return {
-    panelKind: panelKind && isWorkspaceWidgetKind(panelKind) ? panelKind : null,
-    role: roleParam && isShellRole(roleParam) ? roleParam : undefined,
+    panelKind: panelKind && isWorkspaceWidgetKind(panelKind) && isShellPanelAccessible(role, panelKind) ? panelKind : null,
+    role,
   };
 }
 

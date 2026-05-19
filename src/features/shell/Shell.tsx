@@ -76,6 +76,10 @@ function normalizePanelKind(panelKind: string | null | undefined): WorkspaceWidg
   return panelKind && isWorkspaceWidgetKind(panelKind) ? panelKind : null;
 }
 
+function getRoleLabel(role: ShellRole) {
+  return shellScopes.find((scope) => scope.id === role)?.label ?? 'Support';
+}
+
 const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
   workspace: null,
   telemetry: 'graph',
@@ -117,6 +121,8 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
   const activeNavId = getActiveNavId(activePanelKind);
   const canOpenPanel = isShellPanelAccessible(activeRole, activePanelKind);
   const isDetachedWindow = Boolean(activePanelKind && canOpenPanel);
+  const activeRoleLabel = getRoleLabel(activeRole);
+  const activePanelLabel = activePanelKind ? getPanelLabel(activePanelKind) : 'Workspace';
   const [isRailOpen, setIsRailOpen] = useState(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true;
 
@@ -166,9 +172,9 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
 
   useEffect(() => {
     document.title = isDetachedWindow
-      ? `Mission Control Center — ${getPanelLabel(activePanelKind)}`
-      : `Mission Control Center — ${shellScopes.find((scope) => scope.id === activeRole)?.label ?? 'Support'}`;
-  }, [activePanelKind, activeRole, isDetachedWindow]);
+      ? `Mission Control Center — ${activePanelLabel}`
+      : `Mission Control Center — ${activeRoleLabel}`;
+  }, [activePanelLabel, activeRoleLabel, isDetachedWindow]);
 
   const navigateToPanel = (target: WorkspaceWidget['kind'] | null) => {
     closeRailOnMobile();
@@ -191,6 +197,10 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
             <div className="shell-branding shell-branding-window">
               <p className="shell-eyebrow">Mission Control Center</p>
               <h1>{getPanelLabel(activePanelKind)}</h1>
+              <div className="shell-meta" aria-label="Window context">
+                <span>{activeRoleLabel}</span>
+                <span>{activePanelLabel}</span>
+              </div>
               <p className="shell-copy">
                 Detached page mode. The OS window can go wherever the desktop gods permit; the app merely keeps its hands clean.
               </p>
@@ -245,6 +255,10 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
         <div className="shell-branding">
           <p className="shell-eyebrow">Mission Control Center</p>
           <h1>Spatial command surface</h1>
+          <div className="shell-meta" aria-label="Current context">
+            <span>{activeRoleLabel}</span>
+            <span>{activePanelLabel}</span>
+          </div>
           <p className="shell-copy">
             {shellScopes.find((scope) => scope.id === activeRole)?.description ?? 'Support'}
           </p>

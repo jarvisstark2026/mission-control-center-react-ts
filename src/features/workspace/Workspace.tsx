@@ -1446,7 +1446,11 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             <button
               type="button"
               className="workspace-launch-button"
-              onClick={() => window.location.assign(window.location.origin + window.location.pathname)}
+              onClick={() => {
+                const url = new URL(window.location.href);
+                url.searchParams.delete('panel');
+                window.location.assign(url.toString());
+              }}
             >
               Open hub
             </button>

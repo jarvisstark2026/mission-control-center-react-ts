@@ -4,7 +4,7 @@ import './visualLab.css';
 
 export function VisualLab() {
   return (
-    <section className="visual-lab" aria-label="HUD stress-test layer">
+    <section className="visual-lab" aria-hidden="true">
       <BackdropGrid />
 
       <div className="visual-lab__stage">

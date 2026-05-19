@@ -49,7 +49,7 @@ function getPanelLabel(panelKind: WorkspaceWidget['kind'] | null | undefined) {
     case 'native-app':
       return 'Native app bridge';
     case 'window-manager':
-      return 'Registry';
+      return 'Window manager';
     case 'sheet':
       return 'Spreadsheet';
     case 'docs':

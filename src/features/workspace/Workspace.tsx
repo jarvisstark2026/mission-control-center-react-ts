@@ -3,7 +3,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, ChangeEvent } fr
 
 import { StatusChip } from '../../components/ui/StatusChip';
 import { isShellRole, type ShellRole } from '../shell/roles';
-import type { WorkspaceWidget } from './workspaceTypes';
+import { isWorkspaceWidgetKind, type WorkspaceWidget } from './workspaceTypes';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
 
@@ -648,6 +648,7 @@ const widgetPresets: WorkspaceWidget[] = [
     open: true,
     minWidth: 300,
     minHeight: 190,
+    previewFileId: null,
   },
   {
     id: 'map',
@@ -971,8 +972,7 @@ function loadStoredWidgetState(): WorkspaceWidget[] | null {
     if (!Array.isArray(parsed)) return null;
 
     const byId = new Map(parsed.filter((item): item is Partial<WorkspaceWidget> & { id: string } => Boolean(item && item.id)).map((item) => [item.id, item]));
-
-    return widgetPresets.map((preset) => {
+    const normalizedPresets = widgetPresets.map((preset) => {
       const stored = byId.get(preset.id);
       if (!stored) return { ...preset, open: defaultOpenKinds.has(preset.kind) };
 
@@ -994,6 +994,32 @@ function loadStoredWidgetState(): WorkspaceWidget[] | null {
         lineAlpha: clampNumber(stored.lineAlpha, preset.lineAlpha, 0, 1),
       };
     });
+
+    const dynamicWidgets = parsed
+      .filter((item): item is Partial<WorkspaceWidget> & { id: string } => Boolean(item && item.id && !widgetPresets.some((preset) => preset.id === item.id) && item.kind && isWorkspaceWidgetKind(item.kind)))
+      .map((stored) => {
+        const kind = stored.kind as keyof typeof widgetBlueprints;
+        const blueprint = widgetBlueprints[kind];
+        const minWidth = clampNumber(typeof stored.minWidth === 'number' ? stored.minWidth : blueprint?.minWidth ?? 300, blueprint?.minWidth ?? 300, 120, 1920);
+        const minHeight = clampNumber(typeof stored.minHeight === 'number' ? stored.minHeight : blueprint?.minHeight ?? 180, blueprint?.minHeight ?? 180, 120, 1080);
+        return {
+          ...(blueprint ? { title: blueprint.title, subtitle: blueprint.subtitle, surfaceAlpha: blueprint.surfaceAlpha, lineAlpha: blueprint.lineAlpha } : {}),
+          ...stored,
+          kind,
+          open: typeof stored.open === 'boolean' ? stored.open : true,
+          minWidth,
+          minHeight,
+          width: clampNumber(stored.width, blueprint?.minWidth ?? minWidth, minWidth, 4096),
+          height: clampNumber(stored.height, blueprint?.minHeight ?? minHeight, minHeight, 4096),
+          x: clampNumber(stored.x, 0, -8192, 8192),
+          y: clampNumber(stored.y, 0, -8192, 8192),
+          zIndex: clampNumber(stored.zIndex, 1, 0, 999),
+          surfaceAlpha: clampNumber(stored.surfaceAlpha, blueprint?.surfaceAlpha ?? 0.08, 0, 1),
+          lineAlpha: clampNumber(stored.lineAlpha, blueprint?.lineAlpha ?? 0.14, 0, 1),
+        } as WorkspaceWidget;
+      });
+
+    return [...normalizedPresets, ...dynamicWidgets];
   } catch {
     return null;
   }
@@ -1552,9 +1578,11 @@ function VideoWidget() {
 function PreviewWidget({
   file,
   onBrowseFiles,
+  onOpenPreview,
 }: {
   file: LocalFileRecord | null;
-  onBrowseFiles: (files: FileList | File[]) => void;
+  onBrowseFiles: (files: FileList | File[]) => Promise<LocalFileRecord[]>;
+  onOpenPreview: (file: LocalFileRecord) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
@@ -1602,10 +1630,12 @@ function PreviewWidget({
     fileInputRef.current?.click();
   };
 
-  const handlePreviewFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  const handlePreviewFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = event.target.files;
     if (!selectedFiles || selectedFiles.length === 0) return;
-    void onBrowseFiles(selectedFiles);
+
+    const imported = await onBrowseFiles(selectedFiles);
+    imported.forEach((record) => onOpenPreview(record));
     event.target.value = '';
   };
 
@@ -2522,7 +2552,7 @@ function FileExplorerWidget({
   selectedFileId: string | null;
   folderEntries: LocalFolderEntry[];
   folderPath: string | null;
-  onBrowseFiles: (files: FileList | File[]) => void;
+  onBrowseFiles: (files: FileList | File[]) => Promise<LocalFileRecord[]>;
   onBrowseFolder: () => void;
   onOpenPreview: (file: LocalFileRecord) => void;
   onSelectFile: (id: string | null) => void;
@@ -2778,7 +2808,7 @@ function WorkspaceWidgetCard({
   folderEntries: LocalFolderEntry[];
   folderPath: string | null;
   activeMarketGraph: MarketGraph;
-  onBrowseFiles: (files: FileList | File[]) => void;
+  onBrowseFiles: (files: FileList | File[]) => Promise<LocalFileRecord[]>;
   onBrowseFolder: () => void;
   onOpenPreview: (file: LocalFileRecord) => void;
   onSelectFile: (id: string | null) => void;
@@ -2789,6 +2819,8 @@ function WorkspaceWidgetCard({
   onFocusWidget: (id: string) => void;
   onCloseWidget: (id: string) => void;
 }) {
+  const previewFile = widget.previewFileId ? localFiles.find((record) => record.id === widget.previewFileId) ?? null : null;
+
   return (
     <article
       className={`workspace-widget ${widget.open ? 'is-open' : 'is-closed'} kind-${widget.kind}`}
@@ -2877,7 +2909,7 @@ function WorkspaceWidgetCard({
         {widget.kind === 'native-app' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />}
         {widget.kind === 'window-manager' && <WindowManagerWidget widgets={workspaceWidgets} onFocusWidget={onFocusWidget} onCloseWidget={onCloseWidget} />}
         {widget.kind === 'video' && <VideoWidget />}
-        {widget.kind === '3d' && <PreviewWidget file={activeLocalFile} onBrowseFiles={onBrowseFiles} />}
+        {widget.kind === '3d' && <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} />}
         {widget.kind === '3d-studio' && <ModelStudioWidget />}
         {widget.kind === 'flow' && <WorkflowWidget />}
         {widget.kind === 'list' && <ListWidget />}
@@ -2960,6 +2992,19 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     if (!persistedLocalFilesLoadedRef.current) return;
     void writePersistedLocalFiles(localFiles);
   }, [localFiles]);
+
+  useEffect(() => {
+    if (activeLocalFileId) return;
+
+    const previewWidget = widgetsRef.current.find((widget) => widget.kind === '3d' && widget.previewFileId);
+    if (!previewWidget?.previewFileId) return;
+
+    const restoredFile = localFiles.find((record) => record.id === previewWidget.previewFileId) ?? null;
+    if (!restoredFile) return;
+
+    setSelectedLocalFileId(restoredFile.id);
+    setActiveLocalFileId(restoredFile.id);
+  }, [activeLocalFileId, localFiles]);
 
   useEffect(() => {
     const updateBounds = () => {
@@ -3246,34 +3291,58 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     }
   };
 
-  const resizePreviewWidgetForImage = (dimensions: LocalImageDimensions | null) => {
-    if (!dimensions) return;
-
-    const previewWidget = widgetsRef.current.find((widget) => widget.kind === '3d');
-    if (!previewWidget) return;
-
+  const openPreviewWidget = (file: LocalFileRecord, dimensions: LocalImageDimensions | null = null) => {
+    const blueprint = widgetBlueprints['3d'];
+    const viewportWidth = Math.max(320, bounds.width || window.innerWidth || blueprint.minWidth);
+    const viewportHeight = Math.max(240, bounds.height || window.innerHeight || blueprint.minHeight);
     const chromeWidth = 36;
     const chromeHeight = 108;
-    const viewportWidth = Math.max(320, bounds.width || window.innerWidth || previewWidget.width);
-    const viewportHeight = Math.max(240, bounds.height || window.innerHeight || previewWidget.height);
-    const maxWidth = Math.max(previewWidget.minWidth, Math.floor(viewportWidth * 0.88));
-    const maxHeight = Math.max(previewWidget.minHeight, Math.floor(viewportHeight * 0.86));
-    const scale = Math.min(maxWidth / dimensions.width, maxHeight / dimensions.height, 1);
-    const nextWidth = clampWidgetSize(Math.round(dimensions.width * scale) + chromeWidth, previewWidget.width, previewWidget.minWidth, maxWidth + chromeWidth);
-    const nextHeight = clampWidgetSize(Math.round(dimensions.height * scale) + chromeHeight, previewWidget.height, previewWidget.minHeight, maxHeight + chromeHeight);
+    const highest = widgetsRef.current.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
+    const existing = widgetsRef.current.find((widget) => widget.kind === '3d' && widget.previewFileId === file.id);
+
+    if (existing) {
+      setWidgets((current) => {
+        const next = current.map((widget) =>
+          widget.id === existing.id
+            ? {
+                ...widget,
+                open: true,
+                subtitle: file.path,
+                zIndex: highest + 1,
+              }
+            : widget,
+        );
+        widgetsRef.current = next;
+        return next;
+      });
+      return;
+    }
+
+    const scale = dimensions ? Math.min((viewportWidth * 0.88) / dimensions.width, (viewportHeight * 0.86) / dimensions.height, 1) : 1;
+    const nextWidth = dimensions ? Math.max(blueprint.minWidth, Math.round(dimensions.width * scale) + chromeWidth) : blueprint.minWidth;
+    const nextHeight = dimensions ? Math.max(blueprint.minHeight, Math.round(dimensions.height * scale) + chromeHeight) : blueprint.minHeight;
+    const offset = Math.min(72, widgetsRef.current.filter((widget) => widget.kind === '3d').length * 18);
 
     setWidgets((current) => {
-      const next = current.map((widget) =>
-        widget.kind === '3d'
-          ? {
-              ...widget,
-              width: nextWidth,
-              height: nextHeight,
-              open: true,
-              zIndex: widget.zIndex + 1,
-            }
-          : widget,
-      );
+      const highestZ = current.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
+      const nextWidget: WorkspaceWidget = {
+        id: `preview-${file.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        kind: '3d',
+        title: 'Preview',
+        subtitle: file.path,
+        x: clampNumber(528 + offset, 528, 0, Math.max(0, viewportWidth - nextWidth)),
+        y: clampNumber(66 + offset, 66, 0, Math.max(0, viewportHeight - nextHeight)),
+        width: nextWidth,
+        height: nextHeight,
+        zIndex: highestZ + 1,
+        surfaceAlpha: blueprint.surfaceAlpha,
+        lineAlpha: blueprint.lineAlpha,
+        open: true,
+        minWidth: blueprint.minWidth,
+        minHeight: blueprint.minHeight,
+        previewFileId: file.id,
+      };
+      const next = [...current, nextWidget];
       widgetsRef.current = next;
       return next;
     });
@@ -3281,7 +3350,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
 
   const importLocalFiles = async (selected: FileList | File[]) => {
     const imported = Array.from(selected, createLocalFileRecord);
-    if (!imported.length) return;
+    if (!imported.length) return [] as LocalFileRecord[];
 
     const enriched = await Promise.all(
       imported.map(async (record) => ({
@@ -3300,22 +3369,27 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
 
     const first = enriched[0];
     setSelectedLocalFileId(first.id);
+    return enriched;
   };
 
   const openLocalPreview = async (file: LocalFileRecord) => {
     setSelectedLocalFileId(file.id);
     setActiveLocalFileId(file.id);
-    focusWidget('preview');
-    if (file.previewKind === 'image') {
-      resizePreviewWidgetForImage(file.imageDimensions ?? (await measureImageDimensions(file.file)));
-    }
+    const dimensions = file.previewKind === 'image' ? file.imageDimensions ?? (await measureImageDimensions(file.file)) : null;
+    openPreviewWidget(file, dimensions);
   };
+
   const clearLocalFiles = () => {
     setLocalFiles([]);
     setSelectedLocalFileId(null);
     setActiveLocalFileId(null);
     setFolderEntries([]);
     setFolderPath(null);
+    setWidgets((current) => {
+      const next = current.map((widget) => (widget.kind === '3d' ? { ...widget, previewFileId: null } : widget));
+      widgetsRef.current = next;
+      return next;
+    });
     void clearPersistedLocalFiles();
   };
 

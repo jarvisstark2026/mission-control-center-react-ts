@@ -30,6 +30,20 @@ function readShellLocation(): ShellLocationState {
   };
 }
 
+function getCanonicalShellLocationHref(locationState: ShellLocationState) {
+  if (typeof window === 'undefined') {
+    return '';
+  }
+
+  const url = new URL(window.location.href);
+  url.searchParams.set('role', locationState.role);
+
+  if (locationState.panelKind) url.searchParams.set('panel', locationState.panelKind);
+  else url.searchParams.delete('panel');
+
+  return url.toString();
+}
+
 export default function App() {
   const [shellLocation, setShellLocation] = useState(readShellLocation);
 
@@ -39,6 +53,15 @@ export default function App() {
     window.addEventListener('popstate', syncShellLocation);
     return () => window.removeEventListener('popstate', syncShellLocation);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const canonicalHref = getCanonicalShellLocationHref(shellLocation);
+    if (canonicalHref && canonicalHref !== window.location.href) {
+      window.history.replaceState({}, '', canonicalHref);
+    }
+  }, [shellLocation]);
 
   const handleNavigate = (nextLocation: { panelKind: WorkspaceWidget['kind'] | null; role: ShellRole }) => {
     if (typeof window === 'undefined') return;

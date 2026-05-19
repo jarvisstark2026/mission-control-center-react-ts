@@ -87,6 +87,12 @@ export const shellNavItems: ShellNavItem[] = [
     allowedRoles: ['admin', 'home', 'support'],
   },
   {
+    id: 'flow',
+    label: 'Workflows',
+    hint: 'workflow library and PDF handouts',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
     id: '3d',
     label: 'Preview',
     hint: 'files and project models',

@@ -65,7 +65,7 @@ function getPanelLabel(panelKind: WorkspaceWidget['kind'] | null | undefined) {
     case '3d-studio':
       return '3D studio';
     case 'flow':
-      return 'Chat preview';
+      return 'Workflows';
     case 'list':
       return 'List';
     default:
@@ -94,6 +94,7 @@ const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
   audio: 'audio',
   diagram: 'diagram',
   news: 'news',
+  flow: 'flow',
   video: 'video',
   '3d': '3d',
   list: 'list',

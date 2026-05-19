@@ -2325,7 +2325,7 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
             Open installed app
           </button>
         </div>
-        <div className="launcher-desktop-list" aria-label="Loaded desktop apps">
+        <div className="launcher-desktop-list" role="group" aria-label="Loaded desktop apps">
           {desktopApps.map((app) => (
             <button key={app.name} type="button" className="launcher-desktop-item">
               <span>{app.name}</span>

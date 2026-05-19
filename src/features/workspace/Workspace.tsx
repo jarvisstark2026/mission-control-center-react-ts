@@ -960,7 +960,13 @@ function LauncherWidget() {
   const launch = (kind: (typeof apps)[number]['kind']) => {
     const url = new URL(window.location.href);
     url.searchParams.set('panel', kind);
-    window.open(url.toString(), '_blank', 'popup=yes,width=1280,height=900')?.focus?.();
+    const popup = window.open(url.toString(), '_blank', 'popup=yes,width=1280,height=900');
+    if (!popup) {
+      window.location.assign(url.toString());
+      return;
+    }
+
+    popup.focus?.();
   };
 
   return (

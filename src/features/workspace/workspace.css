@@ -141,6 +141,8 @@
 
 .workspace-widget {
   position: absolute;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   --widget-chrome-top: 40px;
   --widget-chrome-bottom: 12px;
@@ -196,7 +198,8 @@
   .workspace-widget:hover,
   .workspace-launch-button:hover,
   .workspace-launch-pill:hover,
-  .workspace-widget:active {
+  .workspace-widget:active,
+  .workspace-widget.is-closed .widget-body {
     transform: none;
   }
 }
@@ -364,11 +367,12 @@
 .widget-body {
   position: relative;
   width: 100%;
-  height: 100%;
+  flex: 1 1 auto;
   min-height: 0;
   padding: var(--widget-chrome-top) 14px var(--widget-chrome-bottom);
   box-sizing: border-box;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-gutter: stable both-edges;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.18) transparent;

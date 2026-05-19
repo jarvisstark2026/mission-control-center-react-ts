@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from 'react';
+import { forwardRef, type ButtonHTMLAttributes } from 'react';
 
 import '../../styles/components.css';
 
@@ -14,10 +14,13 @@ const variantClassNames: Record<ActionButtonVariant, string> = {
   ghost: 'action-button--ghost',
 };
 
-export function ActionButton({ variant = 'secondary', className, type = 'button', children, ...rest }: ActionButtonProps) {
+export const ActionButton = forwardRef<HTMLButtonElement, ActionButtonProps>(function ActionButton(
+  { variant = 'secondary', className, type = 'button', children, ...rest },
+  ref,
+) {
   return (
-    <button type={type} className={["action-button", variantClassNames[variant], className].filter(Boolean).join(' ')} {...rest}>
+    <button ref={ref} type={type} className={["action-button", variantClassNames[variant], className].filter(Boolean).join(' ')} {...rest}>
       {children}
     </button>
   );
-}
+});

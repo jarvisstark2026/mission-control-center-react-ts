@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { ActionButton } from '../../components/ui/ActionButton';
 import { SectionHeader } from '../../components/ui/SectionHeader';
@@ -142,6 +142,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
   const canCloseDetachedWindow = typeof window !== 'undefined' && Boolean(window.opener);
   const activeRoleLabel = getRoleLabel(activeRole);
   const activePanelLabel = activePanelKind ? getPanelLabel(activePanelKind) : 'Workspace';
+  const menuToggleRef = useRef<HTMLButtonElement | null>(null);
   const [isRailOpen, setIsRailOpen] = useState(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return true;
 
@@ -186,6 +187,9 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
 
     if (window.matchMedia(`(max-width: ${railBreakpoint}px)`).matches) {
       setIsRailOpen(false);
+      window.requestAnimationFrame(() => {
+        menuToggleRef.current?.focus();
+      });
     }
   };
 
@@ -248,6 +252,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
   return (
     <section className="shell-frame" aria-label="Mission Control Center shell">
       <ActionButton
+        ref={menuToggleRef}
         variant="ghost"
         className="shell-menu-toggle"
         aria-label={isRailOpen ? 'Close navigation menu' : 'Open navigation menu'}
@@ -261,7 +266,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
       <div
         className={`shell-backdrop ${isRailOpen ? 'is-visible' : ''}`}
         aria-hidden="true"
-        onClick={() => setIsRailOpen(false)}
+        onClick={closeRailOnMobile}
       />
 
       <aside id="shell-rail" className={`shell-rail ${isRailOpen ? 'is-open' : 'is-closed'}`} aria-label="Role navigation">

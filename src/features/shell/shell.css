@@ -27,6 +27,13 @@
   backdrop-filter: blur(16px);
 }
 
+.shell-menu-toggle:hover,
+.shell-menu-toggle:focus-visible {
+  border-color: rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 1px rgba(140, 182, 255, 0.22), 0 0 0 4px rgba(140, 182, 255, 0.12);
+}
+
 .shell-backdrop {
   display: none;
 }

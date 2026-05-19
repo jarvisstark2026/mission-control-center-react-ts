@@ -65,7 +65,7 @@ function getShellCopy(role: ShellRole, panelKind: WorkspaceWidget['kind'] | null
   const roleDescription = getRoleDescription(role);
 
   if (detached && panelKind) {
-    return `Detached page mode. ${getPanelLabel(panelKind)} is operating independently while I keep the paperwork in order.`;
+    return `Detached window mode. ${getPanelLabel(panelKind)} is operating independently while I keep the paperwork in order.`;
   }
 
   if (panelKind) {
@@ -73,6 +73,18 @@ function getShellCopy(role: ShellRole, panelKind: WorkspaceWidget['kind'] | null
   }
 
   return `${roleDescription} Open a surface when you are ready.`;
+}
+
+function closeDetachedWindow(navigateToPanel: (target: WorkspaceWidget['kind'] | null) => void) {
+  if (window.opener) {
+    window.close();
+    if (!window.closed) {
+      navigateToPanel(null);
+    }
+    return;
+  }
+
+  navigateToPanel(null);
 }
 
 const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
@@ -218,14 +230,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
               <button
                 type="button"
                 className="shell-window-button is-muted"
-                onClick={() => {
-                  if (window.opener) {
-                    window.close();
-                    navigateToPanel(null);
-                    return;
-                  }
-                  navigateToPanel(null);
-                }}
+                onClick={() => closeDetachedWindow(navigateToPanel)}
               >
                 Close window
               </button>

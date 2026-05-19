@@ -18,7 +18,7 @@ export function SectionHeader({ eyebrow, title, description, className, children
     ['aria-describedby']: ariaDescribedByProp,
     ...headerProps
   } = rest;
-  const ariaLabelledBy = ariaLabelProp ? ariaLabelledByProp : [ariaLabelledByProp, titleId].filter(Boolean).join(' ');
+  const ariaLabelledBy = ariaLabelProp ? ariaLabelledByProp : ariaLabelledByProp ?? titleId;
   const ariaDescribedBy = [ariaDescribedByProp, description ? descriptionId : null].filter(Boolean).join(' ');
 
   return (

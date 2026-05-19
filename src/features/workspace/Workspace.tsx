@@ -2717,8 +2717,10 @@ function FileExplorerWidget({
   return (
     <div className="file-explorer-surface">
       <div className="file-explorer-head">
-        <span>Local file browser</span>
-        <strong>Choose files or folders from this PC.</strong>
+        <div className="file-explorer-head-copy">
+          <span className="file-explorer-head-kicker">Local file browser</span>
+          <strong className="file-explorer-head-title">Choose files or folders from this PC.</strong>
+        </div>
         <div className="file-explorer-head-meta" role="status" aria-live="polite" aria-atomic="true">
           <span>{selectedCountLabel}</span>
           <small>{explorerStatusLabel}</small>
@@ -2899,8 +2901,11 @@ function WindowManagerWidget({
     <div className="window-manager-surface">
       <div className="window-manager-head">
         <div className="window-manager-head-copy">
-          <span>live registry</span>
-          <strong>{openWidgets.length} open · {widgets.length} total</strong>
+          <span className="window-manager-head-kicker">Window registry</span>
+          <strong className="window-manager-head-title">Open windows and pinned surfaces</strong>
+          <small className="window-manager-head-meta">
+            {openWidgets.length} open · {widgets.length} total
+          </small>
         </div>
       </div>
       <div className="window-manager-list" role="list" aria-label="Open widgets">

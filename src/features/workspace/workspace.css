@@ -1940,14 +1940,19 @@
   gap: 8px 12px;
 }
 
-.file-explorer-head span,
-.file-explorer-head strong {
+.file-explorer-head-copy {
+  display: grid;
+  gap: 2px;
+}
+
+.file-explorer-head-kicker,
+.file-explorer-head-title {
   display: block;
   text-transform: uppercase;
   letter-spacing: 0.12em;
 }
 
-.file-explorer-head strong {
+.file-explorer-head-title {
   margin-top: 4px;
   font-size: 0.76rem;
 }
@@ -1962,8 +1967,6 @@
 .file-explorer-head-meta span,
 .file-explorer-head-meta small {
   display: block;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
   color: rgba(255, 255, 255, 0.74);
 }
 
@@ -2348,8 +2351,8 @@
 .window-manager-head {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding-bottom: 8px;
+  gap: 4px;
+  padding-bottom: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
@@ -2359,21 +2362,36 @@
   min-width: 0;
 }
 
-.window-manager-head span,
-.window-manager-head strong,
-.window-manager-head small {
+.window-manager-head-kicker,
+.window-manager-head-meta {
+  display: block;
   text-transform: uppercase;
   letter-spacing: 0.12em;
 }
 
-.window-manager-head span {
-  font-size: 0.58rem;
+.window-manager-head-kicker {
+  font-size: 0.56rem;
   color: rgba(255, 255, 255, 0.58);
 }
 
-.window-manager-head strong {
-  font-size: 0.66rem;
-  color: rgba(255, 255, 255, 0.9);
+.window-manager-head-title {
+  font-size: 0.82rem;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.92);
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+.window-manager-head-meta {
+  font-size: 0.54rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.68);
+  max-width: 24ch;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  text-wrap: balance;
 }
 
 .window-manager-list {

@@ -2107,6 +2107,7 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
     { label: 'Workflows', kind: 'flow' as const, note: 'open in workspace' },
     { label: 'List', kind: 'list' as const, note: 'open in workspace' },
   ];
+  const hasDesktopCommand = desktopCommand.trim().length > 0;
 
   const openInstalledApp = () => {
     const nextName = desktopCommand.trim();
@@ -2126,6 +2127,36 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
 
   return (
     <div className="launcher-surface">
+      <div className="launcher-desktop-bridge">
+        <div className="launcher-desktop-head">
+          <span>desktop hooks</span>
+          <strong>load installed apps into memory</strong>
+          <p>Command line stays. The bridge now lives beside the workspace launcher rather than impersonating a separate universe.</p>
+        </div>
+        <div className="launcher-desktop-controls">
+          <label className="launcher-desktop-input">
+            <span>Installed app or command</span>
+            <input
+              type="text"
+              value={desktopCommand}
+              onChange={(event) => setDesktopCommand(event.target.value)}
+              onKeyDown={(event) => event.key === 'Enter' && openInstalledApp()}
+              placeholder="e.g. explorer.exe, obsidian, notepad.exe"
+            />
+          </label>
+          <button type="button" className="launcher-desktop-button" onClick={openInstalledApp} disabled={!hasDesktopCommand}>
+            Open installed app
+          </button>
+        </div>
+        <div className="launcher-desktop-list" aria-label="Loaded desktop apps">
+          {desktopApps.map((app) => (
+            <button key={app.name} type="button" className="launcher-desktop-item">
+              <span>{app.name}</span>
+              <small>{app.note}</small>
+            </button>
+          ))}
+        </div>
+      </div>
       <div className="launcher-summary">
         <span>workspace hooks</span>
         <strong>open / focus / stay in the workspace</strong>
@@ -2148,36 +2179,6 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
             </button>
           );
         })}
-      </div>
-      <div className="launcher-desktop-bridge">
-        <div className="launcher-desktop-head">
-          <span>desktop bridge</span>
-          <strong>load installed apps into memory</strong>
-          <p>Command line stays. The bridge now lives beside the workspace launcher rather than impersonating a separate universe.</p>
-        </div>
-        <div className="launcher-desktop-controls">
-          <label className="launcher-desktop-input">
-            <span>Installed app or command</span>
-            <input
-              type="text"
-              value={desktopCommand}
-              onChange={(event) => setDesktopCommand(event.target.value)}
-              onKeyDown={(event) => event.key === 'Enter' && openInstalledApp()}
-              placeholder="e.g. explorer.exe, obsidian, notepad.exe"
-            />
-          </label>
-          <button type="button" className="launcher-desktop-button" onClick={openInstalledApp}>
-            Open installed app
-          </button>
-        </div>
-        <div className="launcher-desktop-list" aria-label="Loaded desktop apps">
-          {desktopApps.map((app) => (
-            <button key={app.name} type="button" className="launcher-desktop-item">
-              <span>{app.name}</span>
-              <small>{app.note}</small>
-            </button>
-          ))}
-        </div>
       </div>
       <p className="launcher-note">The launcher now opens widgets where they belong: in the workspace, not as a separate browser tantrum.</p>
     </div>

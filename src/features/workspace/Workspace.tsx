@@ -31,6 +31,78 @@ type LocalFolderEntry = {
   file?: File;
 };
 
+const localFilesStoreName = 'files';
+const localFilesDbName = 'mission-control-center-local-files';
+
+function openLocalFilesDb(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const request = window.indexedDB.open(localFilesDbName, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(localFilesStoreName)) {
+        db.createObjectStore(localFilesStoreName, { keyPath: 'id' });
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error('Unable to open local files store'));
+  });
+}
+
+async function readPersistedLocalFiles(): Promise<LocalFileRecord[]> {
+  if (typeof window === 'undefined' || !window.indexedDB) return [];
+  const db = await openLocalFilesDb();
+  try {
+    return await new Promise<LocalFileRecord[]>((resolve, reject) => {
+      const tx = db.transaction(localFilesStoreName, 'readonly');
+      const store = tx.objectStore(localFilesStoreName);
+      const request = store.getAll();
+      request.onsuccess = () => resolve((request.result as LocalFileRecord[]) ?? []);
+      request.onerror = () => reject(request.error ?? new Error('Unable to load local files'));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+async function writePersistedLocalFiles(records: LocalFileRecord[]): Promise<void> {
+  if (typeof window === 'undefined' || !window.indexedDB) return;
+  const db = await openLocalFilesDb();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(localFilesStoreName, 'readwrite');
+      const store = tx.objectStore(localFilesStoreName);
+      const clear = store.clear();
+      clear.onerror = () => reject(clear.error ?? new Error('Unable to clear local files store'));
+      clear.onsuccess = () => {
+        records.forEach((record) => store.put(record));
+      };
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error ?? new Error('Unable to persist local files'));
+      tx.onabort = () => reject(tx.error ?? new Error('Unable to persist local files'));
+    });
+  } finally {
+    db.close();
+  }
+}
+
+async function clearPersistedLocalFiles(): Promise<void> {
+  if (typeof window === 'undefined' || !window.indexedDB) return;
+  const db = await openLocalFilesDb();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(localFilesStoreName, 'readwrite');
+      const store = tx.objectStore(localFilesStoreName);
+      const request = store.clear();
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error ?? new Error('Unable to clear local files'));
+      tx.onerror = () => reject(tx.error ?? new Error('Unable to clear local files'));
+      tx.onabort = () => reject(tx.error ?? new Error('Unable to clear local files'));
+    });
+  } finally {
+    db.close();
+  }
+}
+
 function getLocalFilePath(file: File): string {
   return file.webkitRelativePath || file.name;
 }
@@ -2281,40 +2353,28 @@ function FileExplorerWidget({
   activeFileId,
   folderEntries,
   folderPath,
-  isChooserOpen,
   onBrowseFiles,
   onBrowseFolder,
   onOpenPreview,
   onClearFiles,
-  onToggleChooser,
 }: {
   files: LocalFileRecord[];
   activeFileId: string | null;
   folderEntries: LocalFolderEntry[];
   folderPath: string | null;
-  isChooserOpen: boolean;
   onBrowseFiles: (files: FileList | File[]) => void;
   onBrowseFolder: () => void;
   onOpenPreview: (file: LocalFileRecord) => void;
   onClearFiles: () => void;
-  onToggleChooser: (open: boolean) => void;
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const activeFile = files.find((record) => record.id === activeFileId) ?? null;
 
   const handleBrowseFilesClick = () => {
-    onToggleChooser(true);
-  };
-
-  const handleBrowseFolderClick = () => {
-    onToggleChooser(true);
-  };
-
-  const handlePickFilesClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handlePickFolderClick = () => {
+  const handleBrowseFolderClick = () => {
     void onBrowseFolder();
   };
 
@@ -2351,29 +2411,6 @@ function FileExplorerWidget({
         </button>
         <input ref={fileInputRef} className="file-explorer-input" type="file" multiple onChange={handleFileChange} />
       </div>
-
-      {isChooserOpen ? (
-        <div className="file-explorer-chooser">
-          <div className="file-explorer-chooser-head">
-            <div>
-              <span>Choose source</span>
-              <strong>widget-styled picker entry point</strong>
-            </div>
-            <button type="button" className="file-explorer-button is-muted" onClick={() => onToggleChooser(false)}>
-              Close
-            </button>
-          </div>
-          <div className="file-explorer-chooser-actions">
-            <button type="button" className="file-explorer-button" onClick={handlePickFilesClick}>
-              Open files
-            </button>
-            <button type="button" className="file-explorer-button" onClick={handlePickFolderClick}>
-              Open folder
-            </button>
-          </div>
-          <small className="file-explorer-chooser-note">The browser’s native picker still owns the modal. This is merely the less ugly doorway.</small>
-        </div>
-      ) : null}
 
       <div className="file-explorer-body">
         {folderEntries.length ? (
@@ -2526,13 +2563,11 @@ function WorkspaceWidgetCard({
   activeLocalFileId,
   folderEntries,
   folderPath,
-  isChooserOpen,
   activeMarketGraph,
   onBrowseFiles,
   onBrowseFolder,
   onOpenPreview,
   onClearFiles,
-  onToggleChooser,
   onLaunchWorkspaceWidget,
   onSelectMarketGraph,
   workspaceWidgets,
@@ -2550,13 +2585,11 @@ function WorkspaceWidgetCard({
   activeLocalFileId: string | null;
   folderEntries: LocalFolderEntry[];
   folderPath: string | null;
-  isChooserOpen: boolean;
   activeMarketGraph: MarketGraph;
   onBrowseFiles: (files: FileList | File[]) => void;
   onBrowseFolder: () => void;
   onOpenPreview: (file: LocalFileRecord) => void;
   onClearFiles: () => void;
-  onToggleChooser: (open: boolean) => void;
   onLaunchWorkspaceWidget: (kind: WorkspaceWidget['kind']) => void;
   onSelectMarketGraph: (graph: MarketGraph) => void;
   workspaceWidgets: WorkspaceWidget[];
@@ -2640,12 +2673,10 @@ function WorkspaceWidgetCard({
             activeFileId={activeLocalFileId}
             folderEntries={folderEntries}
             folderPath={folderPath}
-            isChooserOpen={isChooserOpen}
             onBrowseFiles={onBrowseFiles}
             onBrowseFolder={onBrowseFolder}
             onOpenPreview={onOpenPreview}
             onClearFiles={onClearFiles}
-            onToggleChooser={onToggleChooser}
           />
         )}
         {widget.kind === 'native-app' && <NativeAppWidget />}
@@ -2686,7 +2717,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   const [activeLocalFileId, setActiveLocalFileId] = useState<string | null>(null);
   const [folderEntries, setFolderEntries] = useState<LocalFolderEntry[]>([]);
   const [folderPath, setFolderPath] = useState<string | null>(null);
-  const [isChooserOpen, setIsChooserOpen] = useState(false);
+  const persistedLocalFilesLoadedRef = useRef(false);
   const [activeMarketGraphId, setActiveMarketGraphId] = useState(defaultMarketGraph.id);
 
   useEffect(() => {
@@ -2694,9 +2725,24 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   }, [widgets]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(workspaceStorageKey, JSON.stringify(widgets));
-  }, [widgets]);
+    let cancelled = false;
+
+    void readPersistedLocalFiles().then((records) => {
+      if (cancelled) return;
+      setLocalFiles(records);
+      setActiveLocalFileId((current) => current ?? records[0]?.id ?? null);
+      persistedLocalFilesLoadedRef.current = true;
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!persistedLocalFilesLoadedRef.current) return;
+    void writePersistedLocalFiles(localFiles);
+  }, [localFiles]);
 
   useEffect(() => {
     const updateBounds = () => {
@@ -2927,8 +2973,6 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   };
 
   const browseFolder = async () => {
-    setIsChooserOpen(true);
-
     const picker = (window as Window & { showDirectoryPicker?: (options?: { mode?: 'read'; startIn?: string }) => Promise<any> }).showDirectoryPicker;
     if (!picker) return;
 
@@ -2959,8 +3003,9 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     const viewportHeight = Math.max(240, bounds.height || window.innerHeight || previewWidget.height);
     const maxWidth = Math.max(previewWidget.minWidth, Math.floor(viewportWidth * 0.88));
     const maxHeight = Math.max(previewWidget.minHeight, Math.floor(viewportHeight * 0.86));
-    const nextWidth = clampWidgetSize(dimensions.width + chromeWidth, previewWidget.minWidth, previewWidget.minWidth, maxWidth);
-    const nextHeight = clampWidgetSize(dimensions.height + chromeHeight, previewWidget.minHeight, previewWidget.minHeight, maxHeight);
+    const scale = Math.min(maxWidth / dimensions.width, maxHeight / dimensions.height, 1);
+    const nextWidth = clampWidgetSize(Math.round(dimensions.width * scale) + chromeWidth, previewWidget.width, previewWidget.minWidth, maxWidth + chromeWidth);
+    const nextHeight = clampWidgetSize(Math.round(dimensions.height * scale) + chromeHeight, previewWidget.height, previewWidget.minHeight, maxHeight + chromeHeight);
 
     setWidgets((current) => {
       const next = current.map((widget) =>
@@ -3019,6 +3064,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     setActiveLocalFileId(null);
     setFolderEntries([]);
     setFolderPath(null);
+    void clearPersistedLocalFiles();
   };
 
   const activeLocalFile = useMemo(
@@ -3070,13 +3116,11 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             activeLocalFileId={activeLocalFileId}
             folderEntries={folderEntries}
             folderPath={folderPath}
-            isChooserOpen={isChooserOpen}
             activeMarketGraph={activeMarketGraph}
             onBrowseFiles={importLocalFiles}
             onBrowseFolder={browseFolder}
             onOpenPreview={openLocalPreview}
             onClearFiles={clearLocalFiles}
-            onToggleChooser={setIsChooserOpen}
             onLaunchWorkspaceWidget={openWorkspaceWidget}
             onSelectMarketGraph={openMarketGraph}
             workspaceWidgets={widgets}
@@ -3133,13 +3177,11 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             activeLocalFileId={activeLocalFileId}
             folderEntries={folderEntries}
             folderPath={folderPath}
-            isChooserOpen={isChooserOpen}
             activeMarketGraph={activeMarketGraph}
             onBrowseFiles={importLocalFiles}
             onBrowseFolder={browseFolder}
             onOpenPreview={openLocalPreview}
             onClearFiles={clearLocalFiles}
-            onToggleChooser={setIsChooserOpen}
             onLaunchWorkspaceWidget={openWorkspaceWidget}
             onSelectMarketGraph={openMarketGraph}
             workspaceWidgets={widgets}

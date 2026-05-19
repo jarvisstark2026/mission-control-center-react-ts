@@ -12,8 +12,13 @@ export function SectionHeader({ eyebrow, title, description, className, children
   const baseId = useId();
   const titleId = `${baseId}-title`;
   const descriptionId = `${baseId}-description`;
-  const { ['aria-labelledby']: ariaLabelledByProp, ['aria-describedby']: ariaDescribedByProp, ...headerProps } = rest;
-  const ariaLabelledBy = [ariaLabelledByProp, titleId].filter(Boolean).join(' ');
+  const {
+    ['aria-label']: ariaLabelProp,
+    ['aria-labelledby']: ariaLabelledByProp,
+    ['aria-describedby']: ariaDescribedByProp,
+    ...headerProps
+  } = rest;
+  const ariaLabelledBy = ariaLabelProp ? ariaLabelledByProp : [ariaLabelledByProp, titleId].filter(Boolean).join(' ');
   const ariaDescribedBy = [ariaDescribedByProp, description ? descriptionId : null].filter(Boolean).join(' ');
 
   return (

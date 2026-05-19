@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   display: grid;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  grid-template-columns: clamp(240px, 28vw, 360px) minmax(0, 1fr);
   background: #030913;
   color: rgba(255, 255, 255, 0.92);
 }
@@ -13,7 +13,8 @@
   display: grid;
   align-content: start;
   gap: 18px;
-  padding: 28px 24px;
+  padding: 24px 20px;
+  min-width: 240px;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
@@ -108,7 +109,22 @@
   overflow: hidden;
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 1200px) {
+  .shell-frame {
+    grid-template-columns: clamp(220px, 30vw, 320px) minmax(0, 1fr);
+  }
+
+  .shell-rail {
+    padding: 20px 16px;
+    gap: 14px;
+  }
+
+  .shell-branding h1 {
+    font-size: clamp(1.6rem, 3vw, 2.6rem);
+  }
+}
+
+@media (max-width: 900px) {
   .shell-frame {
     grid-template-columns: 1fr;
   }

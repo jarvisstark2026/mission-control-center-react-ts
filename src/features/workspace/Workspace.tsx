@@ -1261,20 +1261,6 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   useEffect(() => {
     if (!bounds.width || !bounds.height) return;
 
-    setWidgets((current) =>
-      current.map((widget) => ({
-        ...widget,
-        x: clamp(widget.x, 0, Math.max(0, bounds.width - widget.width)),
-        y: clamp(widget.y, 0, Math.max(0, bounds.height - widget.height)),
-        width: clamp(widget.width, widget.minWidth, Math.max(widget.minWidth, bounds.width - widget.x)),
-        height: clamp(widget.height, widget.minHeight, Math.max(widget.minHeight, bounds.height - widget.y)),
-      })),
-    );
-  }, [bounds.height, bounds.width]);
-
-  useEffect(() => {
-    if (!bounds.width || !bounds.height) return;
-
     const isCompact = bounds.width < 860;
     if (!isCompact) {
       compactLayoutAppliedRef.current = false;
@@ -1393,16 +1379,8 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     const deltaY = event.clientY - interaction.startY;
 
     if (interaction.mode === 'drag') {
-      const nextLeft = clamp(
-        interaction.startLeft + deltaX,
-        0,
-        Math.max(0, canvasRect.width - currentWidget.width),
-      );
-      const nextTop = clamp(
-        interaction.startTop + deltaY,
-        0,
-        Math.max(0, canvasRect.height - currentWidget.height),
-      );
+      const nextLeft = interaction.startLeft + deltaX;
+      const nextTop = interaction.startTop + deltaY;
 
       setWidgets((current) =>
         current.map((widget) =>
@@ -1418,16 +1396,8 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
       return;
     }
 
-    const nextWidth = clamp(
-      interaction.startWidth + deltaX,
-      currentWidget.minWidth,
-      Math.max(currentWidget.minWidth, canvasRect.width - interaction.startLeft),
-    );
-    const nextHeight = clamp(
-      interaction.startHeight + deltaY,
-      currentWidget.minHeight,
-      Math.max(currentWidget.minHeight, canvasRect.height - interaction.startTop),
-    );
+    const nextWidth = Math.max(currentWidget.minWidth, interaction.startWidth + deltaX);
+    const nextHeight = Math.max(currentWidget.minHeight, interaction.startHeight + deltaY);
 
     setWidgets((current) =>
       current.map((widget) =>
@@ -1493,7 +1463,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             onStartResize={startResize}
             onToggleOpen={toggleWidget}
             onClose={closeWidget}
-            showChrome={false}
+            showChrome={panelKind === 'browser'}
           />
         </div>
       </section>

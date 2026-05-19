@@ -928,6 +928,11 @@
   align-content: start;
 }
 
+.browser-surface {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
 .schedule-head,
 .launcher-summary,
 .file-explorer-path,
@@ -1068,7 +1073,7 @@
 .browser-frame {
   width: 100%;
   flex: 1;
-  min-height: 140px;
+  min-height: 0;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.02);
 }

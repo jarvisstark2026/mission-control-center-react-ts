@@ -12,6 +12,7 @@ export type WidgetKind =
   | 'watch-video'
   | 'file-explorer'
   | 'native-app'
+  | 'window-manager'
   | 'video'
   | '3d'
   | 'flow'

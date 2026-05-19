@@ -62,6 +62,18 @@ export const shellNavItems: ShellNavItem[] = [
     hint: 'folders and files',
     allowedRoles: ['admin', 'home', 'support'],
   },
+  {
+    id: 'native-app',
+    label: 'Native app bridge',
+    hint: 'installed apps and external windows',
+    allowedRoles: ['admin', 'support'],
+  },
+  {
+    id: 'window-manager',
+    label: 'Window manager',
+    hint: 'open surfaces and routing',
+    allowedRoles: ['admin', 'support'],
+  },
 ];
 
 export function getVisibleShellNavItems(role: ShellRole) {

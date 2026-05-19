@@ -200,6 +200,22 @@ const widgetPresets: WorkspaceWidget[] = [
     minHeight: 200,
   },
   {
+    id: 'window-manager',
+    kind: 'window-manager',
+    title: 'Window manager',
+    subtitle: 'open / spawn / route',
+    x: 840,
+    y: 332,
+    width: 344,
+    height: 238,
+    zIndex: 4,
+    surfaceAlpha: 0.08,
+    lineAlpha: 0.15,
+    open: true,
+    minWidth: 300,
+    minHeight: 200,
+  },
+  {
     id: 'audio',
     kind: 'audio',
     title: 'Audio surface',
@@ -247,6 +263,7 @@ const launchableWindowKinds: WorkspaceWidget['kind'][] = [
   'watch-video',
   'file-explorer',
   'native-app',
+  'window-manager',
   'video',
   '3d',
   'flow',
@@ -267,6 +284,7 @@ const widgetBlueprints: Record<WorkspaceWidget['kind'], { title: string; subtitl
   'watch-video': { title: 'Watch video', subtitle: 'player / playback', surfaceAlpha: 0.078, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
   'file-explorer': { title: 'File explorer', subtitle: 'folders / files', surfaceAlpha: 0.076, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
   'native-app': { title: 'Native app bridge', subtitle: 'installed apps / external windows', surfaceAlpha: 0.08, lineAlpha: 0.15, minWidth: 320, minHeight: 200 },
+  'window-manager': { title: 'Window manager', subtitle: 'open / spawn / route', surfaceAlpha: 0.08, lineAlpha: 0.15, minWidth: 300, minHeight: 200 },
   video: { title: 'Video', subtitle: 'media frame', surfaceAlpha: 0.082, lineAlpha: 0.14, minWidth: 260, minHeight: 170 },
   '3d': { title: '3D preview', subtitle: 'assets / projects', surfaceAlpha: 0.1, lineAlpha: 0.16, minWidth: 300, minHeight: 190 },
   flow: { title: 'Flow chart', subtitle: 'system logic', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 220, minHeight: 150 },
@@ -548,6 +566,7 @@ function LauncherWidget() {
     { label: 'Watch video', kind: 'watch-video' as const },
     { label: 'File explorer', kind: 'file-explorer' as const },
     { label: 'Native app bridge', kind: 'native-app' as const },
+    { label: 'Window manager', kind: 'window-manager' as const },
     { label: 'Video', kind: 'video' as const },
     { label: '3D preview', kind: '3d' as const },
     { label: 'Flow chart', kind: 'flow' as const },
@@ -686,6 +705,37 @@ function NativeAppWidget() {
   );
 }
 
+
+function WindowManagerWidget() {
+  const items = [
+    { kind: 'overview', label: 'Command core', state: 'pinned', action: 'raise' },
+    { kind: 'launcher', label: 'App launcher', state: 'spawnable', action: 'open' },
+    { kind: 'browser', label: 'Browser', state: 'web panel', action: 'open' },
+    { kind: 'schedule', label: 'Schedule', state: 'today', action: 'open' },
+    { kind: 'native-app', label: 'Native bridge', state: 'desktop handoff', action: 'open' },
+    { kind: 'file-explorer', label: 'File explorer', state: 'local files', action: 'open' },
+    { kind: 'watch-video', label: 'Watch video', state: 'playback', action: 'open' },
+  ];
+
+  return (
+    <div className="window-manager-surface">
+      <div className="window-manager-head">
+        <span>window state</span>
+        <strong>{items.length} tracked surfaces</strong>
+      </div>
+      <div className="window-manager-list">
+        {items.map((item) => (
+          <button key={item.kind} type="button" className="window-manager-item">
+            <span>{item.label}</span>
+            <small>{item.state}</small>
+          </button>
+        ))}
+      </div>
+      <p className="window-manager-note">This is the first pass at the desktop traffic controller. A little less decorative, a little more useful.</p>
+    </div>
+  );
+}
+
 function WorkspaceWidgetCard({
   widget,
   onStartDrag,
@@ -750,6 +800,7 @@ function WorkspaceWidgetCard({
         {widget.kind === 'watch-video' && <WatchVideoWidget />}
         {widget.kind === 'file-explorer' && <FileExplorerWidget />}
         {widget.kind === 'native-app' && <NativeAppWidget />}
+        {widget.kind === 'window-manager' && <WindowManagerWidget />}
         {widget.kind === 'video' && <VideoWidget />}
         {widget.kind === '3d' && <PreviewWidget />}
         {widget.kind === 'flow' && <FlowWidget />}

@@ -1815,10 +1815,6 @@
 }
 
 @media (min-width: 1800px) {
-  .workspace-shell {
-    background-size: 88px 88px;
-  }
-
   .workspace-head {
     top: 20px;
     left: 20px;

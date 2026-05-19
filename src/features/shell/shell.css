@@ -19,6 +19,9 @@
     linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
     rgba(255, 255, 255, 0.01);
   backdrop-filter: blur(18px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .shell-branding h1,
@@ -61,26 +64,39 @@
 .shell-nav-list li {
   display: grid;
   gap: 4px;
+}
+
+.shell-nav-button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
   padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.shell-scope-list li.is-active {
+.shell-scope-list li.is-active,
+.shell-nav-button:hover,
+.shell-nav-button:focus-visible {
   border-color: rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.06);
 }
 
 .shell-scope-list span,
-.shell-nav-list span {
+.shell-nav-list span,
+.shell-nav-button span {
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.72rem;
 }
 
 .shell-scope-list small,
-.shell-nav-list small {
+.shell-nav-list small,
+.shell-nav-button small {
   color: rgba(255, 255, 255, 0.62);
   line-height: 1.4;
 }
@@ -100,5 +116,6 @@
   .shell-rail {
     border-right: 0;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    max-height: 38vh;
   }
 }

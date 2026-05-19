@@ -94,6 +94,26 @@ function normalizePanelKind(panelKind: string | null | undefined): WorkspaceWidg
   }
 }
 
+const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
+  workspace: null,
+  telemetry: 'graph',
+  approvals: 'project',
+  registry: 'window-manager',
+  schedule: 'schedule',
+  launcher: 'launcher',
+  browser: 'browser',
+  'watch-video': 'watch-video',
+  'file-explorer': 'file-explorer',
+  'native-app': 'native-app',
+  'window-manager': 'window-manager',
+  sheet: 'sheet',
+  docs: 'docs',
+  slides: 'slides',
+  'trading-graph': 'trading-graph',
+  image: 'image',
+  pdf: 'pdf',
+};
+
 export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
   const activeRole = role ?? defaultRole;
   const visibleItems = getVisibleShellNavItems(activeRole);
@@ -104,6 +124,15 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
       ? `Mission Control Center — ${getPanelLabel(activePanelKind)}`
       : `Mission Control Center — ${shellScopes.find((scope) => scope.id === activeRole)?.label ?? 'Support'}`;
   }, [activePanelKind, activeRole]);
+
+  const navigateToPanel = (target: WorkspaceWidget['kind'] | null) => {
+    if (typeof window === 'undefined') return;
+
+    const url = new URL(window.location.href);
+    if (target) url.searchParams.set('panel', target);
+    else url.searchParams.delete('panel');
+    window.location.assign(url.toString());
+  };
 
   if (activePanelKind) {
     return (
@@ -119,17 +148,20 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
             </div>
 
             <div className="shell-window-actions">
-              <button
-                type="button"
-                className="shell-window-button"
-                onClick={() => {
-                  const baseUrl = `${window.location.origin}${window.location.pathname}`;
-                  window.location.assign(baseUrl);
-                }}
-              >
+              <button type="button" className="shell-window-button" onClick={() => navigateToPanel(null)}>
                 Open hub
               </button>
-              <button type="button" className="shell-window-button is-muted" onClick={() => window.close()}>
+              <button
+                type="button"
+                className="shell-window-button is-muted"
+                onClick={() => {
+                  if (window.opener) {
+                    window.close();
+                    return;
+                  }
+                  navigateToPanel(null);
+                }}
+              >
                 Close window
               </button>
             </div>
@@ -169,8 +201,14 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
           <ul className="shell-nav-list">
             {visibleItems.map((item) => (
               <li key={item.id}>
-                <span>{item.label}</span>
-                <small>{item.hint}</small>
+                <button
+                  type="button"
+                  className="shell-nav-button"
+                  onClick={() => navigateToPanel(navPanelById[item.id] ?? null)}
+                >
+                  <span>{item.label}</span>
+                  <small>{item.hint}</small>
+                </button>
               </li>
             ))}
           </ul>

@@ -361,6 +361,40 @@ const initialWidgetState = widgetPresets.map((widget) => ({
   open: defaultOpenKinds.has(widget.kind),
 }));
 
+const workspaceStorageKey = 'mission-control-center.workspace.layout.v1';
+
+function loadStoredWidgetState(): WorkspaceWidget[] | null {
+  if (typeof window === 'undefined') return null;
+
+  try {
+    const raw = window.localStorage.getItem(workspaceStorageKey);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as Partial<WorkspaceWidget>[];
+    if (!Array.isArray(parsed)) return null;
+
+    const byId = new Map(parsed.filter((item): item is Partial<WorkspaceWidget> & { id: string } => Boolean(item && item.id)).map((item) => [item.id, item]));
+
+    return widgetPresets.map((preset) => {
+      const stored = byId.get(preset.id);
+      if (!stored) return { ...preset, open: defaultOpenKinds.has(preset.kind) };
+
+      return {
+        ...preset,
+        ...stored,
+        open: typeof stored.open === 'boolean' ? stored.open : defaultOpenKinds.has(preset.kind),
+        width: typeof stored.width === 'number' ? stored.width : preset.width,
+        height: typeof stored.height === 'number' ? stored.height : preset.height,
+        x: typeof stored.x === 'number' ? stored.x : preset.x,
+        y: typeof stored.y === 'number' ? stored.y : preset.y,
+        zIndex: typeof stored.zIndex === 'number' ? stored.zIndex : preset.zIndex,
+      };
+    });
+  } catch {
+    return null;
+  }
+}
+
 const launchableWindowKinds: WorkspaceWidget['kind'][] = [
   'overview',
   'graph',
@@ -1044,10 +1078,10 @@ function WorkspaceWidgetCard({
                 event.stopPropagation();
                 onToggleOpen(widget.id);
               }}
-              aria-label={widget.open ? `Minimize ${widget.title}` : `Restore ${widget.title}`}
-              title={widget.open ? `Minimize ${widget.title}` : `Restore ${widget.title}`}
+              aria-label={widget.open ? `Minimize ${widget.title}` : `Maximize ${widget.title}`}
+              title={widget.open ? `Minimize ${widget.title}` : `Maximize ${widget.title}`}
             >
-              {widget.open ? '−' : '+'}
+              {widget.open ? '↑' : '↓'}
             </button>
             <button
               type="button"
@@ -1119,6 +1153,20 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
 
   useEffect(() => {
     widgetsRef.current = widgets;
+  }, [widgets]);
+
+  useEffect(() => {
+    const stored = loadStoredWidgetState();
+    if (!stored) return;
+
+    widgetsRef.current = stored;
+    compactLayoutAppliedRef.current = true;
+    setWidgets(stored);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.localStorage.setItem(workspaceStorageKey, JSON.stringify(widgets));
   }, [widgets]);
 
   useEffect(() => {
@@ -1195,7 +1243,12 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     const url = new URL(window.location.href);
     url.searchParams.set('panel', kind);
     const popup = window.open(url.toString(), '_blank', 'popup=yes,width=1280,height=900');
-    popup?.focus?.();
+    if (!popup) {
+      window.location.assign(url.toString());
+      return;
+    }
+
+    popup.focus?.();
     setNextLaunchIndex((current) => current + 1);
   };
 
@@ -1212,7 +1265,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
 
   const startDrag = (event: ReactPointerEvent<HTMLElement>, id: string) => {
     if (event.button !== 0) return;
-    if ((event.target as HTMLElement).closest('button.widget-toggle, button.widget-resize-handle')) return;
+    if ((event.target as HTMLElement).closest('button, input, textarea, select, a, video, [role="button"]')) return;
 
     const widget = widgetsRef.current.find((item) => item.id === id);
     const canvas = canvasRef.current;

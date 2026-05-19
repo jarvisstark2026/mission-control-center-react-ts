@@ -145,6 +145,11 @@ const launchableWindowKinds: WorkspaceWidget['kind'][] = [
   'diagram',
   'project',
   'news',
+  'schedule',
+  'launcher',
+  'browser',
+  'watch-video',
+  'file-explorer',
   'video',
   '3d',
   'flow',
@@ -159,6 +164,11 @@ const widgetBlueprints: Record<WorkspaceWidget['kind'], { title: string; subtitl
   diagram: { title: 'Diagram', subtitle: 'system structure', surfaceAlpha: 0.078, lineAlpha: 0.15, minWidth: 260, minHeight: 170 },
   project: { title: 'Project list', subtitle: 'tasks / backlog', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 260, minHeight: 150 },
   news: { title: 'News / market', subtitle: 'watchlist', surfaceAlpha: 0.078, lineAlpha: 0.14, minWidth: 240, minHeight: 150 },
+  schedule: { title: 'Schedule', subtitle: 'day / week / next', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 280, minHeight: 170 },
+  launcher: { title: 'App launcher', subtitle: 'apps / desktop hooks', surfaceAlpha: 0.082, lineAlpha: 0.15, minWidth: 280, minHeight: 180 },
+  browser: { title: 'Browser', subtitle: 'pages / tabs', surfaceAlpha: 0.074, lineAlpha: 0.14, minWidth: 320, minHeight: 220 },
+  'watch-video': { title: 'Watch video', subtitle: 'player / playback', surfaceAlpha: 0.078, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
+  'file-explorer': { title: 'File explorer', subtitle: 'folders / files', surfaceAlpha: 0.076, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
   video: { title: 'Video', subtitle: 'media frame', surfaceAlpha: 0.082, lineAlpha: 0.14, minWidth: 260, minHeight: 170 },
   '3d': { title: '3D preview', subtitle: 'assets / projects', surfaceAlpha: 0.1, lineAlpha: 0.16, minWidth: 300, minHeight: 190 },
   flow: { title: 'Flow chart', subtitle: 'system logic', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 220, minHeight: 150 },
@@ -395,6 +405,143 @@ function ListWidget() {
   );
 }
 
+function ScheduleWidget() {
+  const slots = [
+    { time: '07:30', label: 'Morning shift', note: 'brief / hydrate / review' },
+    { time: '12:15', label: 'Project block', note: 'deep work / build' },
+    { time: '16:30', label: 'Check-in', note: 'status / approvals' },
+    { time: '21:00', label: 'Wrap-up', note: 'handoff / tidy / plan' },
+  ];
+
+  return (
+    <div className="schedule-surface">
+      <div className="schedule-head">
+        <span>Today</span>
+        <strong>4 blocks</strong>
+      </div>
+      {slots.map((slot, index) => (
+        <div className="schedule-slot" key={slot.time}>
+          <div className="schedule-time">{slot.time}</div>
+          <div className="schedule-content">
+            <span>{slot.label}</span>
+            <small>{slot.note}</small>
+          </div>
+          <div className="schedule-bar">
+            <i style={{ width: `${38 + index * 14}%` }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function LauncherWidget() {
+  const apps = [
+    { label: 'Browser', kind: 'browser' as const },
+    { label: 'Files', kind: 'file-explorer' as const },
+    { label: 'Schedule', kind: 'schedule' as const },
+    { label: 'Watch video', kind: 'watch-video' as const },
+  ];
+
+  const launch = (kind: (typeof apps)[number]['kind']) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('panel', kind);
+    window.open(url.toString(), '_blank', 'popup=yes,width=1280,height=900')?.focus?.();
+  };
+
+  return (
+    <div className="launcher-surface">
+      <div className="launcher-summary">
+        <span>desktop hooks</span>
+        <strong>open / spawn / route</strong>
+      </div>
+      <div className="launcher-grid">
+        {apps.map((app) => (
+          <button key={app.kind} type="button" className="launcher-app" onClick={() => launch(app.kind)}>
+            <span>{app.label}</span>
+            <small>open panel</small>
+          </button>
+        ))}
+      </div>
+      <p className="launcher-note">Native app integration can hang off this hook later. For now it is a disciplined preview of the idea.</p>
+    </div>
+  );
+}
+
+function BrowserWidget() {
+  const [url, setUrl] = useState('https://example.org');
+  const [frameUrl, setFrameUrl] = useState(url);
+
+  const submitUrl = () => {
+    let next = url.trim();
+    if (!next) return;
+    if (!/^https?:\/\//i.test(next) && !next.startsWith('data:')) {
+      next = `https://${next}`;
+    }
+    setFrameUrl(next);
+    setUrl(next);
+  };
+
+  return (
+    <div className="browser-surface">
+      <div className="browser-bar">
+        <input value={url} onChange={(event) => setUrl(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && submitUrl()} />
+        <button type="button" onClick={submitUrl}>Go</button>
+      </div>
+      <div className="browser-bookmarks">
+        {['https://example.org', 'https://developer.mozilla.org', 'https://news.ycombinator.com'].map((bookmark) => (
+          <button key={bookmark} type="button" onClick={() => { setUrl(bookmark); setFrameUrl(bookmark); }}>
+            {bookmark.replace('https://', '')}
+          </button>
+        ))}
+      </div>
+      <iframe title="Browser preview" src={frameUrl} className="browser-frame" />
+    </div>
+  );
+}
+
+function WatchVideoWidget() {
+  return (
+    <div className="watch-video-surface">
+      <video controls preload="metadata" src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" />
+      <div className="watch-video-caption">
+        <span>watch video</span>
+        <small>stream / scrub / fullscreen</small>
+      </div>
+    </div>
+  );
+}
+
+function FileExplorerWidget() {
+  const folders = [
+    { name: 'Projects', files: ['mission-control-center', 'dailyforge', 'design-assets'] },
+    { name: 'Documents', files: ['briefs', 'notes', 'exports'] },
+    { name: 'Media', files: ['video', 'audio', 'screens'] },
+  ];
+
+  return (
+    <div className="file-explorer-surface">
+      <div className="file-explorer-path">/home/jarvis</div>
+      {folders.map((folder) => (
+        <section key={folder.name} className="file-explorer-folder">
+          <div className="file-explorer-folder-head">
+            <span>{folder.name}</span>
+            <small>{folder.files.length} items</small>
+          </div>
+          <ul>
+            {folder.files.map((file) => (
+              <li key={file}>
+                <span>{file}</span>
+                <small>open</small>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 function WorkspaceWidgetCard({
   widget,
   onStartDrag,
@@ -453,6 +600,11 @@ function WorkspaceWidgetCard({
         {widget.kind === 'diagram' && <DiagramWidget />}
         {widget.kind === 'project' && <ProjectWidget />}
         {widget.kind === 'news' && <NewsWidget />}
+        {widget.kind === 'schedule' && <ScheduleWidget />}
+        {widget.kind === 'launcher' && <LauncherWidget />}
+        {widget.kind === 'browser' && <BrowserWidget />}
+        {widget.kind === 'watch-video' && <WatchVideoWidget />}
+        {widget.kind === 'file-explorer' && <FileExplorerWidget />}
         {widget.kind === 'video' && <VideoWidget />}
         {widget.kind === '3d' && <PreviewWidget />}
         {widget.kind === 'flow' && <FlowWidget />}

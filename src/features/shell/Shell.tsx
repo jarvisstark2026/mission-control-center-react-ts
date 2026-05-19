@@ -28,6 +28,16 @@ function getPanelLabel(panelKind: string | null | undefined) {
       return 'Project list';
     case 'news':
       return 'News / market';
+    case 'schedule':
+      return 'Schedule';
+    case 'launcher':
+      return 'App launcher';
+    case 'browser':
+      return 'Browser';
+    case 'watch-video':
+      return 'Watch video';
+    case 'file-explorer':
+      return 'File explorer';
     case 'video':
       return 'Video';
     case '3d':
@@ -50,6 +60,11 @@ function normalizePanelKind(panelKind: string | null | undefined): WorkspaceWidg
     case 'diagram':
     case 'project':
     case 'news':
+    case 'schedule':
+    case 'launcher':
+    case 'browser':
+    case 'watch-video':
+    case 'file-explorer':
     case 'video':
     case '3d':
     case 'flow':

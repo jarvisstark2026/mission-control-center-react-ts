@@ -152,10 +152,14 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
   }, []);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+
+      const media = window.matchMedia(`(max-width: ${railBreakpoint}px)`);
+      if (!media.matches) return;
+
       setIsRailOpen(false);
     };
 

@@ -83,6 +83,7 @@ function getRoleLabel(role: ShellRole) {
 const navPanelById: Record<string, WorkspaceWidget['kind'] | null> = {
   workspace: null,
   telemetry: 'graph',
+  map: 'map',
   approvals: 'project',
   registry: 'window-manager',
   schedule: 'schedule',

@@ -21,6 +21,12 @@ export const shellNavItems: ShellNavItem[] = [
     allowedRoles: ['admin', 'home', 'support'],
   },
   {
+    id: 'map',
+    label: 'Map / routes',
+    hint: 'locations and zones',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
     id: 'approvals',
     label: 'Approvals',
     hint: 'gated actions and queue review',

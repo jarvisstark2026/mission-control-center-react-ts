@@ -117,10 +117,15 @@
     transform 160ms ease;
 }
 
-.action-button:hover,
-.action-button:focus-visible {
+.action-button:hover {
   border-color: rgba(255, 255, 255, 0.24);
   background: rgba(255, 255, 255, 0.08);
+}
+
+.action-button:focus-visible {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(140, 182, 255, 0.28), 0 0 0 4px rgba(140, 182, 255, 0.12);
 }
 
 .action-button:active {
@@ -138,10 +143,15 @@
   background: rgba(140, 182, 255, 0.1);
 }
 
-.action-button--primary:hover,
-.action-button--primary:focus-visible {
+.action-button--primary:hover {
   border-color: rgba(140, 182, 255, 0.34);
   background: rgba(140, 182, 255, 0.14);
+}
+
+.action-button--primary:focus-visible {
+  border-color: rgba(140, 182, 255, 0.4);
+  background: rgba(140, 182, 255, 0.14);
+  box-shadow: 0 0 0 1px rgba(140, 182, 255, 0.34), 0 0 0 4px rgba(140, 182, 255, 0.14);
 }
 
 .action-button--secondary {

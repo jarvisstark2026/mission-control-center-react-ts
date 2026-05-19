@@ -18,12 +18,13 @@ export function SectionHeader({ eyebrow, title, description, className, children
     ['aria-describedby']: ariaDescribedByProp,
     ...headerProps
   } = rest;
-  const ariaLabelledBy = ariaLabelProp ? ariaLabelledByProp : ariaLabelledByProp ?? titleId;
+  const ariaLabelledBy = ariaLabelledByProp ?? (!ariaLabelProp ? titleId : undefined);
   const ariaDescribedBy = [ariaDescribedByProp, description ? descriptionId : null].filter(Boolean).join(' ');
 
   return (
     <header
       className={["section-header", className].filter(Boolean).join(' ')}
+      aria-label={ariaLabelProp}
       aria-labelledby={ariaLabelledBy}
       aria-describedby={ariaDescribedBy || undefined}
       {...headerProps}

@@ -530,7 +530,7 @@ const widgetPresets: WorkspaceWidget[] = [
   {
     id: 'news',
     kind: 'news',
-    title: 'News / market',
+    title: 'Markets',
     subtitle: 'watchlist',
     x: 872,
     y: 94,
@@ -880,7 +880,7 @@ const widgetBlueprints: Record<WorkspaceWidget['kind'], { title: string; subtitl
   map: { title: 'Map / routes', subtitle: 'locations / zones', surfaceAlpha: 0.08, lineAlpha: 0.15, minWidth: 250, minHeight: 170 },
   diagram: { title: 'Diagram preview', subtitle: 'system structure', surfaceAlpha: 0.078, lineAlpha: 0.15, minWidth: 260, minHeight: 170 },
   project: { title: 'Project list', subtitle: 'tasks / backlog', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 260, minHeight: 150 },
-  news: { title: 'News / market', subtitle: 'watchlist', surfaceAlpha: 0.078, lineAlpha: 0.14, minWidth: 240, minHeight: 150 },
+  news: { title: 'Markets', subtitle: 'watchlist', surfaceAlpha: 0.078, lineAlpha: 0.14, minWidth: 240, minHeight: 150 },
   schedule: { title: 'Schedule', subtitle: 'day / week / next', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 280, minHeight: 170 },
   launcher: { title: 'App launcher', subtitle: 'apps / desktop hooks', surfaceAlpha: 0.082, lineAlpha: 0.15, minWidth: 280, minHeight: 180 },
   browser: { title: 'Browser', subtitle: 'pages / tabs', surfaceAlpha: 0.074, lineAlpha: 0.14, minWidth: 320, minHeight: 220 },
@@ -1017,18 +1017,174 @@ function GraphWidget() {
   );
 }
 
-function TradingGraphWidget() {
+type MarketGraph = {
+  id: string;
+  categoryId: string;
+  category: string;
+  label: string;
+  ticker: string;
+  change: string;
+  horizon: string;
+  note: string;
+};
+
+type MarketCategory = {
+  id: string;
+  label: string;
+  summary: string;
+  graphs: MarketGraph[];
+};
+
+const marketCategories: MarketCategory[] = [
+  {
+    id: 'equities',
+    label: 'Equities',
+    summary: 'indices and large caps',
+    graphs: [
+      { id: 'spx', categoryId: 'equities', category: 'Equities', label: 'S&P 500', ticker: 'SPX', change: '+0.8%', horizon: '1D / 4H', note: 'broad market benchmark and risk appetite' },
+      { id: 'ndx', categoryId: 'equities', category: 'Equities', label: 'Nasdaq 100', ticker: 'NDX', change: '+1.4%', horizon: '1D / 1H', note: 'tech-heavy momentum and volatility' },
+      { id: 'ukx', categoryId: 'equities', category: 'Equities', label: 'FTSE 100', ticker: 'UKX', change: '+0.3%', horizon: '1D / 1H', note: 'steady large-cap index with defensive tilt' },
+    ],
+  },
+  {
+    id: 'crypto',
+    label: 'Crypto',
+    summary: 'high beta and weekend noise',
+    graphs: [
+      { id: 'btc', categoryId: 'crypto', category: 'Crypto', label: 'Bitcoin', ticker: 'BTC/USD', change: '+2.1%', horizon: '1D / 30M', note: 'primary crypto risk gauge' },
+      { id: 'eth', categoryId: 'crypto', category: 'Crypto', label: 'Ethereum', ticker: 'ETH/USD', change: '+1.6%', horizon: '1D / 30M', note: 'smart contract network and beta proxy' },
+      { id: 'sol', categoryId: 'crypto', category: 'Crypto', label: 'Solana', ticker: 'SOL/USD', change: '+3.4%', horizon: '1D / 15M', note: 'fast moving altcoin trend tracker' },
+    ],
+  },
+  {
+    id: 'fx',
+    label: 'FX',
+    summary: 'currency crosses and macro drift',
+    graphs: [
+      { id: 'eurusd', categoryId: 'fx', category: 'FX', label: 'Euro / Dollar', ticker: 'EUR/USD', change: '-0.2%', horizon: '1D / 1H', note: 'core reserve currency cross' },
+      { id: 'gbpusd', categoryId: 'fx', category: 'FX', label: 'Pound / Dollar', ticker: 'GBP/USD', change: '+0.1%', horizon: '1D / 1H', note: 'UK rate sensitivity and risk tone' },
+      { id: 'usdjpy', categoryId: 'fx', category: 'FX', label: 'Dollar / Yen', ticker: 'USD/JPY', change: '+0.6%', horizon: '1D / 1H', note: 'carry, intervention risk, and funding stress' },
+    ],
+  },
+  {
+    id: 'commodities',
+    label: 'Commodities',
+    summary: 'energy, metals, and inflation pressure',
+    graphs: [
+      { id: 'gold', categoryId: 'commodities', category: 'Commodities', label: 'Gold', ticker: 'XAU/USD', change: '+0.4%', horizon: '1D / 4H', note: 'safe haven and real-rate mirror' },
+      { id: 'brent', categoryId: 'commodities', category: 'Commodities', label: 'Brent crude', ticker: 'BRENT', change: '-0.7%', horizon: '1D / 1H', note: 'energy pulse and inflation input' },
+      { id: 'silver', categoryId: 'commodities', category: 'Commodities', label: 'Silver', ticker: 'XAG/USD', change: '+0.9%', horizon: '1D / 4H', note: 'industrial demand and precious metal mix' },
+    ],
+  },
+];
+
+const marketGraphIndex = new Map(marketCategories.flatMap((category) => category.graphs.map((graph) => [graph.id, graph] as const)));
+const defaultMarketGraph = marketCategories[0]?.graphs[0] ?? {
+  id: 'spx',
+  categoryId: 'equities',
+  category: 'Equities',
+  label: 'S&P 500',
+  ticker: 'SPX',
+  change: '+0.8%',
+  horizon: '1D / 4H',
+  note: 'broad market benchmark and risk appetite',
+};
+
+function getMarketGraph(graphId: string) {
+  return marketGraphIndex.get(graphId) ?? defaultMarketGraph;
+}
+
+function TradingGraphWidget({ graph }: { graph: MarketGraph }) {
   return (
     <div className="trading-graph-surface">
       <div className="trading-graph-header">
-        <span>market graph</span>
-        <strong>price / volume / signal</strong>
+        <div>
+          <span>market graph</span>
+          <strong>{graph.label}</strong>
+        </div>
+        <div className="trading-graph-header-meta">
+          <span>{graph.ticker}</span>
+          <small>{graph.category}</small>
+        </div>
+      </div>
+      <div className="trading-graph-summary">
+        <div className="trading-graph-stat">
+          <span>horizon</span>
+          <strong>{graph.horizon}</strong>
+        </div>
+        <div className="trading-graph-stat">
+          <span>signal</span>
+          <strong>{graph.change}</strong>
+        </div>
+        <div className="trading-graph-stat trading-graph-stat-wide">
+          <span>notes</span>
+          <small>{graph.note}</small>
+        </div>
       </div>
       <div className="trading-graph-body">
         <div className="trading-graph-grid" />
         <div className="trading-graph-line trading-a" />
         <div className="trading-graph-line trading-b" />
         <div className="trading-graph-volume" />
+      </div>
+      <p className="trading-graph-footer">Selecting a market item in the markets widget brings this graph forward and swaps the market context. No ceremony, just the useful bit.</p>
+    </div>
+  );
+}
+
+function MarketsWidget({
+  activeGraph,
+  onSelectGraph,
+}: {
+  activeGraph: MarketGraph;
+  onSelectGraph: (graph: MarketGraph) => void;
+}) {
+  return (
+    <div className="markets-surface">
+      <div className="markets-head">
+        <div>
+          <span>Markets</span>
+          <strong>custom graph library / watchlist</strong>
+        </div>
+        <div className="markets-head-meta">
+          <span>{activeGraph.category}</span>
+          <small>{activeGraph.ticker}</small>
+        </div>
+      </div>
+      <div className="markets-summary">
+        <strong>{activeGraph.label}</strong>
+        <p>{activeGraph.note}</p>
+      </div>
+      <div className="markets-categories">
+        {marketCategories.map((category) => (
+          <section className="market-category" key={category.id}>
+            <div className="market-category-head">
+              <div>
+                <span>{category.label}</span>
+                <strong>{category.summary}</strong>
+              </div>
+              <small>{category.graphs.length} graphs</small>
+            </div>
+            <div className="market-graph-list">
+              {category.graphs.map((graph) => {
+                const isActive = graph.id === activeGraph.id;
+                return (
+                  <button
+                    key={graph.id}
+                    type="button"
+                    className={`market-graph-item ${isActive ? 'is-active' : ''}`}
+                    onClick={() => onSelectGraph(graph)}
+                    aria-pressed={isActive}
+                  >
+                    <span>{graph.label}</span>
+                    <strong>{graph.ticker}</strong>
+                    <small>{graph.horizon} · {graph.change}</small>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        ))}
       </div>
     </div>
   );
@@ -1207,18 +1363,14 @@ function ProjectWidget() {
   );
 }
 
-function NewsWidget() {
-  return (
-    <div className="news-surface">
-      <div className="news-ticker" />
-      {['AI systems', 'energy', 'markets', 'home'].map((label) => (
-        <div className="news-item" key={label}>
-          <span>{label}</span>
-          <span>live</span>
-        </div>
-      ))}
-    </div>
-  );
+function NewsWidget({
+  activeGraph,
+  onSelectGraph,
+}: {
+  activeGraph: MarketGraph;
+  onSelectGraph: (graph: MarketGraph) => void;
+}) {
+  return <MarketsWidget activeGraph={activeGraph} onSelectGraph={onSelectGraph} />;
 }
 
 function VideoWidget() {
@@ -1772,60 +1924,53 @@ function ScheduleWidget() {
   );
 }
 
-function LauncherWidget() {
+type LauncherWidgetProps = {
+  onLaunchWorkspaceWidget: (kind: WorkspaceWidget['kind']) => void;
+};
+
+function LauncherWidget({ onLaunchWorkspaceWidget }: LauncherWidgetProps) {
   const apps = [
-    { label: 'Command core', kind: 'overview' as const },
-    { label: 'Telemetry', kind: 'graph' as const },
-    { label: 'Audio preview', kind: 'audio' as const },
-    { label: 'Map / routes', kind: 'map' as const },
-    { label: 'Diagram preview', kind: 'diagram' as const },
-    { label: 'Project list', kind: 'project' as const },
-    { label: 'News / market', kind: 'news' as const },
-    { label: 'Schedule', kind: 'schedule' as const },
-    { label: 'Browser', kind: 'browser' as const },
-    { label: 'Live TV', kind: 'watch-video' as const },
-    { label: 'File explorer', kind: 'file-explorer' as const },
-    { label: 'Native app bridge', kind: 'native-app' as const },
-    { label: 'Registry', kind: 'window-manager' as const },
-    { label: 'Spreadsheet', kind: 'sheet' as const },
-    { label: 'Docs', kind: 'docs' as const },
-    { label: 'Presentation', kind: 'slides' as const },
-    { label: 'Trading graph', kind: 'trading-graph' as const },
-    { label: 'Image preview', kind: 'image' as const },
-    { label: 'PDF', kind: 'pdf' as const },
-    { label: 'Media frame', kind: 'video' as const },
-    { label: 'Preview', kind: '3d' as const },
-    { label: '3D studio', kind: '3d-studio' as const },
-    { label: 'Workflows', kind: 'flow' as const },
-    { label: 'List', kind: 'list' as const },
+    { label: 'Command core', kind: 'overview' as const, note: 'open in workspace' },
+    { label: 'Telemetry', kind: 'graph' as const, note: 'open in workspace' },
+    { label: 'Audio preview', kind: 'audio' as const, note: 'open in workspace' },
+    { label: 'Map / routes', kind: 'map' as const, note: 'open in workspace' },
+    { label: 'Diagram preview', kind: 'diagram' as const, note: 'open in workspace' },
+    { label: 'Project list', kind: 'project' as const, note: 'open in workspace' },
+    { label: 'Markets', kind: 'news' as const, note: 'open graph library' },
+    { label: 'Schedule', kind: 'schedule' as const, note: 'open in workspace' },
+    { label: 'Browser', kind: 'browser' as const, note: 'open in workspace' },
+    { label: 'Live TV', kind: 'watch-video' as const, note: 'open in workspace' },
+    { label: 'File explorer', kind: 'file-explorer' as const, note: 'open in workspace' },
+    { label: 'Native app bridge', kind: 'native-app' as const, note: 'open in workspace' },
+    { label: 'Registry', kind: 'window-manager' as const, note: 'track open widgets' },
+    { label: 'Spreadsheet', kind: 'sheet' as const, note: 'open in workspace' },
+    { label: 'Docs', kind: 'docs' as const, note: 'open in workspace' },
+    { label: 'Presentation', kind: 'slides' as const, note: 'open in workspace' },
+    { label: 'Trading graph', kind: 'trading-graph' as const, note: 'focus market chart' },
+    { label: 'Image preview', kind: 'image' as const, note: 'open in workspace' },
+    { label: 'PDF', kind: 'pdf' as const, note: 'open in workspace' },
+    { label: 'Media frame', kind: 'video' as const, note: 'open in workspace' },
+    { label: 'Preview', kind: '3d' as const, note: 'open in workspace' },
+    { label: '3D studio', kind: '3d-studio' as const, note: 'open in workspace' },
+    { label: 'Workflows', kind: 'flow' as const, note: 'open in workspace' },
+    { label: 'List', kind: 'list' as const, note: 'open in workspace' },
   ];
-
-  const launch = (kind: (typeof apps)[number]['kind']) => {
-    const url = buildPanelWindowUrl(kind);
-    const popup = window.open(url.toString(), '_blank', 'popup=yes,width=1280,height=900');
-    if (!popup) {
-      window.location.assign(url.toString());
-      return;
-    }
-
-    popup.focus?.();
-  };
 
   return (
     <div className="launcher-surface">
       <div className="launcher-summary">
-        <span>desktop hooks</span>
-        <strong>open / spawn / route</strong>
+        <span>workspace hooks</span>
+        <strong>open / focus / stay in the workspace</strong>
       </div>
       <div className="launcher-grid">
         {apps.map((app) => (
-          <button key={app.kind} type="button" className="launcher-app" onClick={() => launch(app.kind)}>
+          <button key={app.kind} type="button" className="launcher-app" onClick={() => onLaunchWorkspaceWidget(app.kind)}>
             <span>{app.label}</span>
-            <small>open panel</small>
+            <small>{app.note}</small>
           </button>
         ))}
       </div>
-      <p className="launcher-note">Native app integration can hang off this hook later. For now it is a disciplined preview of the idea.</p>
+      <p className="launcher-note">The launcher now opens widgets where they belong: in the workspace, not as a separate browser tantrum.</p>
     </div>
   );
 }
@@ -2175,33 +2320,49 @@ function NativeAppWidget() {
 }
 
 
-function WindowManagerWidget() {
-  const items = [
-    { kind: 'overview', label: 'Command core', state: 'pinned', scope: 'core' },
-    { kind: 'launcher', label: 'App launcher', state: 'spawnable', scope: 'admin' },
-    { kind: 'browser', label: 'Browser', state: 'web panel', scope: 'all' },
-    { kind: 'schedule', label: 'Schedule', state: 'today', scope: 'all' },
-    { kind: 'native-app', label: 'Native bridge', state: 'desktop handoff', scope: 'support' },
-    { kind: 'file-explorer', label: 'File explorer', state: 'local files', scope: 'all' },
-    { kind: 'flow', label: 'Workflows', state: 'library / export', scope: 'all' },
-    { kind: 'video', label: 'Media frame', state: 'preview panel', scope: 'all' },
-  ];
+function WindowManagerWidget({
+  widgets,
+  onFocusWidget,
+  onCloseWidget,
+}: {
+  widgets: WorkspaceWidget[];
+  onFocusWidget: (id: string) => void;
+  onCloseWidget: (id: string) => void;
+}) {
+  const openWidgets = [...widgets]
+    .filter((widget) => widget.open)
+    .sort((left, right) => right.zIndex - left.zIndex);
 
   return (
     <div className="window-manager-surface">
       <div className="window-manager-head">
-        <span>registry state</span>
-        <strong>{items.length} connected surfaces</strong>
+        <div>
+          <span>open windows</span>
+          <strong>{openWidgets.length} active · {widgets.length} total</strong>
+        </div>
+        <small>focus or close them from here</small>
       </div>
-      <div className="window-manager-list">
-        {items.map((item) => (
-          <button key={item.kind} type="button" className="window-manager-item">
-            <span>{item.label}</span>
-            <small>{item.state} · {item.scope}</small>
-          </button>
+      <div className="window-manager-list" role="list" aria-label="Open widgets">
+        {openWidgets.map((widget) => (
+          <div key={widget.id} className="window-manager-item" role="listitem">
+            <button type="button" className="window-manager-item-button" onClick={() => onFocusWidget(widget.id)}>
+              <span>{widget.title}</span>
+              <small>{widget.kind} · z{widget.zIndex}</small>
+            </button>
+            <button
+              type="button"
+              className="window-manager-close"
+              onClick={() => onCloseWidget(widget.id)}
+              disabled={Boolean(widget.pinned)}
+              aria-label={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
+              title={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
+            >
+              ×
+            </button>
+          </div>
         ))}
       </div>
-      <p className="window-manager-note">A registry-first view of connected surfaces. Less theatrical than a full traffic controller, which is arguably for the best.</p>
+      <p className="window-manager-note">A registry-first view of the current workspace. Less theatrical than a traffic controller, which is arguably for the best.</p>
     </div>
   );
 }
@@ -2216,9 +2377,15 @@ function WorkspaceWidgetCard({
   localFiles,
   activeLocalFile,
   activeLocalFileId,
+  activeMarketGraph,
   onBrowseFiles,
   onOpenPreview,
   onClearFiles,
+  onLaunchWorkspaceWidget,
+  onSelectMarketGraph,
+  workspaceWidgets,
+  onFocusWidget,
+  onCloseWidget,
 }: {
   widget: WorkspaceWidget;
   onStartDrag: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
@@ -2229,9 +2396,15 @@ function WorkspaceWidgetCard({
   localFiles: LocalFileRecord[];
   activeLocalFile: LocalFileRecord | null;
   activeLocalFileId: string | null;
+  activeMarketGraph: MarketGraph;
   onBrowseFiles: (files: FileList | File[]) => void;
   onOpenPreview: (file: LocalFileRecord) => void;
   onClearFiles: () => void;
+  onLaunchWorkspaceWidget: (kind: WorkspaceWidget['kind']) => void;
+  onSelectMarketGraph: (graph: MarketGraph) => void;
+  workspaceWidgets: WorkspaceWidget[];
+  onFocusWidget: (id: string) => void;
+  onCloseWidget: (id: string) => void;
 }) {
   return (
     <article
@@ -2289,7 +2462,7 @@ function WorkspaceWidgetCard({
       <div className="widget-body">
         {widget.kind === 'overview' && <OverviewWidget />}
         {widget.kind === 'graph' && <GraphWidget />}
-        {widget.kind === 'trading-graph' && <TradingGraphWidget />}
+        {widget.kind === 'trading-graph' && <TradingGraphWidget graph={activeMarketGraph} />}
         {widget.kind === 'sheet' && <SpreadsheetWidget />}
         {widget.kind === 'docs' && <DocsWidget />}
         {widget.kind === 'slides' && <SlidesWidget />}
@@ -2299,14 +2472,14 @@ function WorkspaceWidgetCard({
         {widget.kind === 'map' && <MapWidget />}
         {widget.kind === 'diagram' && <DiagramWidget />}
         {widget.kind === 'project' && <ProjectWidget />}
-        {widget.kind === 'news' && <NewsWidget />}
+        {widget.kind === 'news' && <NewsWidget activeGraph={activeMarketGraph} onSelectGraph={onSelectMarketGraph} />}
         {widget.kind === 'schedule' && <ScheduleWidget />}
-        {widget.kind === 'launcher' && <LauncherWidget />}
+        {widget.kind === 'launcher' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} />}
         {widget.kind === 'browser' && <BrowserWidget />}
         {widget.kind === 'watch-video' && <LiveTvWidget />}
         {widget.kind === 'file-explorer' && <FileExplorerWidget files={localFiles} activeFileId={activeLocalFileId} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} onClearFiles={onClearFiles} />}
         {widget.kind === 'native-app' && <NativeAppWidget />}
-        {widget.kind === 'window-manager' && <WindowManagerWidget />}
+        {widget.kind === 'window-manager' && <WindowManagerWidget widgets={workspaceWidgets} onFocusWidget={onFocusWidget} onCloseWidget={onCloseWidget} />}
         {widget.kind === 'video' && <VideoWidget />}
         {widget.kind === '3d' && <PreviewWidget file={activeLocalFile} />}
         {widget.kind === '3d-studio' && <ModelStudioWidget />}
@@ -2341,6 +2514,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   const [nextLaunchIndex, setNextLaunchIndex] = useState(0);
   const [localFiles, setLocalFiles] = useState<LocalFileRecord[]>([]);
   const [activeLocalFileId, setActiveLocalFileId] = useState<string | null>(null);
+  const [activeMarketGraphId, setActiveMarketGraphId] = useState(defaultMarketGraph.id);
 
   useEffect(() => {
     widgetsRef.current = widgets;
@@ -2538,8 +2712,11 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   };
 
   const closeWidget = (id: string) => {
-    setWidgets((current) => current.filter((widget) => widget.id !== id || widget.pinned));
-    widgetsRef.current = widgetsRef.current.filter((widget) => widget.id !== id || widget.pinned);
+    setWidgets((current) => {
+      const next = current.filter((widget) => widget.id !== id || widget.pinned);
+      widgetsRef.current = next;
+      return next;
+    });
   };
 
   const focusWidget = (id: string, open = true) => {
@@ -2557,6 +2734,17 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
           : widget,
       ),
     );
+  };
+
+  const openWorkspaceWidget = (kind: WorkspaceWidget['kind']) => {
+    const target = widgetsRef.current.find((widget) => widget.kind === kind);
+    if (!target) return;
+    focusWidget(target.id);
+  };
+
+  const openMarketGraph = (graph: MarketGraph) => {
+    setActiveMarketGraphId(graph.id);
+    openWorkspaceWidget('trading-graph');
   };
 
   const importLocalFiles = (selected: FileList | File[]) => {
@@ -2588,6 +2776,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     () => localFiles.find((record) => record.id === activeLocalFileId) ?? null,
     [activeLocalFileId, localFiles],
   );
+  const activeMarketGraph = useMemo(() => getMarketGraph(activeMarketGraphId), [activeMarketGraphId]);
 
   if (panelKind) {
     const focusedWidget = getFocusedWidget(panelKind, bounds.width || 1200, bounds.height || 800);
@@ -2630,9 +2819,15 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             localFiles={localFiles}
             activeLocalFile={activeLocalFile}
             activeLocalFileId={activeLocalFileId}
+            activeMarketGraph={activeMarketGraph}
             onBrowseFiles={importLocalFiles}
             onOpenPreview={openLocalPreview}
             onClearFiles={clearLocalFiles}
+            onLaunchWorkspaceWidget={openWorkspaceWidget}
+            onSelectMarketGraph={openMarketGraph}
+            workspaceWidgets={widgets}
+            onFocusWidget={focusWidget}
+            onCloseWidget={closeWidget}
           />
         </div>
       </section>
@@ -2682,9 +2877,15 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             localFiles={localFiles}
             activeLocalFile={activeLocalFile}
             activeLocalFileId={activeLocalFileId}
+            activeMarketGraph={activeMarketGraph}
             onBrowseFiles={importLocalFiles}
             onOpenPreview={openLocalPreview}
             onClearFiles={clearLocalFiles}
+            onLaunchWorkspaceWidget={openWorkspaceWidget}
+            onSelectMarketGraph={openMarketGraph}
+            workspaceWidgets={widgets}
+            onFocusWidget={focusWidget}
+            onCloseWidget={closeWidget}
           />
         ))}
       </div>

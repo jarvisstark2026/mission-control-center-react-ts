@@ -31,7 +31,7 @@ function getPanelLabel(panelKind: WorkspaceWidget['kind'] | null | undefined) {
     case 'project':
       return 'Project list';
     case 'news':
-      return 'News / market';
+      return 'Markets';
     case 'schedule':
       return 'Schedule';
     case 'launcher':

@@ -82,8 +82,8 @@ export const shellNavItems: ShellNavItem[] = [
   },
   {
     id: 'news',
-    label: 'News / market',
-    hint: 'watchlist and market context',
+    label: 'Markets',
+    hint: 'custom graph library and watchlist',
     allowedRoles: ['admin', 'home', 'support'],
   },
   {

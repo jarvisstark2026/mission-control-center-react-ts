@@ -138,6 +138,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
   const isNavItemActive = (itemId: string) => itemId === activeNavId;
   const canOpenPanel = isShellPanelAccessible(activeRole, activePanelKind);
   const isDetachedWindow = Boolean(activePanelKind && canOpenPanel);
+  const canCloseDetachedWindow = typeof window !== 'undefined' && Boolean(window.opener);
   const activeRoleLabel = getRoleLabel(activeRole);
   const activePanelLabel = activePanelKind ? getPanelLabel(activePanelKind) : 'Workspace';
   const [isRailOpen, setIsRailOpen] = useState(() => {
@@ -232,7 +233,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
                 className="shell-window-button is-muted"
                 onClick={() => closeDetachedWindow(navigateToPanel)}
               >
-                Close window
+                {canCloseDetachedWindow ? 'Close window' : 'Return to hub'}
               </button>
             </div>
           </div>

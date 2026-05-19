@@ -2050,18 +2050,23 @@ function WorkflowWidget() {
               <small>starter templates</small>
             </div>
             <div className="workflow-template-list">
-              {workflowTemplates.map((item) => (
-                <button
-                  type="button"
-                  key={item.id}
-                  className={`workflow-card ${item.id === template.id ? 'is-active' : ''}`}
-                  onClick={() => selectTemplate(item.id)}
-                >
-                  <strong>{item.title}</strong>
-                  <p>{item.summary}</p>
-                  <small>{item.steps.length} steps · {item.skillIds.length} skills</small>
-                </button>
-              ))}
+              {workflowTemplates.map((item) => {
+                const isSelectedTemplate = item.id === template.id;
+
+                return (
+                  <button
+                    type="button"
+                    key={item.id}
+                    className={`workflow-card ${isSelectedTemplate ? 'is-active' : ''}`}
+                    aria-pressed={isSelectedTemplate}
+                    onClick={() => selectTemplate(item.id)}
+                  >
+                    <strong>{item.title}</strong>
+                    <p>{item.summary}</p>
+                    <small>{item.steps.length} steps · {item.skillIds.length} skills</small>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -2071,17 +2076,22 @@ function WorkflowWidget() {
               <small>toggle helper skills</small>
             </div>
             <div className="workflow-skill-list">
-              {workflowSkills.map((skill) => (
-                <button
-                  type="button"
-                  key={skill.id}
-                  className={`workflow-skill ${selectedSkillIds.has(skill.id) ? 'is-active' : ''}`}
-                  onClick={() => toggleSkill(skill.id)}
-                >
-                  <strong>{skill.title}</strong>
-                  <small>{skill.summary}</small>
-                </button>
-              ))}
+              {workflowSkills.map((skill) => {
+                const isSelectedSkill = selectedSkillIds.has(skill.id);
+
+                return (
+                  <button
+                    type="button"
+                    key={skill.id}
+                    className={`workflow-skill ${isSelectedSkill ? 'is-active' : ''}`}
+                    aria-pressed={isSelectedSkill}
+                    onClick={() => toggleSkill(skill.id)}
+                  >
+                    <strong>{skill.title}</strong>
+                    <small>{skill.summary}</small>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </aside>

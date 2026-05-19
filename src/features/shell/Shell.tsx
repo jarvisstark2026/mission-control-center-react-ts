@@ -12,6 +12,7 @@ const railBreakpoint = 900;
 type ShellProps = {
   panelKind?: string | null;
   role?: ShellRole;
+  onNavigate: (nextLocation: { panelKind: string | null; role: ShellRole }) => void;
 };
 
 function getPanelLabel(panelKind: string | null | undefined) {
@@ -136,7 +137,7 @@ function getActiveNavId(panelKind: WorkspaceWidget['kind'] | null) {
   return entry?.[0] ?? 'workspace';
 }
 
-export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
+export function Shell({ panelKind = null, role = defaultRole, onNavigate }: ShellProps) {
   const activeRole = role ?? defaultRole;
   const visibleItems = getVisibleShellNavItems(activeRole);
   const activePanelKind = normalizePanelKind(panelKind);
@@ -188,28 +189,14 @@ export function Shell({ panelKind = null, role = defaultRole }: ShellProps) {
       : `Mission Control Center — ${shellScopes.find((scope) => scope.id === activeRole)?.label ?? 'Support'}`;
   }, [activePanelKind, activeRole, isDetachedWindow]);
 
-  const navigateWithParams = (update: (url: URL) => void) => {
-    if (typeof window === 'undefined') return;
-
-    const url = new URL(window.location.href);
-    update(url);
-    window.location.assign(url.toString());
-  };
-
   const navigateToPanel = (target: WorkspaceWidget['kind'] | null) => {
-    navigateWithParams((url) => {
-      if (target) url.searchParams.set('panel', target);
-      else url.searchParams.delete('panel');
-    });
+    onNavigate({ panelKind: target, role: activeRole });
   };
 
   const navigateToRole = (targetRole: ShellRole) => {
-    navigateWithParams((url) => {
-      url.searchParams.set('role', targetRole);
-
-      if (activePanelKind && !isShellPanelAccessible(targetRole, activePanelKind)) {
-        url.searchParams.delete('panel');
-      }
+    onNavigate({
+      panelKind: activePanelKind && !isShellPanelAccessible(targetRole, activePanelKind) ? null : activePanelKind,
+      role: targetRole,
     });
   };
 

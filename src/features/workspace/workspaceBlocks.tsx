@@ -221,7 +221,11 @@ export function DesktopBridgePanel({
             type="text"
             value={inputValue}
             onChange={(event) => onChangeInput(event.target.value)}
-            onKeyDown={(event) => event.key === 'Enter' && onSubmit()}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter' && hasInput) {
+                onSubmit();
+              }
+            }}
             placeholder={inputPlaceholder}
           />
         </label>

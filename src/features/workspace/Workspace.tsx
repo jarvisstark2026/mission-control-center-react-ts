@@ -2700,19 +2700,24 @@ function NativeAppWidget() {
   ];
 
   return (
-    <div className="native-app-surface">
-      <div className="native-app-panel">
+    <div className="launcher-desktop-bridge native-app-surface">
+      <div className="launcher-desktop-head">
         <span>desktop bridge</span>
         <strong>open installed app / external window</strong>
-        <p>Type the app name or executable path. The bridge is still the polite fiction standing in for the real OS integration layer.</p>
+        <p>The bridge remains the polite fiction standing in for real OS integration. Its job is to look ready, not to improvise ambition.</p>
       </div>
-      <label className="native-app-input">
-        <span>App or command</span>
-        <input type="text" placeholder="e.g. obsidian, explorer.exe, notepad.exe" />
-      </label>
-      <div className="native-app-list">
+      <div className="launcher-desktop-controls">
+        <label className="launcher-desktop-input">
+          <span>App or command</span>
+          <input type="text" placeholder="e.g. obsidian, explorer.exe, notepad.exe" />
+        </label>
+        <button type="button" className="launcher-desktop-button">
+          Open app
+        </button>
+      </div>
+      <div className="launcher-desktop-list" aria-label="Loaded desktop apps">
         {apps.map((app) => (
-          <button key={app.name} type="button" className="native-app-item">
+          <button key={app.name} type="button" className="launcher-desktop-item">
             <span>{app.name}</span>
             <small>{app.note}</small>
           </button>
@@ -2915,32 +2920,40 @@ function WorkspaceWidgetCard({
         {widget.kind === 'list' && <ListWidget />}
       </div>
 
-      {showChrome ? (
+      {showChrome && widget.open ? (
         <>
           <button
             type="button"
             className="widget-resize-handle widget-resize-handle-bottom-right"
             onPointerDown={(event) => onStartResize(event, widget.id, 'corner')}
             aria-label={`Resize ${widget.title}`}
-          />
+          >
+            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-corner">⋰</span>
+          </button>
           <button
             type="button"
             className="widget-resize-handle widget-resize-handle-left"
             onPointerDown={(event) => onStartResize(event, widget.id, 'left')}
             aria-label={`Resize ${widget.title} from left edge`}
-          />
+          >
+            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-vertical">⋮</span>
+          </button>
           <button
             type="button"
             className="widget-resize-handle widget-resize-handle-right"
             onPointerDown={(event) => onStartResize(event, widget.id, 'right')}
             aria-label={`Resize ${widget.title} from right edge`}
-          />
+          >
+            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-vertical">⋮</span>
+          </button>
           <button
             type="button"
             className="widget-resize-handle widget-resize-handle-bottom"
             onPointerDown={(event) => onStartResize(event, widget.id, 'bottom')}
             aria-label={`Resize ${widget.title} from bottom edge`}
-          />
+          >
+            <span aria-hidden="true" className="widget-resize-grip widget-resize-grip-horizontal">...</span>
+          </button>
         </>
       ) : null}
     </article>
@@ -3263,8 +3276,18 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
 
   const openWorkspaceWidget = (kind: WorkspaceWidget['kind']) => {
     const target = widgetsRef.current.find((widget) => widget.kind === kind);
-    if (!target) return;
-    focusWidget(target.id);
+    if (target) {
+      focusWidget(target.id);
+      return;
+    }
+
+    setWidgets((current) => {
+      const highest = current.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
+      const nextWidget = getFocusedWidget(kind, bounds.width || 1200, bounds.height || 800);
+      const next = [...current, { ...nextWidget, zIndex: highest + 1 }];
+      widgetsRef.current = next;
+      return next;
+    });
   };
 
   const openMarketGraph = (graph: MarketGraph) => {

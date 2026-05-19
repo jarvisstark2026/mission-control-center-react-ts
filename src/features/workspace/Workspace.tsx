@@ -1734,7 +1734,15 @@ function PreviewWidget({
           <button type="button" className="preview-empty-button" onClick={handleBrowsePreviewFiles}>
             Preview a file
           </button>
-          <input ref={fileInputRef} className="preview-empty-input" type="file" multiple onChange={handlePreviewFileChange} />
+          <input
+            ref={fileInputRef}
+            className="preview-empty-input"
+            type="file"
+            multiple
+            aria-hidden="true"
+            tabIndex={-1}
+            onChange={handlePreviewFileChange}
+          />
         </div>
       </div>
     );
@@ -1798,7 +1806,15 @@ function PreviewWidget({
         <button type="button" className="preview-empty-button" onClick={handleBrowsePreviewFiles}>
           Preview another file
         </button>
-        <input ref={fileInputRef} className="preview-empty-input" type="file" multiple onChange={handlePreviewFileChange} />
+        <input
+          ref={fileInputRef}
+          className="preview-empty-input"
+          type="file"
+          multiple
+          aria-hidden="true"
+          tabIndex={-1}
+          onChange={handlePreviewFileChange}
+        />
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties, PointerEvent as ReactPointerEvent } from 'react';
 
+import { StatusChip } from '../../components/ui/StatusChip';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
@@ -1462,7 +1463,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
 
         <div className="workspace-head workspace-head-panel">
           <div className="workspace-brand">Mission Control Center</div>
-          <div className="workspace-chip">detached page · drag the OS window to another screen</div>
+          <StatusChip tone="ice">detached page · drag the OS window to another screen</StatusChip>
           <div className="workspace-launcher">
             <button
               type="button"
@@ -1505,7 +1506,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
 
       <div className="workspace-head">
         <div className="workspace-brand">Mission Control Center</div>
-        <div className="workspace-chip">tailnet live · drag · resize · stack</div>
+        <StatusChip tone="cool">tailnet live · drag · resize · stack</StatusChip>
         <div className="workspace-launcher">
           <button type="button" className="workspace-launch-button" onClick={openNextPanelWindow}>
             Add page · {getWidgetLabel(nextLaunchKind)}

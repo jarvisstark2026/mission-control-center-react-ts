@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { StatusChip } from '../../components/ui/StatusChip';
 import { Workspace } from '../workspace/Workspace';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from '../workspace/workspaceTypes';
 import { getVisibleShellNavItems, isShellPanelAccessible } from './nav';
@@ -204,8 +205,8 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
               <p className="shell-eyebrow">Mission Control Center</p>
               <h1>{getPanelLabel(activePanelKind)}</h1>
               <div className="shell-meta" aria-label="Window context">
-                <span>{activeRoleLabel}</span>
-                <span>{activePanelLabel}</span>
+                <StatusChip tone="cool">{activeRoleLabel}</StatusChip>
+                <StatusChip tone="ice">{activePanelLabel}</StatusChip>
               </div>
               <p className="shell-copy">
                 Detached page mode. The OS window can go wherever the desktop gods permit; the app merely keeps its hands clean.
@@ -262,8 +263,8 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
           <p className="shell-eyebrow">Mission Control Center</p>
           <h1>Spatial command surface</h1>
           <div className="shell-meta" aria-label="Current context">
-            <span>{activeRoleLabel}</span>
-            <span>{activePanelLabel}</span>
+            <StatusChip tone="cool">{activeRoleLabel}</StatusChip>
+            <StatusChip tone="ice">{activePanelLabel}</StatusChip>
           </div>
           <p className="shell-copy">
             {shellScopes.find((scope) => scope.id === activeRole)?.description ?? 'Support'}

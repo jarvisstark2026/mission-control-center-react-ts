@@ -517,6 +517,9 @@ function MapWidget() {
         metaEyebrow="waypoints"
         meta="3 markers"
       />
+      <WorkspaceSummaryPanel className="map-summary-panel" title="route telemetry">
+        Navigation now follows the shared Markets hierarchy: concise status first, then the active map stage.
+      </WorkspaceSummaryPanel>
       <WorkspaceSectionFrame className="media-widget-stage" eyebrow="map" title="active route" meta="local grid">
         <div className="map-surface">
           <div className="map-grid" />
@@ -540,6 +543,9 @@ function DiagramWidget() {
         metaEyebrow="nodes"
         meta="3 linked"
       />
+      <WorkspaceSummaryPanel className="diagram-summary-panel" title="topology status">
+        Diagram canvases share the same shell rhythm as Markets while keeping the node graph itself intact.
+      </WorkspaceSummaryPanel>
       <WorkspaceSectionFrame className="media-widget-stage" eyebrow="canvas" title="dependency map" meta="flow">
         <div className="diagram-surface">
           <div className="diagram-node diagram-node-a" />
@@ -601,6 +607,9 @@ function VideoWidget() {
         metaEyebrow="source"
         meta="standby"
       />
+      <WorkspaceSummaryPanel className="video-summary-panel" title="preview status">
+        Playback chrome now uses the shared content hierarchy before handing the remaining space to the monitor stage.
+      </WorkspaceSummaryPanel>
       <WorkspaceSectionFrame className="media-widget-stage" eyebrow="playback" title="frame preview" meta="offline">
         <div className="video-surface">
           <div className="video-frame" />

@@ -2138,6 +2138,15 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     window.dispatchEvent(new PopStateEvent('popstate'));
   };
 
+  const closePanelWindow = () => {
+    if (typeof window === 'undefined') return;
+
+    window.close();
+    if (!window.closed) {
+      returnToHub();
+    }
+  };
+
   const openNextPanelWindow = () => {
     openPanelWindow(nextLaunchKind);
   };
@@ -2519,8 +2528,14 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             <button type="button" className="workspace-launch-button" onClick={returnToHub}>
               Open hub
             </button>
-            <button type="button" className="workspace-launch-button is-muted" onClick={() => openPanelWindow(nextLaunchKind)}>
-              Add next page
+            <button
+              type="button"
+              className="widget-close workspace-launch-button-close"
+              onClick={closePanelWindow}
+              aria-label="Close page"
+              title="Close page"
+            >
+              ×
             </button>
           </div>
         </div>

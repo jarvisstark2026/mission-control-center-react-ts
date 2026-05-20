@@ -77,6 +77,12 @@ export function WorkspaceWindow({
               type="button"
               className="widget-close"
               disabled={Boolean(widget.pinned)}
+              onPointerDown={(event) => {
+                if (event.button !== 0) return;
+                event.preventDefault();
+                event.stopPropagation();
+                onClose(widget.id);
+              }}
               onClick={(event) => {
                 event.stopPropagation();
                 onClose(widget.id);

@@ -25,14 +25,14 @@ const resizeHandleSpecs: ResizeHandleSpec[] = [
     className: 'widget-resize-handle-left widget-resize-handle-side',
     gripClassName: 'widget-resize-grip-vertical',
     label: 'Resize {title} from the left edge',
-    symbol: '⋮',
+    symbol: '.\n.\n.',
   },
   {
     edge: 'right',
     className: 'widget-resize-handle-right widget-resize-handle-side',
     gripClassName: 'widget-resize-grip-vertical',
     label: 'Resize {title} from the right edge',
-    symbol: '⋮',
+    symbol: '.\n.\n.',
   },
   {
     edge: 'bottom',

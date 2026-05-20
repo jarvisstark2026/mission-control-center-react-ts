@@ -311,10 +311,12 @@
 
 .widget-resize-grip-vertical {
   font-size: 15px;
-  line-height: 0.9;
-  letter-spacing: -0.1em;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
+  line-height: 0.75;
+  letter-spacing: 0;
+  white-space: pre-line;
+  text-orientation: initial;
+  writing-mode: initial;
+  transform: translateY(-1px);
 }
 
 .widget-resize-grip-horizontal {
@@ -385,6 +387,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  padding-top: 30px;
 }
 
 .workspace-widget-frame {

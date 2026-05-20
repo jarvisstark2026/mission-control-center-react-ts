@@ -428,19 +428,6 @@
   touch-action: pan-y;
 }
 
-.widget-body-file-explorer {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding-right: 18px;
-  padding-bottom: 14px;
-}
-
-.widget-body-file-explorer > .file-explorer-surface {
-  flex: 1;
-  min-height: 0;
-}
-
 .widget-scroll-pane::-webkit-scrollbar,
 .preview-media-text::-webkit-scrollbar,
 .launcher-grid::-webkit-scrollbar,
@@ -1972,14 +1959,11 @@
 }
 
 .file-explorer-surface {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  align-content: stretch;
   min-height: 100%;
   height: 100%;
   overflow: hidden;
-  box-sizing: border-box;
-  padding: 14px 14px 12px;
 }
 
 .live-tv-surface {

@@ -6,6 +6,7 @@ import { readShellLocationFromSearch } from '../shell/location';
 import type { ShellRole } from '../shell/roles';
 import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, WorkspaceMetricGrid, WorkspaceRowList, WorkspaceWidgetFrame } from './workspaceBlocks';
 import type { WorkspaceWidget } from './workspaceTypes';
+import { calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
 import { createLocalFileRecord, clearPersistedLocalFiles, formatLocalFileSize, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readPersistedLocalFiles, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
 import { clampNumber, loadStoredWidgetState, saveStoredWidgetState, type WidgetBlueprint } from './workspaceStorage';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from './workflowStudioModel';
@@ -592,10 +593,6 @@ type InteractionState = {
   startWidth: number;
   startHeight: number;
 };
-
-function clamp(value: number, min: number, max: number) {
-  return Math.max(min, Math.min(value, max));
-}
 
 function OverviewWidget() {
   const stats = [
@@ -2617,16 +2614,14 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     const deltaY = event.clientY - interaction.startY;
 
     if (interaction.mode === 'drag') {
-      const nextLeft = clamp(
-        interaction.startLeft + deltaX,
-        0,
-        Math.max(0, canvasRect.width - currentWidget.width),
-      );
-      const nextTop = clamp(
-        interaction.startTop + deltaY,
-        0,
-        Math.max(0, canvasRect.height - currentWidget.height),
-      );
+      const { left: nextLeft, top: nextTop } = calculatePartiallyOffscreenDragPosition({
+        proposedLeft: interaction.startLeft + deltaX,
+        proposedTop: interaction.startTop + deltaY,
+        canvasWidth: canvasRect.width,
+        canvasHeight: canvasRect.height,
+        widgetWidth: currentWidget.width,
+        widgetHeight: currentWidget.open ? currentWidget.height : 58,
+      });
 
       setWidgets((current) =>
         current.map((widget) =>

@@ -1020,6 +1020,26 @@
   align-content: start;
 }
 
+.audio-widget-shell,
+.map-widget-shell,
+.diagram-widget-shell,
+.video-widget-shell {
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+}
+
+.media-widget-stage {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.media-widget-stage > .audio-surface,
+.media-widget-stage > .map-surface,
+.media-widget-stage > .diagram-surface,
+.media-widget-stage > .video-surface {
+  min-height: 0;
+}
+
 .project-row,
 .news-item,
 .market-category,

@@ -548,41 +548,71 @@ function PdfWidget() {
 
 function AudioWidget() {
   return (
-    <div className="audio-surface">
-      <div className="audio-ring audio-ring-a" />
-      <div className="audio-ring audio-ring-b" />
-      <div className="audio-bars">
-        {Array.from({ length: 12 }).map((_, index) => (
-          <i key={index} style={{ height: `${36 + ((index * 11) % 54)}%` }} />
-        ))}
-      </div>
-    </div>
+    <WorkspaceContentShell className="audio-widget-shell">
+      <WorkspaceContentHeader
+        eyebrow="Audio workspace"
+        title="signal monitor"
+        metaEyebrow="input"
+        meta="12 bands"
+      />
+      <WorkspaceSectionFrame className="media-widget-stage" eyebrow="spectrum" title="active waveform" meta="visualiser">
+        <div className="audio-surface">
+          <div className="audio-ring audio-ring-a" />
+          <div className="audio-ring audio-ring-b" />
+          <div className="audio-bars">
+            {Array.from({ length: 12 }).map((_, index) => (
+              <i key={index} style={{ height: `${36 + ((index * 11) % 54)}%` }} />
+            ))}
+          </div>
+        </div>
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
   );
 }
 
 function MapWidget() {
   return (
-    <div className="map-surface">
-      <div className="map-grid" />
-      <div className="map-route map-route-a" />
-      <div className="map-route map-route-b" />
-      <div className="map-point map-point-a" />
-      <div className="map-point map-point-b" />
-      <div className="map-point map-point-c" />
-    </div>
+    <WorkspaceContentShell className="map-widget-shell">
+      <WorkspaceContentHeader
+        eyebrow="Navigation"
+        title="route overview"
+        metaEyebrow="waypoints"
+        meta="3 markers"
+      />
+      <WorkspaceSectionFrame className="media-widget-stage" eyebrow="map" title="active route" meta="local grid">
+        <div className="map-surface">
+          <div className="map-grid" />
+          <div className="map-route map-route-a" />
+          <div className="map-route map-route-b" />
+          <div className="map-point map-point-a" />
+          <div className="map-point map-point-b" />
+          <div className="map-point map-point-c" />
+        </div>
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
   );
 }
 
 function DiagramWidget() {
   return (
-    <div className="diagram-surface">
-      <div className="diagram-node diagram-node-a" />
-      <div className="diagram-node diagram-node-b" />
-      <div className="diagram-node diagram-node-c" />
-      <div className="diagram-link diagram-link-a" />
-      <div className="diagram-link diagram-link-b" />
-      <div className="diagram-link diagram-link-c" />
-    </div>
+    <WorkspaceContentShell className="diagram-widget-shell">
+      <WorkspaceContentHeader
+        eyebrow="Diagram"
+        title="system topology"
+        metaEyebrow="nodes"
+        meta="3 linked"
+      />
+      <WorkspaceSectionFrame className="media-widget-stage" eyebrow="canvas" title="dependency map" meta="flow">
+        <div className="diagram-surface">
+          <div className="diagram-node diagram-node-a" />
+          <div className="diagram-node diagram-node-b" />
+          <div className="diagram-node diagram-node-c" />
+          <div className="diagram-link diagram-link-a" />
+          <div className="diagram-link diagram-link-b" />
+          <div className="diagram-link diagram-link-c" />
+        </div>
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
   );
 }
 
@@ -626,10 +656,20 @@ function NewsWidget({
 
 function VideoWidget() {
   return (
-    <div className="video-surface">
-      <div className="video-frame" />
-      <div className="video-overlay">preview</div>
-    </div>
+    <WorkspaceContentShell className="video-widget-shell">
+      <WorkspaceContentHeader
+        eyebrow="Video"
+        title="preview monitor"
+        metaEyebrow="source"
+        meta="standby"
+      />
+      <WorkspaceSectionFrame className="media-widget-stage" eyebrow="playback" title="frame preview" meta="offline">
+        <div className="video-surface">
+          <div className="video-frame" />
+          <div className="video-overlay">preview</div>
+        </div>
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
   );
 }
 

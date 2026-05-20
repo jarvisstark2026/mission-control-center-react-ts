@@ -413,25 +413,34 @@ function SpreadsheetWidget() {
 function DocsWidget() {
   const outline = ['Title', 'Abstract', 'Sections', 'Appendix'];
   return (
-    <div className="docs-surface">
-      <div className="docs-sidebar">
-        {outline.map((item) => (
-          <div className="docs-outline-item" key={item}>
-            <span>{item}</span>
+    <WorkspaceContentShell className="docs-surface">
+      <WorkspaceContentHeader
+        eyebrow="Docs"
+        title="briefing workspace"
+        metaEyebrow="outline"
+        meta={`${outline.length} sections`}
+      />
+      <WorkspaceSummaryPanel title="Mission Control Center Brief">
+        Operational note. This panel behaves like a writing surface: clean sections, careful emphasis, and no unnecessary spectacle.
+      </WorkspaceSummaryPanel>
+      <div className="docs-layout">
+        <WorkspaceSectionFrame className="docs-sidebar" eyebrow="Outline" title="document map" meta="draft">
+          {outline.map((item) => (
+            <div className="docs-outline-item" key={item}>
+              <span>{item}</span>
+            </div>
+          ))}
+        </WorkspaceSectionFrame>
+        <WorkspaceSectionFrame className="docs-page" eyebrow="Document" title="writing surface" meta="ready">
+          <div className="docs-lines" aria-label="Document layout preview">
+            <span />
+            <span />
+            <span />
+            <span />
           </div>
-        ))}
+        </WorkspaceSectionFrame>
       </div>
-      <div className="docs-page">
-        <div className="docs-title">Mission Control Center Brief</div>
-        <p>Operational note. This panel behaves like a writing surface: clean sections, careful emphasis, and no unnecessary spectacle.</p>
-        <div className="docs-lines">
-          <span />
-          <span />
-          <span />
-          <span />
-        </div>
-      </div>
-    </div>
+    </WorkspaceContentShell>
   );
 }
 

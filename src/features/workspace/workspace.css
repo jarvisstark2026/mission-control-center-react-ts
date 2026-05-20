@@ -3169,43 +3169,37 @@
 
 .docs-surface {
   display: grid;
-  grid-template-columns: 92px minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   gap: 10px;
   min-height: 100%;
+}
+
+.docs-layout {
+  display: grid;
+  grid-template-columns: minmax(112px, 0.38fr) minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
 }
 
 .docs-sidebar {
   display: grid;
   gap: 8px;
   align-content: start;
-  padding: 10px;
 }
 
 .docs-outline-item {
   padding: 8px;
   font-size: 0.56rem;
   color: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.025);
 }
 
 .docs-page {
   display: grid;
   gap: 10px;
   align-content: start;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.035);
-}
-
-.docs-title {
-  font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.94);
-}
-
-.docs-page p {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 0.67rem;
-  line-height: 1.6;
+  min-height: 0;
 }
 
 .docs-lines {

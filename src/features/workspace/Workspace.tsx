@@ -491,39 +491,50 @@ function SlidesWidget() {
 
 function ImageWidget() {
   return (
-    <div className="image-surface">
-      <div className="image-frame">
-        <div className="image-placeholder">
-          <span>no asset loaded</span>
-          <small>drop / annotate / crop</small>
+    <WorkspaceContentShell className="image-surface">
+      <WorkspaceContentHeader
+        eyebrow="Image workspace"
+        title="preview / annotate / crop"
+        metaEyebrow="asset"
+        meta="drop-ready"
+      />
+      <WorkspaceSectionFrame className="image-frame-section" eyebrow="canvas" title="no asset loaded" meta="image">
+        <div className="image-frame">
+          <div className="image-placeholder">
+            <span>no asset loaded</span>
+            <small>drop / annotate / crop</small>
+          </div>
         </div>
-      </div>
-      <div className="image-footer">
-        <span>image</span>
-        <small>preview / annotate / crop</small>
-      </div>
-    </div>
+      </WorkspaceSectionFrame>
+      <WorkspaceSummaryPanel className="image-footer" title="image controls">
+        Preview assets inside the shared workspace shell before annotation tools are connected.
+      </WorkspaceSummaryPanel>
+    </WorkspaceContentShell>
   );
 }
 
 function PdfWidget() {
   return (
-    <div className="pdf-surface">
-      <div className="pdf-toolbar">
-        <span>pdf</span>
-        <small>read / search / export</small>
-      </div>
-      <div className="pdf-page">
-        <div className="pdf-ribbon" />
-        <div className="pdf-lines">
-          <span />
-          <span />
-          <span />
-          <span />
-          <span />
+    <WorkspaceContentShell className="pdf-surface">
+      <WorkspaceContentHeader
+        eyebrow="PDF workspace"
+        title="read / search / export"
+        metaEyebrow="document"
+        meta="page preview"
+      />
+      <WorkspaceSectionFrame className="pdf-page-section" eyebrow="document" title="preview page" meta="pdf">
+        <div className="pdf-page">
+          <div className="pdf-ribbon" />
+          <div className="pdf-lines">
+            <span />
+            <span />
+            <span />
+            <span />
+            <span />
+          </div>
         </div>
-      </div>
-    </div>
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
   );
 }
 

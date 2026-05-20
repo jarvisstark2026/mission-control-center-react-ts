@@ -728,6 +728,10 @@ function PreviewWidget({
         meta={`${file.file.type || 'unknown type'} · ${formatLocalFileSize(file.file.size)}`}
       />
 
+      <WorkspaceSummaryPanel className="preview-file-summary" title={file.file.name}>
+        {status}
+      </WorkspaceSummaryPanel>
+
       <WorkspaceSectionFrame className="preview-file-frame" eyebrow="file stage" title="active preview" meta={file.previewKind}>
         <div className="preview-file-stage">
           {file.previewKind === 'image' && objectUrl ? (
@@ -770,7 +774,10 @@ function PreviewWidget({
         </div>
       </WorkspaceSectionFrame>
 
-      <WorkspaceSectionFrame className="preview-file-foot" eyebrow="status" title={status}>
+      <div className="preview-file-controls">
+        <WorkspaceSummaryPanel className="preview-file-status" title="preview controls">
+          {status}
+        </WorkspaceSummaryPanel>
         <WorkspaceButton className="preview-empty-button" onClick={handleBrowsePreviewFiles}>
           Preview another file
         </WorkspaceButton>
@@ -783,7 +790,7 @@ function PreviewWidget({
           tabIndex={-1}
           onChange={handlePreviewFileChange}
         />
-      </WorkspaceSectionFrame>
+      </div>
     </WorkspaceContentShell>
   );
 }

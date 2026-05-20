@@ -1172,7 +1172,7 @@
 }
 
 .preview-file-surface {
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
 }
 
 .model-studio-surface {
@@ -1454,26 +1454,19 @@
   padding: 16px;
 }
 
-.preview-empty-state span,
-.preview-file-head span,
-.preview-file-foot span {
+.preview-empty-state span {
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.6rem;
   color: rgba(255, 255, 255, 0.64);
 }
 
-.preview-empty-state strong,
-.preview-file-head strong,
-.preview-file-head-meta,
-.preview-file-foot {
+.preview-empty-state strong {
   font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.92);
 }
 
-.preview-empty-state small,
-.preview-file-head-meta small,
-.preview-file-foot span {
+.preview-empty-state small {
   color: rgba(255, 255, 255, 0.62);
   line-height: 1.45;
 }
@@ -1504,19 +1497,21 @@
   pointer-events: none;
 }
 
-.preview-file-foot {
+.preview-file-controls {
+  display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
+  gap: 10px;
 }
 
-.preview-file-foot .workspace-section-head {
+.preview-file-status {
   min-width: 0;
 }
 
-.preview-file-head-meta {
-  display: grid;
-  justify-items: end;
-  gap: 3px;
+.preview-file-status p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .preview-file-stage {

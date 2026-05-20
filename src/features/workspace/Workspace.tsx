@@ -400,6 +400,7 @@ const launchableWindowKinds: WorkspaceWidget['kind'][] = [
   'browser',
   'watch-video',
   'file-explorer',
+  'native-app',
   'window-manager',
   'sheet',
   'docs',

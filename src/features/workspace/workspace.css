@@ -311,12 +311,11 @@
 
 .widget-resize-grip-vertical {
   font-size: 15px;
-  line-height: 0.75;
+  line-height: 1;
   letter-spacing: 0;
-  white-space: pre-line;
-  text-orientation: initial;
-  writing-mode: initial;
-  transform: translateY(-1px);
+  display: inline-block;
+  transform: rotate(90deg) translateY(-1px);
+  transform-origin: center;
 }
 
 .widget-resize-grip-horizontal {

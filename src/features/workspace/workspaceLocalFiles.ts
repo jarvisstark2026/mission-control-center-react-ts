@@ -174,7 +174,7 @@ export function createLocalFileRecord(file: File): LocalFileRecord {
 }
 
 export async function measureImageDimensions(file: File): Promise<LocalImageDimensions | null> {
-  if (!file.type.startsWith('image/')) return null;
+  if (classifyLocalFile(file) !== 'image' || typeof URL === 'undefined' || typeof Image === 'undefined') return null;
 
   const objectUrl = URL.createObjectURL(file);
   try {

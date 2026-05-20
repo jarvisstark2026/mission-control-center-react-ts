@@ -755,36 +755,34 @@ function ModelStudioWidget() {
   const gestureChips = ['drag', 'pinch', 'orbit', 'slice', 'measure', 'simulate'];
 
   return (
-    <div className="model-studio-surface">
-      <div className="model-studio-head">
-        <div>
-          <span>3D asset authoring</span>
-          <strong>sculpt / gesture / simulate</strong>
-        </div>
-        <div className="model-studio-head-meta">
-          <span>real-time engineering</span>
-          <small>structures · bending · heat · stress</small>
-        </div>
-      </div>
+    <WorkspaceContentShell className="model-studio-surface">
+      <WorkspaceContentHeader
+        className="model-studio-head"
+        eyebrow="3D asset authoring"
+        title="sculpt / gesture / simulate"
+        metaEyebrow="real-time engineering"
+        meta="structures · bending · heat · stress"
+      />
+      <WorkspaceSummaryPanel className="model-studio-overview" title="touch / stylus / spatial capture ready">
+        Future support for real 3D-space input can slot in here when the hardware catches up.
+      </WorkspaceSummaryPanel>
 
       <div className="model-studio-layout">
-        <section className="model-studio-canvas">
-          <div className="model-studio-grid" />
-          <div className="model-studio-rig">
-            <div className="model-studio-shell model-studio-shell-a" />
-            <div className="model-studio-shell model-studio-shell-b" />
-            <div className="model-studio-shell model-studio-shell-c" />
+        <WorkspaceSectionFrame className="model-studio-canvas-frame" eyebrow="model viewport" title="spatial capture rig" meta="orbit / slice">
+          <div className="model-studio-canvas">
+            <div className="model-studio-grid" />
+            <div className="model-studio-rig">
+              <div className="model-studio-shell model-studio-shell-a" />
+              <div className="model-studio-shell model-studio-shell-b" />
+              <div className="model-studio-shell model-studio-shell-c" />
+            </div>
+            <div className="model-studio-axis model-studio-axis-x" />
+            <div className="model-studio-axis model-studio-axis-y" />
+            <div className="model-studio-axis model-studio-axis-z" />
           </div>
-          <div className="model-studio-axis model-studio-axis-x" />
-          <div className="model-studio-axis model-studio-axis-y" />
-          <div className="model-studio-axis model-studio-axis-z" />
-          <div className="model-studio-canvas-caption">
-            <span>touch / stylus / spatial capture ready</span>
-            <small>future support for real 3D-space input can slot in here when the hardware catches up.</small>
-          </div>
-        </section>
+        </WorkspaceSectionFrame>
 
-        <aside className="model-studio-panel">
+        <WorkspaceSectionFrame className="model-studio-panel" eyebrow="simulation" title="engineering passes" meta={`${simulationCards.length} checks`}>
           <div className="model-studio-tools">
             {gestureChips.map((chip) => (
               <WorkspaceButton variant="compact" key={chip} className="model-studio-chip">
@@ -808,12 +806,12 @@ function ModelStudioWidget() {
             ))}
           </div>
 
-          <div className="model-studio-footer">
-            <p>Designed as a fluid creation surface first, with engineering-grade simulation bolted on rather than the other way round.</p>
-          </div>
-        </aside>
+          <WorkspaceSummaryPanel className="model-studio-footer" title="creation surface">
+            Designed as a fluid creation surface first, with engineering-grade simulation bolted on rather than the other way round.
+          </WorkspaceSummaryPanel>
+        </WorkspaceSectionFrame>
       </div>
-    </div>
+    </WorkspaceContentShell>
   );
 }
 

@@ -1010,6 +1010,9 @@ function WorkflowWidget() {
         metaEyebrow={template.title}
         meta={`${steps.length} steps · ${selectedSkills.length} skills`}
       />
+      <WorkspaceSummaryPanel className="workflow-summary" title={template.title}>
+        {status}
+      </WorkspaceSummaryPanel>
 
       <WorkspaceSectionFrame className="workflow-actions" eyebrow="workflow controls" meta="save / export / reset">
         <WorkspaceButton className="workflow-action" onClick={saveWorkflow}>

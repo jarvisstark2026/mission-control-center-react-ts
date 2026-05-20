@@ -143,7 +143,15 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
       const media = window.matchMedia(`(max-width: ${railBreakpoint}px)`);
       if (!media.matches) return;
 
-      setIsRailOpen(false);
+      setIsRailOpen((current) => {
+        if (current) {
+          window.requestAnimationFrame(() => {
+            menuToggleRef.current?.focus();
+          });
+        }
+
+        return false;
+      });
     };
 
     window.addEventListener('keydown', handleKeyDown);

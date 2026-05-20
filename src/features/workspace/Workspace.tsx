@@ -4,7 +4,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, ChangeEvent } fr
 import { StatusChip } from '../../components/ui/StatusChip';
 import { readShellLocationFromSearch } from '../shell/location';
 import type { ShellRole } from '../shell/roles';
-import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, WorkspaceMetricGrid, WorkspaceRowList, WorkspaceWidgetFrame } from './workspaceBlocks';
+import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceRowList, WorkspaceSectionFrame, WorkspaceSummaryPanel, WorkspaceWidgetFrame } from './workspaceBlocks';
 import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from './workspaceDesktopApps';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
@@ -322,31 +322,26 @@ function MarketsWidget({
   onSelectGraph: (graph: MarketGraph) => void;
 }) {
   return (
-    <div className="markets-surface">
-      <div className="markets-head">
-        <div>
-          <span>Markets</span>
-          <strong>custom graph library / watchlist</strong>
-        </div>
-        <div className="markets-head-meta">
-          <span>{activeGraph.category}</span>
-          <small>{activeGraph.ticker}</small>
-        </div>
-      </div>
-      <div className="markets-summary">
-        <strong>{activeGraph.label}</strong>
-        <p>{activeGraph.note}</p>
-      </div>
+    <WorkspaceContentShell className="markets-surface">
+      <WorkspaceContentHeader
+        className="markets-head"
+        eyebrow="Markets"
+        title="custom graph library / watchlist"
+        metaEyebrow={activeGraph.category}
+        meta={activeGraph.ticker}
+      />
+      <WorkspaceSummaryPanel className="markets-summary" title={activeGraph.label}>
+        {activeGraph.note}
+      </WorkspaceSummaryPanel>
       <div className="markets-categories">
         {marketCategories.map((category) => (
-          <section className="market-category" key={category.id}>
-            <div className="market-category-head">
-              <div>
-                <span>{category.label}</span>
-                <strong>{category.summary}</strong>
-              </div>
-              <small>{category.graphs.length} graphs</small>
-            </div>
+          <WorkspaceSectionFrame
+            className="market-category"
+            key={category.id}
+            eyebrow={category.label}
+            title={category.summary}
+            meta={`${category.graphs.length} graphs`}
+          >
             <WorkspaceCatalogGrid
               className="market-graph-list"
               variant="market"
@@ -364,10 +359,10 @@ function MarketsWidget({
                 onSelectGraph(graph);
               }}
             />
-          </section>
+          </WorkspaceSectionFrame>
         ))}
       </div>
-    </div>
+    </WorkspaceContentShell>
   );
 }
 
@@ -1770,16 +1765,13 @@ function WindowManagerWidget({
     .sort((left, right) => right.zIndex - left.zIndex);
 
   return (
-    <div className="window-manager-surface">
-      <div className="window-manager-head">
-        <div className="window-manager-head-copy">
-          <span className="window-manager-head-kicker">Window registry</span>
-          <strong className="window-manager-head-title">Open windows and pinned surfaces</strong>
-          <small className="window-manager-head-meta">
-            {openWidgets.length} open · {widgets.length} total
-          </small>
-        </div>
-      </div>
+    <WorkspaceContentShell className="window-manager-surface">
+      <WorkspaceContentHeader
+        className="window-manager-head"
+        eyebrow="Window registry"
+        title="Open windows and pinned surfaces"
+        meta={`${openWidgets.length} open · ${widgets.length} total`}
+      />
       {openWidgets.length > 0 ? (
         <WorkspaceActionRowList
           className="window-manager-list"
@@ -1798,7 +1790,7 @@ function WindowManagerWidget({
         <p className="window-manager-empty">No windows are open. Remarkably, the machine is being tidy on its own.</p>
       )}
       <p className="window-manager-note">Open surfaces stay listed here. Pinned windows cannot be closed.</p>
-    </div>
+    </WorkspaceContentShell>
   );
 }
 

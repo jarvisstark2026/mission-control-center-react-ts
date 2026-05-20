@@ -2573,10 +2573,79 @@
   gap: 6px;
 }
 
-.window-manager-head {
+.workspace-content-head {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.workspace-content-head span,
+.workspace-content-head strong,
+.workspace-content-head-meta span,
+.workspace-content-head-meta small,
+.workspace-summary-panel strong,
+.workspace-summary-panel p,
+.workspace-section-head span,
+.workspace-section-head strong,
+.workspace-section-head small {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.workspace-content-head span,
+.workspace-content-head-meta span,
+.workspace-section-head span {
+  font-size: 0.62rem;
+}
+
+.workspace-content-head strong,
+.workspace-content-head-meta small,
+.workspace-section-head strong,
+.workspace-section-head small {
+  font-size: 0.56rem;
+}
+
+.workspace-content-head strong,
+.workspace-section-head strong {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.workspace-content-head-meta {
+  text-align: right;
+}
+
+.workspace-summary-panel,
+.workspace-section-frame {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.workspace-summary-panel p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.58rem;
+  line-height: 1.5;
+}
+
+.workspace-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.workspace-content-head-meta small,
+.workspace-section-head small {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.window-manager-head {
   padding-bottom: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
@@ -2838,13 +2907,16 @@
 }
 
 .markets-summary strong,
+.market-category .workspace-section-head strong,
 .market-category-head strong,
 .market-graph-item strong {
   font-size: 0.72rem;
 }
 
 .market-graph-item small,
+.market-category .workspace-section-head small,
 .market-category-head small,
+.markets-head .workspace-content-head-meta small,
 .markets-head-meta small {
   color: rgba(255, 255, 255, 0.62);
 }

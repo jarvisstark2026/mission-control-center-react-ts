@@ -14,6 +14,91 @@ export function WorkspaceWidgetFrame({
   return <div className={["workspace-widget-frame", `kind-${kind}`, className].filter(Boolean).join(' ')}>{children}</div>;
 }
 
+export function WorkspaceContentShell({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={["workspace-content-shell", className].filter(Boolean).join(' ')}>{children}</div>;
+}
+
+export function WorkspaceContentHeader({
+  eyebrow,
+  title,
+  metaEyebrow,
+  meta,
+  className,
+}: {
+  eyebrow: ReactNode;
+  title: ReactNode;
+  metaEyebrow?: ReactNode;
+  meta?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={["workspace-content-head", className].filter(Boolean).join(' ')}>
+      <div>
+        <span>{eyebrow}</span>
+        <strong>{title}</strong>
+      </div>
+      {metaEyebrow || meta ? (
+        <div className="workspace-content-head-meta">
+          {metaEyebrow ? <span>{metaEyebrow}</span> : null}
+          {meta ? <small>{meta}</small> : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function WorkspaceSectionFrame({
+  eyebrow,
+  title,
+  meta,
+  children,
+  className,
+}: {
+  eyebrow?: ReactNode;
+  title?: ReactNode;
+  meta?: ReactNode;
+  children?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <section className={["workspace-section-frame", className].filter(Boolean).join(' ')}>
+      {eyebrow || title || meta ? (
+        <div className="workspace-section-head">
+          <div>
+            {eyebrow ? <span>{eyebrow}</span> : null}
+            {title ? <strong>{title}</strong> : null}
+          </div>
+          {meta ? <small>{meta}</small> : null}
+        </div>
+      ) : null}
+      {children}
+    </section>
+  );
+}
+
+export function WorkspaceSummaryPanel({
+  title,
+  children,
+  className,
+}: {
+  title: ReactNode;
+  children?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={["workspace-summary-panel", className].filter(Boolean).join(' ')}>
+      <strong>{title}</strong>
+      {children ? <p>{children}</p> : null}
+    </div>
+  );
+}
+
 export type WorkspaceMetric = {
   label: string;
   value: ReactNode;

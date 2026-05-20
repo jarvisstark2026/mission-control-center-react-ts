@@ -98,6 +98,11 @@
   font-size: 0.64rem;
 }
 
+.workspace-launch-button.is-muted {
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.68);
+}
+
 .workspace-launch-pill {
   min-height: 28px;
   padding: 6px 9px;

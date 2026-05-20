@@ -116,3 +116,14 @@ export function saveStoredWidgetState(widgets: WorkspaceWidget[]): boolean {
     return false;
   }
 }
+
+export function clearStoredWidgetState(): boolean {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    window.localStorage.removeItem(workspaceStorageKey);
+    return true;
+  } catch {
+    return false;
+  }
+}

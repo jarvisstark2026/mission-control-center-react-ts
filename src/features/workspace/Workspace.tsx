@@ -8,7 +8,7 @@ import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, Works
 import type { WorkspaceWidget } from './workspaceTypes';
 import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
 import { createLocalFileRecord, clearPersistedLocalFiles, formatLocalFileSize, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readPersistedLocalFiles, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
-import { clampNumber, loadStoredWidgetState, saveStoredWidgetState, type WidgetBlueprint } from './workspaceStorage';
+import { clampNumber, clearStoredWidgetState, loadStoredWidgetState, saveStoredWidgetState, type WidgetBlueprint } from './workspaceStorage';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from './workflowStudioModel';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
@@ -369,6 +369,10 @@ const initialWidgetState = widgetPresets.map((widget) => ({
   ...widget,
   open: defaultOpenKinds.has(widget.kind),
 }));
+
+function createInitialWidgetState() {
+  return initialWidgetState.map((widget) => ({ ...widget }));
+}
 
 function getCurrentShellRole(): ShellRole {
   if (typeof window === 'undefined') return 'support';
@@ -2559,6 +2563,15 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     openPanelWindow(nextLaunchKind);
   };
 
+  const resetWorkspaceLayout = () => {
+    interactionRef.current = null;
+    const resetWidgets = createInitialWidgetState();
+    widgetsRef.current = resetWidgets;
+    void clearStoredWidgetState();
+    setNextLaunchIndex(0);
+    setWidgets(resetWidgets);
+  };
+
   const raiseWidget = (id: string) => {
     setWidgets((current) => {
       const highest = current.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
@@ -2984,6 +2997,9 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
         <div className="workspace-brand">Mission Control Center</div>
         <StatusChip tone="cool">tailnet live · drag · resize · stack</StatusChip>
         <div className="workspace-launcher">
+          <button type="button" className="workspace-launch-button is-muted" onClick={resetWorkspaceLayout}>
+            Reset layout
+          </button>
           <button type="button" className="workspace-launch-button" onClick={openNextPanelWindow}>
             Add page · {getWidgetLabel(nextLaunchKind)}
           </button>

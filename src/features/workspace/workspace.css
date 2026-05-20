@@ -1020,6 +1020,9 @@
   align-content: start;
 }
 
+.overview-surface,
+.graph-surface,
+.schedule-surface,
 .audio-widget-shell,
 .map-widget-shell,
 .diagram-widget-shell,
@@ -1028,16 +1031,40 @@
   align-content: stretch;
 }
 
+.list-surface {
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+}
+
+.overview-dashboard,
+.graph-stage,
+.schedule-section,
+.list-section,
 .media-widget-stage {
   min-height: 0;
   overflow: hidden;
 }
 
+.overview-dashboard,
+.graph-stage,
+.schedule-section,
+.list-section {
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+}
+
 .media-widget-stage > .audio-surface,
 .media-widget-stage > .map-surface,
 .media-widget-stage > .diagram-surface,
-.media-widget-stage > .video-surface {
+.media-widget-stage > .video-surface,
+.graph-stage > .spark-panel,
+.overview-dashboard > .widget-grid {
   min-height: 0;
+}
+
+.graph-stage > .spark-panel,
+.overview-dashboard > .widget-grid {
+  height: 100%;
 }
 
 .project-row,

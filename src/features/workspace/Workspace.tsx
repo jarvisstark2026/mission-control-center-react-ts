@@ -1006,7 +1006,7 @@ function WorkflowWidget() {
 
       <div className="workflow-layout">
         <aside className="workflow-column workflow-library">
-          <WorkspaceSectionFrame className="workflow-group" eyebrow="Workflow library" meta="starter templates">
+          <WorkspaceSectionFrame className="workflow-group" eyebrow="Workflow library" title="template catalog" meta="starter templates">
             <WorkspaceCatalogGrid
               className="workflow-template-list"
               variant="market"
@@ -1023,7 +1023,7 @@ function WorkflowWidget() {
             />
           </WorkspaceSectionFrame>
 
-          <WorkspaceSectionFrame className="workflow-group" eyebrow="Skill library" meta="toggle helper skills">
+          <WorkspaceSectionFrame className="workflow-group" eyebrow="Skill library" title="helper skills" meta="toggle helper skills">
             <WorkspaceCatalogGrid
               className="workflow-skill-list"
               variant="market"

@@ -6,7 +6,7 @@ import { readShellLocationFromSearch } from '../shell/location';
 import type { ShellRole } from '../shell/roles';
 import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, WorkspaceMetricGrid, WorkspaceRowList, WorkspaceWidgetFrame } from './workspaceBlocks';
 import type { WorkspaceWidget } from './workspaceTypes';
-import { calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
+import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
 import { createLocalFileRecord, clearPersistedLocalFiles, formatLocalFileSize, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readPersistedLocalFiles, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
 import { clampNumber, loadStoredWidgetState, saveStoredWidgetState, type WidgetBlueprint } from './workspaceStorage';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from './workflowStudioModel';
@@ -2238,6 +2238,7 @@ type WorkspaceWidgetCardProps = {
   onStartDrag: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
   onStartResize: (event: ReactPointerEvent<HTMLElement>, id: string, edge: ResizeEdge) => void;
   onToggleOpen: (id: string) => void;
+  onRecenter: (id: string) => void;
   onClose: (id: string) => void;
   showChrome?: boolean;
   localFiles: LocalFileRecord[];
@@ -2266,6 +2267,7 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
     onStartDrag,
     onStartResize,
     onToggleOpen,
+    onRecenter,
     onClose,
     showChrome = true,
     localFiles,
@@ -2324,6 +2326,18 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
               title={widget.open ? `Minimize ${widget.title}` : `Maximize ${widget.title}`}
             >
               {widget.open ? '▴' : '▾'}
+            </button>
+            <button
+              type="button"
+              className="widget-recenter"
+              onClick={(event) => {
+                event.stopPropagation();
+                onRecenter(widget.id);
+              }}
+              aria-label={`Recenter ${widget.title}`}
+              title={`Recenter ${widget.title}`}
+            >
+              ⌖
             </button>
             <button
               type="button"
@@ -2695,6 +2709,35 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     );
   };
 
+  const recenterWidget = (id: string) => {
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    const canvasWidth = Math.max(320, canvasRect?.width ?? bounds.width ?? 0);
+    const canvasHeight = Math.max(240, canvasRect?.height ?? bounds.height ?? 0);
+
+    setWidgets((current) => {
+      const highest = current.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
+      const next = current.map((widget) => {
+        if (widget.id !== id) return widget;
+
+        const { left, top } = calculateCenteredWidgetPosition({
+          canvasWidth,
+          canvasHeight,
+          widgetWidth: widget.width,
+          widgetHeight: widget.open ? widget.height : 58,
+        });
+
+        return {
+          ...widget,
+          x: left,
+          y: top,
+          zIndex: highest + 1,
+        };
+      });
+      widgetsRef.current = next;
+      return next;
+    });
+  };
+
   const closeWidget = (id: string) => {
     setWidgets((current) =>
       current.map((widget) =>
@@ -2902,6 +2945,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             onStartDrag={startDrag}
             onStartResize={startResize}
             onToggleOpen={toggleWidget}
+            onRecenter={recenterWidget}
             onClose={closeWidget}
             showChrome={panelKind === 'browser'}
             localFiles={localFiles}
@@ -2967,6 +3011,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             onStartDrag={startDrag}
             onStartResize={startResize}
             onToggleOpen={toggleWidget}
+            onRecenter={recenterWidget}
             onClose={closeWidget}
             localFiles={localFiles}
             activeLocalFile={activeLocalFile}

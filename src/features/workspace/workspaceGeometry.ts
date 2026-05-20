@@ -14,6 +14,14 @@ export type DragGeometryResult = {
   top: number;
 };
 
+export type CenterGeometryParams = {
+  canvasWidth: number;
+  canvasHeight: number;
+  widgetWidth: number;
+  widgetHeight: number;
+  minimumMargin?: number;
+};
+
 const defaultMinimumVisibleWidth = 96;
 const defaultMinimumVisibleHeight = 58;
 
@@ -48,5 +56,22 @@ export function calculatePartiallyOffscreenDragPosition({
   return {
     left: clamp(proposedLeft, minLeft, maxLeft),
     top: clamp(proposedTop, minTop, maxTop),
+  };
+}
+
+export function calculateCenteredWidgetPosition({
+  canvasWidth,
+  canvasHeight,
+  widgetWidth,
+  widgetHeight,
+  minimumMargin = 24,
+}: CenterGeometryParams): DragGeometryResult {
+  const effectiveCanvasWidth = Math.max(widgetWidth, canvasWidth);
+  const effectiveCanvasHeight = Math.max(widgetHeight, canvasHeight);
+  const margin = Math.max(0, minimumMargin);
+
+  return {
+    left: Math.max(margin, Math.round((effectiveCanvasWidth - widgetWidth) / 2)),
+    top: Math.max(margin, Math.round((effectiveCanvasHeight - widgetHeight) / 2)),
   };
 }

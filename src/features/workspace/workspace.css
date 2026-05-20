@@ -189,6 +189,7 @@
   .workspace-launch-button,
   .workspace-launch-pill,
   .widget-toggle,
+  .widget-recenter,
   .widget-close,
   .widget-resize-handle {
     animation: none;
@@ -208,7 +209,7 @@
   position: absolute;
   top: 8px;
   left: 10px;
-  right: 68px;
+  right: 94px;
   z-index: 2;
   display: grid;
   gap: 2px;
@@ -237,7 +238,8 @@
   color: rgba(255, 255, 255, 0.62);
 }
 
-.widget-toggle {
+.widget-toggle,
+.widget-recenter {
   width: 22px;
   height: 22px;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -248,12 +250,18 @@
   cursor: pointer;
 }
 
+.widget-recenter {
+  font-size: 0.72rem;
+}
+
 .widget-toggle:hover,
+.widget-recenter:hover,
 .widget-close:hover {
   background: rgba(255, 255, 255, 0.12);
 }
 
 .widget-toggle:focus-visible,
+.widget-recenter:focus-visible,
 .widget-close:focus-visible {
   background: rgba(255, 255, 255, 0.14);
   outline: 2px solid rgba(255, 255, 255, 0.72);

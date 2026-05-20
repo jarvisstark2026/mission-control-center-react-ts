@@ -2188,18 +2188,10 @@
 }
 
 .browser-bookmarks {
-  display: flex;
-  flex: 0 0 auto;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 6px;
   max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  touch-action: pan-x;
-}
-
-.browser-bookmarks button {
-  flex: 0 0 auto;
 }
 
 .browser-frame-section {

@@ -1288,19 +1288,17 @@ function BrowserWidget() {
           />
           <WorkspaceButton className="browser-go-button" onClick={submitUrl}>Go</WorkspaceButton>
         </div>
-        <div className="browser-bookmarks">
-          {['https://example.org', 'https://developer.mozilla.org', 'https://news.ycombinator.com'].map((bookmark) => (
-            <WorkspaceButton
-              key={bookmark}
-              type="button"
-              variant="secondary"
-              className="browser-bookmark"
-              onClick={() => { setUrl(bookmark); setFrameUrl(bookmark); }}
-            >
-              {bookmark.replace('https://', '')}
-            </WorkspaceButton>
-          ))}
-        </div>
+        <WorkspaceCatalogGrid
+          className="browser-bookmarks"
+          variant="launcher"
+          ariaLabel="Browser bookmarks"
+          items={['https://example.org', 'https://developer.mozilla.org', 'https://news.ycombinator.com'].map((bookmark) => ({
+            id: bookmark,
+            label: bookmark.replace('https://', ''),
+            note: 'bookmark',
+          }))}
+          onSelect={(item) => { setUrl(item.id); setFrameUrl(item.id); }}
+        />
       </WorkspaceSectionFrame>
 
       <WorkspaceSectionFrame className="browser-frame-section" eyebrow="preview" title="remote page" meta="iframe">

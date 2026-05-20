@@ -234,6 +234,9 @@ function TradingGraphWidget({ graph }: { graph: MarketGraph }) {
         metaEyebrow={graph.ticker}
         meta={graph.category}
       />
+      <WorkspaceSummaryPanel className="trading-graph-routing" title="graph routing">
+        Selecting a market item in the markets widget brings this graph forward and swaps the market context. No ceremony, just the useful bit.
+      </WorkspaceSummaryPanel>
       <WorkspaceMetricGrid className="trading-graph-summary" metrics={summary} />
       <WorkspaceSectionFrame className="trading-graph-body" eyebrow="chart" title="active market trace" meta={graph.ticker}>
         <div className="trading-graph-stage">
@@ -243,9 +246,6 @@ function TradingGraphWidget({ graph }: { graph: MarketGraph }) {
           <div className="trading-graph-volume" />
         </div>
       </WorkspaceSectionFrame>
-      <WorkspaceSummaryPanel title="graph routing">
-        Selecting a market item in the markets widget brings this graph forward and swaps the market context. No ceremony, just the useful bit.
-      </WorkspaceSummaryPanel>
     </WorkspaceContentShell>
   );
 }

@@ -9,6 +9,10 @@ export function clampNumber(value: unknown, fallback: number, min: number, max: 
   return Math.min(max, Math.max(min, value));
 }
 
+function normalizePreviewFileId(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
 export function loadStoredWidgetState({
   presets,
   defaultOpenKinds,
@@ -49,6 +53,7 @@ export function loadStoredWidgetState({
         zIndex: clampNumber(stored.zIndex, preset.zIndex, 0, 999),
         surfaceAlpha: clampNumber(stored.surfaceAlpha, preset.surfaceAlpha, 0, 1),
         lineAlpha: clampNumber(stored.lineAlpha, preset.lineAlpha, 0, 1),
+        previewFileId: normalizePreviewFileId(stored.previewFileId),
       };
     });
 
@@ -74,6 +79,7 @@ export function loadStoredWidgetState({
           zIndex: clampNumber(stored.zIndex, 1, 0, 999),
           surfaceAlpha: clampNumber(stored.surfaceAlpha, blueprint?.surfaceAlpha ?? 0.08, 0, 1),
           lineAlpha: clampNumber(stored.lineAlpha, blueprint?.lineAlpha ?? 0.14, 0, 1),
+          previewFileId: normalizePreviewFileId(stored.previewFileId),
         } as WorkspaceWidget;
       });
 

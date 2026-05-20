@@ -8,7 +8,7 @@ import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, Works
 import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from './workspaceDesktopApps';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
-import { createLocalFileRecord, clearPersistedLocalFiles, formatLocalFileSize, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readPersistedLocalFiles, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
+import { createLocalFileRecord, clearPersistedLocalFiles, formatLocalFileSize, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readLocalFileTextPreview, readPersistedLocalFiles, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
 import { clampNumber, clearStoredWidgetState, loadStoredWidgetState, saveStoredWidgetState } from './workspaceStorage';
 import { getFocusedWidget, getWidgetLabel, getWorkspaceLauncherEntries, launchableWindowKinds, widgetBlueprints, widgetPresets } from './workspaceWidgetCatalog';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from './workflowStudioModel';
@@ -603,11 +603,10 @@ function PreviewWidget({
     setTextPreview('');
 
     if (file.previewKind === 'text') {
-      void file.file
-        .text()
+      void readLocalFileTextPreview(file.file, 16000)
         .then((content) => {
           if (cancelled) return;
-          setTextPreview(content.slice(0, 16000));
+          setTextPreview(content);
           setStatus(`Text preview ready · ${formatLocalFileSize(file.file.size)}`);
         })
         .catch(() => {
@@ -1488,10 +1487,15 @@ function LocalFileMiniPreview({ file }: { file: LocalFileRecord }) {
     }
 
     if (file.previewKind === 'text') {
-      void file.file.text().then((content) => {
-        if (cancelled) return;
-        setTextSnippet(content.slice(0, 96).replace(/\s+/g, ' ').trim());
-      });
+      void readLocalFileTextPreview(file.file, 96, { compactWhitespace: true })
+        .then((content) => {
+          if (cancelled) return;
+          setTextSnippet(content);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setTextSnippet('Text preview unavailable');
+        });
     }
 
     return () => {

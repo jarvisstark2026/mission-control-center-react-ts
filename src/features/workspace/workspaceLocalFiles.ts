@@ -192,6 +192,17 @@ export async function measureImageDimensions(file: File): Promise<LocalImageDime
   }
 }
 
+export async function readLocalFileTextPreview(
+  file: File,
+  maxCharacters: number,
+  { compactWhitespace = false }: { compactWhitespace?: boolean } = {},
+): Promise<string> {
+  const content = await file.text();
+  const trimmedContent = content.slice(0, maxCharacters);
+
+  return compactWhitespace ? trimmedContent.replace(/\s+/g, ' ').trim() : trimmedContent;
+}
+
 function clampWidgetSize(value: number, fallback: number, min: number, max: number) {
   if (!Number.isFinite(value)) return fallback;
   return Math.min(max, Math.max(min, value));

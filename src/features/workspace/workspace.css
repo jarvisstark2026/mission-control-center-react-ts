@@ -2358,33 +2358,6 @@
   gap: 8px;
 }
 
-.file-explorer-button {
-  min-height: 32px;
-  padding: 0 11px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.92);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.58rem;
-  cursor: pointer;
-}
-
-.file-explorer-button:hover,
-.file-explorer-button:focus-visible {
-  background: rgba(255, 255, 255, 0.09);
-}
-
-.file-explorer-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.file-explorer-button.is-muted {
-  background: rgba(255, 255, 255, 0.035);
-}
-
 .file-explorer-input {
   position: absolute;
   width: 1px;

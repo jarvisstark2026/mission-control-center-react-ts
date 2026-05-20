@@ -1747,19 +1747,18 @@ function FileExplorerWidget({
 
       <WorkspaceSectionFrame className="file-explorer-toolbar-frame" eyebrow="file controls" title="local intake" meta="browse / clear">
         <div className="file-explorer-toolbar">
-          <WorkspaceButton className="file-explorer-button" onClick={handleBrowseFilesClick}>
+          <WorkspaceButton onClick={handleBrowseFilesClick}>
             Browse items
           </WorkspaceButton>
           <WorkspaceButton
             variant="secondary"
-            className="file-explorer-button is-muted"
             onClick={handleBrowseFolderClick}
             disabled={!canBrowseFolder}
             title={canBrowseFolder ? 'Open a general-use folder picker' : 'Folder picker is not available in this browser'}
           >
             Open folder
           </WorkspaceButton>
-          <WorkspaceButton variant="secondary" className="file-explorer-button is-muted" onClick={onClearFiles} disabled={!files.length && !folderEntries.length}>
+          <WorkspaceButton variant="secondary" onClick={onClearFiles} disabled={!files.length && !folderEntries.length}>
             Clear loaded files
           </WorkspaceButton>
           <input

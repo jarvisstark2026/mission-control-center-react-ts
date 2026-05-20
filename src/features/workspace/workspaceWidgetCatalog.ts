@@ -57,6 +57,56 @@ export const widgetBlueprints: Record<WorkspaceWidget['kind'], WidgetBlueprint> 
   list: { title: 'List', subtitle: 'inbox / next steps', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 260, minHeight: 150 },
 };
 
+type WidgetPresetLayout = Pick<WorkspaceWidget, 'id' | 'kind' | 'x' | 'y' | 'width' | 'height' | 'zIndex'> &
+  Partial<Pick<WorkspaceWidget, 'title' | 'subtitle' | 'minWidth' | 'minHeight' | 'pinned' | 'previewFileId'>>;
+
+const widgetPresetLayouts: WidgetPresetLayout[] = [
+  { id: 'overview', kind: 'overview', x: 44, y: 74, width: 390, height: 248, zIndex: 6, pinned: true },
+  { id: 'telemetry', kind: 'graph', x: 264, y: 88, width: 350, height: 220, zIndex: 5 },
+  { id: 'market-telemetry', kind: 'trading-graph', x: 620, y: 90, width: 378, height: 224, zIndex: 5 },
+  { id: 'preview', kind: '3d', x: 528, y: 66, width: 426, height: 258, zIndex: 4, previewFileId: null },
+  { id: 'map', kind: 'map', x: 246, y: 286, width: 300, height: 218, zIndex: 3 },
+  { id: 'flow', kind: 'flow', x: 560, y: 318, width: 680, height: 420, zIndex: 2, minWidth: 320, minHeight: 320 },
+  { id: 'news', kind: 'news', x: 872, y: 94, width: 274, height: 194, zIndex: 1 },
+  { id: 'schedule', kind: 'schedule', x: 914, y: 308, width: 292, height: 206, zIndex: 2 },
+  { id: 'launcher', kind: 'launcher', x: 586, y: 530, width: 310, height: 194, zIndex: 3 },
+  { id: 'browser', kind: 'browser', x: 616, y: 74, width: 392, height: 292, zIndex: 4 },
+  { id: 'watch-video', kind: 'watch-video', x: 986, y: 536, width: 276, height: 180, zIndex: 2 },
+  { id: 'file-explorer', kind: 'file-explorer', x: 60, y: 330, width: 380, height: 420, zIndex: 3, minWidth: 360, minHeight: 380 },
+  { id: 'native-app', kind: 'native-app', x: 420, y: 320, width: 392, height: 238, zIndex: 4 },
+  { id: 'window-manager', kind: 'window-manager', x: 840, y: 332, width: 344, height: 238, zIndex: 4 },
+  { id: 'sheet', kind: 'sheet', x: 120, y: 772, width: 408, height: 246, zIndex: 2 },
+  { id: 'docs', kind: 'docs', x: 548, y: 786, width: 342, height: 232, zIndex: 2 },
+  { id: 'slides', kind: 'slides', x: 912, y: 790, width: 330, height: 230, zIndex: 2 },
+  { id: 'image', kind: 'image', x: 1260, y: 778, width: 286, height: 224, zIndex: 2 },
+  { id: 'pdf', kind: 'pdf', x: 1580, y: 782, width: 300, height: 224, zIndex: 2 },
+  { id: 'audio', kind: 'audio', x: 60, y: 548, width: 344, height: 194, zIndex: 2 },
+  { id: 'list', kind: 'list', title: 'Project list', subtitle: 'tasks / backlog', x: 418, y: 568, width: 332, height: 174, zIndex: 1 },
+];
+
+export const widgetPresets: WorkspaceWidget[] = widgetPresetLayouts.map((layout) => {
+  const blueprint = widgetBlueprints[layout.kind];
+
+  return {
+    id: layout.id,
+    kind: layout.kind,
+    title: layout.title ?? blueprint.title,
+    subtitle: layout.subtitle ?? blueprint.subtitle,
+    x: layout.x,
+    y: layout.y,
+    width: layout.width,
+    height: layout.height,
+    zIndex: layout.zIndex,
+    surfaceAlpha: blueprint.surfaceAlpha,
+    lineAlpha: blueprint.lineAlpha,
+    open: true,
+    minWidth: layout.minWidth ?? blueprint.minWidth,
+    minHeight: layout.minHeight ?? blueprint.minHeight,
+    pinned: layout.pinned,
+    previewFileId: layout.previewFileId,
+  };
+});
+
 export function getWidgetLabel(kind: WorkspaceWidget['kind']) {
   return widgetBlueprints[kind].title;
 }

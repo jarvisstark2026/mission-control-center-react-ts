@@ -1632,9 +1632,13 @@
 }
 
 .workflow-actions {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
+}
+
+.workflow-actions .workspace-section-head {
+  grid-column: 1 / -1;
 }
 
 .workflow-action {
@@ -1856,6 +1860,10 @@
 @media (max-width: 1260px) {
   .workflow-layout {
     grid-template-columns: 1fr;
+  }
+
+  .workflow-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

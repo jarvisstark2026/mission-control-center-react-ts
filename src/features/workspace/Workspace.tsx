@@ -958,19 +958,16 @@ function WorkflowWidget() {
   });
 
   return (
-    <div className="workflow-surface">
-      <div className="workflow-head">
-        <div>
-          <span>Workflow studio</span>
-          <strong>{draft.name}</strong>
-        </div>
-        <div className="workflow-head-meta">
-          <small>{template.title}</small>
-          <small>{steps.length} steps · {selectedSkills.length} skills</small>
-        </div>
-      </div>
+    <WorkspaceContentShell className="workflow-surface">
+      <WorkspaceContentHeader
+        className="workflow-head"
+        eyebrow="Workflow studio"
+        title={draft.name}
+        metaEyebrow={template.title}
+        meta={`${steps.length} steps · ${selectedSkills.length} skills`}
+      />
 
-      <div className="workflow-actions">
+      <WorkspaceSectionFrame className="workflow-actions" eyebrow="workflow controls" meta="save / export / reset">
         <WorkspaceButton className="workflow-action" onClick={saveWorkflow}>
           Save workflow
         </WorkspaceButton>
@@ -983,15 +980,11 @@ function WorkflowWidget() {
         <WorkspaceButton variant="secondary" className="workflow-action is-muted" onClick={startNewWorkflow}>
           New workflow
         </WorkspaceButton>
-      </div>
+      </WorkspaceSectionFrame>
 
       <div className="workflow-layout">
         <aside className="workflow-column workflow-library">
-          <div className="workflow-group">
-            <div className="workflow-group-head">
-              <span>Workflow library</span>
-              <small>starter templates</small>
-            </div>
+          <WorkspaceSectionFrame className="workflow-group" eyebrow="Workflow library" meta="starter templates">
             <div className="workflow-template-list">
               {workflowTemplates.map((item) => {
                 const isSelectedTemplate = item.id === template.id;
@@ -1011,13 +1004,9 @@ function WorkflowWidget() {
                 );
               })}
             </div>
-          </div>
+          </WorkspaceSectionFrame>
 
-          <div className="workflow-group">
-            <div className="workflow-group-head">
-              <span>Skill library</span>
-              <small>toggle helper skills</small>
-            </div>
+          <WorkspaceSectionFrame className="workflow-group" eyebrow="Skill library" meta="toggle helper skills">
             <div className="workflow-skill-list">
               {workflowSkills.map((skill) => {
                 const isSelectedSkill = selectedSkillIds.has(skill.id);
@@ -1036,14 +1025,10 @@ function WorkflowWidget() {
                 );
               })}
             </div>
-          </div>
+          </WorkspaceSectionFrame>
         </aside>
 
-        <section className="workflow-column workflow-canvas">
-          <div className="workflow-group-head">
-            <span>Workflow visualisation</span>
-            <small>step by step</small>
-          </div>
+        <WorkspaceSectionFrame className="workflow-column workflow-canvas" eyebrow="Workflow visualisation" meta="step by step">
           <div className="workflow-diagram" aria-label="Workflow visualisation">
             <svg viewBox={`0 0 ${svgWidth} 180`} role="img" aria-label="Workflow diagram">
               <rect x="0" y="0" width={svgWidth} height="180" fill="transparent" />
@@ -1066,14 +1051,10 @@ function WorkflowWidget() {
           </ol>
 
           <div className="workflow-status">{status}</div>
-        </section>
+        </WorkspaceSectionFrame>
 
         <aside className="workflow-column workflow-editor">
-          <div className="workflow-group">
-            <div className="workflow-group-head">
-              <span>User workflow</span>
-              <small>edit and save</small>
-            </div>
+          <WorkspaceSectionFrame className="workflow-group" eyebrow="User workflow" meta="edit and save">
             <label className="workflow-field">
               <span>Workflow name</span>
               <input
@@ -1102,18 +1083,14 @@ function WorkflowWidget() {
                   onKeyDown={(event) => event.key === 'Enter' && canAddCustomStep && addCustomStep()}
                   placeholder="Add a custom step"
                 />
-                <button type="button" onClick={addCustomStep} disabled={!canAddCustomStep}>
+                <WorkspaceButton variant="secondary" className="workflow-inline-add" onClick={addCustomStep} disabled={!canAddCustomStep}>
                   Add
-                </button>
+                </WorkspaceButton>
               </div>
             </label>
-          </div>
+          </WorkspaceSectionFrame>
 
-          <div className="workflow-group">
-            <div className="workflow-group-head">
-              <span>Saved workflows</span>
-              <small>{savedWorkflows.length} stored locally</small>
-            </div>
+          <WorkspaceSectionFrame className="workflow-group" eyebrow="Saved workflows" meta={`${savedWorkflows.length} stored locally`}>
             <div className="workflow-saved-list">
               {savedWorkflows.length ? (
                 savedWorkflows.map((workflow) => (
@@ -1132,10 +1109,10 @@ function WorkflowWidget() {
                 <div className="workflow-empty">No saved workflows yet. Save one and it will stay available locally.</div>
               )}
             </div>
-          </div>
+          </WorkspaceSectionFrame>
         </aside>
       </div>
-    </div>
+    </WorkspaceContentShell>
   );
 }
 

@@ -1246,6 +1246,7 @@ function WorkflowWidget() {
   const steps = getWorkflowSteps(draft);
   const selectedSkills = workflowSkills.filter((skill) => draft.skillIds.includes(skill.id));
   const selectedSkillIds = new Set(draft.skillIds);
+  const canAddCustomStep = newStep.trim().length > 0;
   const svgWidth = Math.max(620, steps.length * 170);
 
   const selectTemplate = (templateId: string) => {
@@ -1506,10 +1507,10 @@ function WorkflowWidget() {
                   type="text"
                   value={newStep}
                   onChange={(event) => setNewStep(event.target.value)}
-                  onKeyDown={(event) => event.key === 'Enter' && addCustomStep()}
+                  onKeyDown={(event) => event.key === 'Enter' && canAddCustomStep && addCustomStep()}
                   placeholder="Add a custom step"
                 />
-                <button type="button" onClick={addCustomStep}>
+                <button type="button" onClick={addCustomStep} disabled={!canAddCustomStep}>
                   Add
                 </button>
               </div>

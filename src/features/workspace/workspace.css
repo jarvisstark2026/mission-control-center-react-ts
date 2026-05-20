@@ -772,6 +772,7 @@
 .preview-surface::before,
 .markets-surface::before,
 .project-surface::before,
+.news-surface::before,
 .model-studio-surface::before {
   content: none;
 }
@@ -782,7 +783,6 @@
 .flow-surface::before,
 .list-surface::before,
 .video-surface::before,
-.news-surface::before,
 .audio-surface::before {
   content: '';
   position: absolute;
@@ -1029,6 +1029,7 @@
 }
 
 .project-surface,
+.news-surface,
 .schedule-surface,
 .list-surface {
   grid-template-rows: auto auto minmax(0, 1fr);
@@ -1046,6 +1047,7 @@
 .overview-dashboard,
 .graph-stage,
 .project-lanes,
+.news-feed-section,
 .schedule-section,
 .list-section,
 .media-widget-stage {
@@ -1056,6 +1058,7 @@
 .overview-dashboard,
 .graph-stage,
 .project-lanes,
+.news-feed-section,
 .schedule-section,
 .list-section {
   grid-template-rows: auto minmax(0, 1fr);
@@ -1076,6 +1079,7 @@
   height: 100%;
 }
 
+.news-feed-grid,
 .schedule-rows,
 .list-rows {
   min-height: 0;
@@ -1959,8 +1963,9 @@
 }
 
 .browser-surface {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  align-content: stretch;
   height: 100%;
   min-height: 100%;
   overflow: hidden;
@@ -2217,7 +2222,7 @@
 .browser-address-section {
   display: grid;
   gap: 8px;
-  flex: 0 0 auto;
+  min-height: 0;
 }
 
 .browser-bar {
@@ -2259,16 +2264,15 @@
 }
 
 .browser-frame-section {
-  flex: 1 1 auto;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
   overflow: hidden;
 }
 
 .browser-frame {
   width: 100%;
-  flex: 1;
+  height: 100%;
   min-height: 0;
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.02);
@@ -3033,7 +3037,7 @@
 
 .trading-graph-surface {
   display: grid;
-  grid-template-rows: auto auto auto minmax(120px, 1fr);
+  grid-template-rows: auto auto minmax(120px, 1fr);
   gap: 10px;
   align-content: stretch;
 }
@@ -3112,7 +3116,7 @@
 
 .trading-graph-body {
   min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   align-content: stretch;
   overflow: hidden;
 }

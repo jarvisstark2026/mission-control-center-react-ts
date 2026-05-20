@@ -243,8 +243,8 @@ function TradingGraphWidget({ graph }: { graph: MarketGraph }) {
       <WorkspaceSummaryPanel className="trading-graph-routing" title="graph routing">
         Selecting a market item in the markets widget brings this graph forward and swaps the market context. No ceremony, just the useful bit.
       </WorkspaceSummaryPanel>
-      <WorkspaceMetricGrid className="trading-graph-summary" metrics={summary} />
       <WorkspaceSectionFrame className="trading-graph-body" eyebrow="chart" title="active market trace" meta={graph.ticker}>
+        <WorkspaceMetricGrid className="trading-graph-summary" metrics={summary} />
         <div className="trading-graph-stage">
           <div className="trading-graph-grid" />
           <div className="trading-graph-line trading-a" />
@@ -601,7 +601,38 @@ function NewsWidget({
   activeGraph: MarketGraph;
   onSelectGraph: (graph: MarketGraph) => void;
 }) {
-  return <MarketsWidget activeGraph={activeGraph} onSelectGraph={onSelectGraph} />;
+  const newsItems = marketCategories.flatMap((category) =>
+    category.graphs.map((graph) => ({
+      id: graph.id,
+      label: graph.label,
+      note: `${graph.category} · ${graph.note}`,
+      badge: graph.change,
+      active: graph.id === activeGraph.id,
+    })),
+  );
+
+  return (
+    <WorkspaceContentShell className="news-surface">
+      <WorkspaceContentHeader
+        eyebrow="News feed"
+        title="market pulse / watchlist"
+        metaEyebrow="active"
+        meta={activeGraph.ticker}
+      />
+      <WorkspaceSummaryPanel className="news-summary" title={activeGraph.label}>
+        {activeGraph.note}. Selecting a pulse keeps the market graph in sync without borrowing the entire Markets shell wholesale.
+      </WorkspaceSummaryPanel>
+      <WorkspaceSectionFrame className="news-feed-section" eyebrow="feed" title="signal headlines" meta={`${newsItems.length} items`}>
+        <WorkspaceCatalogGrid
+          className="news-feed-grid"
+          variant="market"
+          ariaLabel="Market news signals"
+          items={newsItems}
+          onSelect={(item) => onSelectGraph(getMarketGraph(item.id))}
+        />
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
+  );
 }
 
 function VideoWidget() {

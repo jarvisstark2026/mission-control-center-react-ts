@@ -438,6 +438,9 @@ function ImageWidget() {
         metaEyebrow="asset"
         meta="drop-ready"
       />
+      <WorkspaceSummaryPanel className="image-summary" title="asset staging">
+        Preview assets inside the shared workspace shell before annotation tools are connected.
+      </WorkspaceSummaryPanel>
       <WorkspaceSectionFrame className="image-frame-section" eyebrow="canvas" title="no asset loaded" meta="image">
         <div className="image-frame">
           <div className="image-placeholder">
@@ -446,9 +449,6 @@ function ImageWidget() {
           </div>
         </div>
       </WorkspaceSectionFrame>
-      <WorkspaceSummaryPanel className="image-footer" title="image controls">
-        Preview assets inside the shared workspace shell before annotation tools are connected.
-      </WorkspaceSummaryPanel>
     </WorkspaceContentShell>
   );
 }

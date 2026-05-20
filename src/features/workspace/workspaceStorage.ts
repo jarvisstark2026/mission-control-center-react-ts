@@ -14,6 +14,10 @@ function normalizePreviewFileId(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value : null;
 }
 
+function isStoredWidgetRecord(value: unknown): value is Partial<WorkspaceWidget> & { id: string } {
+  return Boolean(value && typeof value === 'object' && typeof (value as Partial<WorkspaceWidget>).id === 'string');
+}
+
 export function loadStoredWidgetState({
   presets,
   defaultOpenKinds,
@@ -27,7 +31,8 @@ export function loadStoredWidgetState({
   if (!Array.isArray(parsed)) return null;
 
   try {
-    const byId = new Map(parsed.filter((item): item is Partial<WorkspaceWidget> & { id: string } => Boolean(item && item.id)).map((item) => [item.id, item]));
+    const presetIds = new Set(presets.map((preset) => preset.id));
+    const byId = new Map(parsed.filter(isStoredWidgetRecord).map((item) => [item.id, item]));
     const normalizedPresets = presets.map((preset) => {
       const stored = byId.get(preset.id);
       if (!stored) return { ...preset, open: defaultOpenKinds.has(preset.kind) };
@@ -54,29 +59,32 @@ export function loadStoredWidgetState({
     });
 
     const dynamicWidgets = parsed
-      .filter((item): item is Partial<WorkspaceWidget> & { id: string } => Boolean(item && item.id && !presets.some((preset) => preset.id === item.id) && item.kind && isWorkspaceWidgetKind(item.kind)))
+      .filter((item): item is Partial<WorkspaceWidget> & { id: string; kind: WorkspaceWidget['kind'] } =>
+        Boolean(isStoredWidgetRecord(item) && !presetIds.has(item.id) && item.kind && isWorkspaceWidgetKind(item.kind)),
+      )
       .map((stored) => {
-        const kind = stored.kind as WorkspaceWidget['kind'];
+        const kind = stored.kind;
         const blueprint = blueprints[kind];
-        const minWidth = clampNumber(typeof stored.minWidth === 'number' ? stored.minWidth : blueprint?.minWidth ?? 300, blueprint?.minWidth ?? 300, 120, 1920);
-        const minHeight = clampNumber(typeof stored.minHeight === 'number' ? stored.minHeight : blueprint?.minHeight ?? 180, blueprint?.minHeight ?? 180, 120, 1080);
+        const minWidth = clampNumber(typeof stored.minWidth === 'number' ? stored.minWidth : blueprint.minWidth, blueprint.minWidth, 120, 1920);
+        const minHeight = clampNumber(typeof stored.minHeight === 'number' ? stored.minHeight : blueprint.minHeight, blueprint.minHeight, 120, 1080);
         return {
-          ...stored,
+          id: stored.id,
           kind,
-          title: blueprint?.title ?? stored.title ?? kind,
-          subtitle: blueprint?.subtitle ?? stored.subtitle ?? '',
+          title: blueprint.title,
+          subtitle: blueprint.subtitle,
           open: typeof stored.open === 'boolean' ? stored.open : true,
           minWidth,
           minHeight,
-          width: clampNumber(stored.width, blueprint?.minWidth ?? minWidth, minWidth, 4096),
-          height: clampNumber(stored.height, blueprint?.minHeight ?? minHeight, minHeight, 4096),
+          width: clampNumber(stored.width, blueprint.minWidth, minWidth, 4096),
+          height: clampNumber(stored.height, blueprint.minHeight, minHeight, 4096),
           x: clampNumber(stored.x, 0, -8192, 8192),
           y: clampNumber(stored.y, 0, -8192, 8192),
           zIndex: clampNumber(stored.zIndex, 1, 0, 999),
-          surfaceAlpha: clampNumber(stored.surfaceAlpha, blueprint?.surfaceAlpha ?? 0.08, 0, 1),
-          lineAlpha: clampNumber(stored.lineAlpha, blueprint?.lineAlpha ?? 0.14, 0, 1),
+          surfaceAlpha: clampNumber(stored.surfaceAlpha, blueprint.surfaceAlpha, 0, 1),
+          lineAlpha: clampNumber(stored.lineAlpha, blueprint.lineAlpha, 0, 1),
+          pinned: typeof stored.pinned === 'boolean' ? stored.pinned : undefined,
           previewFileId: normalizePreviewFileId(stored.previewFileId),
-        } as WorkspaceWidget;
+        };
       });
 
     return [...normalizedPresets, ...dynamicWidgets];

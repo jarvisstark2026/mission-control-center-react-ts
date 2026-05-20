@@ -1633,15 +1633,20 @@ function FileExplorerWidget({
     : folderEntries.length
       ? `Folder: ${visibleFolderPath}`
       : 'General use folder ready';
+  const getFolderEntrySelectionId = (entry: LocalFolderEntry) => (entry.file ? createLocalFileRecord(entry.file).id : entry.id);
 
-  const folderCatalogItems = folderTreeEntries.map((entry) => ({
-    id: entry.id,
-    label: entry.path,
-    note: entry.file ? `${entry.kind} · ${formatLocalFileSize(entry.file.size)}` : `${entry.kind} · no file access`,
-    badge: entry.depth > 0 ? `depth ${entry.depth}` : entry.kind,
-    active: entry.id === selectedFileId || entry.id === activeFileId,
-    state: entry.kind,
-  }));
+  const folderCatalogItems = folderTreeEntries.map((entry) => {
+    const selectionId = getFolderEntrySelectionId(entry);
+
+    return {
+      id: selectionId,
+      label: entry.path,
+      note: entry.file ? `${entry.kind} · ${formatLocalFileSize(entry.file.size)}` : `${entry.kind} · no file access`,
+      badge: entry.depth > 0 ? `depth ${entry.depth}` : entry.kind,
+      active: selectionId === selectedFileId || selectionId === activeFileId,
+      state: entry.kind,
+    };
+  });
 
   const selectedFileCatalogItems = files.map((record) => ({
     id: record.id,
@@ -1669,16 +1674,17 @@ function FileExplorerWidget({
   };
 
   const handleFolderSelect = (entryId: string) => {
-    const entry = folderTreeEntries.find((candidate) => candidate.id === entryId);
+    const entry = folderTreeEntries.find((candidate) => getFolderEntrySelectionId(candidate) === entryId);
     if (!entry?.file) return;
 
-    if (selectedFileId === entry.id || activeFileId === entry.id) {
-      void onOpenPreview(createLocalFileRecord(entry.file));
+    const fileRecord = createLocalFileRecord(entry.file);
+    if (selectedFileId === fileRecord.id || activeFileId === fileRecord.id) {
+      void onOpenPreview(fileRecord);
       return;
     }
 
     void onBrowseFiles([entry.file]);
-    onSelectFile(createLocalFileRecord(entry.file).id);
+    onSelectFile(fileRecord.id);
   };
 
   const handleSelectedFileSelect = (fileId: string) => {
@@ -1877,7 +1883,6 @@ type WorkspaceWidgetCardProps = {
   onClose: (id: string) => void;
   showChrome?: boolean;
   localFiles: LocalFileRecord[];
-  activeLocalFile: LocalFileRecord | null;
   activeLocalFileId: string | null;
   selectedLocalFileId: string | null;
   folderEntries: LocalFolderEntry[];
@@ -1906,7 +1911,6 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
     onClose,
     showChrome = true,
     localFiles,
-    activeLocalFile,
     activeLocalFileId,
     selectedLocalFileId,
     folderEntries,
@@ -2493,10 +2497,6 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     void clearPersistedLocalFiles();
   };
 
-  const activeLocalFile = useMemo(
-    () => localFiles.find((record) => record.id === activeLocalFileId) ?? null,
-    [activeLocalFileId, localFiles],
-  );
   const activeMarketGraph = useMemo(() => getMarketGraph(activeMarketGraphId), [activeMarketGraphId]);
 
   if (panelKind) {
@@ -2529,7 +2529,6 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             onClose={closeWidget}
             showChrome={panelKind === 'browser'}
             localFiles={localFiles}
-            activeLocalFile={activeLocalFile}
             activeLocalFileId={activeLocalFileId}
             selectedLocalFileId={selectedLocalFileId}
             folderEntries={folderEntries}
@@ -2594,7 +2593,6 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             onRecenter={recenterWidget}
             onClose={closeWidget}
             localFiles={localFiles}
-            activeLocalFile={activeLocalFile}
             activeLocalFileId={activeLocalFileId}
             selectedLocalFileId={selectedLocalFileId}
             folderEntries={folderEntries}

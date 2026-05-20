@@ -820,8 +820,8 @@ function ModelStudioWidget() {
         metaEyebrow="real-time engineering"
         meta="structures · bending · heat · stress"
       />
-      <WorkspaceSummaryPanel className="model-studio-overview" title="touch / stylus / spatial capture ready">
-        Future support for real 3D-space input can slot in here when the hardware catches up.
+      <WorkspaceSummaryPanel className="model-studio-overview" title="creation surface">
+        Designed as a fluid creation surface first, with touch, stylus, and spatial capture ready to slot in when the hardware catches up.
       </WorkspaceSummaryPanel>
 
       <div className="model-studio-layout">
@@ -862,10 +862,6 @@ function ModelStudioWidget() {
               </article>
             ))}
           </div>
-
-          <WorkspaceSummaryPanel className="model-studio-footer" title="creation surface">
-            Designed as a fluid creation surface first, with engineering-grade simulation bolted on rather than the other way round.
-          </WorkspaceSummaryPanel>
         </WorkspaceSectionFrame>
       </div>
     </WorkspaceContentShell>

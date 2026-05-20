@@ -1197,7 +1197,6 @@
 .model-studio-head span,
 .model-studio-head strong,
 .model-studio-head small,
-.model-studio-footer p,
 .model-studio-canvas-caption span,
 .model-studio-canvas-caption small,
 .model-studio-sim span,
@@ -1366,8 +1365,7 @@
 }
 
 .model-studio-sim small,
-.model-studio-canvas-caption small,
-.model-studio-footer p {
+.model-studio-canvas-caption small {
   color: rgba(255, 255, 255, 0.68);
   font-size: 0.64rem;
   line-height: 1.45;
@@ -1385,14 +1383,6 @@
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, rgba(120, 210, 255, 0.92), rgba(255, 173, 83, 0.92));
-}
-
-.model-studio-footer {
-  padding-top: 2px;
-}
-
-.model-studio-footer p {
-  margin: 0;
 }
 
 .preview-ring,

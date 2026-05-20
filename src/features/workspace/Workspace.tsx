@@ -235,12 +235,14 @@ function TradingGraphWidget({ graph }: { graph: MarketGraph }) {
         meta={graph.category}
       />
       <WorkspaceMetricGrid className="trading-graph-summary" metrics={summary} />
-      <div className="trading-graph-body">
-        <div className="trading-graph-grid" />
-        <div className="trading-graph-line trading-a" />
-        <div className="trading-graph-line trading-b" />
-        <div className="trading-graph-volume" />
-      </div>
+      <WorkspaceSectionFrame className="trading-graph-body" eyebrow="chart" title="active market trace" meta={graph.ticker}>
+        <div className="trading-graph-stage">
+          <div className="trading-graph-grid" />
+          <div className="trading-graph-line trading-a" />
+          <div className="trading-graph-line trading-b" />
+          <div className="trading-graph-volume" />
+        </div>
+      </WorkspaceSectionFrame>
       <WorkspaceSummaryPanel title="graph routing">
         Selecting a market item in the markets widget brings this graph forward and swaps the market context. No ceremony, just the useful bit.
       </WorkspaceSummaryPanel>
@@ -2562,17 +2564,22 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
         <div className="workspace-brand">Mission Control Center</div>
         <StatusChip tone="cool">tailnet live · drag · resize · stack</StatusChip>
         <div className="workspace-launcher">
-          <button type="button" className="workspace-launch-button is-muted" onClick={resetWorkspaceLayout}>
+          <WorkspaceButton variant="secondary" className="workspace-launch-button is-muted" onClick={resetWorkspaceLayout}>
             Reset layout
-          </button>
-          <button type="button" className="workspace-launch-button" onClick={openNextPanelWindow}>
+          </WorkspaceButton>
+          <WorkspaceButton className="workspace-launch-button" onClick={openNextPanelWindow}>
             Add page · {getWidgetLabel(nextLaunchKind)}
-          </button>
+          </WorkspaceButton>
           <div className="workspace-launch-pills" role="group" aria-label="Window launch shortcuts">
             {launchableWindowKinds.map((kind) => (
-              <button key={kind} type="button" className="workspace-launch-pill" onClick={() => openPanelWindow(kind)}>
+              <WorkspaceButton
+                key={kind}
+                variant="compact"
+                className="workspace-launch-pill"
+                onClick={() => openPanelWindow(kind)}
+              >
                 {getWidgetLabel(kind)}
-              </button>
+              </WorkspaceButton>
             ))}
           </div>
         </div>

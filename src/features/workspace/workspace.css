@@ -404,9 +404,11 @@
   box-sizing: border-box;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
   scrollbar-gutter: stable both-edges;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  touch-action: pan-y;
 }
 
 .widget-body-file-explorer {
@@ -424,7 +426,9 @@
 
 .widget-scroll-pane::-webkit-scrollbar,
 .preview-media-text::-webkit-scrollbar,
+.file-explorer-body::-webkit-scrollbar,
 .file-explorer-list::-webkit-scrollbar,
+.window-manager-list::-webkit-scrollbar,
 .workflow-saved-list::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -432,14 +436,18 @@
 
 .widget-scroll-pane::-webkit-scrollbar-track,
 .preview-media-text::-webkit-scrollbar-track,
+.file-explorer-body::-webkit-scrollbar-track,
 .file-explorer-list::-webkit-scrollbar-track,
+.window-manager-list::-webkit-scrollbar-track,
 .workflow-saved-list::-webkit-scrollbar-track {
   background: transparent;
 }
 
 .widget-scroll-pane::-webkit-scrollbar-thumb,
 .preview-media-text::-webkit-scrollbar-thumb,
+.file-explorer-body::-webkit-scrollbar-thumb,
 .file-explorer-list::-webkit-scrollbar-thumb,
+.window-manager-list::-webkit-scrollbar-thumb,
 .workflow-saved-list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.18);
   border-radius: 999px;
@@ -449,14 +457,18 @@
 
 .widget-scroll-pane:hover::-webkit-scrollbar-thumb,
 .preview-media-text:hover::-webkit-scrollbar-thumb,
+.file-explorer-body:hover::-webkit-scrollbar-thumb,
 .file-explorer-list:hover::-webkit-scrollbar-thumb,
+.window-manager-list:hover::-webkit-scrollbar-thumb,
 .workflow-saved-list:hover::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.28);
 }
 
 .widget-scroll-pane::-webkit-scrollbar-thumb:active,
 .preview-media-text::-webkit-scrollbar-thumb:active,
+.file-explorer-body::-webkit-scrollbar-thumb:active,
 .file-explorer-list::-webkit-scrollbar-thumb:active,
+.window-manager-list::-webkit-scrollbar-thumb:active,
 .workflow-saved-list::-webkit-scrollbar-thumb:active {
   background: rgba(255, 255, 255, 0.42);
 }
@@ -1359,6 +1371,7 @@
   margin: 0;
   padding: 12px;
   overflow: auto;
+  overscroll-behavior: contain;
   white-space: pre-wrap;
   word-break: break-word;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
@@ -2148,6 +2161,7 @@
   display: grid;
   gap: 10px;
   overflow: auto;
+  overscroll-behavior: contain;
   scrollbar-gutter: stable both-edges;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
@@ -2518,6 +2532,7 @@
   flex: 1;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   padding-right: 2px;
   scrollbar-gutter: stable both-edges;
   scrollbar-width: thin;

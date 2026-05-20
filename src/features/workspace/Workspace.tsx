@@ -1842,24 +1842,28 @@ function WindowManagerWidget({
         title="Open windows and pinned surfaces"
         meta={`${openWidgets.length} open · ${widgets.length} total`}
       />
-      {openWidgets.length > 0 ? (
-        <WorkspaceActionRowList
-          className="window-manager-list"
-          ariaLabel="Open widgets"
-          rows={openWidgets.map((widget) => ({
-            id: widget.id,
-            primary: widget.title,
-            secondary: widget.kind,
-            meta: `z${widget.zIndex}${widget.pinned ? ' · pinned' : ''}`,
-            pinned: widget.pinned,
-          }))}
-          onFocusRow={onFocusWidget}
-          onCloseRow={onCloseWidget}
-        />
-      ) : (
-        <p className="window-manager-empty">No windows are open. Remarkably, the machine is being tidy on its own.</p>
-      )}
-      <p className="window-manager-note">Open surfaces stay listed here. Pinned windows cannot be closed.</p>
+      <WorkspaceSectionFrame className="window-manager-list-frame" eyebrow="registry" title="open surfaces" meta={`${openWidgets.length} active`}>
+        {openWidgets.length > 0 ? (
+          <WorkspaceActionRowList
+            className="window-manager-list"
+            ariaLabel="Open widgets"
+            rows={openWidgets.map((widget) => ({
+              id: widget.id,
+              primary: widget.title,
+              secondary: widget.kind,
+              meta: `z${widget.zIndex}${widget.pinned ? ' · pinned' : ''}`,
+              pinned: widget.pinned,
+            }))}
+            onFocusRow={onFocusWidget}
+            onCloseRow={onCloseWidget}
+          />
+        ) : (
+          <p className="window-manager-empty">No windows are open. Remarkably, the machine is being tidy on its own.</p>
+        )}
+      </WorkspaceSectionFrame>
+      <WorkspaceSummaryPanel className="window-manager-note" title="window controls">
+        Open surfaces stay listed here. Pinned windows cannot be closed.
+      </WorkspaceSummaryPanel>
     </WorkspaceContentShell>
   );
 }

@@ -1067,6 +1067,17 @@
   height: 100%;
 }
 
+.schedule-rows,
+.list-rows {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
 .project-row,
 .news-item,
 .market-category,
@@ -2839,10 +2850,17 @@
   text-wrap: balance;
 }
 
+.window-manager-list-frame {
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+  overflow: hidden;
+}
+
 .window-manager-list {
   display: grid;
   gap: 8px;
-  flex: 1;
   min-height: 0;
   overflow: auto;
   overscroll-behavior: contain;
@@ -2925,8 +2943,6 @@
 
 .window-manager-note {
   margin: 0;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.62);
   letter-spacing: 0.05em;
   font-size: 0.6rem;

@@ -197,8 +197,10 @@ export async function readLocalFileTextPreview(
   maxCharacters: number,
   { compactWhitespace = false }: { compactWhitespace?: boolean } = {},
 ): Promise<string> {
-  const content = await file.text();
-  const trimmedContent = content.slice(0, maxCharacters);
+  const characterLimit = Math.max(0, maxCharacters);
+  const byteLimit = Math.min(file.size, Math.max(characterLimit * 4, 1024));
+  const content = await file.slice(0, byteLimit).text();
+  const trimmedContent = content.slice(0, characterLimit);
 
   return compactWhitespace ? trimmedContent.replace(/\s+/g, ' ').trim() : trimmedContent;
 }

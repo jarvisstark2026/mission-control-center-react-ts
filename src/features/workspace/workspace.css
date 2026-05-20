@@ -430,6 +430,10 @@
 .file-explorer-body::-webkit-scrollbar,
 .file-explorer-list::-webkit-scrollbar,
 .window-manager-list::-webkit-scrollbar,
+.workflow-diagram::-webkit-scrollbar,
+.workflow-template-list::-webkit-scrollbar,
+.workflow-skill-list::-webkit-scrollbar,
+.workflow-step-list::-webkit-scrollbar,
 .workflow-saved-list::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -441,6 +445,10 @@
 .file-explorer-body::-webkit-scrollbar-track,
 .file-explorer-list::-webkit-scrollbar-track,
 .window-manager-list::-webkit-scrollbar-track,
+.workflow-diagram::-webkit-scrollbar-track,
+.workflow-template-list::-webkit-scrollbar-track,
+.workflow-skill-list::-webkit-scrollbar-track,
+.workflow-step-list::-webkit-scrollbar-track,
 .workflow-saved-list::-webkit-scrollbar-track {
   background: transparent;
 }
@@ -451,6 +459,10 @@
 .file-explorer-body::-webkit-scrollbar-thumb,
 .file-explorer-list::-webkit-scrollbar-thumb,
 .window-manager-list::-webkit-scrollbar-thumb,
+.workflow-diagram::-webkit-scrollbar-thumb,
+.workflow-template-list::-webkit-scrollbar-thumb,
+.workflow-skill-list::-webkit-scrollbar-thumb,
+.workflow-step-list::-webkit-scrollbar-thumb,
 .workflow-saved-list::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.18);
   border-radius: 999px;
@@ -464,6 +476,10 @@
 .file-explorer-body:hover::-webkit-scrollbar-thumb,
 .file-explorer-list:hover::-webkit-scrollbar-thumb,
 .window-manager-list:hover::-webkit-scrollbar-thumb,
+.workflow-diagram:hover::-webkit-scrollbar-thumb,
+.workflow-template-list:hover::-webkit-scrollbar-thumb,
+.workflow-skill-list:hover::-webkit-scrollbar-thumb,
+.workflow-step-list:hover::-webkit-scrollbar-thumb,
 .workflow-saved-list:hover::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.28);
 }
@@ -474,6 +490,10 @@
 .file-explorer-body::-webkit-scrollbar-thumb:active,
 .file-explorer-list::-webkit-scrollbar-thumb:active,
 .window-manager-list::-webkit-scrollbar-thumb:active,
+.workflow-diagram::-webkit-scrollbar-thumb:active,
+.workflow-template-list::-webkit-scrollbar-thumb:active,
+.workflow-skill-list::-webkit-scrollbar-thumb:active,
+.workflow-step-list::-webkit-scrollbar-thumb:active,
 .workflow-saved-list::-webkit-scrollbar-thumb:active {
   background: rgba(255, 255, 255, 0.42);
 }
@@ -1583,6 +1603,19 @@
   gap: 8px;
 }
 
+.workflow-template-list,
+.workflow-skill-list,
+.workflow-step-list {
+  max-height: clamp(160px, 28vh, 320px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  touch-action: pan-y;
+}
+
 .workflow-card,
 .workflow-skill,
 .workflow-saved-card {
@@ -1626,6 +1659,10 @@
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.03);
   overflow-x: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
 }
 
 .workflow-diagram svg {

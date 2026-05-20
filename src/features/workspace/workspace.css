@@ -426,6 +426,7 @@
 
 .widget-scroll-pane::-webkit-scrollbar,
 .preview-media-text::-webkit-scrollbar,
+.markets-categories::-webkit-scrollbar,
 .file-explorer-body::-webkit-scrollbar,
 .file-explorer-list::-webkit-scrollbar,
 .window-manager-list::-webkit-scrollbar,
@@ -436,6 +437,7 @@
 
 .widget-scroll-pane::-webkit-scrollbar-track,
 .preview-media-text::-webkit-scrollbar-track,
+.markets-categories::-webkit-scrollbar-track,
 .file-explorer-body::-webkit-scrollbar-track,
 .file-explorer-list::-webkit-scrollbar-track,
 .window-manager-list::-webkit-scrollbar-track,
@@ -445,6 +447,7 @@
 
 .widget-scroll-pane::-webkit-scrollbar-thumb,
 .preview-media-text::-webkit-scrollbar-thumb,
+.markets-categories::-webkit-scrollbar-thumb,
 .file-explorer-body::-webkit-scrollbar-thumb,
 .file-explorer-list::-webkit-scrollbar-thumb,
 .window-manager-list::-webkit-scrollbar-thumb,
@@ -457,6 +460,7 @@
 
 .widget-scroll-pane:hover::-webkit-scrollbar-thumb,
 .preview-media-text:hover::-webkit-scrollbar-thumb,
+.markets-categories:hover::-webkit-scrollbar-thumb,
 .file-explorer-body:hover::-webkit-scrollbar-thumb,
 .file-explorer-list:hover::-webkit-scrollbar-thumb,
 .window-manager-list:hover::-webkit-scrollbar-thumb,
@@ -466,6 +470,7 @@
 
 .widget-scroll-pane::-webkit-scrollbar-thumb:active,
 .preview-media-text::-webkit-scrollbar-thumb:active,
+.markets-categories::-webkit-scrollbar-thumb:active,
 .file-explorer-body::-webkit-scrollbar-thumb:active,
 .file-explorer-list::-webkit-scrollbar-thumb:active,
 .window-manager-list::-webkit-scrollbar-thumb:active,
@@ -2625,6 +2630,8 @@
   display: grid;
   gap: 10px;
   align-content: start;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  min-height: 100%;
 }
 
 .markets-head {
@@ -2698,6 +2705,14 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+  touch-action: pan-y;
 }
 
 .market-category {

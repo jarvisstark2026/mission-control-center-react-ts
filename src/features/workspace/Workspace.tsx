@@ -1472,58 +1472,63 @@ function LiveTvWidget() {
   };
 
   return (
-    <div className="live-tv-surface">
-      <div className="live-tv-header">
-        <div className="live-tv-now-playing">
-          <span>Live TV</span>
-          <strong>{activeSource.name}</strong>
-          <p>{activeSource.description}</p>
-        </div>
-        <div className="live-tv-status">
-          <span>{isLoading ? 'Tuning' : 'On air'}</span>
-          <strong>{status}</strong>
-        </div>
-      </div>
-
-      <WorkspaceCatalogGrid
-        className="live-tv-preset-list"
-        variant="live-tv"
-        ariaLabel="Live TV sources"
-        items={liveTvSources.map((source) => ({
-          id: source.name,
-          label: source.name,
-          note: source.description,
-          badge: source.badge,
-          active: source.name === activeSource.name,
-          state: source.streamType,
-        }))}
-        onSelect={(item) => {
-          const source = liveTvSources.find((candidate) => candidate.name === item.id) ?? defaultLiveTvSource;
-          setDraftUrl(source.url);
-          setActiveSource(source);
-        }}
+    <WorkspaceContentShell className="live-tv-surface">
+      <WorkspaceContentHeader
+        eyebrow="Live TV"
+        title={activeSource.name}
+        metaEyebrow={isLoading ? 'tuning' : 'on air'}
+        meta={status}
       />
 
-      <label className="live-tv-input">
-        <span>Channel or stream URL</span>
-        <input
-          type="text"
-          value={draftUrl}
-          onChange={(event) => setDraftUrl(event.target.value)}
-          onKeyDown={(event) => event.key === 'Enter' && tuneCustomFeed()}
-          placeholder="Paste an official HLS / MP4 source"
+      <WorkspaceSummaryPanel className="live-tv-status-panel" title={activeSource.description}>
+        Internet TV playback stays inside the shared workspace shell, with source presets and custom feeds kept as local widget controls.
+      </WorkspaceSummaryPanel>
+
+      <WorkspaceSectionFrame className="live-tv-source-section" eyebrow="sources" title="channel presets" meta={`${liveTvSources.length} feeds`}>
+        <WorkspaceCatalogGrid
+          className="live-tv-preset-list"
+          variant="live-tv"
+          ariaLabel="Live TV sources"
+          items={liveTvSources.map((source) => ({
+            id: source.name,
+            label: source.name,
+            note: source.description,
+            badge: source.badge,
+            active: source.name === activeSource.name,
+            state: source.streamType,
+          }))}
+          onSelect={(item) => {
+            const source = liveTvSources.find((candidate) => candidate.name === item.id) ?? defaultLiveTvSource;
+            setDraftUrl(source.url);
+            setActiveSource(source);
+          }}
         />
-      </label>
+      </WorkspaceSectionFrame>
 
-      <div className="live-tv-actions">
-        <button type="button" onClick={tuneCustomFeed}>
-          Tune feed
-        </button>
-        <small>Best with official HLS (.m3u8) feeds from your provider or home tuner.</small>
-      </div>
+      <WorkspaceSectionFrame className="live-tv-controls-section" eyebrow="stream" title="custom feed" meta="HLS / MP4">
+        <label className="live-tv-input">
+          <span>Channel or stream URL</span>
+          <input
+            type="text"
+            value={draftUrl}
+            onChange={(event) => setDraftUrl(event.target.value)}
+            onKeyDown={(event) => event.key === 'Enter' && tuneCustomFeed()}
+            placeholder="Paste an official HLS / MP4 source"
+          />
+        </label>
 
-      <video ref={videoRef} className="live-tv-frame" controls autoPlay playsInline preload="metadata" />
-    </div>
+        <div className="live-tv-actions">
+          <WorkspaceButton className="live-tv-tune-button" onClick={tuneCustomFeed}>
+            Tune feed
+          </WorkspaceButton>
+          <small>Best with official HLS (.m3u8) feeds from your provider or home tuner.</small>
+        </div>
+      </WorkspaceSectionFrame>
+
+      <WorkspaceSectionFrame className="live-tv-player-section" eyebrow="playback" title="active stream" meta={activeSource.streamType.toUpperCase()}>
+        <video ref={videoRef} className="live-tv-frame" controls autoPlay playsInline preload="metadata" />
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
   );
 }
 

@@ -1928,7 +1928,18 @@
   display: grid;
   gap: 10px;
   align-content: start;
-  grid-template-rows: auto auto auto minmax(160px, 1fr);
+  grid-template-rows: auto auto auto auto minmax(160px, 1fr);
+}
+
+.live-tv-source-section,
+.live-tv-controls-section,
+.live-tv-player-section {
+  min-width: 0;
+}
+
+.live-tv-player-section {
+  min-height: 0;
+  align-content: stretch;
 }
 
 .live-tv-header {

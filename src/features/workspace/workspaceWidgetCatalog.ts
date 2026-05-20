@@ -29,6 +29,19 @@ export const launchableWindowKinds: WorkspaceWidget['kind'][] = [
   'list',
 ];
 
+type WorkspaceLauncherEntry = {
+  kind: WorkspaceWidget['kind'];
+  note: string;
+};
+
+const workspaceLauncherNotes: Partial<Record<WorkspaceWidget['kind'], string>> = {
+  news: 'open graph library',
+  'window-manager': 'track open widgets',
+  'trading-graph': 'focus market chart',
+};
+
+const workspaceLauncherKinds = launchableWindowKinds.filter((kind) => kind !== 'native-app');
+
 export const widgetBlueprints: Record<WorkspaceWidget['kind'], WidgetBlueprint> = {
   overview: { title: 'Command core', subtitle: 'open / move / stack', surfaceAlpha: 0.11, lineAlpha: 0.18, minWidth: 300, minHeight: 180 },
   graph: { title: 'Telemetry', subtitle: 'live curves', surfaceAlpha: 0.085, lineAlpha: 0.16, minWidth: 280, minHeight: 170 },
@@ -109,6 +122,13 @@ export const widgetPresets: WorkspaceWidget[] = widgetPresetLayouts.map((layout)
 
 export function getWidgetLabel(kind: WorkspaceWidget['kind']) {
   return widgetBlueprints[kind].title;
+}
+
+export function getWorkspaceLauncherEntries(): WorkspaceLauncherEntry[] {
+  return workspaceLauncherKinds.map((kind) => ({
+    kind,
+    note: workspaceLauncherNotes[kind] ?? 'open in workspace',
+  }));
 }
 
 export function getFocusedWidget(kind: WorkspaceWidget['kind'], width: number, height: number): WorkspaceWidget {

@@ -10,7 +10,7 @@ import type { WorkspaceWidget } from './workspaceTypes';
 import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
 import { createLocalFileRecord, clearPersistedLocalFiles, formatLocalFileSize, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readPersistedLocalFiles, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
 import { clampNumber, clearStoredWidgetState, loadStoredWidgetState, saveStoredWidgetState } from './workspaceStorage';
-import { getFocusedWidget, getWidgetLabel, launchableWindowKinds, widgetBlueprints, widgetPresets } from './workspaceWidgetCatalog';
+import { getFocusedWidget, getWidgetLabel, getWorkspaceLauncherEntries, launchableWindowKinds, widgetBlueprints, widgetPresets } from './workspaceWidgetCatalog';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from './workflowStudioModel';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
@@ -1165,31 +1165,7 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
   const [desktopCommand, setDesktopCommand] = useState('');
   const [desktopApps, setDesktopApps] = useState<DesktopAppRecord[]>(defaultDesktopApps);
 
-  const workspaceApps = [
-    { label: 'Command core', kind: 'overview' as const, note: 'open in workspace' },
-    { label: 'Telemetry', kind: 'graph' as const, note: 'open in workspace' },
-    { label: 'Audio preview', kind: 'audio' as const, note: 'open in workspace' },
-    { label: 'Map / routes', kind: 'map' as const, note: 'open in workspace' },
-    { label: 'Diagram preview', kind: 'diagram' as const, note: 'open in workspace' },
-    { label: 'Project list', kind: 'project' as const, note: 'open in workspace' },
-    { label: 'Markets', kind: 'news' as const, note: 'open graph library' },
-    { label: 'Schedule', kind: 'schedule' as const, note: 'open in workspace' },
-    { label: 'Browser', kind: 'browser' as const, note: 'open in workspace' },
-    { label: 'Live TV', kind: 'watch-video' as const, note: 'open in workspace' },
-    { label: 'File explorer', kind: 'file-explorer' as const, note: 'open in workspace' },
-    { label: 'Window manager', kind: 'window-manager' as const, note: 'track open widgets' },
-    { label: 'Spreadsheet', kind: 'sheet' as const, note: 'open in workspace' },
-    { label: 'Docs', kind: 'docs' as const, note: 'open in workspace' },
-    { label: 'Presentation', kind: 'slides' as const, note: 'open in workspace' },
-    { label: 'Trading graph', kind: 'trading-graph' as const, note: 'focus market chart' },
-    { label: 'Image preview', kind: 'image' as const, note: 'open in workspace' },
-    { label: 'PDF', kind: 'pdf' as const, note: 'open in workspace' },
-    { label: 'Media frame', kind: 'video' as const, note: 'open in workspace' },
-    { label: 'Preview', kind: '3d' as const, note: 'open in workspace' },
-    { label: '3D studio', kind: '3d-studio' as const, note: 'open in workspace' },
-    { label: 'Workflows', kind: 'flow' as const, note: 'open in workspace' },
-    { label: 'List', kind: 'list' as const, note: 'open in workspace' },
-  ];
+  const workspaceApps = getWorkspaceLauncherEntries();
   const hasDesktopCommand = desktopCommand.trim().length > 0;
 
   const openInstalledApp = () => {
@@ -1215,7 +1191,7 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
 
     return {
       id: app.kind,
-      label: app.label,
+      label: getWidgetLabel(app.kind),
       note: state === 'open' ? 'open · click to focus' : app.note,
       badge: state,
       active: state === 'open',

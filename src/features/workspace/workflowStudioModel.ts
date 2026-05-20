@@ -1,3 +1,5 @@
+import { readLocalStorageJson, writeLocalStorageJson } from './browserStorage';
+
 export type WorkflowTemplate = {
   id: string;
   title: string;
@@ -99,32 +101,15 @@ function createStarterWorkflow(): SavedWorkflow {
 }
 
 export function loadSavedWorkflows(): SavedWorkflow[] {
-  if (typeof window === 'undefined') return [createStarterWorkflow()];
+  const parsed = readLocalStorageJson<SavedWorkflow[]>(workflowStudioStorageKey);
+  if (!Array.isArray(parsed)) return [createStarterWorkflow()];
 
-  try {
-    const raw = window.localStorage.getItem(workflowStudioStorageKey);
-    if (!raw) return [createStarterWorkflow()];
-
-    const parsed = JSON.parse(raw) as SavedWorkflow[];
-    if (!Array.isArray(parsed)) return [createStarterWorkflow()];
-
-    const savedWorkflows = parsed.filter((item): item is SavedWorkflow => Boolean(item && item.id && item.name && item.templateId));
-    return savedWorkflows.length ? savedWorkflows : [createStarterWorkflow()];
-  } catch {
-    return [createStarterWorkflow()];
-  }
+  const savedWorkflows = parsed.filter((item): item is SavedWorkflow => Boolean(item && item.id && item.name && item.templateId));
+  return savedWorkflows.length ? savedWorkflows : [createStarterWorkflow()];
 }
 
-
 export function saveSavedWorkflows(workflows: SavedWorkflow[]): boolean {
-  if (typeof window === 'undefined') return false;
-
-  try {
-    window.localStorage.setItem(workflowStudioStorageKey, JSON.stringify(workflows));
-    return true;
-  } catch {
-    return false;
-  }
+  return writeLocalStorageJson(workflowStudioStorageKey, workflows);
 }
 
 export function getWorkflowSteps(draft: WorkflowDraft) {

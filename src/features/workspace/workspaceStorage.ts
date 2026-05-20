@@ -1,3 +1,4 @@
+import { readLocalStorageJson, removeLocalStorageItem, writeLocalStorageJson } from './browserStorage';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from './workspaceTypes';
 
 export type WidgetBlueprint = Pick<WorkspaceWidget, 'title' | 'subtitle' | 'surfaceAlpha' | 'lineAlpha' | 'minWidth' | 'minHeight'>;
@@ -22,15 +23,10 @@ export function loadStoredWidgetState({
   defaultOpenKinds: Set<WorkspaceWidget['kind']>;
   blueprints: Record<WorkspaceWidget['kind'], WidgetBlueprint>;
 }): WorkspaceWidget[] | null {
-  if (typeof window === 'undefined') return null;
+  const parsed = readLocalStorageJson<Partial<WorkspaceWidget>[]>(workspaceStorageKey);
+  if (!Array.isArray(parsed)) return null;
 
   try {
-    const raw = window.localStorage.getItem(workspaceStorageKey);
-    if (!raw) return null;
-
-    const parsed = JSON.parse(raw) as Partial<WorkspaceWidget>[];
-    if (!Array.isArray(parsed)) return null;
-
     const byId = new Map(parsed.filter((item): item is Partial<WorkspaceWidget> & { id: string } => Boolean(item && item.id)).map((item) => [item.id, item]));
     const normalizedPresets = presets.map((preset) => {
       const stored = byId.get(preset.id);
@@ -90,40 +86,26 @@ export function loadStoredWidgetState({
 }
 
 export function saveStoredWidgetState(widgets: WorkspaceWidget[]): boolean {
-  if (typeof window === 'undefined') return false;
+  const serializableWidgets = widgets.map((widget) => ({
+    id: widget.id,
+    kind: widget.kind,
+    x: widget.x,
+    y: widget.y,
+    width: widget.width,
+    height: widget.height,
+    zIndex: widget.zIndex,
+    open: widget.open,
+    minWidth: widget.minWidth,
+    minHeight: widget.minHeight,
+    surfaceAlpha: widget.surfaceAlpha,
+    lineAlpha: widget.lineAlpha,
+    pinned: widget.pinned,
+    previewFileId: widget.previewFileId ?? null,
+  }));
 
-  try {
-    const serializableWidgets = widgets.map((widget) => ({
-      id: widget.id,
-      kind: widget.kind,
-      x: widget.x,
-      y: widget.y,
-      width: widget.width,
-      height: widget.height,
-      zIndex: widget.zIndex,
-      open: widget.open,
-      minWidth: widget.minWidth,
-      minHeight: widget.minHeight,
-      surfaceAlpha: widget.surfaceAlpha,
-      lineAlpha: widget.lineAlpha,
-      pinned: widget.pinned,
-      previewFileId: widget.previewFileId ?? null,
-    }));
-
-    window.localStorage.setItem(workspaceStorageKey, JSON.stringify(serializableWidgets));
-    return true;
-  } catch {
-    return false;
-  }
+  return writeLocalStorageJson(workspaceStorageKey, serializableWidgets);
 }
 
 export function clearStoredWidgetState(): boolean {
-  if (typeof window === 'undefined') return false;
-
-  try {
-    window.localStorage.removeItem(workspaceStorageKey);
-    return true;
-  } catch {
-    return false;
-  }
+  return removeLocalStorageItem(workspaceStorageKey);
 }

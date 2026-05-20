@@ -412,6 +412,7 @@
 }
 
 .launcher-grid,
+.browser-bookmarks,
 .live-tv-preset-list,
 .market-graph-list,
 .launcher-desktop-list {
@@ -441,6 +442,7 @@
 .widget-scroll-pane::-webkit-scrollbar,
 .preview-media-text::-webkit-scrollbar,
 .launcher-grid::-webkit-scrollbar,
+.browser-bookmarks::-webkit-scrollbar,
 .live-tv-preset-list::-webkit-scrollbar,
 .markets-categories::-webkit-scrollbar,
 .market-graph-list::-webkit-scrollbar,
@@ -460,6 +462,7 @@
 .widget-scroll-pane::-webkit-scrollbar-track,
 .preview-media-text::-webkit-scrollbar-track,
 .launcher-grid::-webkit-scrollbar-track,
+.browser-bookmarks::-webkit-scrollbar-track,
 .live-tv-preset-list::-webkit-scrollbar-track,
 .markets-categories::-webkit-scrollbar-track,
 .market-graph-list::-webkit-scrollbar-track,
@@ -478,6 +481,7 @@
 .widget-scroll-pane::-webkit-scrollbar-thumb,
 .preview-media-text::-webkit-scrollbar-thumb,
 .launcher-grid::-webkit-scrollbar-thumb,
+.browser-bookmarks::-webkit-scrollbar-thumb,
 .live-tv-preset-list::-webkit-scrollbar-thumb,
 .markets-categories::-webkit-scrollbar-thumb,
 .market-graph-list::-webkit-scrollbar-thumb,
@@ -499,6 +503,7 @@
 .widget-scroll-pane:hover::-webkit-scrollbar-thumb,
 .preview-media-text:hover::-webkit-scrollbar-thumb,
 .launcher-grid:hover::-webkit-scrollbar-thumb,
+.browser-bookmarks:hover::-webkit-scrollbar-thumb,
 .live-tv-preset-list:hover::-webkit-scrollbar-thumb,
 .markets-categories:hover::-webkit-scrollbar-thumb,
 .market-graph-list:hover::-webkit-scrollbar-thumb,
@@ -1834,7 +1839,9 @@
 .browser-surface {
   display: flex;
   flex-direction: column;
+  height: 100%;
   min-height: 100%;
+  overflow: hidden;
 }
 
 .file-explorer-surface {
@@ -2105,8 +2112,17 @@
 
 .browser-bookmarks {
   display: flex;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-x;
+}
+
+.browser-bookmarks button {
+  flex: 0 0 auto;
 }
 
 .browser-frame {

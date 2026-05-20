@@ -448,9 +448,19 @@ function SlidesWidget() {
   const slides = ['Vision', 'Stack', 'Workflows', 'Launch'];
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const activeSlide = slides[activeSlideIndex] ?? slides[0];
+
   return (
-    <div className="slides-surface">
-      <div className="slides-stage">
+    <WorkspaceContentShell className="slides-surface">
+      <WorkspaceContentHeader
+        eyebrow="Slides"
+        title="deck / speaker notes"
+        metaEyebrow="slide"
+        meta={`${activeSlideIndex + 1} / ${slides.length}`}
+      />
+      <WorkspaceSummaryPanel title={activeSlide}>
+        Presentation staging for the command story, now sharing the same header and summary hierarchy as Markets.
+      </WorkspaceSummaryPanel>
+      <WorkspaceSectionFrame className="slides-stage" eyebrow="stage" title="active frame" meta="preview">
         <div className="slides-canvas">
           <strong>Presentation</strong>
           <p>{activeSlide}</p>
@@ -458,22 +468,24 @@ function SlidesWidget() {
             Slide {activeSlideIndex + 1} of {slides.length} · deck / speaker notes / command story
           </small>
         </div>
-      </div>
-      <div className="slides-strip">
-        {slides.map((slide, index) => (
-          <button
-            key={slide}
-            type="button"
-            className={`slides-thumb ${index === activeSlideIndex ? 'is-active' : ''}`}
-            aria-pressed={index === activeSlideIndex}
-            onClick={() => setActiveSlideIndex(index)}
-          >
-            <span>{index + 1}</span>
-            <small>{slide}</small>
-          </button>
-        ))}
-      </div>
-    </div>
+      </WorkspaceSectionFrame>
+      <WorkspaceSectionFrame className="slides-strip-frame" eyebrow="slides" title="navigation" meta={`${slides.length} frames`}>
+        <div className="slides-strip">
+          {slides.map((slide, index) => (
+            <WorkspaceButton
+              key={slide}
+              variant="compact"
+              className={`slides-thumb ${index === activeSlideIndex ? 'is-active' : ''}`}
+              aria-pressed={index === activeSlideIndex}
+              onClick={() => setActiveSlideIndex(index)}
+            >
+              <span>{index + 1}</span>
+              <small>{slide}</small>
+            </WorkspaceButton>
+          ))}
+        </div>
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
   );
 }
 
@@ -999,46 +1011,40 @@ function WorkflowWidget() {
       <div className="workflow-layout">
         <aside className="workflow-column workflow-library">
           <WorkspaceSectionFrame className="workflow-group" eyebrow="Workflow library" meta="starter templates">
-            <div className="workflow-template-list">
-              {workflowTemplates.map((item) => {
-                const isSelectedTemplate = item.id === template.id;
-
-                return (
-                  <button
-                    type="button"
-                    key={item.id}
-                    className={`workflow-card ${isSelectedTemplate ? 'is-active' : ''}`}
-                    aria-pressed={isSelectedTemplate}
-                    onClick={() => selectTemplate(item.id)}
-                  >
-                    <strong>{item.title}</strong>
-                    <p>{item.summary}</p>
-                    <small>{item.steps.length} steps · {item.skillIds.length} skills</small>
-                  </button>
-                );
-              })}
-            </div>
+            <WorkspaceCatalogGrid
+              className="workflow-template-list"
+              variant="market"
+              ariaLabel="Workflow templates"
+              items={workflowTemplates.map((item) => ({
+                id: item.id,
+                label: item.title,
+                note: item.summary,
+                badge: `${item.steps.length} steps`,
+                state: `${item.skillIds.length} skills`,
+                active: item.id === template.id,
+              }))}
+              onSelect={(item) => selectTemplate(item.id)}
+            />
           </WorkspaceSectionFrame>
 
           <WorkspaceSectionFrame className="workflow-group" eyebrow="Skill library" meta="toggle helper skills">
-            <div className="workflow-skill-list">
-              {workflowSkills.map((skill) => {
+            <WorkspaceCatalogGrid
+              className="workflow-skill-list"
+              variant="market"
+              ariaLabel="Workflow skills"
+              items={workflowSkills.map((skill) => {
                 const isSelectedSkill = selectedSkillIds.has(skill.id);
 
-                return (
-                  <button
-                    type="button"
-                    key={skill.id}
-                    className={`workflow-skill ${isSelectedSkill ? 'is-active' : ''}`}
-                    aria-pressed={isSelectedSkill}
-                    onClick={() => toggleSkill(skill.id)}
-                  >
-                    <strong>{skill.title}</strong>
-                    <small>{skill.summary}</small>
-                  </button>
-                );
+                return {
+                  id: skill.id,
+                  label: skill.title,
+                  note: skill.summary,
+                  badge: isSelectedSkill ? 'on' : 'off',
+                  active: isSelectedSkill,
+                };
               })}
-            </div>
+              onSelect={(item) => toggleSkill(item.id)}
+            />
           </WorkspaceSectionFrame>
         </aside>
 
@@ -1105,24 +1111,24 @@ function WorkflowWidget() {
           </WorkspaceSectionFrame>
 
           <WorkspaceSectionFrame className="workflow-group" eyebrow="Saved workflows" meta={`${savedWorkflows.length} stored locally`}>
-            <div className="workflow-saved-list">
-              {savedWorkflows.length ? (
-                savedWorkflows.map((workflow) => (
-                  <button
-                    key={workflow.id}
-                    type="button"
-                    className={`workflow-saved-card ${workflow.id === draft.id ? 'is-active' : ''}`}
-                    onClick={() => loadWorkflow(workflow)}
-                  >
-                    <strong>{workflow.name}</strong>
-                    <small>{getWorkflowTemplate(workflow.templateId).title}</small>
-                    <span>{getWorkflowSteps(workflow).length} steps · {workflow.skillIds.length} skills</span>
-                  </button>
-                ))
-              ) : (
-                <div className="workflow-empty">No saved workflows yet. Save one and it will stay available locally.</div>
-              )}
-            </div>
+            <WorkspaceCatalogGrid
+              className="workflow-saved-list"
+              variant="market"
+              ariaLabel="Saved workflows"
+              items={savedWorkflows.length ? savedWorkflows.map((workflow) => ({
+                id: workflow.id,
+                label: workflow.name,
+                note: getWorkflowTemplate(workflow.templateId).title,
+                badge: `${getWorkflowSteps(workflow).length} steps`,
+                state: `${workflow.skillIds.length} skills`,
+                active: workflow.id === draft.id,
+              })) : []}
+              onSelect={(item) => {
+                const workflow = savedWorkflows.find((entry) => entry.id === item.id);
+                if (workflow) loadWorkflow(workflow);
+              }}
+            />
+            {savedWorkflows.length ? null : <div className="workflow-empty">No saved workflows yet. Save one and it will stay available locally.</div>}
           </WorkspaceSectionFrame>
         </aside>
       </div>

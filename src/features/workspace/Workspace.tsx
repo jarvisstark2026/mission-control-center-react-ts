@@ -13,7 +13,7 @@ import { createLocalFileObjectUrl, createLocalFileRecord, clearPersistedLocalFil
 import { clampNumber, clearStoredWidgetState, loadStoredWidgetState, saveStoredWidgetState } from './workspaceStorage';
 import { getFocusedWidget, getWidgetLabel, getWorkspaceLauncherEntries, launchableWindowKinds, widgetBlueprints, widgetPresets } from './workspaceWidgetCatalog';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from './workflowStudioModel';
-import { buildPanelWindowUrl, buildWorkspaceHubUrl } from './workspacePanelRouting';
+import { closeWorkspacePanelWindow, openWorkspacePanelWindow, returnToWorkspaceHub } from './workspacePanelWindows';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
 
@@ -1919,6 +1919,87 @@ type WorkspaceWidgetCardProps = {
   onCloseWidget: (id: string) => void;
 };
 
+type WorkspaceWidgetRuntimeProps = Omit<WorkspaceWidgetCardProps, 'widget' | 'showChrome'>;
+type WorkspaceWidgetContentProps = Omit<
+  WorkspaceWidgetRuntimeProps,
+  'onStartDrag' | 'onStartResize' | 'onToggleOpen' | 'onRecenter' | 'onClose'
+>;
+
+function WorkspaceWidgetContent({
+  widget,
+  localFiles,
+  activeLocalFileId,
+  selectedLocalFileId,
+  folderEntries,
+  folderPath,
+  canBrowseFolder,
+  activeMarketGraph,
+  onBrowseFiles,
+  onBrowseFolder,
+  onOpenPreview,
+  onSelectFile,
+  onClearFiles,
+  onLaunchWorkspaceWidget,
+  onSelectMarketGraph,
+  workspaceWidgets,
+  onFocusWidget,
+  onCloseWidget,
+}: {
+  widget: WorkspaceWidget;
+} & WorkspaceWidgetContentProps) {
+  const previewFile = widget.previewFileId ? localFiles.find((record) => record.id === widget.previewFileId) ?? null : null;
+
+  if (widget.kind === 'file-explorer') {
+    return (
+      <FileExplorerWidget
+        files={localFiles}
+        activeFileId={activeLocalFileId}
+        selectedFileId={selectedLocalFileId}
+        folderEntries={folderEntries}
+        folderPath={folderPath}
+        canBrowseFolder={canBrowseFolder}
+        onBrowseFiles={onBrowseFiles}
+        onBrowseFolder={onBrowseFolder}
+        onOpenPreview={onOpenPreview}
+        onSelectFile={onSelectFile}
+        onClearFiles={onClearFiles}
+      />
+    );
+  }
+
+  if (widget.kind === 'window-manager') {
+    return <WindowManagerWidget widgets={workspaceWidgets} onFocusWidget={onFocusWidget} onCloseWidget={onCloseWidget} />;
+  }
+
+  return (
+    <div className="widget-scroll-pane">
+      {widget.kind === 'overview' && <OverviewWidget />}
+      {widget.kind === 'graph' && <GraphWidget />}
+      {widget.kind === 'trading-graph' && <TradingGraphWidget graph={activeMarketGraph} />}
+      {widget.kind === 'sheet' && <SpreadsheetWidget />}
+      {widget.kind === 'docs' && <DocsWidget />}
+      {widget.kind === 'slides' && <SlidesWidget />}
+      {widget.kind === 'image' && <ImageWidget />}
+      {widget.kind === 'pdf' && <PdfWidget />}
+      {widget.kind === 'audio' && <AudioWidget />}
+      {widget.kind === 'map' && <MapWidget />}
+      {widget.kind === 'diagram' && <DiagramWidget />}
+      {widget.kind === 'project' && <ProjectWidget />}
+      {widget.kind === 'news' && <NewsWidget activeGraph={activeMarketGraph} onSelectGraph={onSelectMarketGraph} />}
+      {widget.kind === 'schedule' && <ScheduleWidget />}
+      {widget.kind === 'launcher' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />}
+      {widget.kind === 'browser' && <BrowserWidget />}
+      {widget.kind === 'watch-video' && <LiveTvWidget />}
+      {widget.kind === 'native-app' && <NativeAppWidget />}
+      {widget.kind === 'video' && <VideoWidget />}
+      {widget.kind === '3d' && <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} />}
+      {widget.kind === '3d-studio' && <ModelStudioWidget />}
+      {widget.kind === 'flow' && <WorkflowWidget />}
+      {widget.kind === 'list' && <ListWidget />}
+    </div>
+  );
+}
+
 function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
   const {
     widget,
@@ -1946,7 +2027,6 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
     onFocusWidget,
     onCloseWidget,
   } = props;
-  const previewFile = widget.previewFileId ? localFiles.find((record) => record.id === widget.previewFileId) ?? null : null;
 
   return (
     <WorkspaceWindow
@@ -1959,49 +2039,26 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
       onClose={onClose}
       showChrome={showChrome}
     >
-        {widget.kind === 'file-explorer' && (
-          <FileExplorerWidget
-            files={localFiles}
-            activeFileId={activeLocalFileId}
-            selectedFileId={selectedLocalFileId}
-            folderEntries={folderEntries}
-            folderPath={folderPath}
-            canBrowseFolder={canBrowseFolder}
-            onBrowseFiles={onBrowseFiles}
-            onBrowseFolder={onBrowseFolder}
-            onOpenPreview={onOpenPreview}
-            onSelectFile={onSelectFile}
-            onClearFiles={onClearFiles}
-          />
-        )}
-        {widget.kind === 'window-manager' && <WindowManagerWidget widgets={workspaceWidgets} onFocusWidget={onFocusWidget} onCloseWidget={onCloseWidget} />}
-        {widget.kind !== 'file-explorer' && widget.kind !== 'window-manager' && (
-          <div className="widget-scroll-pane">
-            {widget.kind === 'overview' && <OverviewWidget />}
-            {widget.kind === 'graph' && <GraphWidget />}
-            {widget.kind === 'trading-graph' && <TradingGraphWidget graph={activeMarketGraph} />}
-            {widget.kind === 'sheet' && <SpreadsheetWidget />}
-            {widget.kind === 'docs' && <DocsWidget />}
-            {widget.kind === 'slides' && <SlidesWidget />}
-            {widget.kind === 'image' && <ImageWidget />}
-            {widget.kind === 'pdf' && <PdfWidget />}
-            {widget.kind === 'audio' && <AudioWidget />}
-            {widget.kind === 'map' && <MapWidget />}
-            {widget.kind === 'diagram' && <DiagramWidget />}
-            {widget.kind === 'project' && <ProjectWidget />}
-            {widget.kind === 'news' && <NewsWidget activeGraph={activeMarketGraph} onSelectGraph={onSelectMarketGraph} />}
-            {widget.kind === 'schedule' && <ScheduleWidget />}
-            {widget.kind === 'launcher' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />}
-            {widget.kind === 'browser' && <BrowserWidget />}
-            {widget.kind === 'watch-video' && <LiveTvWidget />}
-            {widget.kind === 'native-app' && <NativeAppWidget />}
-            {widget.kind === 'video' && <VideoWidget />}
-            {widget.kind === '3d' && <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} />}
-            {widget.kind === '3d-studio' && <ModelStudioWidget />}
-            {widget.kind === 'flow' && <WorkflowWidget />}
-            {widget.kind === 'list' && <ListWidget />}
-          </div>
-        )}
+      <WorkspaceWidgetContent
+        widget={widget}
+        localFiles={localFiles}
+        activeLocalFileId={activeLocalFileId}
+        selectedLocalFileId={selectedLocalFileId}
+        folderEntries={folderEntries}
+        folderPath={folderPath}
+        canBrowseFolder={canBrowseFolder}
+        activeMarketGraph={activeMarketGraph}
+        onBrowseFiles={onBrowseFiles}
+        onBrowseFolder={onBrowseFolder}
+        onOpenPreview={onOpenPreview}
+        onSelectFile={onSelectFile}
+        onClearFiles={onClearFiles}
+        onLaunchWorkspaceWidget={onLaunchWorkspaceWidget}
+        onSelectMarketGraph={onSelectMarketGraph}
+        workspaceWidgets={workspaceWidgets}
+        onFocusWidget={onFocusWidget}
+        onCloseWidget={onCloseWidget}
+      />
     </WorkspaceWindow>
   );
 }
@@ -2126,37 +2183,17 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   const nextLaunchKind = launchableWindowKinds[nextLaunchIndex % launchableWindowKinds.length];
 
   const openPanelWindow = (kind: WorkspaceWidget['kind']) => {
-    if (typeof window === 'undefined') return;
-
-    const url = buildPanelWindowUrl(kind);
-    const popup = window.open(url.toString(), '_blank', 'popup=yes,width=1280,height=900');
-    if (!popup) {
-      window.location.assign(url.toString());
-      return;
+    if (openWorkspacePanelWindow(kind)) {
+      setNextLaunchIndex((current) => current + 1);
     }
-
-    popup.focus?.();
-    setNextLaunchIndex((current) => current + 1);
   };
 
   const returnToHub = () => {
-    if (typeof window === 'undefined') return;
-
-    const url = buildWorkspaceHubUrl();
-
-    if (url.toString() === window.location.href) return;
-
-    window.history.replaceState({}, '', url.toString());
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    returnToWorkspaceHub();
   };
 
   const closePanelWindow = () => {
-    if (typeof window === 'undefined') return;
-
-    window.close();
-    if (!window.closed) {
-      returnToHub();
-    }
+    closeWorkspacePanelWindow();
   };
 
   const openNextPanelWindow = () => {
@@ -2525,6 +2562,30 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   };
 
   const activeMarketGraph = useMemo(() => getMarketGraph(activeMarketGraphId), [activeMarketGraphId]);
+  const widgetRuntimeProps: WorkspaceWidgetRuntimeProps = {
+    onStartDrag: startDrag,
+    onStartResize: startResize,
+    onToggleOpen: toggleWidget,
+    onRecenter: recenterWidget,
+    onClose: closeWidget,
+    localFiles,
+    activeLocalFileId,
+    selectedLocalFileId,
+    folderEntries,
+    folderPath,
+    canBrowseFolder,
+    activeMarketGraph,
+    onBrowseFiles: importLocalFiles,
+    onBrowseFolder: browseFolder,
+    onOpenPreview: openLocalPreview,
+    onSelectFile: setSelectedLocalFileId,
+    onClearFiles: clearLocalFiles,
+    onLaunchWorkspaceWidget: openWorkspaceWidget,
+    onSelectMarketGraph: openMarketGraph,
+    workspaceWidgets: widgets,
+    onFocusWidget: focusWidget,
+    onCloseWidget: closeWidget,
+  };
 
   if (panelKind) {
     const focusedWidget = getFocusedWidget(panelKind, bounds.width || 1200, bounds.height || 800);
@@ -2555,29 +2616,8 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
         <div className="workspace-panel-stage">
           <WorkspaceWidgetCard
             widget={focusedWidget}
-            onStartDrag={startDrag}
-            onStartResize={startResize}
-            onToggleOpen={toggleWidget}
-            onRecenter={recenterWidget}
-            onClose={closeWidget}
             showChrome={panelKind === 'browser'}
-            localFiles={localFiles}
-            activeLocalFileId={activeLocalFileId}
-            selectedLocalFileId={selectedLocalFileId}
-            folderEntries={folderEntries}
-            folderPath={folderPath}
-            canBrowseFolder={canBrowseFolder}
-            activeMarketGraph={activeMarketGraph}
-            onBrowseFiles={importLocalFiles}
-            onBrowseFolder={browseFolder}
-            onOpenPreview={openLocalPreview}
-            onSelectFile={setSelectedLocalFileId}
-            onClearFiles={clearLocalFiles}
-            onLaunchWorkspaceWidget={openWorkspaceWidget}
-            onSelectMarketGraph={openMarketGraph}
-            workspaceWidgets={widgets}
-            onFocusWidget={focusWidget}
-            onCloseWidget={closeWidget}
+            {...widgetRuntimeProps}
           />
         </div>
       </section>
@@ -2625,28 +2665,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
           <WorkspaceWidgetCard
             key={widget.id}
             widget={widget}
-            onStartDrag={startDrag}
-            onStartResize={startResize}
-            onToggleOpen={toggleWidget}
-            onRecenter={recenterWidget}
-            onClose={closeWidget}
-            localFiles={localFiles}
-            activeLocalFileId={activeLocalFileId}
-            selectedLocalFileId={selectedLocalFileId}
-            folderEntries={folderEntries}
-            folderPath={folderPath}
-            canBrowseFolder={canBrowseFolder}
-            activeMarketGraph={activeMarketGraph}
-            onBrowseFiles={importLocalFiles}
-            onBrowseFolder={browseFolder}
-            onOpenPreview={openLocalPreview}
-            onSelectFile={setSelectedLocalFileId}
-            onClearFiles={clearLocalFiles}
-            onLaunchWorkspaceWidget={openWorkspaceWidget}
-            onSelectMarketGraph={openMarketGraph}
-            workspaceWidgets={widgets}
-            onFocusWidget={focusWidget}
-            onCloseWidget={closeWidget}
+            {...widgetRuntimeProps}
           />
         ))}
       </WorkspaceCanvas>

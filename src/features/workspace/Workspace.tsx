@@ -490,6 +490,9 @@ function AudioWidget() {
         metaEyebrow="input"
         meta="12 bands"
       />
+      <WorkspaceSummaryPanel className="audio-summary-panel" title="audio telemetry">
+        Signal monitoring now follows the shared Markets hierarchy: title, concise status, then the active stage.
+      </WorkspaceSummaryPanel>
       <WorkspaceSectionFrame className="media-widget-stage" eyebrow="spectrum" title="active waveform" meta="visualiser">
         <div className="audio-surface">
           <div className="audio-ring audio-ring-a" />

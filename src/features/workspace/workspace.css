@@ -1025,11 +1025,15 @@
 .overview-surface,
 .graph-surface,
 .schedule-surface,
-.audio-widget-shell,
 .map-widget-shell,
 .diagram-widget-shell,
 .video-widget-shell {
   grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+}
+
+.audio-widget-shell {
+  grid-template-rows: auto auto minmax(0, 1fr);
   align-content: stretch;
 }
 

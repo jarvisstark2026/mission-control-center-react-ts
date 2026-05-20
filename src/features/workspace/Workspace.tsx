@@ -1269,7 +1269,7 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
       />
 
       <WorkspaceSummaryPanel className="launcher-summary-panel" title="workspace hooks">
-        open / focus / stay in the workspace
+        Open or focus widgets in the workspace, with external apps routed through the bridge rather than a separate browser tantrum.
       </WorkspaceSummaryPanel>
 
       <WorkspaceSectionFrame className="launcher-desktop-section" eyebrow="desktop bridge" meta="installed apps and shortcuts">
@@ -1296,10 +1296,6 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
           />
         </DesktopBridgePanel>
       </WorkspaceSectionFrame>
-
-      <WorkspaceSummaryPanel className="launcher-note-panel" title="launcher note">
-        The launcher now opens widgets where they belong: in the workspace, not as a separate browser tantrum.
-      </WorkspaceSummaryPanel>
     </WorkspaceContentShell>
   );
 }

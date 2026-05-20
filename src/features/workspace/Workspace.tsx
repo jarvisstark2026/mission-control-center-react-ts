@@ -1709,32 +1709,34 @@ function FileExplorerWidget({
         meta={explorerStatusLabel}
       />
 
-      <div className="file-explorer-toolbar">
-        <WorkspaceButton className="file-explorer-button" onClick={handleBrowseFilesClick}>
-          Browse items
-        </WorkspaceButton>
-        <WorkspaceButton
-          variant="secondary"
-          className="file-explorer-button is-muted"
-          onClick={handleBrowseFolderClick}
-          disabled={!canBrowseFolder}
-          title={canBrowseFolder ? 'Open a general-use folder picker' : 'Folder picker is not available in this browser'}
-        >
-          Open folder
-        </WorkspaceButton>
-        <WorkspaceButton variant="secondary" className="file-explorer-button is-muted" onClick={onClearFiles} disabled={!files.length && !folderEntries.length}>
-          Clear loaded files
-        </WorkspaceButton>
-        <input
-          ref={fileInputRef}
-          className="file-explorer-input"
-          type="file"
-          multiple
-          aria-hidden="true"
-          tabIndex={-1}
-          onChange={handleFileChange}
-        />
-      </div>
+      <WorkspaceSectionFrame className="file-explorer-toolbar-frame" eyebrow="file controls" title="local intake" meta="browse / clear">
+        <div className="file-explorer-toolbar">
+          <WorkspaceButton className="file-explorer-button" onClick={handleBrowseFilesClick}>
+            Browse items
+          </WorkspaceButton>
+          <WorkspaceButton
+            variant="secondary"
+            className="file-explorer-button is-muted"
+            onClick={handleBrowseFolderClick}
+            disabled={!canBrowseFolder}
+            title={canBrowseFolder ? 'Open a general-use folder picker' : 'Folder picker is not available in this browser'}
+          >
+            Open folder
+          </WorkspaceButton>
+          <WorkspaceButton variant="secondary" className="file-explorer-button is-muted" onClick={onClearFiles} disabled={!files.length && !folderEntries.length}>
+            Clear loaded files
+          </WorkspaceButton>
+          <input
+            ref={fileInputRef}
+            className="file-explorer-input"
+            type="file"
+            multiple
+            aria-hidden="true"
+            tabIndex={-1}
+            onChange={handleFileChange}
+          />
+        </div>
+      </WorkspaceSectionFrame>
 
       <div className="file-explorer-body">
         {hasRealFolderEntries || files.length ? (
@@ -1768,10 +1770,9 @@ function FileExplorerWidget({
         )}
       </div>
 
-      <div className="file-explorer-footer">
-        <span>{loadedEntryCount ? `${loadedEntryCount} ${loadedEntryCount === 1 ? 'entry' : 'entries'}` : 'No entries loaded'}</span>
-        <small>Single-click selects · click again opens preview.</small>
-      </div>
+      <WorkspaceSummaryPanel className="file-explorer-footer" title={loadedEntryCount ? `${loadedEntryCount} ${loadedEntryCount === 1 ? 'entry' : 'entries'}` : 'No entries loaded'}>
+        Single-click selects · click again opens preview.
+      </WorkspaceSummaryPanel>
     </WorkspaceContentShell>
   );
 }

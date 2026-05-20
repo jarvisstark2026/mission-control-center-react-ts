@@ -2365,6 +2365,11 @@
   color: rgba(255, 255, 255, 0.54);
 }
 
+.file-explorer-toolbar-frame {
+  display: grid;
+  gap: 10px;
+}
+
 .file-explorer-toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -2549,24 +2554,10 @@
 }
 
 .file-explorer-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 0;
 }
 
-.file-explorer-footer span,
-.file-explorer-footer small {
-  display: block;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.56rem;
-  color: rgba(255, 255, 255, 0.68);
-}
-
-.file-explorer-footer small {
+.file-explorer-footer p {
   text-align: right;
 }
 

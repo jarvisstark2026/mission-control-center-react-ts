@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, PointerEvent as ReactPointerEvent, ChangeEvent } from 'react';
+import type { PointerEvent as ReactPointerEvent, ChangeEvent } from 'react';
 
 import { StatusChip } from '../../components/ui/StatusChip';
-import { readShellLocationFromSearch } from '../shell/location';
-import type { ShellRole } from '../shell/roles';
-import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceRowList, WorkspaceSectionFrame, WorkspaceSummaryPanel, WorkspaceWidgetFrame } from './workspaceBlocks';
+import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceRowList, WorkspaceSectionFrame, WorkspaceSummaryPanel } from './workspaceBlocks';
+import { WorkspaceAtmosphere, WorkspaceCanvas } from './WorkspaceCanvas';
+import type { ResizeEdge } from './WorkspaceResizeHandles';
+import { WorkspaceWindow } from './WorkspaceWindow';
 import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from './workspaceDesktopApps';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
@@ -12,6 +13,7 @@ import { createLocalFileObjectUrl, createLocalFileRecord, clearPersistedLocalFil
 import { clampNumber, clearStoredWidgetState, loadStoredWidgetState, saveStoredWidgetState } from './workspaceStorage';
 import { getFocusedWidget, getWidgetLabel, getWorkspaceLauncherEntries, launchableWindowKinds, widgetBlueprints, widgetPresets } from './workspaceWidgetCatalog';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from './workflowStudioModel';
+import { buildPanelWindowUrl, buildWorkspaceHubUrl } from './workspacePanelRouting';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
 
@@ -33,19 +35,6 @@ const initialWidgetState = widgetPresets.map((widget) => ({
 
 function createInitialWidgetState() {
   return initialWidgetState.map((widget) => ({ ...widget }));
-}
-
-function getCurrentShellRole(): ShellRole {
-  if (typeof window === 'undefined') return 'support';
-
-  return readShellLocationFromSearch(window.location.search, 'support').role;
-}
-
-function buildPanelWindowUrl(kind: WorkspaceWidget['kind']) {
-  const url = new URL(window.location.href);
-  url.searchParams.set('role', getCurrentShellRole());
-  url.searchParams.set('panel', kind);
-  return url;
 }
 
 function createCompactLayout(boundsWidth: number, boundsHeight: number): WorkspaceWidget[] {
@@ -89,85 +78,6 @@ function createCompactLayout(boundsWidth: number, boundsHeight: number): Workspa
     nextY += height + gap;
     return nextWidget;
   });
-}
-
-type ResizeEdge = 'corner' | 'left' | 'right' | 'bottom';
-
-type ResizeHandleSpec = {
-  edge: ResizeEdge;
-  className: string;
-  gripClassName: string;
-  label: string;
-  symbol: string;
-};
-
-const resizeHandleSpecs: ResizeHandleSpec[] = [
-  {
-    edge: 'corner',
-    className: 'widget-resize-handle-bottom-right',
-    gripClassName: 'widget-resize-grip-corner',
-    label: 'Resize {title} from the bottom-right corner',
-    symbol: '┘',
-  },
-  {
-    edge: 'left',
-    className: 'widget-resize-handle-left widget-resize-handle-side',
-    gripClassName: 'widget-resize-grip-vertical',
-    label: 'Resize {title} from the left edge',
-    symbol: '⋮',
-  },
-  {
-    edge: 'right',
-    className: 'widget-resize-handle-right widget-resize-handle-side',
-    gripClassName: 'widget-resize-grip-vertical',
-    label: 'Resize {title} from the right edge',
-    symbol: '⋮',
-  },
-  {
-    edge: 'bottom',
-    className: 'widget-resize-handle-bottom',
-    gripClassName: 'widget-resize-grip-horizontal',
-    label: 'Resize {title} from the bottom edge',
-    symbol: '⋯',
-  },
-];
-
-function WidgetResizeHandles({
-  widget,
-  onStartResize,
-  showChrome,
-}: {
-  widget: WorkspaceWidget;
-  onStartResize: (event: ReactPointerEvent<HTMLButtonElement>, widgetId: string, edge: ResizeEdge) => void;
-  showChrome: boolean;
-}) {
-  if (!showChrome || !widget.open) return null;
-
-  return (
-    <>
-      {resizeHandleSpecs.map((handle) => {
-        const label = handle.label.replace('{title}', widget.title);
-
-        return (
-          <button
-            key={handle.edge}
-            type="button"
-            className={`widget-resize-handle ${handle.className}`}
-            onPointerDown={(event) => {
-              event.stopPropagation();
-              onStartResize(event, widget.id, handle.edge);
-            }}
-            aria-label={label}
-            title={label}
-          >
-            <span aria-hidden="true" className={`widget-resize-grip ${handle.gripClassName}`}>
-              {handle.symbol}
-            </span>
-          </button>
-        );
-      })}
-    </>
-  );
 }
 
 type InteractionState = {
@@ -1834,20 +1744,35 @@ function NativeAppWidget() {
   };
 
   return (
-    <DesktopBridgePanel
-      eyebrow="desktop bridge"
-      title="open installed app / external window"
-      description="Bridge installed apps and external windows without pretending the browser can do an operating system’s job on its own."
-      inputLabel="App or command"
-      inputValue={desktopCommand}
-      inputPlaceholder="e.g. obsidian, explorer.exe, notepad.exe"
-      submitLabel="Open app"
-      apps={apps}
-      onChangeInput={setDesktopCommand}
-      onSubmit={openInstalledApp}
-      onSelectApp={recallInstalledApp}
-      className="native-app-surface"
-    />
+    <WorkspaceContentShell className="native-app-surface">
+      <WorkspaceContentHeader
+        eyebrow="Desktop bridge"
+        title="open installed app / external window"
+        metaEyebrow="local"
+        meta="installed apps"
+      />
+
+      <WorkspaceSummaryPanel className="native-app-summary" title="bridge status">
+        Browser containment remains intact; operating-system ambitions are routed through the external app bridge.
+      </WorkspaceSummaryPanel>
+
+      <WorkspaceSectionFrame className="native-app-bridge-section" eyebrow="desktop controls" title="app command" meta={`${apps.length} remembered`}>
+        <DesktopBridgePanel
+          eyebrow="desktop bridge"
+          title="open installed app / external window"
+          description="Bridge installed apps and external windows without pretending the browser can do an operating system’s job on its own."
+          inputLabel="App or command"
+          inputValue={desktopCommand}
+          inputPlaceholder="e.g. obsidian, explorer.exe, notepad.exe"
+          submitLabel="Open app"
+          apps={apps}
+          onChangeInput={setDesktopCommand}
+          onSubmit={openInstalledApp}
+          onSelectApp={recallInstalledApp}
+          className="native-app-bridge"
+        />
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
   );
 }
 
@@ -1954,74 +1879,16 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
   const previewFile = widget.previewFileId ? localFiles.find((record) => record.id === widget.previewFileId) ?? null : null;
 
   return (
-    <article
-      className={`workspace-widget ${widget.open ? 'is-open' : 'is-closed'} kind-${widget.kind}`}
-      style={
-        {
-          left: `${widget.x}px`,
-          top: `${widget.y}px`,
-          width: `${widget.width}px`,
-          height: `${widget.open ? widget.height : 58}px`,
-          zIndex: widget.zIndex,
-          '--widget-surface-alpha': widget.surfaceAlpha,
-          '--widget-line-alpha': widget.lineAlpha,
-        } as CSSProperties
-      }
-      onPointerDown={showChrome ? (event) => onStartDrag(event, widget.id) : undefined}
+    <WorkspaceWindow
+      widget={widget}
+      bodyClassName={`widget-body ${widget.kind === 'file-explorer' ? 'widget-body-file-explorer' : ''} ${widget.kind === 'window-manager' ? 'widget-body-window-manager' : ''}`}
+      onStartDrag={onStartDrag}
+      onStartResize={onStartResize}
+      onToggleOpen={onToggleOpen}
+      onRecenter={onRecenter}
+      onClose={onClose}
+      showChrome={showChrome}
     >
-      {showChrome ? (
-        <>
-          <div className="widget-labels" aria-hidden="true">
-            <span className="widget-title">{widget.title}</span>
-            <span className="widget-subtitle">{widget.subtitle}</span>
-          </div>
-
-          <div className="widget-chrome-actions" role="toolbar" aria-label={`${widget.title} window controls`}>
-            <button
-              type="button"
-              className="widget-toggle"
-              onClick={(event) => {
-                event.stopPropagation();
-                onToggleOpen(widget.id);
-              }}
-              aria-label={widget.open ? `Minimize ${widget.title}` : `Maximize ${widget.title}`}
-              title={widget.open ? `Minimize ${widget.title}` : `Maximize ${widget.title}`}
-            >
-              {widget.open ? '▴' : '▾'}
-            </button>
-            <button
-              type="button"
-              className="widget-recenter"
-              onClick={(event) => {
-                event.stopPropagation();
-                onRecenter(widget.id);
-              }}
-              aria-label={`Recenter ${widget.title}`}
-              title={`Recenter ${widget.title}`}
-            >
-              ⌖
-            </button>
-            <button
-              type="button"
-              className="widget-close"
-              disabled={Boolean(widget.pinned)}
-              onClick={(event) => {
-                event.stopPropagation();
-                onClose(widget.id);
-              }}
-              aria-label={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
-              title={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
-            >
-              ×
-            </button>
-          </div>
-        </>
-      ) : null}
-
-      <WorkspaceWidgetFrame
-        kind={widget.kind}
-        className={`widget-body ${widget.kind === 'file-explorer' ? 'widget-body-file-explorer' : ''} ${widget.kind === 'window-manager' ? 'widget-body-window-manager' : ''}`}
-      >
         {widget.kind === 'file-explorer' && (
           <FileExplorerWidget
             files={localFiles}
@@ -2065,10 +1932,7 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
             {widget.kind === 'list' && <ListWidget />}
           </div>
         )}
-      </WorkspaceWidgetFrame>
-
-      <WidgetResizeHandles widget={widget} onStartResize={onStartResize} showChrome={showChrome} />
-    </article>
+    </WorkspaceWindow>
   );
 }
 
@@ -2208,8 +2072,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   const returnToHub = () => {
     if (typeof window === 'undefined') return;
 
-    const url = new URL(window.location.href);
-    url.searchParams.delete('panel');
+    const url = buildWorkspaceHubUrl();
 
     if (url.toString() === window.location.href) return;
 
@@ -2593,9 +2456,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
 
     return (
       <section className="workspace-shell workspace-shell-panel">
-        <div className="workspace-atmosphere workspace-atmosphere-a" aria-hidden="true" />
-        <div className="workspace-atmosphere workspace-atmosphere-b" aria-hidden="true" />
-        <div className="workspace-grid" aria-hidden="true" />
+        <WorkspaceAtmosphere />
 
         <div className="workspace-head workspace-head-panel">
           <div className="workspace-brand">Mission Control Center</div>
@@ -2645,9 +2506,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
 
   return (
     <section className="workspace-shell">
-      <div className="workspace-atmosphere workspace-atmosphere-a" aria-hidden="true" />
-      <div className="workspace-atmosphere workspace-atmosphere-b" aria-hidden="true" />
-      <div className="workspace-grid" aria-hidden="true" />
+      <WorkspaceAtmosphere />
 
       <VisualLab />
 
@@ -2671,9 +2530,8 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
         </div>
       </div>
 
-      <div
-        className="workspace-canvas"
-        ref={canvasRef}
+      <WorkspaceCanvas
+        canvasRef={canvasRef}
         onPointerMove={handlePointerMove}
         onPointerUp={stopInteraction}
         onPointerCancel={stopInteraction}
@@ -2707,7 +2565,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
             onCloseWidget={closeWidget}
           />
         ))}
-      </div>
+      </WorkspaceCanvas>
     </section>
   );
 }

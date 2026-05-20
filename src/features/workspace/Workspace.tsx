@@ -1325,6 +1325,10 @@ function BrowserWidget() {
         meta={frameUrl.replace(/^https?:\/\//i, '')}
       />
 
+      <WorkspaceSummaryPanel className="browser-summary-panel" title="embedded preview">
+        Address controls and bookmarked pages now sit beneath the same status tier as Markets, while the iframe remains contained in the browser stage.
+      </WorkspaceSummaryPanel>
+
       <WorkspaceSectionFrame className="browser-address-section" eyebrow="address" title="navigation controls" meta="URL / bookmarks">
         <div className="browser-bar">
           <input

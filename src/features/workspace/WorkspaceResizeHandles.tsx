@@ -4,6 +4,8 @@ import type { WorkspaceWidget } from './workspaceTypes';
 
 export type ResizeEdge = 'corner' | 'left' | 'right' | 'bottom';
 
+const RESIZE_GRIP_ICON = '⋯';
+
 type ResizeHandleSpec = {
   edge: ResizeEdge;
   className: string;
@@ -25,21 +27,21 @@ const resizeHandleSpecs: ResizeHandleSpec[] = [
     className: 'widget-resize-handle-left widget-resize-handle-side',
     gripClassName: 'widget-resize-grip-vertical',
     label: 'Resize {title} from the left edge',
-    symbol: '⋯',
+    symbol: RESIZE_GRIP_ICON,
   },
   {
     edge: 'right',
     className: 'widget-resize-handle-right widget-resize-handle-side',
     gripClassName: 'widget-resize-grip-vertical',
     label: 'Resize {title} from the right edge',
-    symbol: '⋯',
+    symbol: RESIZE_GRIP_ICON,
   },
   {
     edge: 'bottom',
     className: 'widget-resize-handle-bottom',
     gripClassName: 'widget-resize-grip-horizontal',
     label: 'Resize {title} from the bottom edge',
-    symbol: '⋯',
+    symbol: RESIZE_GRIP_ICON,
   },
 ];
 

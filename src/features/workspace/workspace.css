@@ -1856,13 +1856,7 @@
 
 .workflow-step-remove {
   justify-self: start;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-size: 0.56rem;
+  min-height: 28px;
 }
 
 .workflow-status {

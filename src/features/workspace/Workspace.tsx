@@ -1029,7 +1029,7 @@ function WorkflowWidget() {
       </WorkspaceSectionFrame>
 
       <div className="workflow-layout">
-        <aside className="workflow-column workflow-library">
+        <WorkspaceSectionFrame className="workflow-column workflow-library" eyebrow="Workflow library" title="templates and skills" meta="starter set">
           <WorkspaceSectionFrame className="workflow-group" eyebrow="Workflow library" title="template catalog" meta="starter templates">
             <WorkspaceCatalogGrid
               className="workflow-template-list"
@@ -1066,9 +1066,9 @@ function WorkflowWidget() {
               onSelect={(item) => toggleSkill(item.id)}
             />
           </WorkspaceSectionFrame>
-        </aside>
+        </WorkspaceSectionFrame>
 
-        <WorkspaceSectionFrame className="workflow-column workflow-canvas" eyebrow="Workflow visualisation" meta="step by step">
+        <WorkspaceSectionFrame className="workflow-column workflow-canvas" eyebrow="Workflow visualisation" title="step map" meta="step by step">
           <div className="workflow-diagram" aria-label="Workflow visualisation">
             <svg viewBox={`0 0 ${svgWidth} 180`} role="img" aria-label="Workflow diagram">
               <rect x="0" y="0" width={svgWidth} height="180" fill="transparent" />
@@ -1082,9 +1082,9 @@ function WorkflowWidget() {
                 <span>Step {index + 1}</span>
                 <strong>{step}</strong>
                 {index >= template.steps.length ? (
-                  <button type="button" className="workflow-step-remove" onClick={() => removeCustomStep(index)}>
+                  <WorkspaceButton variant="compact" className="workflow-step-remove" onClick={() => removeCustomStep(index)}>
                     Remove
-                  </button>
+                  </WorkspaceButton>
                 ) : null}
               </li>
             ))}
@@ -1093,7 +1093,7 @@ function WorkflowWidget() {
           <div className="workflow-status">{status}</div>
         </WorkspaceSectionFrame>
 
-        <aside className="workflow-column workflow-editor">
+        <WorkspaceSectionFrame className="workflow-column workflow-editor" eyebrow="User workflow" title="edit and save" meta="local draft">
           <WorkspaceSectionFrame className="workflow-group" eyebrow="User workflow" meta="edit and save">
             <label className="workflow-field">
               <span>Workflow name</span>
@@ -1150,7 +1150,7 @@ function WorkflowWidget() {
             />
             {savedWorkflows.length ? null : <div className="workflow-empty">No saved workflows yet. Save one and it will stay available locally.</div>}
           </WorkspaceSectionFrame>
-        </aside>
+        </WorkspaceSectionFrame>
       </div>
     </WorkspaceContentShell>
   );

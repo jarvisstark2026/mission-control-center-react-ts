@@ -535,17 +535,30 @@ function DiagramWidget() {
 }
 
 function ProjectWidget() {
+  const projectLanes = ['layout', 'assets', 'review', 'deploy'];
+
   return (
-    <div className="project-surface">
-      {['layout', 'assets', 'review', 'deploy'].map((label, index) => (
-        <div className="project-row" key={label}>
-          <span>{label}</span>
-          <div className="project-track">
-            <i style={{ width: `${50 + index * 10}%` }} />
+    <WorkspaceContentShell className="project-surface">
+      <WorkspaceContentHeader
+        eyebrow="Project list"
+        title="tasks / backlog"
+        metaEyebrow="delivery"
+        meta={`${projectLanes.length} lanes`}
+      />
+      <WorkspaceSummaryPanel title="active build queue">
+        Track delivery stages with the same compact hierarchy used by Markets.
+      </WorkspaceSummaryPanel>
+      <WorkspaceSectionFrame className="project-lanes" eyebrow="progress" title="current stages" meta="completion">
+        {projectLanes.map((label, index) => (
+          <div className="project-row" key={label}>
+            <span>{label}</span>
+            <div className="project-track" aria-label={`${label} ${50 + index * 10}% complete`}>
+              <i style={{ width: `${50 + index * 10}%` }} />
+            </div>
           </div>
-        </div>
-      ))}
-    </div>
+        ))}
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
   );
 }
 

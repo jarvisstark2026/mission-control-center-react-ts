@@ -768,7 +768,8 @@
 }
 
 .preview-surface::before,
-.markets-surface::before {
+.markets-surface::before,
+.project-surface::before {
   content: none;
 }
 
@@ -780,8 +781,7 @@
 .list-surface::before,
 .video-surface::before,
 .news-surface::before,
-.audio-surface::before,
-.project-surface::before {
+.audio-surface::before {
   content: '';
   position: absolute;
   inset: 0;

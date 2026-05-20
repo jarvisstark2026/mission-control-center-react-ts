@@ -3106,27 +3106,30 @@
 }
 
 .sheet-surface {
-  display: grid;
-  gap: 10px;
+  min-height: 0;
 }
 
-.sheet-toolbar, .docs-sidebar, .slides-stage {
+.sheet-grid-frame {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.docs-sidebar,
+.slides-stage {
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.035);
 }
 
-.sheet-toolbar, .docs-outline-item, .docs-title, .slides-canvas, .slides-thumb {
+.docs-outline-item,
+.docs-title,
+.slides-canvas,
+.slides-thumb {
   text-transform: uppercase;
   letter-spacing: 0.12em;
-}
-
-.sheet-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 12px;
-  font-size: 0.62rem;
 }
 
 .sheet-grid {

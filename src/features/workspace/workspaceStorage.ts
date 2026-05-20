@@ -39,7 +39,6 @@ export function loadStoredWidgetState({
 
       return {
         ...preset,
-        ...stored,
         open: typeof stored.open === 'boolean' ? stored.open : defaultOpenKinds.has(preset.kind),
         minWidth: effectiveMinWidth,
         minHeight: effectiveMinHeight,
@@ -61,9 +60,10 @@ export function loadStoredWidgetState({
         const minWidth = clampNumber(typeof stored.minWidth === 'number' ? stored.minWidth : blueprint?.minWidth ?? 300, blueprint?.minWidth ?? 300, 120, 1920);
         const minHeight = clampNumber(typeof stored.minHeight === 'number' ? stored.minHeight : blueprint?.minHeight ?? 180, blueprint?.minHeight ?? 180, 120, 1080);
         return {
-          ...(blueprint ? { title: blueprint.title, subtitle: blueprint.subtitle, surfaceAlpha: blueprint.surfaceAlpha, lineAlpha: blueprint.lineAlpha } : {}),
           ...stored,
           kind,
+          title: blueprint?.title ?? stored.title ?? kind,
+          subtitle: blueprint?.subtitle ?? stored.subtitle ?? '',
           open: typeof stored.open === 'boolean' ? stored.open : true,
           minWidth,
           minHeight,
@@ -80,5 +80,33 @@ export function loadStoredWidgetState({
     return [...normalizedPresets, ...dynamicWidgets];
   } catch {
     return null;
+  }
+}
+
+export function saveStoredWidgetState(widgets: WorkspaceWidget[]): boolean {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    const serializableWidgets = widgets.map((widget) => ({
+      id: widget.id,
+      kind: widget.kind,
+      x: widget.x,
+      y: widget.y,
+      width: widget.width,
+      height: widget.height,
+      zIndex: widget.zIndex,
+      open: widget.open,
+      minWidth: widget.minWidth,
+      minHeight: widget.minHeight,
+      surfaceAlpha: widget.surfaceAlpha,
+      lineAlpha: widget.lineAlpha,
+      pinned: widget.pinned,
+      previewFileId: widget.previewFileId ?? null,
+    }));
+
+    window.localStorage.setItem(workspaceStorageKey, JSON.stringify(serializableWidgets));
+    return true;
+  } catch {
+    return false;
   }
 }

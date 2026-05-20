@@ -7,7 +7,7 @@ import type { ShellRole } from '../shell/roles';
 import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, WorkspaceMetricGrid, WorkspaceRowList, WorkspaceWidgetFrame } from './workspaceBlocks';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { createLocalFileRecord, clearPersistedLocalFiles, formatLocalFileSize, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readPersistedLocalFiles, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
-import { clampNumber, loadStoredWidgetState, workspaceStorageKey, type WidgetBlueprint } from './workspaceStorage';
+import { clampNumber, loadStoredWidgetState, saveStoredWidgetState, type WidgetBlueprint } from './workspaceStorage';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from './workflowStudioModel';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
@@ -1684,8 +1684,8 @@ function BrowserWidget() {
   const submitUrl = () => {
     let next = url.trim();
     if (!next) return;
-    if (!/^https?:\/\//i.test(next) && !next.startsWith('data:')) {
-      next = `https://${next}`;
+    if (!/^https?:\/\//i.test(next)) {
+      next = `https://${next.replace(/^data:/i, '')}`;
     }
     setFrameUrl(next);
     setUrl(next);
@@ -1699,7 +1699,7 @@ function BrowserWidget() {
           onChange={(event) => setUrl(event.target.value)}
           onKeyDown={(event) => event.key === 'Enter' && submitUrl()}
           aria-label="Browser URL"
-          placeholder="Enter a website or data URL"
+          placeholder="Enter a website URL"
         />
         <button type="button" onClick={submitUrl}>Go</button>
       </div>
@@ -2384,7 +2384,7 @@ function WorkspaceWidgetCard(props: WorkspaceWidgetCardProps) {
             {widget.kind === 'launcher' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />}
             {widget.kind === 'browser' && <BrowserWidget />}
             {widget.kind === 'watch-video' && <LiveTvWidget />}
-            {widget.kind === 'native-app' && <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />}
+            {widget.kind === 'native-app' && <NativeAppWidget />}
             {widget.kind === 'video' && <VideoWidget />}
             {widget.kind === '3d' && <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} />}
             {widget.kind === '3d-studio' && <ModelStudioWidget />}
@@ -2424,6 +2424,11 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   useEffect(() => {
     widgetsRef.current = widgets;
   }, [widgets]);
+
+  useEffect(() => {
+    if (panelKind || bounds.width < 860) return;
+    void saveStoredWidgetState(widgets);
+  }, [bounds.width, panelKind, widgets]);
 
   useEffect(() => {
     let cancelled = false;

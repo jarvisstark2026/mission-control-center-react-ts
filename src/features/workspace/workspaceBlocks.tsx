@@ -93,7 +93,7 @@ export function WorkspaceCatalogGrid({
             type="button"
             className={[itemClassName, item.active ? 'is-active' : null].filter(Boolean).join(' ')}
             data-state={item.state}
-            aria-pressed={Boolean(item.active)}
+            aria-pressed={typeof item.active === 'boolean' ? item.active : undefined}
             onClick={() => onSelect(item)}
           >
             {content}

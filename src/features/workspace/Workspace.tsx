@@ -102,22 +102,42 @@ function OverviewWidget() {
   ];
 
   return (
-    <div className="widget-grid">
-      <div className="stats-arc" />
-      <WorkspaceMetricGrid metrics={stats} />
-    </div>
+    <WorkspaceContentShell className="overview-surface">
+      <WorkspaceContentHeader
+        eyebrow="System overview"
+        title="status / devices / alerts"
+        metaEyebrow="workspace"
+        meta="live frame"
+      />
+      <WorkspaceSectionFrame className="overview-dashboard" eyebrow="telemetry" title="command summary" meta={`${stats.length} signals`}>
+        <div className="widget-grid">
+          <div className="stats-arc" />
+          <WorkspaceMetricGrid metrics={stats} />
+        </div>
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
   );
 }
 
 function GraphWidget() {
   return (
-    <div className="spark-panel">
-      <div className="spark-line spark-a" />
-      <div className="spark-line spark-b" />
-      <div className="spark-line spark-c" />
-      <div className="spark-grid" />
-      <div className="spark-axis" />
-    </div>
+    <WorkspaceContentShell className="graph-surface">
+      <WorkspaceContentHeader
+        eyebrow="Telemetry graph"
+        title="signal trace / trend line"
+        metaEyebrow="scope"
+        meta="3 channels"
+      />
+      <WorkspaceSectionFrame className="graph-stage" eyebrow="chart" title="live trace" meta="sparkline">
+        <div className="spark-panel">
+          <div className="spark-line spark-a" />
+          <div className="spark-line spark-b" />
+          <div className="spark-line spark-c" />
+          <div className="spark-grid" />
+          <div className="spark-axis" />
+        </div>
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
   );
 }
 
@@ -1117,7 +1137,19 @@ function ListWidget() {
     secondary: 'open',
   }));
 
-  return <WorkspaceRowList className="list-surface" rows={rows} ariaLabel="Workspace list" />;
+  return (
+    <WorkspaceContentShell className="list-surface">
+      <WorkspaceContentHeader
+        eyebrow="Project list"
+        title="tasks / backlog"
+        metaEyebrow="queue"
+        meta={`${rows.length} lanes`}
+      />
+      <WorkspaceSectionFrame className="list-section" eyebrow="items" title="current queue" meta="open states">
+        <WorkspaceRowList className="list-rows" rows={rows} ariaLabel="Workspace list" />
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
+  );
 }
 
 function ScheduleWidget() {
@@ -1135,7 +1167,19 @@ function ScheduleWidget() {
     meta: slot.note,
   }));
 
-  return <WorkspaceRowList className="schedule-surface" rows={rows} ariaLabel="Today schedule" />;
+  return (
+    <WorkspaceContentShell className="schedule-surface">
+      <WorkspaceContentHeader
+        eyebrow="Schedule"
+        title="today / shift rhythm"
+        metaEyebrow="timeline"
+        meta={`${rows.length} blocks`}
+      />
+      <WorkspaceSectionFrame className="schedule-section" eyebrow="agenda" title="active day plan" meta="local time">
+        <WorkspaceRowList className="schedule-rows" rows={rows} ariaLabel="Today schedule" />
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
+  );
 }
 
 type LauncherWidgetProps = {

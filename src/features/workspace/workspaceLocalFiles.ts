@@ -205,6 +205,20 @@ export async function readLocalFileTextPreview(
   return compactWhitespace ? trimmedContent.replace(/\s+/g, ' ').trim() : trimmedContent;
 }
 
+const objectUrlPreviewKinds = new Set<LocalPreviewKind>(['image', 'audio', 'video', 'pdf', 'unsupported']);
+
+export function createLocalFileObjectUrl(file: Pick<LocalFileRecord, 'file' | 'previewKind'>): string | null {
+  if (!objectUrlPreviewKinds.has(file.previewKind) || typeof URL === 'undefined') return null;
+
+  return URL.createObjectURL(file.file);
+}
+
+export function revokeLocalFileObjectUrl(objectUrl: string | null): void {
+  if (!objectUrl || typeof URL === 'undefined') return;
+
+  URL.revokeObjectURL(objectUrl);
+}
+
 function clampWidgetSize(value: number, fallback: number, min: number, max: number) {
   if (!Number.isFinite(value)) return fallback;
   return Math.min(max, Math.max(min, value));

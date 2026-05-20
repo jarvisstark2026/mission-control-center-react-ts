@@ -8,7 +8,7 @@ import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, Works
 import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from './workspaceDesktopApps';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
-import { createLocalFileRecord, clearPersistedLocalFiles, formatLocalFileSize, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readLocalFileTextPreview, readPersistedLocalFiles, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
+import { createLocalFileObjectUrl, createLocalFileRecord, clearPersistedLocalFiles, formatLocalFileSize, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readLocalFileTextPreview, readPersistedLocalFiles, revokeLocalFileObjectUrl, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
 import { clampNumber, clearStoredWidgetState, loadStoredWidgetState, saveStoredWidgetState } from './workspaceStorage';
 import { getFocusedWidget, getWidgetLabel, getWorkspaceLauncherEntries, launchableWindowKinds, widgetBlueprints, widgetPresets } from './workspaceWidgetCatalog';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from './workflowStudioModel';
@@ -596,7 +596,7 @@ function PreviewWidget({
       return undefined;
     }
 
-    const nextUrl = URL.createObjectURL(file.file);
+    const nextUrl = createLocalFileObjectUrl(file);
     let cancelled = false;
     setObjectUrl(nextUrl);
     setStatus(`Opening ${file.previewKind} preview…`);
@@ -620,7 +620,7 @@ function PreviewWidget({
 
     return () => {
       cancelled = true;
-      URL.revokeObjectURL(nextUrl);
+      revokeLocalFileObjectUrl(nextUrl);
     };
   }, [file]);
 
@@ -1478,11 +1478,11 @@ function LocalFileMiniPreview({ file }: { file: LocalFileRecord }) {
     setTextSnippet('');
 
     if (file.previewKind === 'image') {
-      const nextUrl = URL.createObjectURL(file.file);
+      const nextUrl = createLocalFileObjectUrl(file);
       setObjectUrl(nextUrl);
       return () => {
         cancelled = true;
-        URL.revokeObjectURL(nextUrl);
+        revokeLocalFileObjectUrl(nextUrl);
       };
     }
 

@@ -2554,11 +2554,11 @@
   line-height: 1.45;
 }
 
-.file-explorer-footer {
-  margin-top: 0;
+.file-explorer-summary {
+  flex: 0 0 auto;
 }
 
-.file-explorer-footer p {
+.file-explorer-summary p {
   text-align: right;
 }
 

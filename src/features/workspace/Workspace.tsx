@@ -1743,6 +1743,10 @@ function FileExplorerWidget({
         meta={explorerStatusLabel}
       />
 
+      <WorkspaceSummaryPanel className="file-explorer-summary" title={loadedEntryCount ? `${loadedEntryCount} ${loadedEntryCount === 1 ? 'entry' : 'entries'}` : 'No entries loaded'}>
+        Single-click selects · click again opens preview.
+      </WorkspaceSummaryPanel>
+
       <WorkspaceSectionFrame className="file-explorer-toolbar-frame" eyebrow="file controls" title="local intake" meta="browse / clear">
         <div className="file-explorer-toolbar">
           <WorkspaceButton className="file-explorer-button" onClick={handleBrowseFilesClick}>
@@ -1803,10 +1807,6 @@ function FileExplorerWidget({
           </WorkspaceSummaryPanel>
         )}
       </div>
-
-      <WorkspaceSummaryPanel className="file-explorer-footer" title={loadedEntryCount ? `${loadedEntryCount} ${loadedEntryCount === 1 ? 'entry' : 'entries'}` : 'No entries loaded'}>
-        Single-click selects · click again opens preview.
-      </WorkspaceSummaryPanel>
     </WorkspaceContentShell>
   );
 }
@@ -1883,6 +1883,9 @@ function WindowManagerWidget({
         title="Open windows and pinned surfaces"
         meta={`${openWidgets.length} open · ${widgets.length} total`}
       />
+      <WorkspaceSummaryPanel className="window-manager-note" title="window controls">
+        Open surfaces stay listed here. Pinned windows cannot be closed.
+      </WorkspaceSummaryPanel>
       <WorkspaceSectionFrame className="window-manager-list-frame" eyebrow="registry" title="open surfaces" meta={`${openWidgets.length} active`}>
         {openWidgets.length > 0 ? (
           <WorkspaceActionRowList
@@ -1902,9 +1905,6 @@ function WindowManagerWidget({
           <p className="window-manager-empty">No windows are open. Remarkably, the machine is being tidy on its own.</p>
         )}
       </WorkspaceSectionFrame>
-      <WorkspaceSummaryPanel className="window-manager-note" title="window controls">
-        Open surfaces stay listed here. Pinned windows cannot be closed.
-      </WorkspaceSummaryPanel>
     </WorkspaceContentShell>
   );
 }

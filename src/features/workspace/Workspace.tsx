@@ -411,27 +411,29 @@ function SpreadsheetWidget() {
 }
 
 function DocsWidget() {
-  const outline = ['Title', 'Abstract', 'Sections', 'Appendix'];
+  const outlineRows = [
+    { id: 'title', primary: 'Title', secondary: 'Mission Control Center Brief', meta: 'ready' },
+    { id: 'abstract', primary: 'Abstract', secondary: 'Operational summary', meta: 'draft' },
+    { id: 'sections', primary: 'Sections', secondary: 'Architecture · Systems · Risks', meta: 'in progress' },
+    { id: 'appendix', primary: 'Appendix', secondary: 'References and links', meta: 'pending' },
+  ];
+
   return (
     <WorkspaceContentShell className="docs-surface">
       <WorkspaceContentHeader
         eyebrow="Docs"
         title="briefing workspace"
         metaEyebrow="outline"
-        meta={`${outline.length} sections`}
+        meta={`${outlineRows.length} sections`}
       />
       <WorkspaceSummaryPanel title="Mission Control Center Brief">
         Operational note. This panel behaves like a writing surface: clean sections, careful emphasis, and no unnecessary spectacle.
       </WorkspaceSummaryPanel>
       <div className="docs-layout">
-        <WorkspaceSectionFrame className="docs-sidebar" eyebrow="Outline" title="document map" meta="draft">
-          {outline.map((item) => (
-            <div className="docs-outline-item" key={item}>
-              <span>{item}</span>
-            </div>
-          ))}
+        <WorkspaceSectionFrame className="docs-sidebar" eyebrow="outline" title="document map" meta="live draft">
+          <WorkspaceRowList rows={outlineRows} className="docs-outline-list" ariaLabel="Document outline" />
         </WorkspaceSectionFrame>
-        <WorkspaceSectionFrame className="docs-page" eyebrow="Document" title="writing surface" meta="ready">
+        <WorkspaceSectionFrame className="docs-page" eyebrow="document" title="writing surface" meta="ready">
           <div className="docs-lines" aria-label="Document layout preview">
             <span />
             <span />
@@ -449,11 +451,19 @@ function SlidesWidget() {
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
   const activeSlide = slides[activeSlideIndex] ?? slides[0];
 
+  const slideCards = slides.map((slide, index) => ({
+    id: slide.toLowerCase(),
+    label: `${index + 1}. ${slide}`,
+    note: index === activeSlideIndex ? 'active frame' : 'jump to frame',
+    badge: `slide ${index + 1}`,
+    active: index === activeSlideIndex,
+  }));
+
   return (
     <WorkspaceContentShell className="slides-surface">
       <WorkspaceContentHeader
         eyebrow="Slides"
-        title="deck / speaker notes"
+        title="presentation stage"
         metaEyebrow="slide"
         meta={`${activeSlideIndex + 1} / ${slides.length}`}
       />
@@ -465,25 +475,23 @@ function SlidesWidget() {
           <strong>Presentation</strong>
           <p>{activeSlide}</p>
           <small>
-            Slide {activeSlideIndex + 1} of {slides.length} · deck / speaker notes / command story
+            Slide {activeSlideIndex + 1} of {slides.length} · command story
           </small>
         </div>
       </WorkspaceSectionFrame>
       <WorkspaceSectionFrame className="slides-strip-frame" eyebrow="slides" title="navigation" meta={`${slides.length} frames`}>
-        <div className="slides-strip">
-          {slides.map((slide, index) => (
-            <WorkspaceButton
-              key={slide}
-              variant="compact"
-              className={`slides-thumb ${index === activeSlideIndex ? 'is-active' : ''}`}
-              aria-pressed={index === activeSlideIndex}
-              onClick={() => setActiveSlideIndex(index)}
-            >
-              <span>{index + 1}</span>
-              <small>{slide}</small>
-            </WorkspaceButton>
-          ))}
-        </div>
+        <WorkspaceCatalogGrid
+          className="slides-strip"
+          variant="launcher"
+          items={slideCards}
+          ariaLabel="Slide navigation"
+          onSelect={(item) => {
+            const nextIndex = slides.findIndex((slide) => slide.toLowerCase() === item.id);
+            if (nextIndex >= 0) {
+              setActiveSlideIndex(nextIndex);
+            }
+          }}
+        />
       </WorkspaceSectionFrame>
     </WorkspaceContentShell>
   );

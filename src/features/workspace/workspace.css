@@ -3594,6 +3594,60 @@
   }
 }
 
+@media (max-width: 560px) {
+  .workspace-head {
+    left: 8px;
+    right: 8px;
+    top: 8px;
+    width: calc(100vw - 16px);
+    max-width: calc(100vw - 16px);
+    gap: 6px;
+  }
+
+  .workspace-brand,
+  .workspace-chip {
+    min-height: 28px;
+    padding: 6px 9px;
+    font-size: 0.56rem;
+  }
+
+  .workspace-launcher {
+    width: 100%;
+    gap: 6px;
+  }
+
+  .workspace-launch-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .workspace-launch-pills {
+    display: none;
+  }
+
+  .widget-labels {
+    top: 8px;
+    left: 10px;
+    right: 36px;
+  }
+
+  .widget-body {
+    padding: 38px 10px 12px;
+  }
+
+  .widget-toggle {
+    top: 8px;
+    right: 8px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .widget-resize-handle-bottom-right {
+    right: 4px;
+    bottom: 4px;
+  }
+}
+
 @media (max-width: 1280px) {
   .workspace-launch-pills {
     max-width: min(100%, 880px);

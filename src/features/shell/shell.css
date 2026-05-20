@@ -268,10 +268,10 @@
   .shell-rail {
     position: absolute;
     inset: 0 auto 0 0;
-    width: min(88vw, 320px);
+    width: min(84vw, 320px);
     min-width: 0;
     max-height: none;
-    padding: 56px 14px 14px;
+    padding: 52px 14px 14px;
     gap: 12px;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     border-bottom: 0;
@@ -290,7 +290,7 @@
   }
 
   .shell-branding h1 {
-    font-size: clamp(1.45rem, 3.4vw, 2.2rem);
+    font-size: clamp(1.45rem, 3.4vw, 2.1rem);
   }
 
   .shell-copy {
@@ -305,6 +305,7 @@
 
   .shell-nav-button {
     padding: 10px 12px;
+    min-height: 72px;
   }
 }
 
@@ -365,8 +366,12 @@
   }
 
   .shell-rail {
-    padding: 52px 12px 10px;
-    gap: 10px;
+    padding: 48px 10px 10px;
+    gap: 8px;
+  }
+
+  .shell-copy {
+    display: none;
   }
 
   .shell-scope-list,
@@ -375,7 +380,7 @@
   }
 
   .shell-nav-button {
-    min-height: 66px;
+    min-height: 60px;
     padding: 10px 12px;
   }
 }

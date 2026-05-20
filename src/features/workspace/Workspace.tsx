@@ -49,22 +49,27 @@ function buildPanelWindowUrl(kind: WorkspaceWidget['kind']) {
 }
 
 function createCompactLayout(boundsWidth: number, boundsHeight: number): WorkspaceWidget[] {
-  const stackWidth = Math.max(260, Math.min(boundsWidth - 16, 420));
+  const isNarrow = boundsWidth < 760;
+  const stackWidth = isNarrow
+    ? Math.max(260, Math.min(boundsWidth - 16, 360))
+    : Math.max(260, Math.min(boundsWidth - 16, 420));
   const totalWidgets = widgetPresets.length;
-  const openCount = boundsHeight < 760 ? 2 : 3;
-  const topInset = 58;
+  const openCount = isNarrow ? 1 : boundsHeight < 760 ? 2 : 3;
+  const topInset = isNarrow ? 52 : 58;
   const bottomInset = 12;
-  const gap = 8;
-  const closedHeight = 44;
+  const gap = isNarrow ? 6 : 8;
+  const closedHeight = isNarrow ? 40 : 44;
 
   const availableHeight = Math.max(0, boundsHeight - topInset - bottomInset - gap * (totalWidgets - 1));
   const openHeightBudget = Math.max(0, availableHeight - closedHeight * (totalWidgets - openCount));
-  const openHeight = Math.max(112, Math.min(160, Math.floor(openHeightBudget / openCount)));
+  const openHeight = Math.max(120, Math.min(isNarrow ? 220 : 160, Math.floor(openHeightBudget / openCount)));
 
   const openHeights =
-    openCount === 2
-      ? [openHeight + 10, Math.max(112, openHeight - 6)]
-      : [openHeight + 12, Math.max(112, openHeight + 2), Math.max(112, openHeight - 10)];
+    openCount === 1
+      ? [Math.max(140, openHeight)]
+      : openCount === 2
+        ? [openHeight + 10, Math.max(112, openHeight - 6)]
+        : [openHeight + 12, Math.max(112, openHeight + 2), Math.max(112, openHeight - 10)];
 
   let nextY = topInset;
 

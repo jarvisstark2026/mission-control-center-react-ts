@@ -291,17 +291,14 @@ function TradingGraphWidget({ graph }: { graph: MarketGraph }) {
   ];
 
   return (
-    <div className="trading-graph-surface">
-      <div className="trading-graph-header">
-        <div>
-          <span>market graph</span>
-          <strong>{graph.label}</strong>
-        </div>
-        <div className="trading-graph-header-meta">
-          <span>{graph.ticker}</span>
-          <small>{graph.category}</small>
-        </div>
-      </div>
+    <WorkspaceContentShell className="trading-graph-surface">
+      <WorkspaceContentHeader
+        className="trading-graph-header"
+        eyebrow="market graph"
+        title={graph.label}
+        metaEyebrow={graph.ticker}
+        meta={graph.category}
+      />
       <WorkspaceMetricGrid className="trading-graph-summary" metrics={summary} />
       <div className="trading-graph-body">
         <div className="trading-graph-grid" />
@@ -309,8 +306,10 @@ function TradingGraphWidget({ graph }: { graph: MarketGraph }) {
         <div className="trading-graph-line trading-b" />
         <div className="trading-graph-volume" />
       </div>
-      <p className="trading-graph-footer">Selecting a market item in the markets widget brings this graph forward and swaps the market context. No ceremony, just the useful bit.</p>
-    </div>
+      <WorkspaceSummaryPanel title="graph routing">
+        Selecting a market item in the markets widget brings this graph forward and swaps the market context. No ceremony, just the useful bit.
+      </WorkspaceSummaryPanel>
+    </WorkspaceContentShell>
   );
 }
 

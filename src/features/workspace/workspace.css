@@ -552,6 +552,7 @@
 .audio-surface,
 .map-surface,
 .diagram-surface,
+.workspace-content-shell,
 .project-surface,
 .news-surface,
 .markets-surface,
@@ -1009,6 +1010,7 @@
   transform: rotate(27deg);
 }
 
+.workspace-content-shell,
 .project-surface,
 .news-surface,
 .markets-surface,
@@ -2977,7 +2979,9 @@
 
 .trading-graph-surface {
   display: grid;
-  gap: 8px;
+  grid-template-rows: auto auto minmax(120px, 1fr) auto;
+  gap: 10px;
+  align-content: stretch;
 }
 
 .trading-graph-header {

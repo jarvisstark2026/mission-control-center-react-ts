@@ -4,7 +4,7 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, ChangeEvent } fr
 import { StatusChip } from '../../components/ui/StatusChip';
 import { readShellLocationFromSearch } from '../shell/location';
 import type { ShellRole } from '../shell/roles';
-import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceRowList, WorkspaceSectionFrame, WorkspaceSummaryPanel, WorkspaceWidgetFrame } from './workspaceBlocks';
+import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceRowList, WorkspaceSectionFrame, WorkspaceSummaryPanel, WorkspaceWidgetFrame } from './workspaceBlocks';
 import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from './workspaceDesktopApps';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
@@ -643,9 +643,9 @@ function PreviewWidget({
           <span>Preview</span>
           <strong>pick a file to inspect</strong>
           <small>images, audio, video, pdf, and text files will render here. The rest will be handled with less glamour, but still gracefully.</small>
-          <button type="button" className="preview-empty-button" onClick={handleBrowsePreviewFiles}>
+          <WorkspaceButton className="preview-empty-button" onClick={handleBrowsePreviewFiles}>
             Preview a file
-          </button>
+          </WorkspaceButton>
           <input
             ref={fileInputRef}
             className="preview-empty-input"
@@ -715,9 +715,9 @@ function PreviewWidget({
 
       <div className="preview-file-foot">
         <span>{status}</span>
-        <button type="button" className="preview-empty-button" onClick={handleBrowsePreviewFiles}>
+        <WorkspaceButton className="preview-empty-button" onClick={handleBrowsePreviewFiles}>
           Preview another file
-        </button>
+        </WorkspaceButton>
         <input
           ref={fileInputRef}
           className="preview-empty-input"
@@ -775,9 +775,9 @@ function ModelStudioWidget() {
         <aside className="model-studio-panel">
           <div className="model-studio-tools">
             {gestureChips.map((chip) => (
-              <button type="button" key={chip} className="model-studio-chip">
+              <WorkspaceButton variant="compact" key={chip} className="model-studio-chip">
                 {chip}
-              </button>
+              </WorkspaceButton>
             ))}
           </div>
 
@@ -954,18 +954,18 @@ function WorkflowWidget() {
       </div>
 
       <div className="workflow-actions">
-        <button type="button" className="workflow-action" onClick={saveWorkflow}>
+        <WorkspaceButton className="workflow-action" onClick={saveWorkflow}>
           Save workflow
-        </button>
-        <button type="button" className="workflow-action" onClick={printWorkflow}>
+        </WorkspaceButton>
+        <WorkspaceButton className="workflow-action" onClick={printWorkflow}>
           Print / Save PDF
-        </button>
-        <button type="button" className="workflow-action is-muted" onClick={copySteps}>
+        </WorkspaceButton>
+        <WorkspaceButton variant="secondary" className="workflow-action is-muted" onClick={copySteps}>
           Copy steps
-        </button>
-        <button type="button" className="workflow-action is-muted" onClick={startNewWorkflow}>
+        </WorkspaceButton>
+        <WorkspaceButton variant="secondary" className="workflow-action is-muted" onClick={startNewWorkflow}>
           New workflow
-        </button>
+        </WorkspaceButton>
       </div>
 
       <div className="workflow-layout">
@@ -1596,21 +1596,21 @@ function FileExplorerWidget({
       </div>
 
       <div className="file-explorer-toolbar">
-        <button type="button" className="file-explorer-button" onClick={handleBrowseFilesClick}>
+        <WorkspaceButton className="file-explorer-button" onClick={handleBrowseFilesClick}>
           Browse items
-        </button>
-        <button
-          type="button"
+        </WorkspaceButton>
+        <WorkspaceButton
+          variant="secondary"
           className="file-explorer-button is-muted"
           onClick={handleBrowseFolderClick}
           disabled={!canBrowseFolder}
           title={canBrowseFolder ? 'Open a general-use folder picker' : 'Folder picker is not available in this browser'}
         >
           Open folder
-        </button>
-        <button type="button" className="file-explorer-button is-muted" onClick={onClearFiles} disabled={!files.length && !folderEntries.length}>
+        </WorkspaceButton>
+        <WorkspaceButton variant="secondary" className="file-explorer-button is-muted" onClick={onClearFiles} disabled={!files.length && !folderEntries.length}>
           Clear loaded files
-        </button>
+        </WorkspaceButton>
         <input
           ref={fileInputRef}
           className="file-explorer-input"

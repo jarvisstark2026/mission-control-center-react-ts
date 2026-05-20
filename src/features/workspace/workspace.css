@@ -620,6 +620,60 @@
   color: rgba(255, 255, 255, 0.62);
 }
 
+.workspace-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.92);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.58rem;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease, opacity 140ms ease;
+}
+
+.workspace-button:hover,
+.workspace-button:focus-visible {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.workspace-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.72);
+  outline-offset: 2px;
+}
+
+.workspace-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.workspace-button-secondary {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.workspace-button-destructive {
+  border-color: rgba(255, 120, 120, 0.28);
+  background: rgba(255, 90, 90, 0.08);
+}
+
+.workspace-button-compact,
+.workspace-button-icon {
+  min-height: 30px;
+  padding-inline: 10px;
+  font-size: 0.56rem;
+}
+
+.workspace-button-icon {
+  width: 30px;
+  padding-inline: 0;
+}
+
 .workspace-action-row {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;

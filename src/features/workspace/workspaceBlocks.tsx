@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import type { DesktopAppRecord } from './workspaceDesktopApps';
 import type { WorkspaceWidget } from './workspaceTypes';
 
@@ -96,6 +96,28 @@ export function WorkspaceSummaryPanel({
       <strong>{title}</strong>
       {children ? <p>{children}</p> : null}
     </div>
+  );
+}
+
+type WorkspaceButtonVariant = 'primary' | 'secondary' | 'destructive' | 'compact' | 'icon';
+
+export function WorkspaceButton({
+  variant = 'primary',
+  className,
+  children,
+  type = 'button',
+  ...buttonProps
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: WorkspaceButtonVariant;
+}) {
+  return (
+    <button
+      {...buttonProps}
+      type={type}
+      className={["workspace-button", `workspace-button-${variant}`, className].filter(Boolean).join(' ')}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -330,9 +352,9 @@ export function DesktopBridgePanel({
             placeholder={inputPlaceholder}
           />
         </label>
-        <button type="button" className="launcher-desktop-button" onClick={onSubmit} disabled={!hasInput}>
+        <WorkspaceButton className="launcher-desktop-button" onClick={onSubmit} disabled={!hasInput}>
           {submitLabel}
-        </button>
+        </WorkspaceButton>
       </div>
       <WorkspaceCatalogGrid
         className="launcher-desktop-list"

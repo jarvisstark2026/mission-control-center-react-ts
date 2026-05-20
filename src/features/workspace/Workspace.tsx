@@ -1202,34 +1202,48 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
   });
 
   return (
-    <div className="launcher-surface">
-      <DesktopBridgePanel
-        eyebrow="desktop hooks"
-        title="load installed apps into memory"
-        description="Command line stays. The bridge now lives beside the workspace launcher rather than impersonating a separate universe."
-        inputLabel="Installed app or command"
-        inputValue={desktopCommand}
-        inputPlaceholder="e.g. explorer.exe, obsidian, notepad.exe"
-        submitLabel="Open installed app"
-        apps={desktopApps}
-        onChangeInput={setDesktopCommand}
-        onSubmit={openInstalledApp}
-        onSelectApp={recallInstalledApp}
-      >
-        <div className="launcher-summary">
-          <span>workspace hooks</span>
-          <strong>open / focus / stay in the workspace</strong>
-        </div>
-        <WorkspaceCatalogGrid
-          className="launcher-grid"
-          variant="launcher"
-          ariaLabel="Workspace launch shortcuts"
-          items={workspaceCards}
-          onSelect={(item) => onLaunchWorkspaceWidget(item.id as WorkspaceWidget['kind'])}
-        />
-        <p className="launcher-note">The launcher now opens widgets where they belong: in the workspace, not as a separate browser tantrum.</p>
-      </DesktopBridgePanel>
-    </div>
+    <WorkspaceContentShell className="launcher-surface">
+      <WorkspaceContentHeader
+        className="launcher-head"
+        eyebrow="Workspace launcher"
+        title="open installed apps into the workspace"
+        metaEyebrow="command bridge"
+        meta="launch / focus / stay in the workspace"
+      />
+
+      <WorkspaceSummaryPanel className="launcher-summary-panel" title="workspace hooks">
+        open / focus / stay in the workspace
+      </WorkspaceSummaryPanel>
+
+      <WorkspaceSectionFrame className="launcher-desktop-section" eyebrow="desktop bridge" meta="installed apps and shortcuts">
+        <DesktopBridgePanel
+          eyebrow="installed apps"
+          title="load installed apps into memory"
+          description="Command line stays. The bridge now lives beside the workspace launcher rather than impersonating a separate universe."
+          inputLabel="Installed app or command"
+          inputValue={desktopCommand}
+          inputPlaceholder="e.g. explorer.exe, obsidian, notepad.exe"
+          submitLabel="Open installed app"
+          apps={desktopApps}
+          appsLabel="installed app list"
+          onChangeInput={setDesktopCommand}
+          onSubmit={openInstalledApp}
+          onSelectApp={recallInstalledApp}
+        >
+          <WorkspaceCatalogGrid
+            className="launcher-grid"
+            variant="launcher"
+            ariaLabel="Workspace launch shortcuts"
+            items={workspaceCards}
+            onSelect={(item) => onLaunchWorkspaceWidget(item.id as WorkspaceWidget['kind'])}
+          />
+        </DesktopBridgePanel>
+      </WorkspaceSectionFrame>
+
+      <WorkspaceSummaryPanel className="launcher-note-panel" title="launcher note">
+        The launcher now opens widgets where they belong: in the workspace, not as a separate browser tantrum.
+      </WorkspaceSummaryPanel>
+    </WorkspaceContentShell>
   );
 }
 
@@ -1248,26 +1262,45 @@ function BrowserWidget() {
   };
 
   return (
-    <div className="browser-surface">
-      <div className="browser-bar">
-        <input
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          onKeyDown={(event) => event.key === 'Enter' && submitUrl()}
-          aria-label="Browser URL"
-          placeholder="Enter a website URL"
-        />
-        <button type="button" onClick={submitUrl}>Go</button>
-      </div>
-      <div className="browser-bookmarks">
-        {['https://example.org', 'https://developer.mozilla.org', 'https://news.ycombinator.com'].map((bookmark) => (
-          <button key={bookmark} type="button" onClick={() => { setUrl(bookmark); setFrameUrl(bookmark); }}>
-            {bookmark.replace('https://', '')}
-          </button>
-        ))}
-      </div>
-      <iframe title="Browser preview" src={frameUrl} className="browser-frame" />
-    </div>
+    <WorkspaceContentShell className="browser-surface">
+      <WorkspaceContentHeader
+        className="browser-head"
+        eyebrow="Browser"
+        title="embedded web preview"
+        metaEyebrow="active URL"
+        meta={frameUrl.replace(/^https?:\/\//i, '')}
+      />
+
+      <WorkspaceSectionFrame className="browser-address-section" eyebrow="address" title="navigation controls" meta="URL / bookmarks">
+        <div className="browser-bar">
+          <input
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
+            onKeyDown={(event) => event.key === 'Enter' && submitUrl()}
+            aria-label="Browser URL"
+            placeholder="Enter a website URL"
+          />
+          <WorkspaceButton className="browser-go-button" onClick={submitUrl}>Go</WorkspaceButton>
+        </div>
+        <div className="browser-bookmarks">
+          {['https://example.org', 'https://developer.mozilla.org', 'https://news.ycombinator.com'].map((bookmark) => (
+            <WorkspaceButton
+              key={bookmark}
+              type="button"
+              variant="secondary"
+              className="browser-bookmark"
+              onClick={() => { setUrl(bookmark); setFrameUrl(bookmark); }}
+            >
+              {bookmark.replace('https://', '')}
+            </WorkspaceButton>
+          ))}
+        </div>
+      </WorkspaceSectionFrame>
+
+      <WorkspaceSectionFrame className="browser-frame-section" eyebrow="preview" title="remote page" meta="iframe">
+        <iframe title="Browser preview" src={frameUrl} className="browser-frame" />
+      </WorkspaceSectionFrame>
+    </WorkspaceContentShell>
   );
 }
 

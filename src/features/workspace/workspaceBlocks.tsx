@@ -303,6 +303,7 @@ export function DesktopBridgePanel({
   onChangeInput,
   onSubmit,
   onSelectApp,
+  appsLabel,
   className,
   children,
 }: {
@@ -317,6 +318,7 @@ export function DesktopBridgePanel({
   onChangeInput: (value: string) => void;
   onSubmit: () => void;
   onSelectApp?: (app: DesktopAppRecord) => void;
+  appsLabel?: string;
   className?: string;
   children?: ReactNode;
 }) {
@@ -359,7 +361,7 @@ export function DesktopBridgePanel({
       <WorkspaceCatalogGrid
         className="launcher-desktop-list"
         variant="desktop"
-        ariaLabel={`${eyebrow} apps`}
+        ariaLabel={appsLabel ?? `${eyebrow} apps`}
         items={apps.map((app) => ({
           id: app.name,
           label: app.name,

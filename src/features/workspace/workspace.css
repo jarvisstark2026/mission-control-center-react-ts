@@ -1023,9 +1023,14 @@
 }
 
 .overview-surface,
-.graph-surface,
-.schedule-surface {
+.graph-surface {
   grid-template-rows: auto minmax(0, 1fr);
+  align-content: stretch;
+}
+
+.schedule-surface,
+.list-surface {
+  grid-template-rows: auto auto minmax(0, 1fr);
   align-content: stretch;
 }
 
@@ -1034,11 +1039,6 @@
 .video-widget-shell,
 .audio-widget-shell {
   grid-template-rows: auto auto minmax(0, 1fr);
-  align-content: stretch;
-}
-
-.list-surface {
-  grid-template-rows: auto minmax(0, 1fr);
   align-content: stretch;
 }
 

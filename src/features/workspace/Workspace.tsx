@@ -1162,6 +1162,9 @@ function ListWidget() {
         metaEyebrow="queue"
         meta={`${rows.length} lanes`}
       />
+      <WorkspaceSummaryPanel className="list-summary" title="active task lanes">
+        Task rows now sit beneath the same header and summary tier used by Markets, rather than jumping straight into bespoke list chrome.
+      </WorkspaceSummaryPanel>
       <WorkspaceSectionFrame className="list-section" eyebrow="items" title="current queue" meta="open states">
         <WorkspaceRowList className="list-rows" rows={rows} ariaLabel="Workspace list" />
       </WorkspaceSectionFrame>
@@ -1192,6 +1195,9 @@ function ScheduleWidget() {
         metaEyebrow="timeline"
         meta={`${rows.length} blocks`}
       />
+      <WorkspaceSummaryPanel className="schedule-summary" title="active day plan">
+        Shift rhythm, check-ins, and project blocks now share the same header-summary-section cadence as the Markets shell.
+      </WorkspaceSummaryPanel>
       <WorkspaceSectionFrame className="schedule-section" eyebrow="agenda" title="active day plan" meta="local time">
         <WorkspaceRowList className="schedule-rows" rows={rows} ariaLabel="Today schedule" />
       </WorkspaceSectionFrame>

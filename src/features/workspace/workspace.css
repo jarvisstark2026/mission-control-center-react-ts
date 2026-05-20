@@ -1175,7 +1175,7 @@
 }
 
 .preview-file-surface {
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
 }
 
 .model-studio-surface {
@@ -1497,14 +1497,8 @@
   gap: 10px;
 }
 
-.preview-file-status {
+.preview-file-controls .workspace-section-head {
   min-width: 0;
-}
-
-.preview-file-status p {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .preview-file-stage {

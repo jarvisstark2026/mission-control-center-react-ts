@@ -1120,9 +1120,15 @@
 }
 
 .preview-surface {
+  grid-template-rows: auto auto minmax(0, 1fr);
+  align-content: stretch;
   background:
     radial-gradient(circle at 50% 42%, rgba(99, 163, 255, 0.14), transparent 34%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.015));
+}
+
+.preview-file-surface {
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .model-studio-surface {
@@ -1379,8 +1385,17 @@
   animation: floatB 11s ease-in-out infinite;
 }
 
-.preview-empty-state,
-.preview-file-surface {
+.preview-empty-frame,
+.preview-file-frame {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.preview-empty-frame {
+  min-height: 180px;
+}
+
+.preview-empty-state {
   position: relative;
   display: grid;
   gap: 10px;
@@ -1445,12 +1460,13 @@
   pointer-events: none;
 }
 
-.preview-file-head,
 .preview-file-foot {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.preview-file-foot .workspace-section-head {
+  min-width: 0;
 }
 
 .preview-file-head-meta {
@@ -1462,7 +1478,7 @@
 .preview-file-stage {
   position: relative;
   min-height: 0;
-  flex: 1;
+  height: 100%;
   display: grid;
   overflow: hidden;
 }

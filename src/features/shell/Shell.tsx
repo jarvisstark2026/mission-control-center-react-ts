@@ -237,7 +237,13 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
         onClick={closeRailOnMobile}
       />
 
-      <aside id="shell-rail" className={`shell-rail ${isRailOpen ? 'is-open' : 'is-closed'}`} aria-label="Role navigation">
+      <aside
+        id="shell-rail"
+        className={`shell-rail ${isRailOpen ? 'is-open' : 'is-closed'}`}
+        aria-label="Role navigation"
+        aria-hidden={!isRailOpen}
+        inert={!isRailOpen}
+      >
         <div className="shell-branding">
           <p className="shell-eyebrow">Mission Control Center</p>
           <h1>Spatial command surface</h1>

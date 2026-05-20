@@ -109,6 +109,9 @@ function OverviewWidget() {
         metaEyebrow="workspace"
         meta="live frame"
       />
+      <WorkspaceSummaryPanel className="overview-summary" title="workspace health">
+        Core workspace telemetry now uses the same header, status, and stage cadence as Markets before expanding into the live command summary.
+      </WorkspaceSummaryPanel>
       <WorkspaceSectionFrame className="overview-dashboard" eyebrow="telemetry" title="command summary" meta={`${stats.length} signals`}>
         <div className="widget-grid">
           <div className="stats-arc" />
@@ -128,6 +131,9 @@ function GraphWidget() {
         metaEyebrow="scope"
         meta="3 channels"
       />
+      <WorkspaceSummaryPanel className="graph-summary" title="signal monitor">
+        Live trace staging now follows the shared Markets hierarchy, keeping chart context above the flexible graph body rather than embedded in bespoke chrome.
+      </WorkspaceSummaryPanel>
       <WorkspaceSectionFrame className="graph-stage" eyebrow="chart" title="live trace" meta="sparkline">
         <div className="spark-panel">
           <div className="spark-line spark-a" />

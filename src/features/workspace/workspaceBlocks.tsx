@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { DesktopAppRecord } from './workspaceDesktopApps';
 import type { WorkspaceWidget } from './workspaceTypes';
 
 export function WorkspaceWidgetFrame({
@@ -182,11 +183,6 @@ export function WorkspaceActionRowList({
     </div>
   );
 }
-
-export type DesktopAppRecord = {
-  name: string;
-  note: string;
-};
 
 export function DesktopBridgePanel({
   eyebrow,

@@ -5,6 +5,7 @@ import { StatusChip } from '../../components/ui/StatusChip';
 import { readShellLocationFromSearch } from '../shell/location';
 import type { ShellRole } from '../shell/roles';
 import { DesktopBridgePanel, WorkspaceActionRowList, WorkspaceCatalogGrid, WorkspaceMetricGrid, WorkspaceRowList, WorkspaceWidgetFrame } from './workspaceBlocks';
+import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from './workspaceDesktopApps';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
 import { createLocalFileRecord, clearPersistedLocalFiles, formatLocalFileSize, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readPersistedLocalFiles, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
@@ -1584,13 +1585,7 @@ type LauncherWidgetProps = {
 
 function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherWidgetProps) {
   const [desktopCommand, setDesktopCommand] = useState('');
-  const [desktopApps, setDesktopApps] = useState([
-    { name: 'Mission Control Center', note: 'primary desktop hub' },
-    { name: 'DailyForge', note: 'separate planning surface' },
-    { name: 'Browser', note: 'external web window' },
-    { name: 'Files', note: 'native file manager' },
-    { name: 'Terminal', note: 'command-line session' },
-  ]);
+  const [desktopApps, setDesktopApps] = useState<DesktopAppRecord[]>(defaultDesktopApps);
 
   const workspaceApps = [
     { label: 'Command core', kind: 'overview' as const, note: 'open in workspace' },
@@ -1622,11 +1617,13 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
   const openInstalledApp = () => {
     const nextName = desktopCommand.trim();
     if (!nextName) return;
-    setDesktopApps((current) => {
-      const next = [{ name: nextName, note: 'loaded into desktop memory' }, ...current.filter((app) => app.name !== nextName)];
-      return next.slice(0, 8);
-    });
+    setDesktopApps((current) => rememberDesktopApp(current, nextName));
     setDesktopCommand('');
+  };
+
+  const recallInstalledApp = (app: DesktopAppRecord) => {
+    setDesktopCommand(app.name);
+    setDesktopApps((current) => rememberDesktopApp(current, app.name, { note: app.note }));
   };
 
   const getAppState = (kind: WorkspaceWidget['kind']) => {
@@ -1661,6 +1658,7 @@ function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherW
         apps={desktopApps}
         onChangeInput={setDesktopCommand}
         onSubmit={openInstalledApp}
+        onSelectApp={recallInstalledApp}
       >
         <div className="launcher-summary">
           <span>workspace hooks</span>
@@ -2166,13 +2164,20 @@ function FileExplorerWidget({
 
 
 function NativeAppWidget() {
-  const apps = [
-    { name: 'Mission Control Center', note: 'primary desktop hub' },
-    { name: 'DailyForge', note: 'separate planning surface' },
-    { name: 'Browser', note: 'external web window' },
-    { name: 'Files', note: 'native file manager' },
-    { name: 'Terminal', note: 'command-line session' },
-  ];
+  const [desktopCommand, setDesktopCommand] = useState('');
+  const [apps, setApps] = useState<DesktopAppRecord[]>(defaultDesktopApps);
+
+  const openInstalledApp = () => {
+    const nextName = desktopCommand.trim();
+    if (!nextName) return;
+    setApps((current) => rememberDesktopApp(current, nextName));
+    setDesktopCommand('');
+  };
+
+  const recallInstalledApp = (app: DesktopAppRecord) => {
+    setDesktopCommand(app.name);
+    setApps((current) => rememberDesktopApp(current, app.name, { note: app.note }));
+  };
 
   return (
     <DesktopBridgePanel
@@ -2180,12 +2185,13 @@ function NativeAppWidget() {
       title="open installed app / external window"
       description="Bridge installed apps and external windows without pretending the browser can do an operating system’s job on its own."
       inputLabel="App or command"
-      inputValue=""
+      inputValue={desktopCommand}
       inputPlaceholder="e.g. obsidian, explorer.exe, notepad.exe"
       submitLabel="Open app"
       apps={apps}
-      onChangeInput={() => undefined}
-      onSubmit={() => undefined}
+      onChangeInput={setDesktopCommand}
+      onSubmit={openInstalledApp}
+      onSelectApp={recallInstalledApp}
       className="native-app-surface"
     />
   );

@@ -1906,12 +1906,14 @@
 }
 
 .file-explorer-surface {
-  display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr) auto;
-  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 100%;
   height: 100%;
-  gap: 10px;
   overflow: hidden;
+  box-sizing: border-box;
+  padding: 14px 14px 12px;
 }
 
 .live-tv-surface {
@@ -2237,9 +2239,9 @@
   letter-spacing: 0.12em;
 }
 
-.file-explorer-head-title {
-  margin-top: 4px;
-  font-size: 0.76rem;
+.file-explorer-head {
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .file-explorer-head-meta {

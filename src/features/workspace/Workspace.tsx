@@ -1593,17 +1593,14 @@ function FileExplorerWidget({
   };
 
   return (
-    <div className="file-explorer-surface">
-      <div className="file-explorer-head">
-        <div className="file-explorer-head-copy">
-          <span className="file-explorer-head-kicker">Local file browser</span>
-          <strong className="file-explorer-head-title">Choose files or folders from this PC.</strong>
-        </div>
-        <div className="file-explorer-head-meta" role="status" aria-live="polite" aria-atomic="true">
-          <span>{selectedCountLabel}</span>
-          <small>{explorerStatusLabel}</small>
-        </div>
-      </div>
+    <WorkspaceContentShell className="file-explorer-surface">
+      <WorkspaceContentHeader
+        className="file-explorer-head"
+        eyebrow="Local file browser"
+        title="Choose files or folders from this PC."
+        metaEyebrow={selectedCountLabel}
+        meta={explorerStatusLabel}
+      />
 
       <div className="file-explorer-toolbar">
         <WorkspaceButton className="file-explorer-button" onClick={handleBrowseFilesClick}>
@@ -1635,11 +1632,11 @@ function FileExplorerWidget({
       <div className="file-explorer-body">
         {hasRealFolderEntries || files.length ? (
           <>
-            <section className="file-explorer-folder-tree" aria-label="Folder contents">
-              <div className="file-explorer-folder-head">
-                <span>{hasRealFolderEntries ? 'Folder tree' : 'Selected files'}</span>
-                <small>{folderTreeEntries.length} items · depth {Math.max(...folderTreeEntries.map((entry) => entry.depth), 0)}</small>
-              </div>
+            <WorkspaceSectionFrame
+              className="file-explorer-folder-tree"
+              eyebrow={hasRealFolderEntries ? 'Folder tree' : 'Selected files'}
+              meta={`${folderTreeEntries.length} items · depth ${Math.max(...folderTreeEntries.map((entry) => entry.depth), 0)}`}
+            >
               <ul className="file-explorer-list file-explorer-list-tree">
                 {folderTreeEntries.map((entry) => (
                   <li key={entry.id} className={`file-explorer-item file-explorer-item-${entry.kind}`} style={{ paddingLeft: `${entry.depth * 12}px` }}>
@@ -1673,47 +1670,48 @@ function FileExplorerWidget({
                   </li>
                 ))}
               </ul>
-            </section>
+            </WorkspaceSectionFrame>
 
             {hasRealFolderEntries && files.length ? (
-              <ul className="file-explorer-list" aria-label="Selected local files">
-                {files.map((record) => {
-                  const isSelected = record.id === selectedFileId;
-                  const isActive = record.id === activeFileId;
+              <WorkspaceSectionFrame className="file-explorer-selection-frame" eyebrow="Selected local files" meta={`${files.length} item${files.length === 1 ? '' : 's'}`}>
+                <ul className="file-explorer-list" aria-label="Selected local files">
+                  {files.map((record) => {
+                    const isSelected = record.id === selectedFileId;
+                    const isActive = record.id === activeFileId;
 
-                  return (
-                    <li key={record.id} className={`file-explorer-item ${isActive ? 'is-active' : ''} ${isSelected ? 'is-selected' : ''}`}>
-                      <button
-                        type="button"
-                        className="file-explorer-item-button"
-                        onClick={() => onSelectFile(record.id)}
-                        onDoubleClick={() => void onOpenPreview(record)}
-                        aria-pressed={isSelected}
-                        title="Single click to select, double click to open"
-                      >
-                        <span className="file-explorer-item-preview">
-                          <LocalFileMiniPreview file={record} />
-                        </span>
-                        <span className="file-explorer-item-copy">
-                          <span className="file-explorer-item-name">{record.path}</span>
-                          <span className="file-explorer-item-meta">
-                            <small>{record.previewKind}</small>
-                            <small>{formatLocalFileSize(record.file.size)}</small>
-                            <small>{record.file.type || 'unknown type'}</small>
+                    return (
+                      <li key={record.id} className={`file-explorer-item ${isActive ? 'is-active' : ''} ${isSelected ? 'is-selected' : ''}`}>
+                        <button
+                          type="button"
+                          className="file-explorer-item-button"
+                          onClick={() => onSelectFile(record.id)}
+                          onDoubleClick={() => void onOpenPreview(record)}
+                          aria-pressed={isSelected}
+                          title="Single click to select, double click to open"
+                        >
+                          <span className="file-explorer-item-preview">
+                            <LocalFileMiniPreview file={record} />
                           </span>
-                        </span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+                          <span className="file-explorer-item-copy">
+                            <span className="file-explorer-item-name">{record.path}</span>
+                            <span className="file-explorer-item-meta">
+                              <small>{record.previewKind}</small>
+                              <small>{formatLocalFileSize(record.file.size)}</small>
+                              <small>{record.file.type || 'unknown type'}</small>
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </WorkspaceSectionFrame>
             ) : null}
           </>
         ) : (
-          <div className="file-explorer-empty">
-            <strong>General use folder ready.</strong>
-            <p>Select files or open a folder from your PC, then single-click an item to select it and double-click to open it in the preview panel. The browser cannot rummage through the drive uninvited, which is arguably for the best.</p>
-          </div>
+          <WorkspaceSummaryPanel className="file-explorer-empty-panel" title="General use folder ready.">
+            Select files or open a folder from your PC, then single-click an item to select it and double-click to open it in the preview panel. The browser cannot rummage through the drive uninvited, which is arguably for the best.
+          </WorkspaceSummaryPanel>
         )}
       </div>
 
@@ -1721,7 +1719,7 @@ function FileExplorerWidget({
         <span>{loadedEntryCount ? `${loadedEntryCount} ${loadedEntryCount === 1 ? 'entry' : 'entries'}` : 'No entries loaded'}</span>
         <small>Single-click selects · double-click opens.</small>
       </div>
-    </div>
+    </WorkspaceContentShell>
   );
 }
 

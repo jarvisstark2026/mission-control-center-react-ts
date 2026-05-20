@@ -66,7 +66,7 @@ function getShellCopy(role: ShellRole, panelKind: WorkspaceWidget['kind'] | null
   const roleDescription = getRoleDescription(role);
 
   if (detached && panelKind) {
-    return `Detached window mode. ${getPanelLabel(panelKind)} is operating independently while I keep the paperwork in order.`;
+    return `Connected extension screen. ${getPanelLabel(panelKind)} stays linked to the main workspace while I keep the paperwork in order.`;
   }
 
   if (panelKind) {
@@ -214,7 +214,7 @@ export function Shell({ panelKind = null, role = defaultRole, onNavigate }: Shel
                 className="shell-window-button is-muted"
                 onClick={() => closeDetachedWindow(navigateToPanel)}
               >
-                {canCloseDetachedWindow ? 'Close window' : 'Return to hub'}
+                {canCloseDetachedWindow ? 'Close screen' : 'Return to hub'}
               </ActionButton>
             </div>
           </div>

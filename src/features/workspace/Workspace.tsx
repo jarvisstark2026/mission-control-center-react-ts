@@ -2526,7 +2526,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
 
         <div className="workspace-head workspace-head-panel">
           <div className="workspace-brand">Mission Control Center</div>
-          <StatusChip tone="ice">detached page · drag the OS window to another screen</StatusChip>
+          <StatusChip tone="ice">connected screen · drag the OS window to another display</StatusChip>
           <div className="workspace-launcher">
             <button type="button" className="workspace-launch-button" onClick={returnToHub}>
               Open hub

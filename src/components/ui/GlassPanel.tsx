@@ -1,5 +1,6 @@
 import type { CSSProperties, HTMLAttributes } from 'react';
 
+import { classNames } from '../../lib/classNames';
 import '../../styles/components.css';
 
 type GlassPanelTone = 'ice' | 'cool' | 'neutral';
@@ -62,7 +63,7 @@ export function GlassPanel({
 
   return (
     <div
-      className={["glass-panel", selected ? 'glass-panel--selected' : null, className].filter(Boolean).join(' ')}
+      className={classNames('glass-panel', selected && 'glass-panel--selected', className)}
       style={panelStyle}
       {...rest}
     >

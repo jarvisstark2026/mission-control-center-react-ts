@@ -1,4 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
+
+import { classNames } from '../../lib/classNames';
 import type { DesktopAppRecord } from './workspaceDesktopApps';
 import type { WorkspaceWidget } from './workspaceTypes';
 
@@ -11,7 +13,7 @@ export function WorkspaceWidgetFrame({
   className?: string;
   children: ReactNode;
 }) {
-  return <div className={["workspace-widget-frame", `kind-${kind}`, className].filter(Boolean).join(' ')}>{children}</div>;
+  return <div className={classNames('workspace-widget-frame', `kind-${kind}`, className)}>{children}</div>;
 }
 
 export function WorkspaceContentShell({
@@ -21,7 +23,7 @@ export function WorkspaceContentShell({
   children: ReactNode;
   className?: string;
 }) {
-  return <div className={["workspace-content-shell", className].filter(Boolean).join(' ')}>{children}</div>;
+  return <div className={classNames('workspace-content-shell', className)}>{children}</div>;
 }
 
 export function WorkspaceContentHeader({
@@ -38,7 +40,7 @@ export function WorkspaceContentHeader({
   className?: string;
 }) {
   return (
-    <div className={["workspace-content-head", className].filter(Boolean).join(' ')}>
+    <div className={classNames('workspace-content-head', className)}>
       <div>
         <span>{eyebrow}</span>
         <strong>{title}</strong>
@@ -67,7 +69,7 @@ export function WorkspaceSectionFrame({
   className?: string;
 }) {
   return (
-    <section className={["workspace-section-frame", className].filter(Boolean).join(' ')}>
+    <section className={classNames('workspace-section-frame', className)}>
       {eyebrow || title || meta ? (
         <div className="workspace-section-head">
           <div>
@@ -92,7 +94,7 @@ export function WorkspaceSummaryPanel({
   className?: string;
 }) {
   return (
-    <div className={["workspace-summary-panel", className].filter(Boolean).join(' ')}>
+    <div className={classNames('workspace-summary-panel', className)}>
       <strong>{title}</strong>
       {children ? <p>{children}</p> : null}
     </div>
@@ -114,7 +116,7 @@ export function WorkspaceButton({
     <button
       {...buttonProps}
       type={type}
-      className={["workspace-button", `workspace-button-${variant}`, className].filter(Boolean).join(' ')}
+      className={classNames('workspace-button', `workspace-button-${variant}`, className)}
     >
       {children}
     </button>
@@ -129,11 +131,11 @@ export type WorkspaceMetric = {
 
 export function WorkspaceMetricGrid({ metrics, className }: { metrics: WorkspaceMetric[]; className?: string }) {
   return (
-    <div className={["workspace-metric-grid", className].filter(Boolean).join(' ')}>
+    <div className={classNames('workspace-metric-grid', className)}>
       {metrics.map((metric, index) => (
         <div
           key={`${metric.label}-${index}`}
-          className={["metric-tile", metric.wide ? 'metric-wide' : null].filter(Boolean).join(' ')}
+          className={classNames('metric-tile', metric.wide && 'metric-wide')}
         >
           <span>{metric.label}</span>
           <strong>{metric.value}</strong>
@@ -164,18 +166,20 @@ export function WorkspaceCatalogGrid({
   variant,
   ariaLabel,
   onSelect,
+  onDoubleSelect,
   className,
 }: {
   items: WorkspaceCatalogCard[];
   variant: 'launcher' | 'market' | 'live-tv' | 'desktop';
   ariaLabel?: string;
   onSelect?: (item: WorkspaceCatalogCard) => void;
+  onDoubleSelect?: (item: WorkspaceCatalogCard) => void;
   className?: string;
 }) {
   const itemClassName = catalogVariantClassNames[variant];
 
   return (
-    <div className={["workspace-catalog-grid", className].filter(Boolean).join(' ')} role={ariaLabel ? 'group' : undefined} aria-label={ariaLabel}>
+    <div className={classNames('workspace-catalog-grid', className)} role={ariaLabel ? 'group' : undefined} aria-label={ariaLabel}>
       {items.map((item) => {
         const content = (
           <>
@@ -187,9 +191,9 @@ export function WorkspaceCatalogGrid({
           </>
         );
 
-        if (!onSelect) {
+        if (!onSelect && !onDoubleSelect) {
           return (
-            <div key={item.id} className={[itemClassName, item.active ? 'is-active' : null].filter(Boolean).join(' ')} data-state={item.state}>
+            <div key={item.id} className={classNames(itemClassName, item.active && 'is-active')} data-state={item.state}>
               {content}
             </div>
           );
@@ -199,10 +203,11 @@ export function WorkspaceCatalogGrid({
           <button
             key={item.id}
             type="button"
-            className={[itemClassName, item.active ? 'is-active' : null].filter(Boolean).join(' ')}
+            className={classNames(itemClassName, item.active && 'is-active')}
             data-state={item.state}
             aria-pressed={typeof item.active === 'boolean' ? item.active : undefined}
-            onClick={() => onSelect(item)}
+            onClick={onSelect ? () => onSelect(item) : undefined}
+            onDoubleClick={onDoubleSelect ? () => onDoubleSelect(item) : undefined}
           >
             {content}
           </button>
@@ -231,7 +236,7 @@ export function WorkspaceRowList({
   const itemRole = ariaLabel ? 'listitem' : undefined;
 
   return (
-    <div className={["workspace-row-list", className].filter(Boolean).join(' ')} role={ariaLabel ? 'list' : undefined} aria-label={ariaLabel}>
+    <div className={classNames('workspace-row-list', className)} role={ariaLabel ? 'list' : undefined} aria-label={ariaLabel}>
       {rows.map((row) => (
         <div key={row.id} className="workspace-row" role={itemRole}>
           <span>{row.primary}</span>
@@ -267,7 +272,7 @@ export function WorkspaceActionRowList({
   const itemRole = ariaLabel ? 'listitem' : undefined;
 
   return (
-    <div className={["workspace-action-row-list", className].filter(Boolean).join(' ')} role={ariaLabel ? 'list' : undefined} aria-label={ariaLabel}>
+    <div className={classNames('workspace-action-row-list', className)} role={ariaLabel ? 'list' : undefined} aria-label={ariaLabel}>
       {rows.map((row) => (
         <div key={row.id} className="workspace-action-row" role={itemRole}>
           <button type="button" className="workspace-action-row-button" onClick={() => onFocusRow(row.id)}>
@@ -333,7 +338,7 @@ export function DesktopBridgePanel({
   };
 
   return (
-    <div className={["launcher-desktop-bridge", className].filter(Boolean).join(' ')}>
+    <div className={classNames('launcher-desktop-bridge', className)}>
       <div className="launcher-desktop-head">
         <span>{eyebrow}</span>
         <strong>{title}</strong>

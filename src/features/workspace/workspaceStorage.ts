@@ -54,6 +54,7 @@ export function loadStoredWidgetState({
         zIndex: clampNumber(stored.zIndex, preset.zIndex, 0, 999),
         surfaceAlpha: clampNumber(stored.surfaceAlpha, preset.surfaceAlpha, 0, 1),
         lineAlpha: clampNumber(stored.lineAlpha, preset.lineAlpha, 0, 1),
+        hidden: typeof stored.hidden === 'boolean' ? stored.hidden : undefined,
         previewFileId: normalizePreviewFileId(stored.previewFileId),
       };
     });
@@ -83,6 +84,7 @@ export function loadStoredWidgetState({
           surfaceAlpha: clampNumber(stored.surfaceAlpha, blueprint.surfaceAlpha, 0, 1),
           lineAlpha: clampNumber(stored.lineAlpha, blueprint.lineAlpha, 0, 1),
           pinned: typeof stored.pinned === 'boolean' ? stored.pinned : undefined,
+          hidden: typeof stored.hidden === 'boolean' ? stored.hidden : undefined,
           previewFileId: normalizePreviewFileId(stored.previewFileId),
         };
       });
@@ -108,6 +110,7 @@ export function saveStoredWidgetState(widgets: WorkspaceWidget[]): boolean {
     surfaceAlpha: widget.surfaceAlpha,
     lineAlpha: widget.lineAlpha,
     pinned: widget.pinned,
+    hidden: widget.hidden,
     previewFileId: widget.previewFileId ?? null,
   }));
 

@@ -1,5 +1,6 @@
 import type { HTMLAttributes } from 'react';
 
+import { classNames } from '../../lib/classNames';
 import '../../styles/components.css';
 
 type StatusChipTone = 'ice' | 'cool' | 'neutral';
@@ -16,7 +17,7 @@ const toneClassNames: Record<StatusChipTone, string> = {
 
 export function StatusChip({ tone = 'neutral', className, children, ...rest }: StatusChipProps) {
   return (
-    <span className={["status-chip", toneClassNames[tone], className].filter(Boolean).join(' ')} {...rest}>
+    <span className={classNames('status-chip', toneClassNames[tone], className)} {...rest}>
       {children}
     </span>
   );

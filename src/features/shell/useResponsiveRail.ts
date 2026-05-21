@@ -13,6 +13,8 @@ export function useResponsiveRail() {
   const [isRailOpen, setIsRailOpen] = useState(() => !isMobileRailViewport());
 
   const focusMenuToggle = () => {
+    if (typeof window === 'undefined') return;
+
     window.requestAnimationFrame(() => {
       menuToggleRef.current?.focus();
     });

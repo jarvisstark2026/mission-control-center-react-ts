@@ -41,6 +41,7 @@ export type WorkspaceWidget = {
   minWidth: number;
   minHeight: number;
   pinned?: boolean;
+  hidden?: boolean;
   previewFileId?: string | null;
 };
 

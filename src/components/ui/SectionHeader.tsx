@@ -1,5 +1,6 @@
 import { useId, type HTMLAttributes } from 'react';
 
+import { classNames } from '../../lib/classNames';
 import '../../styles/components.css';
 
 type SectionHeaderProps = HTMLAttributes<HTMLElement> & {
@@ -23,7 +24,7 @@ export function SectionHeader({ eyebrow, title, description, className, children
 
   return (
     <header
-      className={["section-header", className].filter(Boolean).join(' ')}
+      className={classNames('section-header', className)}
       aria-label={ariaLabelProp}
       aria-labelledby={ariaLabelledBy}
       aria-describedby={ariaDescribedBy || undefined}

@@ -1,6 +1,7 @@
 import { ActionButton } from '../../components/ui/ActionButton';
 import { SectionHeader } from '../../components/ui/SectionHeader';
 import { StatusChip } from '../../components/ui/StatusChip';
+import { classNames } from '../../lib/classNames';
 import { Workspace } from '../workspace/Workspace';
 import type { WorkspaceWidget } from '../workspace/workspaceTypes';
 import { getShellNavPanelKind, type ShellNavItem } from './nav';
@@ -23,7 +24,7 @@ function ShellBranding({
   detached = false,
 }: ShellBrandingProps) {
   return (
-    <div className={`shell-branding ${detached ? 'shell-branding-window' : ''}`}>
+    <div className={classNames('shell-branding', detached && 'shell-branding-window')}>
       <p className="shell-eyebrow">Mission Control Center</p>
       <h1>{detached && activePanelKind ? getPanelLabel(activePanelKind) : 'Spatial command surface'}</h1>
       <div className="shell-meta" aria-label={detached ? 'Window context' : 'Current context'} role="status" aria-live="polite" aria-atomic="true">
@@ -99,7 +100,7 @@ export function ShellRail({
   return (
     <aside
       id="shell-rail"
-      className={`shell-rail ${isRailOpen ? 'is-open' : 'is-closed'}`}
+      className={classNames('shell-rail', isRailOpen ? 'is-open' : 'is-closed')}
       aria-label="Role navigation"
       aria-hidden={!isRailOpen}
       inert={!isRailOpen}
@@ -118,7 +119,7 @@ export function ShellRail({
             <li key={scope.id} className={scope.id === activeRole ? 'is-active' : undefined}>
               <button
                 type="button"
-                className={`shell-nav-button shell-scope-button ${scope.id === activeRole ? 'is-active' : ''}`}
+                className={classNames('shell-nav-button', 'shell-scope-button', scope.id === activeRole && 'is-active')}
                 aria-pressed={scope.id === activeRole}
                 onClick={() => onNavigateRole(scope.id)}
               >
@@ -141,7 +142,7 @@ export function ShellRail({
             <li key={item.id}>
               <button
                 type="button"
-                className={`shell-nav-button ${isNavItemActive(item.id) ? 'is-active' : ''}`}
+                className={classNames('shell-nav-button', isNavItemActive(item.id) && 'is-active')}
                 aria-current={isNavItemActive(item.id) ? 'page' : undefined}
                 onClick={() => onNavigatePanel(getShellNavPanelKind(item))}
               >

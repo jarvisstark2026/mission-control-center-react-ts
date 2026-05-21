@@ -1,5 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 
+import { classNames } from '../../lib/classNames';
 import '../../styles/components.css';
 
 type ActionButtonVariant = 'primary' | 'secondary' | 'ghost';
@@ -19,7 +20,7 @@ export const ActionButton = forwardRef<HTMLButtonElement, ActionButtonProps>(fun
   ref,
 ) {
   return (
-    <button ref={ref} type={type} className={["action-button", variantClassNames[variant], className].filter(Boolean).join(' ')} {...rest}>
+    <button ref={ref} type={type} className={classNames('action-button', variantClassNames[variant], className)} {...rest}>
       {children}
     </button>
   );

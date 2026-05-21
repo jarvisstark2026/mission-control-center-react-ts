@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode, PointerEvent as ReactPointerEvent } from 'react';
 
+import { classNames } from '../../lib/classNames';
 import { WorkspaceWidgetFrame } from './workspaceBlocks';
 import { WidgetResizeHandles, type ResizeEdge } from './WorkspaceResizeHandles';
 import type { WorkspaceWidget } from './workspaceTypes';
@@ -27,7 +28,7 @@ export function WorkspaceWindow({
 }) {
   return (
     <article
-      className={`workspace-widget ${widget.open ? 'is-open' : 'is-closed'} kind-${widget.kind}`}
+      className={classNames('workspace-widget', widget.open ? 'is-open' : 'is-closed', `kind-${widget.kind}`)}
       style={
         {
           left: `${widget.x}px`,
@@ -85,7 +86,9 @@ export function WorkspaceWindow({
               }}
               onClick={(event) => {
                 event.stopPropagation();
-                onClose(widget.id);
+                if (event.detail === 0) {
+                  onClose(widget.id);
+                }
               }}
               aria-label={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
               title={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}

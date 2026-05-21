@@ -15,10 +15,20 @@ Mission Control Center is a spatial, HUD-like control surface built with React +
 
 ## Development
 
+Requires Node `^20.19.0`, `^22.13.0`, or `>=24`. The Vite 8 toolchain will not build on older Node 20 releases.
+
 ```bash
-npm install
+npm ci
 npm run dev
 ```
+
+## Quality checks
+
+```bash
+npm run check
+```
+
+This runs ESLint, the Vitest suite, and the production build.
 
 ## Production build
 

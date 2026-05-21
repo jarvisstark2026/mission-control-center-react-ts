@@ -1,3 +1,4 @@
+import { createId } from '../../lib/createId';
 import { readLocalStorageJson, writeLocalStorageJson } from './browserStorage';
 
 export type WorkflowTemplate = {
@@ -83,7 +84,7 @@ export function createWorkflowDraft(templateId = workflowTemplates[0].id): Workf
 
 export function createSavedWorkflow(draft: WorkflowDraft): SavedWorkflow {
   const now = new Date().toISOString();
-  const id = draft.id ?? `workflow-${Date.now()}`;
+  const id = draft.id ?? createId('workflow');
 
   return {
     ...draft,

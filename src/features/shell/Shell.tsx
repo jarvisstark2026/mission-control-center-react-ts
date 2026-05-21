@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import { ActionButton } from '../../components/ui/ActionButton';
+import { classNames } from '../../lib/classNames';
 import { Workspace } from '../workspace/Workspace';
 import type { WorkspaceWidget } from '../workspace/workspaceTypes';
 import { DetachedShellWindow, ShellRail } from './ShellChrome';
@@ -101,7 +102,7 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
       </ActionButton>
 
       <div
-        className={`shell-backdrop ${isRailOpen ? 'is-visible' : ''}`}
+        className={classNames('shell-backdrop', isRailOpen && 'is-visible')}
         aria-hidden="true"
         onClick={closeRailOnMobile}
       />

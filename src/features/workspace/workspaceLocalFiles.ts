@@ -57,7 +57,13 @@ function openLocalFilesDb(): Promise<IDBDatabase> {
 
 export async function readPersistedLocalFiles(): Promise<LocalFileRecord[]> {
   if (typeof window === 'undefined' || !window.indexedDB) return [];
-  const db = await openLocalFilesDb();
+  let db: IDBDatabase;
+  try {
+    db = await openLocalFilesDb();
+  } catch {
+    return [];
+  }
+
   try {
     return await new Promise<LocalFileRecord[]>((resolve, reject) => {
       const tx = db.transaction(localFilesStoreName, 'readonly');
@@ -66,6 +72,8 @@ export async function readPersistedLocalFiles(): Promise<LocalFileRecord[]> {
       request.onsuccess = () => resolve((request.result as LocalFileRecord[]) ?? []);
       request.onerror = () => reject(request.error ?? new Error('Unable to load local files'));
     });
+  } catch {
+    return [];
   } finally {
     db.close();
   }
@@ -73,7 +81,13 @@ export async function readPersistedLocalFiles(): Promise<LocalFileRecord[]> {
 
 export async function writePersistedLocalFiles(records: LocalFileRecord[]): Promise<void> {
   if (typeof window === 'undefined' || !window.indexedDB) return;
-  const db = await openLocalFilesDb();
+  let db: IDBDatabase;
+  try {
+    db = await openLocalFilesDb();
+  } catch {
+    return;
+  }
+
   try {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(localFilesStoreName, 'readwrite');
@@ -87,6 +101,8 @@ export async function writePersistedLocalFiles(records: LocalFileRecord[]): Prom
       tx.onerror = () => reject(tx.error ?? new Error('Unable to persist local files'));
       tx.onabort = () => reject(tx.error ?? new Error('Unable to persist local files'));
     });
+  } catch {
+    return;
   } finally {
     db.close();
   }
@@ -94,7 +110,13 @@ export async function writePersistedLocalFiles(records: LocalFileRecord[]): Prom
 
 export async function clearPersistedLocalFiles(): Promise<void> {
   if (typeof window === 'undefined' || !window.indexedDB) return;
-  const db = await openLocalFilesDb();
+  let db: IDBDatabase;
+  try {
+    db = await openLocalFilesDb();
+  } catch {
+    return;
+  }
+
   try {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(localFilesStoreName, 'readwrite');
@@ -105,6 +127,8 @@ export async function clearPersistedLocalFiles(): Promise<void> {
       tx.onerror = () => reject(tx.error ?? new Error('Unable to clear local files'));
       tx.onabort = () => reject(tx.error ?? new Error('Unable to clear local files'));
     });
+  } catch {
+    return;
   } finally {
     db.close();
   }
@@ -217,11 +241,6 @@ export function revokeLocalFileObjectUrl(objectUrl: string | null): void {
   if (!objectUrl || typeof URL === 'undefined') return;
 
   URL.revokeObjectURL(objectUrl);
-}
-
-function clampWidgetSize(value: number, fallback: number, min: number, max: number) {
-  if (!Number.isFinite(value)) return fallback;
-  return Math.min(max, Math.max(min, value));
 }
 
 export const generalUseFolderLabel = 'General use';

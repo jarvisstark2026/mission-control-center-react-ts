@@ -37,9 +37,9 @@ export const shellNavItems: ShellNavItem[] = [
     allowedRoles: ['admin', 'home', 'support'],
   },
   {
-    id: 'registry',
-    label: 'Registry',
-    hint: 'devices, integrations, and scopes',
+    id: 'manager',
+    label: 'Manager',
+    hint: 'visible widgets, state, and focus',
     allowedRoles: ['admin', 'support'],
     panelKind: 'window-manager',
   },

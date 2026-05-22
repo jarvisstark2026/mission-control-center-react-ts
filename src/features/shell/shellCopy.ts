@@ -19,7 +19,7 @@ const panelLabels: Partial<Record<WorkspaceWidget['kind'], string>> = {
   pdf: 'PDF',
   'file-explorer': 'File explorer',
   'native-app': 'Native app bridge',
-  'window-manager': 'Registry',
+  'window-manager': 'Manager',
   sheet: 'Spreadsheet',
   docs: 'Docs',
   slides: 'Presentation',

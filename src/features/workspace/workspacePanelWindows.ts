@@ -1,5 +1,11 @@
 import type { WorkspaceWidget } from './workspaceTypes';
 import { buildPanelWindowUrl, buildWorkspaceExtensionWindowUrl, buildWorkspaceHubUrl } from './workspacePanelRouting';
+import {
+  canCreateWorkspaceExtensionInstance,
+  createWorkspaceInstanceId,
+  markCurrentWorkspaceExtensionClosed,
+  registerWorkspaceExtensionInstance,
+} from './workspaceInstances';
 
 export function openWorkspacePanelWindow(kind: WorkspaceWidget['kind']) {
   if (typeof window === 'undefined') return false;
@@ -40,6 +46,7 @@ export function closeWorkspacePanelWindow() {
 export function closeWorkspaceExtensionWindow() {
   if (typeof window === 'undefined') return false;
 
+  markCurrentWorkspaceExtensionClosed();
   window.close();
   if (!window.closed) {
     return returnToWorkspaceHub();
@@ -50,14 +57,20 @@ export function closeWorkspaceExtensionWindow() {
 
 export function openWorkspaceExtensionWindow() {
   if (typeof window === 'undefined') return false;
+  if (!canCreateWorkspaceExtensionInstance()) return false;
 
-  const url = buildWorkspaceExtensionWindowUrl();
+  const instanceId = createWorkspaceInstanceId();
+  const url = buildWorkspaceExtensionWindowUrl(undefined, instanceId);
   const popup = window.open(url.toString(), '_blank', 'popup=yes,width=1440,height=960');
   if (!popup) {
     window.location.assign(url.toString());
     return true;
   }
 
+  if (!registerWorkspaceExtensionInstance({ id: instanceId, popup, url: url.toString() })) {
+    popup.close();
+    return false;
+  }
   popup.focus?.();
   return true;
 }

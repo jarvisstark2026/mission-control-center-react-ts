@@ -261,12 +261,14 @@ export function WorkspaceActionRowList({
   className,
   ariaLabel,
   onFocusRow,
+  onTogglePinRow,
   onCloseRow,
 }: {
   rows: WorkspaceActionRow[];
   className?: string;
   ariaLabel?: string;
   onFocusRow: (rowId: string) => void;
+  onTogglePinRow?: (rowId: string) => void;
   onCloseRow: (rowId: string) => void;
 }) {
   const itemRole = ariaLabel ? 'listitem' : undefined;
@@ -280,6 +282,18 @@ export function WorkspaceActionRowList({
             {row.secondary ? <strong>{row.secondary}</strong> : null}
             {row.meta ? <small>{row.meta}</small> : null}
           </button>
+          {onTogglePinRow ? (
+            <button
+              type="button"
+              className={classNames('workspace-action-row-pin', row.pinned && 'is-active')}
+              onClick={() => onTogglePinRow(row.id)}
+              aria-pressed={Boolean(row.pinned)}
+              aria-label={row.pinned ? `Unpin ${row.primary}` : `Pin ${row.primary}`}
+              title={row.pinned ? `Unpin ${row.primary}` : `Pin ${row.primary}`}
+            >
+              <span className="widget-pin-icon" aria-hidden="true" />
+            </button>
+          ) : null}
           <button
             type="button"
             className="workspace-action-row-close"

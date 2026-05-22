@@ -1,10 +1,17 @@
+import { useState, type DragEvent } from 'react';
+
 import { ActionButton } from '../../components/ui/ActionButton';
-import { SectionHeader } from '../../components/ui/SectionHeader';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { classNames } from '../../lib/classNames';
 import { Workspace } from '../workspace/Workspace';
+import { WorkspaceNewScreenButton } from '../workspace/WorkspaceScreenButton';
+import {
+  maxWorkspaceExtensionInstances,
+  type WorkspaceInstance,
+  type WorkspacePlacement,
+  workspacePlacements,
+} from '../workspace/workspaceInstances';
 import type { WorkspaceWidget } from '../workspace/workspaceTypes';
-import { getShellNavPanelKind, type ShellNavItem } from './nav';
 import { shellScopes, type ShellRole } from './roles';
 import { getPanelLabel, getShellCopy } from './shellCopy';
 
@@ -79,80 +86,198 @@ export function DetachedShellWindow({
 }
 
 export function ShellRail({
-  activeNavId,
-  activePanelKind,
-  activePanelLabel,
-  activeRole,
-  activeRoleLabel,
   isRailOpen,
-  visibleItems,
-  onNavigatePanel,
-  onNavigateRole,
-}: ShellBrandingProps & {
-  activeNavId: string;
+  workspaceInstances,
+  onCreateWorkspaceInstance,
+  onOpenMainWorkspace,
+  onCloseWorkspaceInstance,
+  onPlaceWorkspaceInstance,
+}: {
   isRailOpen: boolean;
-  visibleItems: ShellNavItem[];
-  onNavigatePanel: (target: WorkspaceWidget['kind'] | null) => void;
-  onNavigateRole: (targetRole: ShellRole) => void;
+  workspaceInstances: WorkspaceInstance[];
+  onCreateWorkspaceInstance: () => void;
+  onOpenMainWorkspace: () => void;
+  onCloseWorkspaceInstance: (id: string) => void;
+  onPlaceWorkspaceInstance: (id: string, placement: WorkspacePlacement) => void;
 }) {
-  const isNavItemActive = (itemId: string) => itemId === activeNavId;
+  const [draggedWorkspaceId, setDraggedWorkspaceId] = useState<string | null>(null);
+  const extensionInstances = workspaceInstances.filter((instance) => instance.kind === 'extension');
+  const placementLabels: Record<WorkspacePlacement, string> = {
+    'top-left': 'Top left',
+    top: 'Top',
+    'top-right': 'Top right',
+    left: 'Left',
+    center: 'Center',
+    right: 'Right',
+    'bottom-left': 'Bottom left',
+    bottom: 'Bottom',
+    'bottom-right': 'Bottom right',
+  };
+  const getPlacedInstance = (placement: WorkspaceInstance['placement']) =>
+    workspaceInstances.find((instance) => instance.placement === placement);
+  const getPlacementLabel = (placement: WorkspaceInstance['placement']) => placementLabels[placement];
+  const arrangementSlots: WorkspaceInstance['placement'][] = [...workspacePlacements];
+  const isAtWorkspaceCapacity = extensionInstances.length >= maxWorkspaceExtensionInstances;
+  const startWorkspaceDrag = (event: DragEvent<HTMLElement>, id: string) => {
+    setDraggedWorkspaceId(id);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', id);
+  };
+  const moveWorkspaceToPlacement = (event: DragEvent<HTMLElement>, placement: WorkspacePlacement) => {
+    event.preventDefault();
+    const draggedId = event.dataTransfer.getData('text/plain') || draggedWorkspaceId;
+    if (!draggedId) return;
+
+    onPlaceWorkspaceInstance(draggedId, placement);
+    setDraggedWorkspaceId(null);
+  };
 
   return (
     <aside
       id="shell-rail"
       className={classNames('shell-rail', isRailOpen ? 'is-open' : 'is-closed')}
-      aria-label="Role navigation"
+      aria-label="Workspace navigation"
       aria-hidden={!isRailOpen}
       inert={!isRailOpen}
     >
-      <ShellBranding
-        activePanelKind={activePanelKind}
-        activePanelLabel={activePanelLabel}
-        activeRole={activeRole}
-        activeRoleLabel={activeRoleLabel}
-      />
+      <div className="shell-instance-group">
+        <div className="shell-instance-head">
+          <div>
+            <p className="shell-eyebrow">Mission Control Center</p>
+            <h2>Workspaces</h2>
+          </div>
+          <WorkspaceNewScreenButton
+            className="shell-instance-create"
+            label="Create workspace instance"
+            title={isAtWorkspaceCapacity ? 'Workspace instance limit reached' : 'Create workspace instance'}
+            disabled={isAtWorkspaceCapacity}
+            onClick={onCreateWorkspaceInstance}
+          />
+        </div>
+        <p className="shell-instance-copy">Open surfaces stay in the current workspace. Extension instances are listed here.</p>
 
-      <div className="shell-scope-group">
-        <SectionHeader eyebrow="Access" title="Scopes" description="Choose the operating band before opening a surface." />
-        <ul className="shell-scope-list">
-          {shellScopes.map((scope) => (
-            <li key={scope.id} className={scope.id === activeRole ? 'is-active' : undefined}>
+        <ul className="shell-instance-list" aria-label="Open workspaces">
+          {workspaceInstances.map((instance) => (
+            <li
+              key={instance.id}
+              className={classNames('shell-instance-item', instance.active && 'is-active')}
+              data-workspace-instance-id={instance.id}
+              draggable
+              onDragStart={(event) => startWorkspaceDrag(event, instance.id)}
+              onDragEnd={() => setDraggedWorkspaceId(null)}
+            >
               <button
                 type="button"
-                className={classNames('shell-nav-button', 'shell-scope-button', scope.id === activeRole && 'is-active')}
-                aria-pressed={scope.id === activeRole}
-                onClick={() => onNavigateRole(scope.id)}
+                className="shell-instance-button"
+                aria-current={instance.active ? 'page' : undefined}
+                onClick={instance.kind === 'main' ? onOpenMainWorkspace : undefined}
+                aria-disabled={instance.kind !== 'main' ? true : undefined}
               >
-                <span>{scope.label}</span>
-                <small>{scope.description}</small>
+                <span>{instance.label}</span>
+                <small>
+                  {instance.kind === 'main'
+                    ? `Primary workspace - ${getPlacementLabel(instance.placement)}`
+                    : `${instance.active ? 'Current' : 'Extension'} - ${getPlacementLabel(instance.placement)}`}
+                </small>
               </button>
+              {instance.kind === 'extension' ? (
+                <button
+                  type="button"
+                  className="shell-instance-close"
+                  aria-label={`Close ${instance.label}`}
+                  title={`Close ${instance.label}`}
+                  onClick={() => onCloseWorkspaceInstance(instance.id)}
+                >
+                  x
+                </button>
+              ) : null}
             </li>
           ))}
         </ul>
-      </div>
 
-      <div className="shell-nav-group">
-        <SectionHeader
-          eyebrow="Routing"
-          title="Navigation"
-          description="Open the relevant control surface without the usual detour through a menu maze."
-        />
-        <ul className="shell-nav-list">
-          {visibleItems.map((item) => (
-            <li key={item.id}>
-              <button
-                type="button"
-                className={classNames('shell-nav-button', isNavItemActive(item.id) && 'is-active')}
-                aria-current={isNavItemActive(item.id) ? 'page' : undefined}
-                onClick={() => onNavigatePanel(getShellNavPanelKind(item))}
-              >
-                <span>{item.label}</span>
-                <small>{item.hint}</small>
-              </button>
-            </li>
-          ))}
-        </ul>
+        <section className="shell-workspace-arrangement" aria-label="Workspace arrangement">
+          <p className="shell-section-label">Extended layout</p>
+          <div className="shell-arrangement-map">
+            {arrangementSlots.map((placement) => {
+              const placedInstance = getPlacedInstance(placement);
+
+              return (
+                <button
+                  key={placement}
+                  type="button"
+                  className={classNames(
+                    'shell-arrangement-cell',
+                    placedInstance?.kind === 'main' && 'shell-arrangement-main',
+                    placedInstance && 'is-occupied',
+                    draggedWorkspaceId && 'is-drop-target',
+                  )}
+                  data-placement={placement}
+                  draggable={Boolean(placedInstance)}
+                  aria-label={`${getPlacementLabel(placement)} workspace slot`}
+                  onDragStart={placedInstance ? (event) => startWorkspaceDrag(event, placedInstance.id) : undefined}
+                  onDragEnd={placedInstance ? () => setDraggedWorkspaceId(null) : undefined}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                  }}
+                  onDrop={(event) => moveWorkspaceToPlacement(event, placement)}
+                >
+                  <span>{placedInstance?.label ?? getPlacementLabel(placement)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
       </div>
     </aside>
+  );
+}
+
+export function ShellRoleMenu({
+  activeRole,
+  activeRoleLabel,
+  onNavigateRole,
+}: {
+  activeRole: ShellRole;
+  activeRoleLabel: string;
+  onNavigateRole: (targetRole: ShellRole) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const selectRole = (targetRole: ShellRole) => {
+    setIsOpen(false);
+    onNavigateRole(targetRole);
+  };
+
+  return (
+    <div className="shell-role-menu">
+      <button
+        type="button"
+        className="shell-role-menu-trigger"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        <span>Access</span>
+        <strong>{activeRoleLabel}</strong>
+      </button>
+      {isOpen ? (
+        <div className="shell-role-menu-panel" role="menu" aria-label="Access scope menu">
+          {shellScopes.map((scope) => (
+            <button
+              key={scope.id}
+              type="button"
+              className={classNames('shell-role-menu-item', scope.id === activeRole && 'is-active')}
+              role="menuitemradio"
+              aria-checked={scope.id === activeRole}
+              onClick={() => selectRole(scope.id)}
+            >
+              <span>{scope.label}</span>
+              <small>{scope.description}</small>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }

@@ -4,6 +4,7 @@ import { classNames } from '../../lib/classNames';
 import { WorkspaceWidgetFrame } from './workspaceBlocks';
 import { WidgetResizeHandles, type ResizeEdge } from './WorkspaceResizeHandles';
 import type { WorkspaceWidget } from './workspaceTypes';
+import type { WorkspaceWidgetTransferAnimation } from './workspaceWidgetTransfer';
 
 export function WorkspaceWindow({
   widget,
@@ -12,9 +13,11 @@ export function WorkspaceWindow({
   onStartDrag,
   onStartResize,
   onToggleOpen,
+  onTogglePin,
   onRecenter,
   onClose,
   showChrome = true,
+  transferAnimation = null,
 }: {
   widget: WorkspaceWidget;
   children: ReactNode;
@@ -22,13 +25,21 @@ export function WorkspaceWindow({
   onStartDrag: (event: ReactPointerEvent<HTMLElement>, id: string) => void;
   onStartResize: (event: ReactPointerEvent<HTMLElement>, id: string, edge: ResizeEdge) => void;
   onToggleOpen: (id: string) => void;
+  onTogglePin: (id: string) => void;
   onRecenter: (id: string) => void;
   onClose: (id: string) => void;
   showChrome?: boolean;
+  transferAnimation?: WorkspaceWidgetTransferAnimation | null;
 }) {
   return (
     <article
-      className={classNames('workspace-widget', widget.open ? 'is-open' : 'is-closed', `kind-${widget.kind}`)}
+      className={classNames(
+        'workspace-widget',
+        widget.open ? 'is-open' : 'is-closed',
+        `kind-${widget.kind}`,
+        transferAnimation && `is-transfer-${transferAnimation.phase}`,
+        transferAnimation && `transfer-${transferAnimation.direction}`,
+      )}
       style={
         {
           left: `${widget.x}px`,
@@ -73,6 +84,19 @@ export function WorkspaceWindow({
               title={`Recenter ${widget.title}`}
             >
               ⌖
+            </button>
+            <button
+              type="button"
+              className={classNames('widget-pin', widget.pinned && 'is-active')}
+              onClick={(event) => {
+                event.stopPropagation();
+                onTogglePin(widget.id);
+              }}
+              aria-pressed={Boolean(widget.pinned)}
+              aria-label={widget.pinned ? `Unpin ${widget.title}` : `Pin ${widget.title}`}
+              title={widget.pinned ? `Unpin ${widget.title}` : `Pin ${widget.title}`}
+            >
+              <span className="widget-pin-icon" aria-hidden="true" />
             </button>
             <button
               type="button"

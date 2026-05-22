@@ -1,0 +1,26 @@
+﻿export { OverviewWidget } from './OverviewWidget';
+export { GraphWidget } from './GraphWidget';
+export { TradingGraphWidget } from './TradingGraphWidget';
+export { SpreadsheetWidget } from './SpreadsheetWidget';
+export { DocsWidget } from './DocsWidget';
+export { SlidesWidget } from './SlidesWidget';
+export { ImageWidget } from './ImageWidget';
+export { PdfWidget } from './PdfWidget';
+export { AudioWidget } from './AudioWidget';
+export { MapWidget } from './MapWidget';
+export { DiagramWidget } from './DiagramWidget';
+export { ProjectWidget } from './ProjectWidget';
+export { NewsWidget } from './NewsWidget';
+export { VideoWidget } from './VideoWidget';
+export { PreviewWidget } from './PreviewWidget';
+export { ModelStudioWidget } from './ModelStudioWidget';
+export { WorkflowWidget } from './WorkflowWidget';
+export { ListWidget } from './ListWidget';
+export { ScheduleWidget } from './ScheduleWidget';
+export { LauncherWidget } from './LauncherWidget';
+export { BrowserWidget } from './BrowserWidget';
+export { LiveTvWidget } from './LiveTvWidget';
+export { FileExplorerWidget } from './FileExplorerWidget';
+export { NativeAppWidget } from './NativeAppWidget';
+export { WindowManagerWidget } from './WindowManagerWidget';
+

@@ -4,6 +4,7 @@ import type { WorkspaceWidget } from './workspaceTypes';
 
 const workspaceModeParam = 'workspace';
 const workspaceExtensionMode = 'extension';
+const workspaceInstanceParam = 'workspaceId';
 
 function getCurrentHref() {
   return typeof window === 'undefined' ? 'http://localhost/' : window.location.href;
@@ -27,10 +28,13 @@ export function buildWorkspaceHubUrl(href = getCurrentHref()) {
   return url;
 }
 
-export function buildWorkspaceExtensionWindowUrl(href = getCurrentHref()) {
+export function buildWorkspaceExtensionWindowUrl(href = getCurrentHref(), workspaceInstanceId?: string) {
   const url = buildWorkspaceHubUrl(href);
   url.searchParams.set('role', getCurrentShellRole(url.search));
   url.searchParams.set(workspaceModeParam, workspaceExtensionMode);
+  if (workspaceInstanceId) {
+    url.searchParams.set(workspaceInstanceParam, workspaceInstanceId);
+  }
   return url;
 }
 

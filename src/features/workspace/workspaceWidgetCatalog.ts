@@ -1,7 +1,7 @@
 import type { WorkspaceWidget } from './workspaceTypes';
 import type { WidgetBlueprint } from './workspaceStorage';
 
-export const launchableWindowKinds: WorkspaceWidget['kind'][] = [
+export const workspaceShortcutKinds: WorkspaceWidget['kind'][] = [
   'overview',
   'graph',
   'audio',
@@ -36,11 +36,11 @@ type WorkspaceLauncherEntry = {
 
 const workspaceLauncherNotes: Partial<Record<WorkspaceWidget['kind'], string>> = {
   news: 'open graph library',
-  'window-manager': 'track open widgets',
+  'window-manager': 'track workspace widgets',
   'trading-graph': 'focus market chart',
 };
 
-const workspaceLauncherKinds = launchableWindowKinds.filter((kind) => kind !== 'native-app');
+const workspaceLauncherKinds = workspaceShortcutKinds.filter((kind) => kind !== 'native-app');
 
 export const widgetBlueprints: Record<WorkspaceWidget['kind'], WidgetBlueprint> = {
   overview: { title: 'Command core', subtitle: 'open / move / stack', surfaceAlpha: 0.11, lineAlpha: 0.18, minWidth: 300, minHeight: 180 },
@@ -56,7 +56,7 @@ export const widgetBlueprints: Record<WorkspaceWidget['kind'], WidgetBlueprint> 
   'watch-video': { title: 'Live TV', subtitle: 'channels / streams', surfaceAlpha: 0.078, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
   'file-explorer': { title: 'File explorer', subtitle: 'folders / files', surfaceAlpha: 0.076, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
   'native-app': { title: 'Native app bridge', subtitle: 'installed apps / external windows', surfaceAlpha: 0.08, lineAlpha: 0.15, minWidth: 320, minHeight: 200 },
-  'window-manager': { title: 'Registry', subtitle: 'connected surfaces / scopes', surfaceAlpha: 0.08, lineAlpha: 0.15, minWidth: 300, minHeight: 200 },
+  'window-manager': { title: 'Manager', subtitle: 'widgets / state / focus', surfaceAlpha: 0.08, lineAlpha: 0.15, minWidth: 300, minHeight: 200 },
   sheet: { title: 'Spreadsheet', subtitle: 'cells / formulas', surfaceAlpha: 0.082, lineAlpha: 0.15, minWidth: 320, minHeight: 220 },
   docs: { title: 'Docs', subtitle: 'writing / outline', surfaceAlpha: 0.08, lineAlpha: 0.14, minWidth: 300, minHeight: 200 },
   slides: { title: 'Presentation', subtitle: 'deck / speaker notes', surfaceAlpha: 0.082, lineAlpha: 0.15, minWidth: 280, minHeight: 200 },

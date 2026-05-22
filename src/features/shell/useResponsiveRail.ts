@@ -1,16 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 
-export const railBreakpoint = 900;
-
-function isMobileRailViewport() {
-  return typeof window !== 'undefined'
-    && typeof window.matchMedia === 'function'
-    && window.matchMedia(`(max-width: ${railBreakpoint}px)`).matches;
-}
-
 export function useResponsiveRail() {
   const menuToggleRef = useRef<HTMLButtonElement | null>(null);
-  const [isRailOpen, setIsRailOpen] = useState(() => !isMobileRailViewport());
+  const [isRailOpen, setIsRailOpen] = useState(false);
 
   const focusMenuToggle = () => {
     if (typeof window === 'undefined') return;
@@ -21,34 +13,15 @@ export function useResponsiveRail() {
   };
 
   const closeRailOnMobile = () => {
-    if (!isMobileRailViewport()) return;
-
     setIsRailOpen(false);
     focusMenuToggle();
   };
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return;
-
-    const media = window.matchMedia(`(max-width: ${railBreakpoint}px)`);
-    const syncRailState = () => setIsRailOpen(!media.matches);
-
-    syncRailState();
-
-    if (typeof media.addEventListener === 'function') {
-      media.addEventListener('change', syncRailState);
-      return () => media.removeEventListener('change', syncRailState);
-    }
-
-    media.addListener(syncRailState);
-    return () => media.removeListener(syncRailState);
-  }, []);
-
-  useEffect(() => {
     if (typeof window === 'undefined') return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape' || !isMobileRailViewport()) return;
+      if (event.key !== 'Escape') return;
 
       setIsRailOpen((current) => {
         if (current) focusMenuToggle();

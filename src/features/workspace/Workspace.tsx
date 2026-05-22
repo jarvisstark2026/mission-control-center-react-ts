@@ -1,22 +1,28 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import type { PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 
 import { StatusChip } from '../../components/ui/StatusChip';
 import { createId } from '../../lib/createId';
 import { WorkspaceButton } from './workspaceBlocks';
 import { WorkspaceAtmosphere, WorkspaceCanvas } from './WorkspaceCanvas';
+import { WorkspaceCloseScreenButton, WorkspaceNewScreenButton } from './WorkspaceScreenButton';
 import type { ResizeEdge } from './WorkspaceResizeHandles';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
 import { createLocalFileRecord, clearPersistedLocalFiles, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readPersistedLocalFiles, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
-import { clampNumber, clearStoredWidgetState, loadStoredWidgetState, saveStoredWidgetState } from './workspaceStorage';
-import { getFocusedWidget, getWidgetLabel, launchableWindowKinds, widgetBlueprints, widgetPresets } from './workspaceWidgetCatalog';
+import { clampNumber, clearAllStoredWidgetStates, getWorkspaceWidgetStorageKey, loadStoredWidgetState, saveStoredWidgetState, subscribeStoredWidgetState } from './workspaceStorage';
+import { getFocusedWidget, getWidgetLabel, widgetBlueprints, widgetPresets, workspaceShortcutKinds } from './workspaceWidgetCatalog';
 import { defaultMarketGraph, getMarketGraph, type MarketGraph } from './workspaceMarketData';
 import { WorkspaceWidgetCard, type WorkspaceWidgetRuntimeProps } from './workspaceWidgets';
-import { closeWorkspaceExtensionWindow, closeWorkspacePanelWindow, openWorkspaceExtensionWindow, openWorkspacePanelWindow, returnToWorkspaceHub } from './workspacePanelWindows';
+import { closeWorkspaceExtensionWindow, closeWorkspacePanelWindow, openWorkspaceExtensionWindow, returnToWorkspaceHub } from './workspacePanelWindows';
 import { isWorkspaceExtensionUrl } from './workspacePanelRouting';
+import { getAdjacentWorkspaceInstance, getWorkspaceInstanceId, getWorkspaceInstances, type WorkspaceTransferDirection } from './workspaceInstances';
+import { publishWidgetTransfer, subscribeWidgetTransfer, type WorkspaceWidgetTransferAnimation } from './workspaceWidgetTransfer';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
+
+const workspaceTransferOutDurationMs = 180;
+const workspaceTransferAnimationDurationMs = 240;
 
 const defaultOpenKinds = new Set<WorkspaceWidget['kind']>([
   'overview',
@@ -44,6 +50,17 @@ function createBlankWidgetState() {
     open: false,
     hidden: true,
   }));
+}
+
+function loadWidgetStateForWorkspace(workspaceId: string) {
+  const storedWidgets = loadStoredWidgetState({
+    presets: initialWidgetState,
+    defaultOpenKinds,
+    blueprints: widgetBlueprints,
+    workspaceId,
+  });
+
+  return storedWidgets ?? (workspaceId === 'main' ? createInitialWidgetState() : createBlankWidgetState());
 }
 
 function createCompactLayout(boundsWidth: number, boundsHeight: number): WorkspaceWidget[] {
@@ -92,6 +109,7 @@ function createCompactLayout(boundsWidth: number, boundsHeight: number): Workspa
 type InteractionState = {
   id: string;
   mode: 'drag' | 'resize';
+  workspaceId: string;
   edge?: ResizeEdge;
   pointerId: number;
   startX: number;
@@ -104,6 +122,12 @@ type InteractionState = {
 
 type WorkspaceProps = {
   panelKind?: WorkspaceWidget['kind'] | null;
+  topBarSlot?: ReactNode;
+  footerSlot?: ReactNode;
+};
+
+type ActiveWidgetTransferAnimation = WorkspaceWidgetTransferAnimation & {
+  widgetId: string;
 };
 
 type DirectoryPickerWindow = Window & {
@@ -126,25 +150,145 @@ function getWindowViewportSize() {
 function getEffectiveCanvasSize(canvas: HTMLDivElement | null, bounds: { width: number; height: number }) {
   const rect = canvas?.getBoundingClientRect();
   const viewportSize = getWindowViewportSize();
+  const width = rect?.width || bounds.width || viewportSize.width || 1200;
+  const height = rect?.height || bounds.height || viewportSize.height || 800;
 
   return {
-    width: Math.max(320, rect?.width ?? 0, bounds.width, viewportSize.width, 1200),
-    height: Math.max(240, rect?.height ?? 0, bounds.height, viewportSize.height, 800),
+    width: Math.max(320, width),
+    height: Math.max(240, height),
   };
 }
 
-export function Workspace({ panelKind = null }: WorkspaceProps) {
+function getWorkspacePlaneSize(bounds: { width: number; height: number }) {
+  return {
+    minWidth: Math.max(320, bounds.width),
+    minHeight: Math.max(240, bounds.height),
+  };
+}
+
+function getWidgetRenderHeight(widget: WorkspaceWidget) {
+  return widget.open ? widget.height : 58;
+}
+
+function getTransferLandingPosition({
+  direction,
+  widget,
+  canvasWidth,
+  canvasHeight,
+}: {
+  direction: WorkspaceTransferDirection;
+  widget: WorkspaceWidget;
+  canvasWidth: number;
+  canvasHeight: number;
+}) {
+  const margin = 24;
+  const widgetHeight = getWidgetRenderHeight(widget);
+
+  if (direction === 'right') {
+    return {
+      x: margin,
+      y: clampNumber(widget.y, margin, margin, Math.max(margin, canvasHeight - widgetHeight - margin)),
+    };
+  }
+
+  if (direction === 'left') {
+    return {
+      x: Math.max(margin, canvasWidth - widget.width - margin),
+      y: clampNumber(widget.y, margin, margin, Math.max(margin, canvasHeight - widgetHeight - margin)),
+    };
+  }
+
+  if (direction === 'down') {
+    return {
+      x: clampNumber(widget.x, margin, margin, Math.max(margin, canvasWidth - widget.width - margin)),
+      y: margin,
+    };
+  }
+
+  return {
+    x: clampNumber(widget.x, margin, margin, Math.max(margin, canvasWidth - widget.width - margin)),
+    y: Math.max(margin, canvasHeight - widgetHeight - margin),
+  };
+}
+
+function getWorkspaceTransferDirection({
+  canvasRect,
+  deltaX,
+  deltaY,
+  pointerX,
+  pointerY,
+  proposedLeft,
+  proposedTop,
+  visibleLeft,
+  visibleTop,
+  widget,
+}: {
+  canvasRect: DOMRect;
+  deltaX: number;
+  deltaY: number;
+  pointerX: number;
+  pointerY: number;
+  proposedLeft: number;
+  proposedTop: number;
+  visibleLeft: number;
+  visibleTop: number;
+  widget: WorkspaceWidget;
+}): WorkspaceTransferDirection | null {
+  const edgeInset = 2;
+  const overflowTrigger = 18;
+  const widgetHeight = getWidgetRenderHeight(widget);
+  const candidates = [
+    {
+      direction: 'right' as const,
+      active:
+        deltaX > 0 &&
+        pointerX >= canvasRect.right - edgeInset &&
+        proposedLeft + widget.width > visibleLeft + canvasRect.width - overflowTrigger,
+      distance: Math.abs(deltaX),
+    },
+    {
+      direction: 'left' as const,
+      active: deltaX < 0 && pointerX <= canvasRect.left + edgeInset && proposedLeft < visibleLeft + overflowTrigger,
+      distance: Math.abs(deltaX),
+    },
+    {
+      direction: 'down' as const,
+      active:
+        deltaY > 0 &&
+        pointerY >= canvasRect.bottom - edgeInset &&
+        proposedTop + widgetHeight > visibleTop + canvasRect.height - overflowTrigger,
+      distance: Math.abs(deltaY),
+    },
+    {
+      direction: 'up' as const,
+      active: deltaY < 0 && pointerY <= canvasRect.top + edgeInset && proposedTop < visibleTop + overflowTrigger,
+      distance: Math.abs(deltaY),
+    },
+  ];
+
+  return candidates.filter((candidate) => candidate.active).sort((left, right) => right.distance - left.distance)[0]?.direction ?? null;
+}
+
+export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = null }: WorkspaceProps) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
+  const planeRef = useRef<HTMLDivElement | null>(null);
   const isWorkspaceExtension = isWorkspaceExtensionUrl();
-  const storedWidgets = useMemo(() => loadStoredWidgetState({ presets: initialWidgetState, defaultOpenKinds, blueprints: widgetBlueprints }), []);
+  const workspaceInstanceId = getWorkspaceInstanceId();
+  const currentWorkspaceId = isWorkspaceExtension ? workspaceInstanceId ?? 'workspace-extension' : 'main';
   const initialWidgets = useMemo(
-    () => (isWorkspaceExtension ? createBlankWidgetState() : storedWidgets ?? initialWidgetState),
-    [isWorkspaceExtension, storedWidgets],
+    () => (isWorkspaceExtension && !workspaceInstanceId ? createBlankWidgetState() : loadWidgetStateForWorkspace(currentWorkspaceId)),
+    [currentWorkspaceId, isWorkspaceExtension, workspaceInstanceId],
   );
+  const hasStoredWidgets = typeof window !== 'undefined' && window.localStorage.getItem(getWorkspaceWidgetStorageKey(currentWorkspaceId)) !== null;
   const widgetsRef = useRef(initialWidgets);
   const interactionRef = useRef<InteractionState | null>(null);
-  const compactLayoutAppliedRef = useRef(Boolean(storedWidgets) || isWorkspaceExtension);
+  const transferAnimationTimeoutRef = useRef<number | null>(null);
+  const transferCommitTimeoutsRef = useRef<Array<{ id: number; widgetId: string }>>([]);
+  const compactLayoutAppliedRef = useRef(hasStoredWidgets || isWorkspaceExtension);
   const [widgets, setWidgets] = useState(initialWidgets);
+  const [widgetTransferAnimation, setWidgetTransferAnimation] = useState<ActiveWidgetTransferAnimation | null>(null);
+  const pendingWidgetSaveRef = useRef<number | null>(null);
+  const skipNextWidgetSaveRef = useRef(false);
   const [bounds, setBounds] = useState({ width: 0, height: 0 });
   const [localFiles, setLocalFiles] = useState<LocalFileRecord[]>([]);
   const [selectedLocalFileId, setSelectedLocalFileId] = useState<string | null>(null);
@@ -153,16 +297,105 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   const [folderPath, setFolderPath] = useState<string | null>(generalUseFolderLabel);
   const persistedLocalFilesLoadedRef = useRef(false);
   const [activeMarketGraphId, setActiveMarketGraphId] = useState(defaultMarketGraph.id);
+  const [widgetMenuOpen, setWidgetMenuOpen] = useState(false);
   const canBrowseFolder = typeof getDirectoryPicker() === 'function';
+  const canPersistWidgetState = !panelKind && !(currentWorkspaceId === 'main' && bounds.width < 860);
+  const clearPendingWidgetSave = () => {
+    if (pendingWidgetSaveRef.current === null) return;
+    window.clearTimeout(pendingWidgetSaveRef.current);
+    pendingWidgetSaveRef.current = null;
+  };
+  const persistWidgetState = (nextWidgets = widgetsRef.current) => {
+    if (!canPersistWidgetState) return;
+    clearPendingWidgetSave();
+    void saveStoredWidgetState(nextWidgets, currentWorkspaceId);
+  };
+  const finishInteraction = () => {
+    const interaction = interactionRef.current;
+    interactionRef.current = null;
+    if (interaction?.workspaceId === currentWorkspaceId) {
+      persistWidgetState();
+    }
+  };
+  const startWidgetTransferAnimation = useCallback((animation: ActiveWidgetTransferAnimation) => {
+    if (transferAnimationTimeoutRef.current !== null) {
+      window.clearTimeout(transferAnimationTimeoutRef.current);
+      transferAnimationTimeoutRef.current = null;
+    }
+
+    setWidgetTransferAnimation(animation);
+    transferAnimationTimeoutRef.current = window.setTimeout(() => {
+      transferAnimationTimeoutRef.current = null;
+      setWidgetTransferAnimation((current) =>
+        current?.widgetId === animation.widgetId && current.phase === animation.phase ? null : current,
+      );
+    }, workspaceTransferAnimationDurationMs);
+  }, []);
+
+  const clearTransferCommitTimeouts = (widgetId?: string) => {
+    const pendingTimeouts = [];
+
+    for (const pendingTimeout of transferCommitTimeoutsRef.current) {
+      if (widgetId && pendingTimeout.widgetId !== widgetId) {
+        pendingTimeouts.push(pendingTimeout);
+        continue;
+      }
+
+      window.clearTimeout(pendingTimeout.id);
+    }
+
+    transferCommitTimeoutsRef.current = pendingTimeouts;
+  };
+
+  const scheduleTransferSourceCommit = (widgetId: string, nextWidgets: WorkspaceWidget[]) => {
+    const timeoutId = window.setTimeout(() => {
+      transferCommitTimeoutsRef.current = transferCommitTimeoutsRef.current.filter((pendingTimeout) => pendingTimeout.id !== timeoutId);
+      skipNextWidgetSaveRef.current = true;
+      setWidgets(nextWidgets);
+    }, workspaceTransferOutDurationMs);
+
+    transferCommitTimeoutsRef.current = [...transferCommitTimeoutsRef.current, { id: timeoutId, widgetId }];
+  };
 
   useEffect(() => {
     widgetsRef.current = widgets;
   }, [widgets]);
 
   useEffect(() => {
-    if (panelKind || isWorkspaceExtension || bounds.width < 860) return;
-    void saveStoredWidgetState(widgets);
-  }, [bounds.width, isWorkspaceExtension, panelKind, widgets]);
+    if (!canPersistWidgetState) return;
+
+    if (skipNextWidgetSaveRef.current) {
+      skipNextWidgetSaveRef.current = false;
+      return;
+    }
+
+    if (interactionRef.current) return;
+
+    pendingWidgetSaveRef.current = window.setTimeout(() => {
+      pendingWidgetSaveRef.current = null;
+      void saveStoredWidgetState(widgetsRef.current, currentWorkspaceId);
+    }, 120);
+
+    return clearPendingWidgetSave;
+  }, [canPersistWidgetState, currentWorkspaceId, widgets]);
+
+  useEffect(() =>
+    subscribeStoredWidgetState(currentWorkspaceId, () => {
+      const nextWidgets = loadWidgetStateForWorkspace(currentWorkspaceId);
+      widgetsRef.current = nextWidgets;
+      setWidgets(nextWidgets);
+    }),
+  [currentWorkspaceId]);
+
+  useEffect(() =>
+    subscribeWidgetTransfer(currentWorkspaceId, (message) => {
+      startWidgetTransferAnimation({
+        widgetId: message.widgetId,
+        phase: 'incoming',
+        direction: message.direction,
+      });
+    }),
+  [currentWorkspaceId, startWidgetTransferAnimation]);
 
   useEffect(() => {
     let cancelled = false;
@@ -234,26 +467,31 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   }, [bounds.height, bounds.width, isWorkspaceExtension]);
 
   useEffect(() => {
-    const stopInteraction = () => {
-      interactionRef.current = null;
-    };
-
-    window.addEventListener('pointerup', stopInteraction);
-    window.addEventListener('pointercancel', stopInteraction);
-    window.addEventListener('blur', stopInteraction);
+    window.addEventListener('pointerup', finishInteraction);
+    window.addEventListener('pointercancel', finishInteraction);
+    window.addEventListener('blur', finishInteraction);
 
     return () => {
-      window.removeEventListener('pointerup', stopInteraction);
-      window.removeEventListener('pointercancel', stopInteraction);
-      window.removeEventListener('blur', stopInteraction);
+      window.removeEventListener('pointerup', finishInteraction);
+      window.removeEventListener('pointercancel', finishInteraction);
+      window.removeEventListener('blur', finishInteraction);
     };
-  }, []);
+  });
+
+  useEffect(
+    () => () => {
+      clearPendingWidgetSave();
+
+      if (transferAnimationTimeoutRef.current !== null) {
+        window.clearTimeout(transferAnimationTimeoutRef.current);
+      }
+
+      clearTransferCommitTimeouts();
+    },
+    [],
+  );
 
   const orderedWidgets = useMemo(() => widgets.filter((widget) => !widget.hidden).sort((a, b) => a.zIndex - b.zIndex), [widgets]);
-
-  const openPanelWindow = (kind: WorkspaceWidget['kind']) => {
-    openWorkspacePanelWindow(kind);
-  };
 
   const returnToHub = () => {
     returnToWorkspaceHub();
@@ -265,9 +503,10 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
 
   const resetWorkspaceLayout = () => {
     interactionRef.current = null;
-    const resetWidgets = createInitialWidgetState();
+    setWidgetMenuOpen(false);
+    const resetWidgets = currentWorkspaceId === 'main' ? createInitialWidgetState() : createBlankWidgetState();
     widgetsRef.current = resetWidgets;
-    void clearStoredWidgetState();
+    void clearAllStoredWidgetStates(getWorkspaceInstances().map((workspace) => workspace.id));
     setWidgets(resetWidgets);
   };
 
@@ -291,8 +530,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     if ((event.target as HTMLElement).closest('button, input, textarea, select, a, video, [role="button"]')) return;
 
     const widget = widgetsRef.current.find((item) => item.id === id);
-    const canvas = canvasRef.current;
-    if (!widget || !canvas) return;
+    if (!widget || !planeRef.current) return;
 
     event.preventDefault();
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -301,6 +539,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     interactionRef.current = {
       id,
       mode: 'drag',
+      workspaceId: currentWorkspaceId,
       pointerId: event.pointerId,
       startX: event.clientX,
       startY: event.clientY,
@@ -325,6 +564,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     interactionRef.current = {
       id,
       mode: 'resize',
+      workspaceId: currentWorkspaceId,
       edge,
       pointerId: event.pointerId,
       startX: event.clientX,
@@ -336,40 +576,181 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     };
   };
 
+  const getInteractionWorkspaceWidgets = (workspaceId: string) =>
+    workspaceId === currentWorkspaceId ? widgetsRef.current : loadWidgetStateForWorkspace(workspaceId);
+
+  const commitInteractionWorkspaceWidgets = (workspaceId: string, nextWidgets: WorkspaceWidget[]) => {
+    if (workspaceId === currentWorkspaceId) {
+      widgetsRef.current = nextWidgets;
+      setWidgets(nextWidgets);
+      return;
+    }
+
+    void saveStoredWidgetState(nextWidgets, workspaceId);
+  };
+
+  const updateDraggedWidgetPosition = (workspaceId: string, widgetId: string, nextLeft: number, nextTop: number) => {
+    const nextWidgets = getInteractionWorkspaceWidgets(workspaceId).map((widget) =>
+      widget.id === widgetId
+        ? {
+            ...widget,
+            x: nextLeft,
+            y: nextTop,
+          }
+        : widget,
+    );
+
+    commitInteractionWorkspaceWidgets(workspaceId, nextWidgets);
+  };
+
+  const transferWidgetToWorkspace = ({
+    widget,
+    sourceWorkspaceId,
+    targetWorkspaceId,
+    direction,
+  }: {
+    widget: WorkspaceWidget;
+    sourceWorkspaceId: string;
+    targetWorkspaceId: string;
+    direction: WorkspaceTransferDirection;
+  }) => {
+    if (sourceWorkspaceId === currentWorkspaceId) {
+      startWidgetTransferAnimation({
+        widgetId: widget.id,
+        phase: 'outgoing',
+        direction,
+      });
+    }
+
+    const canvasSize = getEffectiveCanvasSize(canvasRef.current, bounds);
+    const targetWidgets = getInteractionWorkspaceWidgets(targetWorkspaceId);
+    const highestTargetZ = targetWidgets.reduce((max, targetWidget) => Math.max(max, targetWidget.zIndex), 0);
+    const landingPosition = getTransferLandingPosition({
+      direction,
+      widget,
+      canvasWidth: canvasSize.width,
+      canvasHeight: canvasSize.height,
+    });
+    const transferredWidget: WorkspaceWidget = {
+      ...widget,
+      x: landingPosition.x,
+      y: landingPosition.y,
+      open: true,
+      hidden: false,
+      zIndex: highestTargetZ + 1,
+    };
+    const hasTargetWidget = targetWidgets.some((targetWidget) => targetWidget.id === widget.id);
+    const nextTargetWidgets = hasTargetWidget
+      ? targetWidgets.map((targetWidget) => (targetWidget.id === widget.id ? transferredWidget : targetWidget))
+      : [...targetWidgets, transferredWidget];
+
+    if (targetWorkspaceId === currentWorkspaceId) {
+      clearTransferCommitTimeouts(widget.id);
+      widgetsRef.current = nextTargetWidgets;
+      setWidgets(nextTargetWidgets);
+      startWidgetTransferAnimation({
+        widgetId: widget.id,
+        phase: 'incoming',
+        direction,
+      });
+    } else {
+      void saveStoredWidgetState(nextTargetWidgets, targetWorkspaceId);
+    }
+
+    publishWidgetTransfer({
+      widgetId: widget.id,
+      sourceWorkspaceId,
+      targetWorkspaceId,
+      direction,
+    });
+
+    const nextSourceWidgets = getInteractionWorkspaceWidgets(sourceWorkspaceId).map((sourceWidget) =>
+      sourceWidget.id === widget.id
+        ? {
+            ...sourceWidget,
+            open: false,
+            hidden: true,
+            pinned: false,
+          }
+        : sourceWidget,
+    );
+
+    if (sourceWorkspaceId === currentWorkspaceId) {
+      widgetsRef.current = nextSourceWidgets;
+      void saveStoredWidgetState(nextSourceWidgets, currentWorkspaceId);
+      scheduleTransferSourceCommit(widget.id, nextSourceWidgets);
+    } else {
+      void saveStoredWidgetState(nextSourceWidgets, sourceWorkspaceId);
+    }
+
+    return transferredWidget;
+  };
+
   const handlePointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     const interaction = interactionRef.current;
-    if (!interaction || !canvasRef.current) return;
+    if (!interaction || !planeRef.current) return;
 
-    const canvasRect = canvasRef.current.getBoundingClientRect();
-    const currentWidget = widgetsRef.current.find((widget) => widget.id === interaction.id);
+    const canvasRect = canvasRef.current?.getBoundingClientRect() ?? planeRef.current.getBoundingClientRect();
+    const currentWidget = getInteractionWorkspaceWidgets(interaction.workspaceId).find((widget) => widget.id === interaction.id);
     if (!currentWidget) return;
 
     const deltaX = event.clientX - interaction.startX;
     const deltaY = event.clientY - interaction.startY;
 
     if (interaction.mode === 'drag') {
+      const proposedLeft = interaction.startLeft + deltaX;
+      const proposedTop = interaction.startTop + deltaY;
+      const transferDirection = getWorkspaceTransferDirection({
+        canvasRect,
+        deltaX,
+        deltaY,
+        pointerX: event.clientX,
+        pointerY: event.clientY,
+        proposedLeft,
+        proposedTop,
+        visibleLeft: 0,
+        visibleTop: 0,
+        widget: currentWidget,
+      });
+      const transferTarget = transferDirection ? getAdjacentWorkspaceInstance(interaction.workspaceId, transferDirection) : null;
+
+      if (transferDirection && transferTarget && transferTarget.id !== interaction.workspaceId) {
+        const transferredWidget = transferWidgetToWorkspace({
+          widget: currentWidget,
+          sourceWorkspaceId: interaction.workspaceId,
+          targetWorkspaceId: transferTarget.id,
+          direction: transferDirection,
+        });
+        interactionRef.current = {
+          ...interaction,
+          workspaceId: transferTarget.id,
+          startX: event.clientX,
+          startY: event.clientY,
+          startLeft: transferredWidget.x,
+          startTop: transferredWidget.y,
+          startWidth: transferredWidget.width,
+          startHeight: transferredWidget.height,
+        };
+        return;
+      }
+
       const { left: nextLeft, top: nextTop } = calculatePartiallyOffscreenDragPosition({
-        proposedLeft: interaction.startLeft + deltaX,
-        proposedTop: interaction.startTop + deltaY,
+        proposedLeft,
+        proposedTop,
         canvasWidth: canvasRect.width,
         canvasHeight: canvasRect.height,
         widgetWidth: currentWidget.width,
         widgetHeight: currentWidget.open ? currentWidget.height : 58,
+        allowTopOverflow: false,
+        minimumVisibleWidth: currentWidget.width,
+        minimumVisibleHeight: currentWidget.open ? currentWidget.height : 58,
       });
 
-      setWidgets((current) =>
-        current.map((widget) =>
-          widget.id === interaction.id
-            ? {
-                ...widget,
-                x: nextLeft,
-                y: nextTop,
-              }
-            : widget,
-        ),
-      );
+      updateDraggedWidgetPosition(interaction.workspaceId, interaction.id, nextLeft, nextTop);
       return;
     }
+
+    if (interaction.workspaceId !== currentWorkspaceId) return;
 
     const isClosed = !currentWidget.open;
     const edge = interaction.edge ?? 'corner';
@@ -401,8 +782,8 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
       nextLeft = interaction.startLeft + (interaction.startWidth - currentWidget.minWidth);
     }
 
-    setWidgets((current) =>
-      current.map((widget) =>
+    setWidgets((current) => {
+      const next = current.map((widget) =>
         widget.id === interaction.id
           ? {
               ...widget,
@@ -412,12 +793,14 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
               height: nextHeight,
             }
           : widget,
-      ),
-    );
+      );
+      widgetsRef.current = next;
+      return next;
+    });
   };
 
   const stopInteraction = () => {
-    interactionRef.current = null;
+    finishInteraction();
   };
 
   const toggleWidget = (id: string) => {
@@ -427,6 +810,23 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
         widget.id === id ? { ...widget, hidden: false, open: !widget.open, zIndex: widget.zIndex + 1 } : widget,
       ),
     );
+  };
+
+  const toggleWidgetPin = (id: string) => {
+    setWidgets((current) => {
+      const next = current.map((widget) =>
+        widget.id === id
+          ? {
+              ...widget,
+              hidden: false,
+              pinned: !widget.pinned,
+              zIndex: widget.pinned ? widget.zIndex : widget.zIndex + 1,
+            }
+          : widget,
+      );
+      widgetsRef.current = next;
+      return next;
+    });
   };
 
   const recenterWidget = (id: string) => {
@@ -464,8 +864,8 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
         widget.id === id
           ? {
               ...widget,
-              open: false,
-              hidden: true,
+              open: widget.pinned ? widget.open : false,
+              hidden: widget.pinned ? false : true,
               zIndex: widget.zIndex + 1,
             }
           : widget,
@@ -522,6 +922,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   };
 
   const openWorkspaceWidget = (kind: WorkspaceWidget['kind']) => {
+    setWidgetMenuOpen(false);
     const target = widgetsRef.current.find((widget) => widget.kind === kind);
     if (target) {
       openWidgetInCenter(target.id);
@@ -667,10 +1068,12 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
   };
 
   const activeMarketGraph = useMemo(() => getMarketGraph(activeMarketGraphId), [activeMarketGraphId]);
+  const workspacePlaneSize = useMemo(() => getWorkspacePlaneSize(bounds), [bounds]);
   const widgetRuntimeProps: WorkspaceWidgetRuntimeProps = {
     onStartDrag: startDrag,
     onStartResize: startResize,
     onToggleOpen: toggleWidget,
+    onTogglePin: toggleWidgetPin,
     onRecenter: recenterWidget,
     onClose: closeWidget,
     localFiles,
@@ -689,6 +1092,7 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     onSelectMarketGraph: openMarketGraph,
     workspaceWidgets: widgets,
     onFocusWidget: focusWidget,
+    onTogglePinWidget: toggleWidgetPin,
     onCloseWidget: closeWidget,
   };
 
@@ -733,54 +1137,56 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
     <section className="workspace-shell">
       <WorkspaceAtmosphere />
 
-      <VisualLab />
+      {!isWorkspaceExtension ? <VisualLab /> : null}
 
       <div className="workspace-head">
-        <div className="workspace-brand">Mission Control Center</div>
-        <StatusChip tone="cool">tailnet live · drag · resize · stack</StatusChip>
+        {!isWorkspaceExtension ? <div className="workspace-brand">Mission Control Center</div> : null}
+        {!isWorkspaceExtension ? <StatusChip tone="cool">tailnet live · drag · resize · stack</StatusChip> : null}
         <div className="workspace-launcher">
-          <WorkspaceButton variant="secondary" className="workspace-launch-button is-muted" onClick={resetWorkspaceLayout}>
-            Reset layout
-          </WorkspaceButton>
+          {!isWorkspaceExtension ? (
+            <WorkspaceButton variant="secondary" className="workspace-launch-button is-muted" onClick={resetWorkspaceLayout}>
+              Reset layout
+            </WorkspaceButton>
+          ) : null}
           {isWorkspaceExtension ? (
-            <WorkspaceButton
-              className="workspace-launch-button workspace-new-screen-button workspace-extension-close-button"
-              aria-label="Close workspace extension"
-              title="Close workspace extension"
-              onClick={closeBlankWorkspaceExtension}
-            >
-              <span className="workspace-extension-close-icon" aria-hidden="true" />
-            </WorkspaceButton>
+            <WorkspaceCloseScreenButton onClick={closeBlankWorkspaceExtension} />
           ) : (
-            <WorkspaceButton
-              className="workspace-launch-button workspace-new-screen-button"
-              aria-label="Create blank workspace"
-              title="Create blank workspace"
-              onClick={openBlankWorkspaceExtension}
-            >
-              <span className="workspace-new-screen-icon" aria-hidden="true">
-                <span className="workspace-new-screen-frame" />
-                <span className="workspace-new-screen-plus" />
-              </span>
-            </WorkspaceButton>
+            <WorkspaceNewScreenButton onClick={openBlankWorkspaceExtension} />
           )}
-          <div className="workspace-launch-pills" role="group" aria-label="Window launch shortcuts">
-            {launchableWindowKinds.map((kind) => (
-              <WorkspaceButton
-                key={kind}
-                variant="compact"
-                className="workspace-launch-pill"
-                onClick={() => openPanelWindow(kind)}
-              >
-                {getWidgetLabel(kind)}
-              </WorkspaceButton>
-            ))}
+          <div className="workspace-widget-menu">
+            <WorkspaceButton
+              variant="compact"
+              className="workspace-launch-button workspace-widget-menu-trigger"
+              aria-expanded={widgetMenuOpen}
+              aria-haspopup="menu"
+              onClick={() => setWidgetMenuOpen((open) => !open)}
+            >
+              Open widget
+            </WorkspaceButton>
+            {widgetMenuOpen ? (
+              <div className="workspace-widget-menu-panel" role="menu" aria-label="Open widget menu">
+                {workspaceShortcutKinds.map((kind) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    className="workspace-widget-menu-item"
+                    role="menuitem"
+                    onClick={() => openWorkspaceWidget(kind)}
+                  >
+                    {getWidgetLabel(kind)}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
+          {topBarSlot}
         </div>
       </div>
 
       <WorkspaceCanvas
         canvasRef={canvasRef}
+        planeRef={planeRef}
+        planeStyle={workspacePlaneSize}
         onPointerMove={handlePointerMove}
         onPointerUp={stopInteraction}
         onPointerCancel={stopInteraction}
@@ -789,10 +1195,21 @@ export function Workspace({ panelKind = null }: WorkspaceProps) {
           <WorkspaceWidgetCard
             key={widget.id}
             widget={widget}
+            transferAnimation={widgetTransferAnimation?.widgetId === widget.id ? widgetTransferAnimation : null}
             {...widgetRuntimeProps}
           />
         ))}
       </WorkspaceCanvas>
+
+      {!isWorkspaceExtension ? (
+        <div className="workspace-footer-tab" aria-label="Workspace footer controls">
+          {footerSlot ?? (
+            <WorkspaceButton variant="compact" className="workspace-launch-button workspace-footer-button">
+              Menu
+            </WorkspaceButton>
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }

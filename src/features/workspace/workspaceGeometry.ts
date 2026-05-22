@@ -5,6 +5,7 @@ export type DragGeometryParams = {
   canvasHeight: number;
   widgetWidth: number;
   widgetHeight: number;
+  allowTopOverflow?: boolean;
   minimumVisibleWidth?: number;
   minimumVisibleHeight?: number;
 };
@@ -42,6 +43,7 @@ export function calculatePartiallyOffscreenDragPosition({
   canvasHeight,
   widgetWidth,
   widgetHeight,
+  allowTopOverflow = true,
   minimumVisibleWidth,
   minimumVisibleHeight,
 }: DragGeometryParams): DragGeometryResult {
@@ -50,7 +52,7 @@ export function calculatePartiallyOffscreenDragPosition({
 
   const minLeft = -Math.max(0, widgetWidth - visibleWidth);
   const maxLeft = Math.max(0, canvasWidth - visibleWidth);
-  const minTop = -Math.max(0, widgetHeight - visibleHeight);
+  const minTop = allowTopOverflow ? -Math.max(0, widgetHeight - visibleHeight) : 0;
   const maxTop = Math.max(0, canvasHeight - visibleHeight);
 
   return {

@@ -2,12 +2,19 @@ import type { ReactNode, RefObject, PointerEvent as ReactPointerEvent } from 're
 
 export function WorkspaceCanvas({
   canvasRef,
+  planeRef,
+  planeStyle,
   children,
   onPointerMove,
   onPointerUp,
   onPointerCancel,
 }: {
   canvasRef: RefObject<HTMLDivElement | null>;
+  planeRef: RefObject<HTMLDivElement | null>;
+  planeStyle: {
+    minWidth: number;
+    minHeight: number;
+  };
   children: ReactNode;
   onPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerUp: () => void;
@@ -21,7 +28,9 @@ export function WorkspaceCanvas({
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
     >
-      {children}
+      <div className="workspace-canvas-plane" ref={planeRef} style={planeStyle}>
+        {children}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { widgetBlueprints, widgetPresets } from './workspaceWidgetCatalog';
-import { loadStoredWidgetState, saveStoredWidgetState, workspaceStorageKey } from './workspaceStorage';
+import { clearAllStoredWidgetStates, getWorkspaceWidgetStorageKey, loadStoredWidgetState, saveStoredWidgetState, workspaceStorageKey } from './workspaceStorage';
 import type { WorkspaceWidget } from './workspaceTypes';
 
 const defaultOpenKinds = new Set<WorkspaceWidget['kind']>(['overview']);
@@ -32,6 +32,48 @@ describe('workspace storage', () => {
       height: 320,
       open: false,
     });
+  });
+
+  it('stores widget layout state separately for each workspace', () => {
+    const [firstWidget] = widgetPresets;
+    const mainWidget = { ...firstWidget, x: 120 };
+    const extensionWidget = { ...firstWidget, x: 640 };
+
+    expect(saveStoredWidgetState([mainWidget], 'main')).toBe(true);
+    expect(saveStoredWidgetState([extensionWidget], 'workspace-1')).toBe(true);
+
+    expect(window.localStorage.getItem(workspaceStorageKey)).not.toBeNull();
+    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('workspace-1'))).not.toBeNull();
+
+    const restoredMain = loadStoredWidgetState({
+      presets: widgetPresets,
+      defaultOpenKinds,
+      blueprints: widgetBlueprints,
+      workspaceId: 'main',
+    });
+    const restoredExtension = loadStoredWidgetState({
+      presets: widgetPresets,
+      defaultOpenKinds,
+      blueprints: widgetBlueprints,
+      workspaceId: 'workspace-1',
+    });
+
+    expect(restoredMain?.find((widget) => widget.id === firstWidget.id)?.x).toBe(120);
+    expect(restoredExtension?.find((widget) => widget.id === firstWidget.id)?.x).toBe(640);
+  });
+
+  it('clears main, registered, and stale workspace layout keys together', () => {
+    const [firstWidget] = widgetPresets;
+
+    expect(saveStoredWidgetState([{ ...firstWidget, x: 120 }], 'main')).toBe(true);
+    expect(saveStoredWidgetState([{ ...firstWidget, x: 640 }], 'workspace-1')).toBe(true);
+    expect(saveStoredWidgetState([{ ...firstWidget, x: 840 }], 'stale-workspace')).toBe(true);
+
+    expect(clearAllStoredWidgetStates(['main', 'workspace-1'])).toBe(true);
+
+    expect(window.localStorage.getItem(workspaceStorageKey)).toBeNull();
+    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('workspace-1'))).toBeNull();
+    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('stale-workspace'))).toBeNull();
   });
 
   it('normalizes invalid persisted layout values back into safe bounds', () => {
@@ -66,5 +108,55 @@ describe('workspace storage', () => {
     expect(overview?.zIndex).toBe(999);
     expect(overview?.surfaceAlpha).toBe(1);
     expect(overview?.lineAlpha).toBe(0);
+  });
+
+  it('keeps restored open widgets inside the top edge of the canvas', () => {
+    window.localStorage.setItem(
+      workspaceStorageKey,
+      JSON.stringify([
+        {
+          id: 'overview',
+          kind: 'overview',
+          open: true,
+          y: -220,
+        },
+        {
+          id: 'telemetry',
+          kind: 'graph',
+          open: false,
+          y: -180,
+        },
+      ]),
+    );
+
+    const restored = loadStoredWidgetState({
+      presets: widgetPresets,
+      defaultOpenKinds,
+      blueprints: widgetBlueprints,
+    });
+
+    expect(restored?.find((widget) => widget.id === 'overview')?.y).toBe(0);
+    expect(restored?.find((widget) => widget.id === 'telemetry')?.y).toBe(-180);
+  });
+
+  it('keeps preset pinned defaults when old saved layouts do not include pin state', () => {
+    window.localStorage.setItem(
+      workspaceStorageKey,
+      JSON.stringify([
+        {
+          id: 'overview',
+          kind: 'overview',
+          open: true,
+        },
+      ]),
+    );
+
+    const restored = loadStoredWidgetState({
+      presets: widgetPresets,
+      defaultOpenKinds,
+      blueprints: widgetBlueprints,
+    });
+
+    expect(restored?.find((widget) => widget.id === 'overview')?.pinned).toBe(true);
   });
 });

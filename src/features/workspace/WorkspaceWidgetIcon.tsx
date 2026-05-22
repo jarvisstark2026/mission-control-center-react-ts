@@ -247,6 +247,15 @@ const widgetIconDefinitions: Record<WidgetKind, WidgetIconDefinition> = {
       'M10 15h4',
     ],
   },
+  'agent-console': {
+    paths: [
+      'M5 6h14v10H8l-3 3z',
+      'M8 10h6',
+      'M8 13h4',
+      'M16 9l3-3',
+      'M18 5l1 1-3 3-1-1z',
+    ],
+  },
 };
 
 export function WorkspaceWidgetIcon({ kind }: { kind: WidgetKind }) {

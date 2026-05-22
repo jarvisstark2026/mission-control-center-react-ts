@@ -184,13 +184,25 @@ describe('Workspace header controls', () => {
     expect(oscillatorStarts).toHaveLength(3);
   });
 
-  it('opens operational core widgets from the shared widget menu', () => {
+  it('opens operational core widgets from the shared widget menu', async () => {
     const { container } = render(<Workspace role="admin" />);
     const currentRender = within(container);
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
+    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Agent console' }));
+    expect(currentRender.getAllByText('tasking / proposals').length).toBeGreaterThan(0);
+
+    await act(async () => {
+      fireEvent.click(currentRender.getByRole('button', { name: 'Send to Jarvis' }));
+      await new Promise((resolve) => setTimeout(resolve, 340));
+    });
+    expect(await currentRender.findByText(/I prepared a gated command proposal/i)).toBeInTheDocument();
+    expect((await currentRender.findAllByText(/Review current mission state and propose/i)).length).toBeGreaterThan(0);
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Command inbox' }));
     expect(currentRender.getAllByText('primary approval queue').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText(/Review current mission state and propose/i).length).toBeGreaterThan(0);
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Notifications' }));
@@ -226,8 +238,10 @@ describe('Workspace header controls', () => {
     fireEvent.click(guestRender.getByRole('button', { name: 'Open widget' }));
 
     expect(guestRender.queryByRole('menuitem', { name: 'Agent control' })).not.toBeInTheDocument();
+    expect(guestRender.queryByRole('menuitem', { name: 'Agent console' })).not.toBeInTheDocument();
     const guestLauncherWidget = guestWorkspace.container.querySelector<HTMLElement>('.workspace-widget.kind-launcher');
     expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent control/i })).not.toBeInTheDocument();
+    expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent console/i })).not.toBeInTheDocument();
   });
 
   it('keeps command approvals role gated inside the command inbox', () => {

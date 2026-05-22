@@ -68,6 +68,12 @@ export const shellNavItems: ShellNavItem[] = [
     allowedRoles: ['admin', 'home', 'support'],
   },
   {
+    id: 'agent-console',
+    label: 'Agent console',
+    hint: 'task Jarvis and stage proposals',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
     id: 'schedule',
     label: 'Schedule',
     hint: 'day blocks and next actions',

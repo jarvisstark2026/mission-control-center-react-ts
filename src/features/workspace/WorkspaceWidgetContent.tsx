@@ -10,6 +10,7 @@ import type { WorkspaceWidget } from './workspaceTypes';
 import { WidgetScrollPane } from './workspaceBlocks';
 import {
   AudioWidget,
+  AgentConsoleWidget,
   AgentControlWidget,
   BrowserWidget,
   CommandInboxWidget,
@@ -156,6 +157,8 @@ function renderWorkspaceWidgetContent({
       return <IntegrationRegistryWidget missionControl={missionControl} />;
     case 'agent-control':
       return <AgentControlWidget state={agentControl} role={activeRole} missionControl={missionControl} />;
+    case 'agent-console':
+      return <AgentConsoleWidget role={activeRole} missionControl={missionControl} />;
     case '3d': {
       const previewFile = widget.previewFileId ? localFiles.find((record) => record.id === widget.previewFileId) ?? null : null;
       return <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} />;

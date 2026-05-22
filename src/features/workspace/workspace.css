@@ -4211,6 +4211,81 @@
   gap: 13px;
 }
 
+.agent-console-surface {
+  gap: 13px;
+}
+
+.agent-console-compose {
+  display: grid;
+  gap: 10px;
+}
+
+.agent-console-field {
+  display: grid;
+  gap: 6px;
+}
+
+.agent-console-field span {
+  color: var(--glass-muted);
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.agent-console-field textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 6px;
+  padding: 10px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.016)),
+    rgba(5, 13, 22, 0.32);
+  color: rgba(239, 247, 255, 0.9);
+  font: inherit;
+  font-size: 0.68rem;
+  line-height: 1.5;
+  outline: none;
+}
+
+.agent-console-field textarea:focus {
+  border-color: rgba(86, 221, 255, 0.38);
+  box-shadow: 0 0 0 1px rgba(86, 221, 255, 0.12);
+}
+
+.agent-console-selector-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.agent-console-chip {
+  min-height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(239, 247, 255, 0.76);
+  cursor: pointer;
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.agent-console-chip[aria-pressed='true'] {
+  border-color: rgba(86, 221, 255, 0.42);
+  background: rgba(86, 221, 255, 0.1);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.agent-console-submit {
+  justify-self: start;
+  min-height: 30px;
+}
+
 .agent-control-summary {
   background:
     linear-gradient(135deg, rgba(86, 221, 255, 0.065), transparent 45%),

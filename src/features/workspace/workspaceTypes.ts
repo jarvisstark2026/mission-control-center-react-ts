@@ -27,7 +27,8 @@ export type WidgetKind =
   | 'command-inbox'
   | 'notifications'
   | 'integration-registry'
-  | 'agent-control';
+  | 'agent-control'
+  | 'agent-console';
 
 export type WorkspaceWidget = {
   id: string;
@@ -79,6 +80,7 @@ export const workspaceWidgetKinds: WidgetKind[] = [
   'notifications',
   'integration-registry',
   'agent-control',
+  'agent-console',
 ];
 
 export function isWorkspaceWidgetKind(value: string): value is WidgetKind {

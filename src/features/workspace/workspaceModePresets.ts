@@ -29,10 +29,10 @@ export const workspaceModePresets: WorkspaceModePreset[] = [
 const modeLayouts: Record<WorkspaceModePresetId, PresetWidgetLayout[]> = {
   'admin-ops': [
     { kind: 'command-inbox', x: 24, y: 76, width: 390, height: 430, zIndex: 10, pinned: true },
-    { kind: 'agent-control', x: 430, y: 76, width: 390, height: 430, zIndex: 9 },
+    { kind: 'agent-console', x: 430, y: 76, width: 390, height: 430, zIndex: 9 },
     { kind: 'integration-registry', x: 836, y: 76, width: 380, height: 430, zIndex: 8 },
     { kind: 'notifications', x: 24, y: 522, width: 430, height: 250, zIndex: 7 },
-    { kind: 'window-manager', x: 470, y: 522, width: 360, height: 250, zIndex: 6 },
+    { kind: 'agent-control', x: 470, y: 522, width: 360, height: 250, zIndex: 6 },
   ],
   home: [
     { kind: 'command-inbox', x: 24, y: 76, width: 390, height: 360, zIndex: 9, pinned: true },
@@ -43,10 +43,10 @@ const modeLayouts: Record<WorkspaceModePresetId, PresetWidgetLayout[]> = {
   ],
   support: [
     { kind: 'command-inbox', x: 24, y: 76, width: 390, height: 390, zIndex: 10, pinned: true },
-    { kind: 'integration-registry', x: 430, y: 76, width: 390, height: 420, zIndex: 9 },
+    { kind: 'agent-console', x: 430, y: 76, width: 390, height: 420, zIndex: 9 },
     { kind: 'notifications', x: 836, y: 76, width: 360, height: 320, zIndex: 8 },
     { kind: 'graph', x: 24, y: 482, width: 360, height: 240, zIndex: 7 },
-    { kind: 'window-manager', x: 400, y: 512, width: 360, height: 240, zIndex: 6 },
+    { kind: 'integration-registry', x: 400, y: 512, width: 360, height: 240, zIndex: 6 },
   ],
   security: [
     { kind: 'command-inbox', x: 24, y: 76, width: 390, height: 390, zIndex: 10, pinned: true },

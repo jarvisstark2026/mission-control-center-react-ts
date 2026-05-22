@@ -44,6 +44,7 @@ export function loadStoredWidgetState({
       'notifications',
       'integration-registry',
       'agent-control',
+      'agent-console',
     ]);
     const byId = new Map(parsed.filter(isStoredWidgetRecord).map((item) => [item.id, item]));
     const normalizedPresets = presets.map((preset) => {

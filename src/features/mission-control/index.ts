@@ -1,11 +1,14 @@
 export type {
   CommandAction,
   CommandAuditEntry,
+  CommandRisk,
   CommandRequest,
+  CommandScope,
   CommandStatus,
   IntegrationPermission,
   IntegrationRecord,
   MissionControlState,
+  MissionControlEvent,
   MissionNotification,
   TelemetrySample,
 } from './missionControlTypes';

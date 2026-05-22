@@ -10,12 +10,13 @@ import {
 import { createMissionCommandGateway, type MissionCommandGatewayMode } from './missionCommandGateway';
 import { loadPersistedMissionControlState, savePersistedMissionControlState } from './missionControlStorage';
 import { createMissionControlTransport } from './missionControlTransport';
-import type { CommandAction, IntegrationPermission, MissionControlState } from './missionControlTypes';
+import type { CommandAction, IntegrationPermission, MissionControlEvent, MissionControlState } from './missionControlTypes';
 
 export type MissionControlRuntime = {
   role: ShellRole;
   state: MissionControlState;
   commandGatewayMode: MissionCommandGatewayMode;
+  ingestEvents: (events: MissionControlEvent[]) => void;
   actOnCommand: (commandId: string, action: CommandAction) => void;
   acknowledgeNotification: (notificationId: string) => void;
   setIntegrationPermission: (integrationId: string, permission: IntegrationPermission) => void;
@@ -58,6 +59,15 @@ export function useMissionControl(role: ShellRole): MissionControlRuntime {
   useEffect(() => {
     savePersistedMissionControlState(stateRef.current);
   }, [state.commands, state.notifications]);
+
+  const ingestEvents = useCallback((events: MissionControlEvent[]) => {
+    if (!events.length) return;
+
+    dispatch({
+      type: 'events',
+      events,
+    } satisfies MissionControlReducerAction);
+  }, []);
 
   const dispatchCommandAction = useCallback(
     (commandId: string, action: CommandAction) => {
@@ -146,10 +156,11 @@ export function useMissionControl(role: ShellRole): MissionControlRuntime {
       role,
       state,
       commandGatewayMode: commandGateway.mode,
+      ingestEvents,
       actOnCommand: dispatchCommandAction,
       acknowledgeNotification,
       setIntegrationPermission,
     }),
-    [acknowledgeNotification, commandGateway.mode, dispatchCommandAction, role, setIntegrationPermission, state],
+    [acknowledgeNotification, commandGateway.mode, dispatchCommandAction, ingestEvents, role, setIntegrationPermission, state],
   );
 }

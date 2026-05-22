@@ -14,6 +14,7 @@ import {
 import type { WorkspaceWidget } from '../workspace/workspaceTypes';
 import { shellScopes, type ShellRole } from './roles';
 import { getPanelLabel, getShellCopy } from './shellCopy';
+import { shellThemeOptions, type ShellThemeId } from './themes';
 
 type ShellBrandingProps = {
   activePanelKind: WorkspaceWidget['kind'] | null;
@@ -274,6 +275,63 @@ export function ShellRoleMenu({
             >
               <span>{scope.label}</span>
               <small>{scope.description}</small>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function ShellThemeMenu({
+  activeTheme,
+  onSelectTheme,
+}: {
+  activeTheme: ShellThemeId;
+  onSelectTheme: (themeId: ShellThemeId) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const activeThemeOption = shellThemeOptions.find((theme) => theme.id === activeTheme) ?? shellThemeOptions[0];
+
+  const selectTheme = (themeId: ShellThemeId) => {
+    setIsOpen(false);
+    onSelectTheme(themeId);
+  };
+
+  return (
+    <div className="shell-theme-menu">
+      <button
+        type="button"
+        className="shell-theme-menu-trigger"
+        aria-label={`Theme ${activeThemeOption.label}`}
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        onClick={() => setIsOpen((open) => !open)}
+      >
+        <span className="shell-theme-orb" aria-hidden="true">
+          <span className={`shell-theme-swatch shell-theme-swatch-${activeThemeOption.id}`} />
+        </span>
+        <span className="shell-theme-trigger-copy">
+          <span>Theme</span>
+          <strong>{activeThemeOption.label}</strong>
+        </span>
+      </button>
+      {isOpen ? (
+        <div className="shell-theme-menu-panel" role="menu" aria-label="Theme menu">
+          {shellThemeOptions.map((theme) => (
+            <button
+              key={theme.id}
+              type="button"
+              className={classNames('shell-theme-menu-item', theme.id === activeTheme && 'is-active')}
+              role="menuitemradio"
+              aria-checked={theme.id === activeTheme}
+              onClick={() => selectTheme(theme.id)}
+            >
+              <span className={`shell-theme-swatch shell-theme-swatch-${theme.id}`} aria-hidden="true" />
+              <span className="shell-theme-menu-copy">
+                <span>{theme.label}</span>
+                <small>{theme.description}</small>
+              </span>
             </button>
           ))}
         </div>

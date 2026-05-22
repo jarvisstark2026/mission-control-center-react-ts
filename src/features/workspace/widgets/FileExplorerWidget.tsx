@@ -67,7 +67,7 @@ export function FileExplorerWidget({
     return {
       id: selectionId,
       label: entry.path,
-      note: entry.file ? `${entry.kind} Â· ${formatLocalFileSize(entry.file.size)}` : `${entry.kind} Â· no file access`,
+      note: entry.file ? `${entry.kind} - ${formatLocalFileSize(entry.file.size)}` : `${entry.kind} - no file access`,
       badge: entry.depth > 0 ? `depth ${entry.depth}` : entry.kind,
       active: selectionId === selectedFileId || selectionId === activeFileId,
       state: entry.kind,
@@ -77,7 +77,7 @@ export function FileExplorerWidget({
   const selectedFileCatalogItems = files.map((record) => ({
     id: record.id,
     label: record.path,
-    note: `${record.previewKind} Â· ${record.file.type || 'unknown type'}`,
+    note: `${record.previewKind} - ${record.file.type || 'unknown type'}`,
     badge: formatLocalFileSize(record.file.size),
     active: record.id === selectedFileId || record.id === activeFileId,
     state: record.previewKind,
@@ -136,7 +136,7 @@ export function FileExplorerWidget({
       />
 
       <WorkspaceSummaryPanel className="file-explorer-summary" title={loadedEntryCount ? `${loadedEntryCount} ${loadedEntryCount === 1 ? 'entry' : 'entries'}` : 'No entries loaded'}>
-        Single-click selects Â· click again opens preview.
+        Single-click selects; click again opens preview.
       </WorkspaceSummaryPanel>
 
       <WorkspaceSectionFrame className="file-explorer-toolbar-frame" eyebrow="file controls" title="local intake" meta="browse / clear">
@@ -170,7 +170,7 @@ export function FileExplorerWidget({
       <div className="file-explorer-body">
         {hasRealFolderEntries || files.length ? (
           <>
-            <WorkspaceSectionFrame className="file-explorer-folder-tree" eyebrow={hasRealFolderEntries ? 'Folder tree' : 'Selected files'} meta={`${folderTreeEntries.length} items Â· depth ${Math.max(...folderTreeEntries.map((entry) => entry.depth), 0)}`}>
+            <WorkspaceSectionFrame className="file-explorer-folder-tree" eyebrow={hasRealFolderEntries ? 'Folder tree' : 'Selected files'} meta={`${folderTreeEntries.length} items - depth ${Math.max(...folderTreeEntries.map((entry) => entry.depth), 0)}`}>
               <WorkspaceCatalogGrid
                 className="file-explorer-catalog file-explorer-folder-catalog"
                 variant="desktop"

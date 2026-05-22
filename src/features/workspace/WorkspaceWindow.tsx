@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode, PointerEvent as ReactPointerEvent } from
 
 import { classNames } from '../../lib/classNames';
 import { WorkspaceWidgetFrame } from './workspaceBlocks';
+import { WorkspaceWidgetIcon } from './WorkspaceWidgetIcon';
 import { WidgetResizeHandles, type ResizeEdge } from './WorkspaceResizeHandles';
 import type { WorkspaceWidget } from './workspaceTypes';
 import type { WorkspaceWidgetTransferAnimation } from './workspaceWidgetTransfer';
@@ -31,11 +32,16 @@ export function WorkspaceWindow({
   showChrome?: boolean;
   transferAnimation?: WorkspaceWidgetTransferAnimation | null;
 }) {
+  const widgetSurfaceAlpha = Math.min(widget.surfaceAlpha * 0.42, 0.05);
+  const widgetLineAlpha = Math.min(widget.lineAlpha * 0.6, 0.1);
+
   return (
     <article
       className={classNames(
         'workspace-widget',
         widget.open ? 'is-open' : 'is-closed',
+        showChrome ? 'has-chrome' : 'is-chromeless',
+        widget.pinned && 'is-pinned',
         `kind-${widget.kind}`,
         transferAnimation && `is-transfer-${transferAnimation.phase}`,
         transferAnimation && `transfer-${transferAnimation.direction}`,
@@ -47,8 +53,8 @@ export function WorkspaceWindow({
           width: `${widget.width}px`,
           height: `${widget.open ? widget.height : 58}px`,
           zIndex: widget.zIndex,
-          '--widget-surface-alpha': widget.surfaceAlpha,
-          '--widget-line-alpha': widget.lineAlpha,
+          '--widget-surface-alpha': widgetSurfaceAlpha,
+          '--widget-line-alpha': widgetLineAlpha,
         } as CSSProperties
       }
       onPointerDown={showChrome ? (event) => onStartDrag(event, widget.id) : undefined}
@@ -56,6 +62,7 @@ export function WorkspaceWindow({
       {showChrome ? (
         <>
           <div className="widget-labels" aria-hidden="true">
+            <WorkspaceWidgetIcon kind={widget.kind} />
             <span className="widget-title">{widget.title}</span>
             <span className="widget-subtitle">{widget.subtitle}</span>
           </div>
@@ -71,7 +78,13 @@ export function WorkspaceWindow({
               aria-label={widget.open ? `Minimize ${widget.title}` : `Maximize ${widget.title}`}
               title={widget.open ? `Minimize ${widget.title}` : `Maximize ${widget.title}`}
             >
-              {widget.open ? '▴' : '▾'}
+              <span
+                className={classNames(
+                  'widget-control-icon',
+                  widget.open ? 'widget-control-icon-minimize' : 'widget-control-icon-maximize',
+                )}
+                aria-hidden="true"
+              />
             </button>
             <button
               type="button"
@@ -83,7 +96,7 @@ export function WorkspaceWindow({
               aria-label={`Recenter ${widget.title}`}
               title={`Recenter ${widget.title}`}
             >
-              ⌖
+              <span className="widget-control-icon widget-control-icon-recenter" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -117,7 +130,7 @@ export function WorkspaceWindow({
               aria-label={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
               title={widget.pinned ? `${widget.title} is pinned` : `Close ${widget.title}`}
             >
-              ×
+              <span className="widget-control-icon widget-control-icon-close" aria-hidden="true" />
             </button>
           </div>
         </>

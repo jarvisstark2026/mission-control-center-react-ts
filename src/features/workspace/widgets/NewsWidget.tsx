@@ -12,7 +12,7 @@ export function NewsWidget({
     category.graphs.map((graph) => ({
       id: graph.id,
       label: graph.label,
-      note: `${graph.category} Â· ${graph.note}`,
+      note: `${graph.category} - ${graph.note}`,
       badge: graph.change,
       active: graph.id === activeGraph.id,
     })),

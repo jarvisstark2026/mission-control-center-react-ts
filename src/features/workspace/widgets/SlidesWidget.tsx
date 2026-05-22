@@ -30,7 +30,7 @@ export function SlidesWidget() {
           <strong>Presentation</strong>
           <p>{activeSlide}</p>
           <small>
-            Slide {activeSlideIndex + 1} of {slides.length} Â· command story
+            Slide {activeSlideIndex + 1} of {slides.length} - command story
           </small>
         </div>
       </WorkspaceSectionFrame>

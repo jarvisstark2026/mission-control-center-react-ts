@@ -1,7 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 import { classNames } from '../../lib/classNames';
-import type { DesktopAppRecord } from './workspaceDesktopApps';
 import type { WorkspaceWidget } from './workspaceTypes';
 
 export function WorkspaceWidgetFrame({
@@ -14,6 +13,16 @@ export function WorkspaceWidgetFrame({
   children: ReactNode;
 }) {
   return <div className={classNames('workspace-widget-frame', `kind-${kind}`, className)}>{children}</div>;
+}
+
+export function WidgetScrollPane({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return <div className={classNames('widget-scroll-pane', className)}>{children}</div>;
 }
 
 export function WorkspaceContentShell({
@@ -302,93 +311,10 @@ export function WorkspaceActionRowList({
             aria-label={row.pinned ? `${row.primary} is pinned` : `Close ${row.primary}`}
             title={row.pinned ? `${row.primary} is pinned` : `Close ${row.primary}`}
           >
-            ×
+            <span className="widget-control-icon widget-control-icon-close" aria-hidden="true" />
           </button>
         </div>
       ))}
-    </div>
-  );
-}
-
-export function DesktopBridgePanel({
-  eyebrow,
-  title,
-  description,
-  inputLabel,
-  inputValue,
-  inputPlaceholder,
-  submitLabel,
-  apps,
-  onChangeInput,
-  onSubmit,
-  onSelectApp,
-  appsLabel,
-  className,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  inputLabel: string;
-  inputValue: string;
-  inputPlaceholder: string;
-  submitLabel: string;
-  apps: DesktopAppRecord[];
-  onChangeInput: (value: string) => void;
-  onSubmit: () => void;
-  onSelectApp?: (app: DesktopAppRecord) => void;
-  appsLabel?: string;
-  className?: string;
-  children?: ReactNode;
-}) {
-  const hasInput = inputValue.trim().length > 0;
-  const isAppSelectable = typeof onSelectApp === 'function' && apps.length > 0;
-  const handleSelectApp = (item: WorkspaceCatalogCard) => {
-    const selectedApp = apps.find((app) => app.name === item.id);
-
-    if (selectedApp) {
-      onSelectApp?.(selectedApp);
-    }
-  };
-
-  return (
-    <div className={classNames('launcher-desktop-bridge', className)}>
-      <div className="launcher-desktop-head">
-        <span>{eyebrow}</span>
-        <strong>{title}</strong>
-        <p>{description}</p>
-      </div>
-      <div className="launcher-desktop-controls">
-        <label className="launcher-desktop-input">
-          <span>{inputLabel}</span>
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(event) => onChangeInput(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter' && hasInput) {
-                onSubmit();
-              }
-            }}
-            placeholder={inputPlaceholder}
-          />
-        </label>
-        <WorkspaceButton className="launcher-desktop-button" onClick={onSubmit} disabled={!hasInput}>
-          {submitLabel}
-        </WorkspaceButton>
-      </div>
-      <WorkspaceCatalogGrid
-        className="launcher-desktop-list"
-        variant="desktop"
-        ariaLabel={appsLabel ?? `${eyebrow} apps`}
-        items={apps.map((app) => ({
-          id: app.name,
-          label: app.name,
-          note: app.note,
-        }))}
-        onSelect={isAppSelectable ? handleSelectApp : undefined}
-      />
-      {children}
     </div>
   );
 }

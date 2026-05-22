@@ -4,7 +4,7 @@
   gap: 10px;
   padding: 20px 18px;
   border: 1px solid var(--glass-panel-border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
     var(--glass-panel-tint);
@@ -44,9 +44,9 @@
   min-height: 24px;
   padding: 5px 9px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.82);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-control);
+  color: var(--color-text-primary);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-size: 0.62rem;
@@ -79,7 +79,7 @@
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--color-text-muted);
 }
 
 .section-header__title {
@@ -92,7 +92,7 @@
 
 .section-header__description {
   margin: 0;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--color-text-muted);
   line-height: 1.45;
 }
 
@@ -103,29 +103,29 @@
   gap: 8px;
   min-height: 38px;
   padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.88);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-control);
+  color: var(--color-text-primary);
   font: inherit;
   line-height: 1;
   cursor: pointer;
   transition:
-    border-color 160ms ease,
-    background 160ms ease,
-    color 160ms ease,
-    transform 160ms ease;
+    border-color var(--motion-fast),
+    background var(--motion-fast),
+    color var(--motion-fast),
+    transform var(--motion-fast);
 }
 
 .action-button:hover {
-  border-color: rgba(255, 255, 255, 0.24);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--glass-border-strong);
+  background: var(--color-surface-control-hover);
 }
 
 .action-button:focus-visible {
-  border-color: rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 0 0 1px rgba(140, 182, 255, 0.28), 0 0 0 4px rgba(140, 182, 255, 0.12);
+  border-color: var(--glass-border-strong);
+  background: var(--color-surface-control-hover);
+  box-shadow: var(--focus-ring);
 }
 
 .action-button:active {
@@ -139,23 +139,23 @@
 }
 
 .action-button--primary {
-  border-color: rgba(140, 182, 255, 0.24);
-  background: rgba(140, 182, 255, 0.1);
+  border-color: var(--jarvis-cyan-line);
+  background: var(--jarvis-cyan-dim);
 }
 
 .action-button--primary:hover {
-  border-color: rgba(140, 182, 255, 0.34);
-  background: rgba(140, 182, 255, 0.14);
+  border-color: var(--jarvis-cyan-line);
+  background: var(--jarvis-cyan-soft);
 }
 
 .action-button--primary:focus-visible {
-  border-color: rgba(140, 182, 255, 0.4);
-  background: rgba(140, 182, 255, 0.14);
-  box-shadow: 0 0 0 1px rgba(140, 182, 255, 0.34), 0 0 0 4px rgba(140, 182, 255, 0.14);
+  border-color: var(--jarvis-cyan-line);
+  background: var(--jarvis-cyan-soft);
+  box-shadow: var(--focus-ring);
 }
 
 .action-button--secondary {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--color-surface-control);
 }
 
 .action-button--ghost {

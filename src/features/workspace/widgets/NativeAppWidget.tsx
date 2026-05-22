@@ -1,5 +1,6 @@
 ﻿import { useState } from 'react';
-import { DesktopBridgePanel, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { DesktopBridgePanel } from '../DesktopBridgePanel';
+import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
 import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from '../workspaceDesktopApps';
 
 export function NativeAppWidget() {
@@ -28,14 +29,14 @@ export function NativeAppWidget() {
       />
 
       <WorkspaceSummaryPanel className="native-app-summary" title="bridge status">
-        Browser containment remains intact; operating-system ambitions are routed through the external app bridge.
+        Browser containment remains intact while installed apps stay routed through the external app bridge.
       </WorkspaceSummaryPanel>
 
       <WorkspaceSectionFrame className="native-app-bridge-section" eyebrow="desktop controls" title="app command" meta={`${apps.length} remembered`}>
         <DesktopBridgePanel
           eyebrow="desktop bridge"
           title="open installed app / external window"
-          description="Bridge installed apps and external windows without pretending the browser can do an operating systemâ€™s job on its own."
+          description="Bridge installed apps and external windows without asking the browser to act as the operating system."
           inputLabel="App or command"
           inputValue={desktopCommand}
           inputPlaceholder="e.g. obsidian, explorer.exe, notepad.exe"

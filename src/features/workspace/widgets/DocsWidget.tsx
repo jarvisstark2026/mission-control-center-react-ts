@@ -4,7 +4,7 @@ export function DocsWidget() {
   const outlineRows = [
     { id: 'title', primary: 'Title', secondary: 'Mission Control Center Brief', meta: 'ready' },
     { id: 'abstract', primary: 'Abstract', secondary: 'Operational summary', meta: 'draft' },
-    { id: 'sections', primary: 'Sections', secondary: 'Architecture Â· Systems Â· Risks', meta: 'in progress' },
+    { id: 'sections', primary: 'Sections', secondary: 'Architecture - Systems - Risks', meta: 'in progress' },
     { id: 'appendix', primary: 'Appendix', secondary: 'References and links', meta: 'pending' },
   ];
 

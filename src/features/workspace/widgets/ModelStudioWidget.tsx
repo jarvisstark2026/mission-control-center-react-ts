@@ -5,7 +5,7 @@ export function ModelStudioWidget() {
     { label: 'Structural integrity', value: '92%', note: 'frame / joints / load paths' },
     { label: 'Bend response', value: '0.18 mm', note: 'deformation under torque' },
     { label: 'Stress hotspots', value: '03', note: 'redline zones and stress peaks' },
-    { label: 'Heat map', value: '64Â°C', note: 'thermal climb under runtime load' },
+    { label: 'Heat map', value: '64 deg C', note: 'thermal climb under runtime load' },
   ];
 
   const gestureChips = ['drag', 'pinch', 'orbit', 'slice', 'measure', 'simulate'];
@@ -17,7 +17,7 @@ export function ModelStudioWidget() {
         eyebrow="3D asset authoring"
         title="sculpt / gesture / simulate"
         metaEyebrow="real-time engineering"
-        meta="structures Â· bending Â· heat Â· stress"
+        meta="structures - bending - heat - stress"
       />
       <WorkspaceSummaryPanel className="model-studio-overview" title="creation surface">
         Designed as a fluid creation surface first, with touch, stylus, and spatial capture ready to slot in when the hardware catches up.

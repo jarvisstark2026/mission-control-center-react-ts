@@ -6,6 +6,7 @@ import App from './App';
 describe('App', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    document.documentElement.removeAttribute('data-theme');
     window.history.replaceState({}, '', '/?role=support');
     vi.restoreAllMocks();
   });
@@ -13,6 +14,7 @@ describe('App', () => {
   afterEach(() => {
     cleanup();
     window.localStorage.clear();
+    document.documentElement.removeAttribute('data-theme');
     vi.useRealTimers();
     vi.restoreAllMocks();
   });
@@ -38,15 +40,26 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /admin/i })).toBeInTheDocument();
   });
 
+  it('switches the workspace theme from the top bar', () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole('button', { name: /theme jarvis prime/i }));
+    const menu = screen.getByRole('menu', { name: /theme menu/i });
+    fireEvent.click(within(menu).getByRole('menuitemradio', { name: /mark iv ember/i }));
+
+    expect(document.documentElement).toHaveAttribute('data-theme', 'ember');
+    expect(window.localStorage.getItem('mission-control-center-theme')).toBe('ember');
+  });
+
   it('uses the rail only for open workspace instances', () => {
     const popup = { close: vi.fn(), focus: vi.fn() } as unknown as Window;
     vi.spyOn(window, 'open').mockReturnValue(popup);
 
     render(<App />);
 
-    const navigationButtons = screen.getAllByLabelText('Open workspace navigation');
+    const navigationButtons = screen.getAllByLabelText('Open workspace setup');
     const navigationButton = navigationButtons[0];
-    expect(navigationButtons).toHaveLength(2);
+    expect(navigationButtons).toHaveLength(1);
     expect(navigationButton.closest('.workspace-footer-tab')).toBeInTheDocument();
     expect(navigationButton).toHaveAttribute('aria-expanded', 'false');
 
@@ -80,7 +93,7 @@ describe('App', () => {
 
     render(<App />);
 
-    fireEvent.click(screen.getAllByLabelText('Open workspace navigation')[0]);
+    fireEvent.click(screen.getAllByLabelText('Open workspace setup')[0]);
     const rail = screen.getByLabelText('Workspace navigation');
     fireEvent.click(within(rail).getByLabelText('Create workspace instance'));
 
@@ -126,7 +139,7 @@ describe('App', () => {
 
     render(<App />);
 
-    fireEvent.click(screen.getAllByLabelText('Open workspace navigation')[0]);
+    fireEvent.click(screen.getAllByLabelText('Open workspace setup')[0]);
     const rail = screen.getByLabelText('Workspace navigation');
 
     fireEvent.click(screen.getByLabelText('Create blank workspace'));

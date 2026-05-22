@@ -28,7 +28,7 @@ export function PreviewWidget({
     const nextUrl = createLocalFileObjectUrl(file);
     let cancelled = false;
     setObjectUrl(nextUrl);
-    setStatus(`Opening ${file.previewKind} previewâ€¦`);
+    setStatus(`Opening ${file.previewKind} preview...`);
     setTextPreview('');
 
     if (file.previewKind === 'text') {
@@ -36,7 +36,7 @@ export function PreviewWidget({
         .then((content) => {
           if (cancelled) return;
           setTextPreview(content);
-          setStatus(`Text preview ready Â· ${formatLocalFileSize(file.file.size)}`);
+          setStatus(`Text preview ready - ${formatLocalFileSize(file.file.size)}`);
         })
         .catch(() => {
           if (cancelled) return;
@@ -44,7 +44,7 @@ export function PreviewWidget({
           setStatus('Text preview unavailable for this file.');
         });
     } else {
-      setStatus(`Ready Â· ${formatLocalFileSize(file.file.size)}`);
+      setStatus(`Ready - ${formatLocalFileSize(file.file.size)}`);
     }
 
     return () => {
@@ -108,7 +108,7 @@ export function PreviewWidget({
         eyebrow="Preview"
         title={file.path}
         metaEyebrow={file.previewKind}
-        meta={`${file.file.type || 'unknown type'} Â· ${formatLocalFileSize(file.file.size)}`}
+        meta={`${file.file.type || 'unknown type'} - ${formatLocalFileSize(file.file.size)}`}
       />
 
       <WorkspaceSummaryPanel className="preview-file-summary" title={file.file.name}>
@@ -155,7 +155,7 @@ export function PreviewWidget({
           ) : null}
 
           {file.previewKind === 'text' ? (
-            <pre className="preview-media preview-media-text">{textPreview || 'Loading text previewâ€¦'}</pre>
+            <pre className="preview-media preview-media-text">{textPreview || 'Loading text preview...'}</pre>
           ) : null}
 
           {file.previewKind === 'unsupported' ? (

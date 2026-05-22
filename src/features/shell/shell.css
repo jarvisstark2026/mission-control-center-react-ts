@@ -4,8 +4,8 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
-  background: #030913;
-  color: rgba(255, 255, 255, 0.92);
+  background: var(--color-bg-shell);
+  color: var(--color-text-primary);
 }
 
 .shell-frame.shell-frame-extension {
@@ -22,20 +22,20 @@
   justify-content: center;
   width: 44px;
   height: 44px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 12px;
-  background: rgba(4, 10, 20, 0.82);
-  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-glass);
+  color: var(--color-text-primary);
   font-size: 1rem;
   cursor: pointer;
-  backdrop-filter: blur(16px);
+  backdrop-filter: var(--glass-blur);
 }
 
 .shell-menu-toggle:hover,
 .shell-menu-toggle:focus-visible {
-  border-color: rgba(255, 255, 255, 0.26);
-  background: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 0 0 1px rgba(140, 182, 255, 0.22), 0 0 0 4px rgba(140, 182, 255, 0.12);
+  border-color: var(--glass-border-strong);
+  background: var(--color-surface-control-hover);
+  box-shadow: var(--focus-ring);
 }
 
 .shell-backdrop {
@@ -48,7 +48,7 @@
   backdrop-filter: blur(4px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 180ms ease;
+  transition: opacity var(--motion-panel);
 }
 
 .shell-backdrop.is-visible {
@@ -67,20 +67,20 @@
   width: min(380px, calc(100vw - 28px));
   max-height: min(560px, calc(100vh - 104px));
   padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 8px;
+  border: 1px solid var(--color-border-muted);
+  border-radius: var(--radius-md);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02)),
-    rgba(5, 17, 30, 0.94);
-  box-shadow: 0 22px 58px rgba(0, 0, 0, 0.44);
-  backdrop-filter: blur(18px);
+    var(--color-surface-overlay);
+  box-shadow: var(--glass-shadow-overlay);
+  backdrop-filter: var(--glass-blur-strong);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
   opacity: 0;
   pointer-events: none;
   transform: translate(-50%, 10px);
-  transition: opacity 180ms ease, transform 180ms ease;
+  transition: opacity var(--motion-panel), transform var(--motion-panel);
 }
 
 .shell-rail.is-open {
@@ -94,22 +94,30 @@
 }
 
 .shell-footer-menu-button {
-  width: 36px;
-  min-width: 36px;
-  min-height: 34px;
+  width: 48px;
+  min-width: 48px;
+  min-height: 46px;
   padding: 0;
+  border-radius: var(--radius-pill);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.035)),
+    radial-gradient(circle at 50% 15%, rgba(255, 255, 255, 0.12), transparent 34%),
+    rgba(255, 255, 255, 0.035);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 10px 22px rgba(0, 0, 0, 0.26);
 }
 
 .shell-footer-menu-button[aria-expanded='true'] {
-  border-color: rgba(255, 255, 255, 0.28);
-  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--glass-border-strong);
+  background: var(--color-surface-control-hover);
 }
 
 .shell-footer-menu-icon {
   position: relative;
   display: block;
-  width: 16px;
-  height: 12px;
+  width: 22px;
+  height: 16px;
 }
 
 .shell-footer-menu-icon,
@@ -129,11 +137,11 @@
 }
 
 .shell-footer-menu-icon::before {
-  top: 5px;
+  top: 7px;
 }
 
 .shell-footer-menu-icon::after {
-  top: 11px;
+  top: 15px;
 }
 
 .shell-footer-menu-icon span {
@@ -152,7 +160,7 @@
   text-transform: uppercase;
   letter-spacing: 0.18em;
   font-size: 0.68rem;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--color-text-muted);
 }
 
 .shell-branding h1 {
@@ -188,7 +196,7 @@
 .shell-instance-copy {
   margin: 0;
   max-width: 34ch;
-  color: rgba(255, 255, 255, 0.68);
+  color: var(--color-text-secondary);
   font-size: 0.82rem;
   line-height: 1.35;
 }
@@ -196,7 +204,7 @@
 .shell-copy {
   margin-top: 12px;
   max-width: 30ch;
-  color: rgba(255, 255, 255, 0.74);
+  color: var(--color-text-secondary);
   line-height: 1.5;
 }
 
@@ -209,10 +217,10 @@
 
 .shell-meta .status-chip {
   padding: 4px 9px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.76);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-control);
+  color: var(--color-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-size: 0.62rem;
@@ -235,9 +243,9 @@
 
 .shell-instance-button,
 .shell-instance-close {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-glass-soft);
   color: inherit;
 }
 
@@ -279,8 +287,8 @@
 .shell-instance-button:focus-visible,
 .shell-instance-close:hover,
 .shell-instance-close:focus-visible {
-  border-color: rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--glass-border-strong);
+  background: var(--color-surface-control-hover);
 }
 
 .shell-workspace-arrangement {
@@ -293,9 +301,9 @@
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 5px;
   padding: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-glass-soft);
 }
 
 .shell-arrangement-cell {
@@ -305,9 +313,9 @@
   place-items: center;
   padding: 5px;
   border: 1px dashed rgba(255, 255, 255, 0.12);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--color-text-muted);
   font: inherit;
   text-align: center;
   cursor: pointer;
@@ -322,8 +330,8 @@
 
 .shell-arrangement-main {
   border-style: solid;
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(255, 255, 255, 0.9);
+  background: var(--color-surface-control-hover);
+  color: var(--color-text-primary);
   cursor: default;
 }
 
@@ -347,7 +355,7 @@
 
 .shell-instance-list small,
 .shell-instance-button small {
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--color-text-muted);
   line-height: 1.4;
 }
 
@@ -363,11 +371,24 @@
   z-index: 2;
 }
 
+.shell-theme-menu {
+  position: relative;
+  z-index: 3;
+}
+
 .workspace-launcher .shell-role-menu {
   pointer-events: auto;
 }
 
+.workspace-launcher .shell-theme-menu {
+  pointer-events: auto;
+}
+
 .workspace-launcher .shell-role-menu-trigger {
+  width: 100%;
+}
+
+.workspace-launcher .shell-theme-menu-trigger {
   width: 100%;
 }
 
@@ -377,14 +398,32 @@
   min-width: 138px;
   min-height: 38px;
   padding: 7px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 999px;
-  background: rgba(5, 17, 30, 0.84);
-  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-glass);
+  color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(18px);
+  box-shadow: var(--glass-shadow-soft);
+  backdrop-filter: var(--glass-blur-strong);
+}
+
+.shell-theme-menu-trigger {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-width: 154px;
+  min-height: 38px;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-glass);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--glass-shadow-soft);
+  backdrop-filter: var(--glass-blur-strong);
 }
 
 .shell-role-menu-trigger span,
@@ -392,13 +431,44 @@
   text-transform: uppercase;
   letter-spacing: 0.16em;
   font-size: 0.58rem;
-  color: rgba(255, 255, 255, 0.58);
+  color: var(--color-text-muted);
+}
+
+.shell-theme-trigger-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.shell-theme-trigger-copy span,
+.shell-theme-menu-copy span {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .shell-role-menu-trigger strong {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 0.68rem;
+}
+
+.shell-theme-trigger-copy strong {
+  overflow: hidden;
+  color: var(--color-text-primary);
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .shell-role-menu-panel {
@@ -409,13 +479,30 @@
   gap: 6px;
   width: min(310px, calc(100vw - 28px));
   padding: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  border-radius: 6px;
-  background: rgba(5, 17, 30, 0.95);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-overlay-strong);
   box-shadow:
-    0 22px 58px rgba(0, 0, 0, 0.44),
+    var(--glass-shadow-overlay),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(22px);
+  backdrop-filter: var(--glass-blur-strong);
+}
+
+.shell-theme-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  gap: 6px;
+  width: min(360px, calc(100vw - 28px));
+  padding: 8px;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-overlay-strong);
+  box-shadow:
+    var(--glass-shadow-overlay),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: var(--glass-blur-strong);
 }
 
 .shell-role-menu-item {
@@ -423,17 +510,103 @@
   gap: 4px;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-glass-soft);
+  color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
 }
 
+.shell-theme-menu-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 58px;
+  padding: 9px 10px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-xs);
+  background: var(--color-surface-glass-soft);
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.shell-theme-menu-copy {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
 .shell-role-menu-item small {
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--color-text-muted);
   line-height: 1.35;
+}
+
+.shell-theme-menu-item small {
+  color: var(--color-text-muted);
+  line-height: 1.35;
+}
+
+.shell-theme-orb,
+.shell-theme-swatch {
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-pill);
+}
+
+.shell-theme-orb {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--glass-border-strong);
+  background:
+    radial-gradient(circle at 50% 35%, var(--jarvis-cyan-soft), transparent 62%),
+    rgba(255, 255, 255, 0.03);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.shell-theme-swatch {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 0 18px rgba(0, 0, 0, 0.18);
+}
+
+.shell-theme-orb .shell-theme-swatch {
+  width: 16px;
+  height: 16px;
+}
+
+.shell-theme-swatch-jarvis {
+  background:
+    radial-gradient(circle at 32% 26%, rgba(86, 221, 255, 0.95), transparent 34%),
+    radial-gradient(circle at 74% 76%, rgba(255, 188, 92, 0.86), transparent 35%),
+    #07101a;
+}
+
+.shell-theme-swatch-arc {
+  background:
+    radial-gradient(circle at 34% 28%, rgba(104, 232, 255, 0.96), transparent 36%),
+    radial-gradient(circle at 76% 74%, rgba(118, 188, 255, 0.82), transparent 36%),
+    #04152a;
+}
+
+.shell-theme-swatch-ember {
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 183, 92, 0.92), transparent 36%),
+    radial-gradient(circle at 76% 74%, rgba(255, 130, 76, 0.86), transparent 34%),
+    #170e08;
+}
+
+.shell-theme-swatch-ghost {
+  background:
+    radial-gradient(circle at 32% 28%, rgba(184, 218, 240, 0.88), transparent 36%),
+    radial-gradient(circle at 76% 74%, rgba(157, 186, 204, 0.68), transparent 34%),
+    #0b1118;
 }
 
 .shell-role-menu-trigger:hover,
@@ -441,15 +614,24 @@
 .shell-role-menu-item:hover,
 .shell-role-menu-item:focus-visible,
 .shell-role-menu-item.is-active {
-  border-color: rgba(255, 255, 255, 0.24);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--glass-border-strong);
+  background: var(--color-surface-control-hover);
+}
+
+.shell-theme-menu-trigger:hover,
+.shell-theme-menu-trigger:focus-visible,
+.shell-theme-menu-item:hover,
+.shell-theme-menu-item:focus-visible,
+.shell-theme-menu-item.is-active {
+  border-color: var(--glass-border-strong);
+  background: var(--color-surface-control-hover);
 }
 
 .shell-frame-window {
   grid-template-columns: 1fr;
   background:
     radial-gradient(circle at top center, rgba(255, 255, 255, 0.08), transparent 28%),
-    #030913;
+    var(--color-bg-shell);
 }
 
 .shell-window {
@@ -584,7 +766,8 @@
     padding: 8px 24px 8px 8px;
   }
 
-  .shell-role-menu {
+  .shell-role-menu,
+  .shell-theme-menu {
     width: 100%;
   }
 }
@@ -618,17 +801,20 @@
     min-height: 52px;
   }
 
-  .shell-role-menu {
+  .shell-role-menu,
+  .shell-theme-menu {
     width: 100%;
   }
 
-  .shell-role-menu-trigger {
+  .shell-role-menu-trigger,
+  .shell-theme-menu-trigger {
     min-width: 118px;
     min-height: 34px;
     padding: 6px 10px;
   }
 
-  .shell-role-menu-trigger span {
+  .shell-role-menu-trigger span,
+  .shell-theme-trigger-copy span {
     display: none;
   }
 

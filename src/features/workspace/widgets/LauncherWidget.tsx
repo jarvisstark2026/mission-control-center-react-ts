@@ -1,5 +1,6 @@
 ﻿import { useState } from 'react';
-import { DesktopBridgePanel, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { DesktopBridgePanel } from '../DesktopBridgePanel';
+import { WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
 import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from '../workspaceDesktopApps';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from '../workspaceTypes';
 import { getWidgetLabel, getWorkspaceLauncherEntries } from '../workspaceWidgetCatalog';
@@ -39,7 +40,7 @@ export function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: La
     return {
       id: app.kind,
       label: getWidgetLabel(app.kind),
-      note: state === 'open' ? 'open Â· double-click to focus' : 'double-click to open',
+      note: state === 'open' ? 'open - double-click to focus' : 'double-click to open',
       badge: state,
       active: state === 'open',
       state,
@@ -57,14 +58,14 @@ export function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: La
       />
 
       <WorkspaceSummaryPanel className="launcher-summary-panel" title="workspace hooks">
-        Open or focus widgets in the workspace, with external apps routed through the bridge rather than a separate browser tantrum.
+        Open or focus widgets in the workspace, with external apps routed through the same desktop bridge.
       </WorkspaceSummaryPanel>
 
       <WorkspaceSectionFrame className="launcher-desktop-section" eyebrow="desktop bridge" meta="installed apps and shortcuts">
         <DesktopBridgePanel
           eyebrow="installed apps"
           title="load installed apps into memory"
-          description="Command line stays. The bridge now lives beside the workspace launcher rather than impersonating a separate universe."
+          description="Command line stays available while installed apps remain linked to the workspace launcher."
           inputLabel="Installed app or command"
           inputValue={desktopCommand}
           inputPlaceholder="e.g. explorer.exe, obsidian, notepad.exe"

@@ -6,6 +6,7 @@ import { createId } from '../../lib/createId';
 import { WorkspaceButton } from './workspaceBlocks';
 import { WorkspaceAtmosphere, WorkspaceCanvas } from './WorkspaceCanvas';
 import { WorkspaceCloseScreenButton, WorkspaceNewScreenButton } from './WorkspaceScreenButton';
+import { WorkspaceWindowTracker } from './WorkspaceWindowTracker';
 import type { ResizeEdge } from './WorkspaceResizeHandles';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
@@ -16,7 +17,8 @@ import { defaultMarketGraph, getMarketGraph, type MarketGraph } from './workspac
 import { WorkspaceWidgetCard, type WorkspaceWidgetRuntimeProps } from './workspaceWidgets';
 import { closeWorkspaceExtensionWindow, closeWorkspacePanelWindow, openWorkspaceExtensionWindow, returnToWorkspaceHub } from './workspacePanelWindows';
 import { isWorkspaceExtensionUrl } from './workspacePanelRouting';
-import { getAdjacentWorkspaceInstance, getWorkspaceInstanceId, getWorkspaceInstances, type WorkspaceTransferDirection } from './workspaceInstances';
+import { getAdjacentWorkspaceInstance, getWorkspaceInstanceId, getWorkspaceInstances, subscribeWorkspaceInstances, type WorkspaceTransferDirection } from './workspaceInstances';
+import { playWidgetAddedSound } from './workspaceSound';
 import { publishWidgetTransfer, subscribeWidgetTransfer, type WorkspaceWidgetTransferAnimation } from './workspaceWidgetTransfer';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
@@ -61,6 +63,21 @@ function loadWidgetStateForWorkspace(workspaceId: string) {
   });
 
   return storedWidgets ?? (workspaceId === 'main' ? createInitialWidgetState() : createBlankWidgetState());
+}
+
+function parseManagedWidgetId(scopedWidgetId: string, fallbackWorkspaceId: string) {
+  const separatorIndex = scopedWidgetId.indexOf('::');
+  if (separatorIndex < 0) {
+    return {
+      workspaceId: fallbackWorkspaceId,
+      widgetId: scopedWidgetId,
+    };
+  }
+
+  return {
+    workspaceId: scopedWidgetId.slice(0, separatorIndex) || fallbackWorkspaceId,
+    widgetId: scopedWidgetId.slice(separatorIndex + 2),
+  };
 }
 
 function createCompactLayout(boundsWidth: number, boundsHeight: number): WorkspaceWidget[] {
@@ -298,6 +315,14 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
   const persistedLocalFilesLoadedRef = useRef(false);
   const [activeMarketGraphId, setActiveMarketGraphId] = useState(defaultMarketGraph.id);
   const [widgetMenuOpen, setWidgetMenuOpen] = useState(false);
+  const [, setWorkspaceCatalogVersion] = useState(0);
+  const bumpWorkspaceCatalogVersion = useCallback(() => setWorkspaceCatalogVersion((version) => version + 1), []);
+  const workspaceInstances = getWorkspaceInstances();
+  const workspaceInstanceIds = workspaceInstances.map((instance) => instance.id).join('|');
+  const extensionWorkspaceNumber = isWorkspaceExtension
+    ? workspaceInstances.filter((instance) => instance.kind === 'extension').findIndex((instance) => instance.id === currentWorkspaceId) + 1
+    : 0;
+  const extensionWorkspaceLabel = extensionWorkspaceNumber > 0 ? `Workspace ${extensionWorkspaceNumber}` : 'Workspace';
   const canBrowseFolder = typeof getDirectoryPicker() === 'function';
   const canPersistWidgetState = !panelKind && !(currentWorkspaceId === 'main' && bounds.width < 860);
   const clearPendingWidgetSave = () => {
@@ -386,6 +411,19 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
       setWidgets(nextWidgets);
     }),
   [currentWorkspaceId]);
+
+  useEffect(() => subscribeWorkspaceInstances(bumpWorkspaceCatalogVersion), [bumpWorkspaceCatalogVersion]);
+
+  useEffect(() => {
+    const unsubscribes = workspaceInstanceIds
+      .split('|')
+      .filter((workspaceId) => workspaceId && workspaceId !== currentWorkspaceId)
+      .map((workspaceId) => subscribeStoredWidgetState(workspaceId, bumpWorkspaceCatalogVersion));
+
+    return () => {
+      unsubscribes.forEach((unsubscribe) => unsubscribe());
+    };
+  }, [bumpWorkspaceCatalogVersion, currentWorkspaceId, workspaceInstanceIds]);
 
   useEffect(() =>
     subscribeWidgetTransfer(currentWorkspaceId, (message) => {
@@ -530,7 +568,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     if ((event.target as HTMLElement).closest('button, input, textarea, select, a, video, [role="button"]')) return;
 
     const widget = widgetsRef.current.find((item) => item.id === id);
-    if (!widget || !planeRef.current) return;
+    if (!widget || widget.pinned || !planeRef.current) return;
 
     event.preventDefault();
     event.currentTarget.setPointerCapture?.(event.pointerId);
@@ -891,6 +929,82 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     );
   };
 
+  const focusManagedWidget = (scopedWidgetId: string) => {
+    const { workspaceId, widgetId } = parseManagedWidgetId(scopedWidgetId, currentWorkspaceId);
+
+    if (workspaceId === currentWorkspaceId) {
+      focusWidget(widgetId);
+      return;
+    }
+
+    const targetWidgets = loadWidgetStateForWorkspace(workspaceId);
+    const highest = targetWidgets.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
+    const nextWidgets = targetWidgets.map((widget) =>
+      widget.id === widgetId
+        ? {
+            ...widget,
+            open: true,
+            hidden: false,
+            zIndex: highest + 1,
+          }
+        : widget,
+    );
+
+    if (saveStoredWidgetState(nextWidgets, workspaceId)) {
+      bumpWorkspaceCatalogVersion();
+    }
+  };
+
+  const toggleManagedWidgetPin = (scopedWidgetId: string) => {
+    const { workspaceId, widgetId } = parseManagedWidgetId(scopedWidgetId, currentWorkspaceId);
+
+    if (workspaceId === currentWorkspaceId) {
+      toggleWidgetPin(widgetId);
+      return;
+    }
+
+    const targetWidgets = loadWidgetStateForWorkspace(workspaceId);
+    const nextWidgets = targetWidgets.map((widget) =>
+      widget.id === widgetId
+        ? {
+            ...widget,
+            hidden: false,
+            pinned: !widget.pinned,
+            zIndex: widget.pinned ? widget.zIndex : widget.zIndex + 1,
+          }
+        : widget,
+    );
+
+    if (saveStoredWidgetState(nextWidgets, workspaceId)) {
+      bumpWorkspaceCatalogVersion();
+    }
+  };
+
+  const closeManagedWidget = (scopedWidgetId: string) => {
+    const { workspaceId, widgetId } = parseManagedWidgetId(scopedWidgetId, currentWorkspaceId);
+
+    if (workspaceId === currentWorkspaceId) {
+      closeWidget(widgetId);
+      return;
+    }
+
+    const targetWidgets = loadWidgetStateForWorkspace(workspaceId);
+    const nextWidgets = targetWidgets.map((widget) =>
+      widget.id === widgetId
+        ? {
+            ...widget,
+            open: widget.pinned ? widget.open : false,
+            hidden: widget.pinned ? false : true,
+            zIndex: widget.zIndex + 1,
+          }
+        : widget,
+    );
+
+    if (saveStoredWidgetState(nextWidgets, workspaceId)) {
+      bumpWorkspaceCatalogVersion();
+    }
+  };
+
   const openWidgetInCenter = (id: string) => {
     const canvasSize = getEffectiveCanvasSize(canvasRef.current, bounds);
 
@@ -925,10 +1039,14 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     setWidgetMenuOpen(false);
     const target = widgetsRef.current.find((widget) => widget.kind === kind);
     if (target) {
+      if (!target.open || target.hidden) {
+        playWidgetAddedSound();
+      }
       openWidgetInCenter(target.id);
       return;
     }
 
+    playWidgetAddedSound();
     setWidgets((current) => {
       const highest = current.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
       const nextWidget = getFocusedWidget(kind, bounds.width || 1200, bounds.height || 800);
@@ -1069,6 +1187,12 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
 
   const activeMarketGraph = useMemo(() => getMarketGraph(activeMarketGraphId), [activeMarketGraphId]);
   const workspacePlaneSize = useMemo(() => getWorkspacePlaneSize(bounds), [bounds]);
+  const workspaceWidgetGroups = workspaceInstances.map((workspace) => ({
+    workspaceId: workspace.id,
+    label: workspace.label,
+    active: workspace.id === currentWorkspaceId,
+    widgets: workspace.id === currentWorkspaceId ? widgets : loadWidgetStateForWorkspace(workspace.id),
+  }));
   const widgetRuntimeProps: WorkspaceWidgetRuntimeProps = {
     onStartDrag: startDrag,
     onStartResize: startResize,
@@ -1091,9 +1215,10 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     onLaunchWorkspaceWidget: openWorkspaceWidget,
     onSelectMarketGraph: openMarketGraph,
     workspaceWidgets: widgets,
-    onFocusWidget: focusWidget,
-    onTogglePinWidget: toggleWidgetPin,
-    onCloseWidget: closeWidget,
+    workspaceWidgetGroups,
+    onFocusWidget: focusManagedWidget,
+    onTogglePinWidget: toggleManagedWidgetPin,
+    onCloseWidget: closeManagedWidget,
   };
 
   if (panelKind) {
@@ -1142,6 +1267,12 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
       <div className="workspace-head">
         {!isWorkspaceExtension ? <div className="workspace-brand">Mission Control Center</div> : null}
         {!isWorkspaceExtension ? <StatusChip tone="cool">tailnet live · drag · resize · stack</StatusChip> : null}
+        {isWorkspaceExtension ? (
+          <div className="workspace-extension-identity" aria-label={`${extensionWorkspaceLabel} top bar marker`}>
+            <span className="workspace-extension-number">{extensionWorkspaceNumber > 0 ? extensionWorkspaceNumber : '-'}</span>
+            <span>{extensionWorkspaceLabel}</span>
+          </div>
+        ) : null}
         <div className="workspace-launcher">
           {!isWorkspaceExtension ? (
             <WorkspaceButton variant="secondary" className="workspace-launch-button is-muted" onClick={resetWorkspaceLayout}>
@@ -1208,6 +1339,12 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
               Menu
             </WorkspaceButton>
           )}
+          <WorkspaceWindowTracker
+            workspaceGroups={workspaceWidgetGroups}
+            onFocusWidget={focusManagedWidget}
+            onTogglePinWidget={toggleManagedWidgetPin}
+            onCloseWidget={closeManagedWidget}
+          />
         </div>
       ) : null}
     </section>

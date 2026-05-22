@@ -122,16 +122,16 @@ export function WorkflowWidget() {
 
   const diagramNodes = steps.map((step, index) => {
     const x = 90 + index * 150;
-    const fill = index === 0 ? '#77d1ff' : index === steps.length - 1 ? '#b4ffc2' : '#dbe7ff';
+    const fill = index === 0 ? 'var(--jarvis-cyan)' : index === steps.length - 1 ? 'var(--jarvis-success)' : 'var(--jarvis-neutral-line)';
 
     return (
       <g key={`${step}-${index}`}>
         {index > 0 ? <line x1={x - 60} y1={96} x2={x - 30} y2={96} stroke="rgba(255,255,255,0.46)" strokeWidth="2" strokeLinecap="round" /> : null}
         <circle cx={x} cy={96} r="28" fill={fill} fillOpacity="0.22" stroke={fill} strokeOpacity="0.88" strokeWidth="2" />
-        <text x={x} y={100} textAnchor="middle" fill="#f7fbff" fontSize="15" fontFamily="Inter, system-ui, sans-serif">
+        <text x={x} y={100} textAnchor="middle" fill="var(--color-text-strong)" fontSize="15" fontFamily="var(--font-family-ui)">
           {index + 1}
         </text>
-        <text x={x} y={146} textAnchor="middle" fill="rgba(255,255,255,0.86)" fontSize="11" fontFamily="Inter, system-ui, sans-serif">
+        <text x={x} y={146} textAnchor="middle" fill="var(--color-text-primary)" fontSize="11" fontFamily="var(--font-family-ui)">
           {step}
         </text>
       </g>
@@ -145,7 +145,7 @@ export function WorkflowWidget() {
         eyebrow="Workflow studio"
         title={draft.name}
         metaEyebrow={template.title}
-        meta={`${steps.length} steps Â· ${selectedSkills.length} skills`}
+        meta={`${steps.length} steps - ${selectedSkills.length} skills`}
       />
       <WorkspaceSummaryPanel className="workflow-summary" title={template.title}>
         {status}

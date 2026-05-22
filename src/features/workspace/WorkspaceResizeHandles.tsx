@@ -4,14 +4,11 @@ import type { WorkspaceWidget } from './workspaceTypes';
 
 export type ResizeEdge = 'corner' | 'left' | 'right' | 'bottom';
 
-const RESIZE_GRIP_ICON = '⋯';
-
 type ResizeHandleSpec = {
   edge: ResizeEdge;
   className: string;
   gripClassName: string;
   label: string;
-  symbol: string;
 };
 
 const resizeHandleSpecs: ResizeHandleSpec[] = [
@@ -20,28 +17,24 @@ const resizeHandleSpecs: ResizeHandleSpec[] = [
     className: 'widget-resize-handle-bottom-right',
     gripClassName: 'widget-resize-grip-corner',
     label: 'Resize {title} from the bottom-right corner',
-    symbol: '┘',
   },
   {
     edge: 'left',
     className: 'widget-resize-handle-left widget-resize-handle-side',
     gripClassName: 'widget-resize-grip-vertical',
     label: 'Resize {title} from the left edge',
-    symbol: RESIZE_GRIP_ICON,
   },
   {
     edge: 'right',
     className: 'widget-resize-handle-right widget-resize-handle-side',
     gripClassName: 'widget-resize-grip-vertical',
     label: 'Resize {title} from the right edge',
-    symbol: RESIZE_GRIP_ICON,
   },
   {
     edge: 'bottom',
     className: 'widget-resize-handle-bottom',
     gripClassName: 'widget-resize-grip-horizontal',
     label: 'Resize {title} from the bottom edge',
-    symbol: RESIZE_GRIP_ICON,
   },
 ];
 
@@ -73,9 +66,7 @@ export function WidgetResizeHandles({
             aria-label={label}
             title={label}
           >
-            <span aria-hidden="true" className={`widget-resize-grip ${handle.gripClassName}`}>
-              {handle.symbol}
-            </span>
+            <span aria-hidden="true" className={`widget-resize-grip ${handle.gripClassName}`} />
           </button>
         );
       })}

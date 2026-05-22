@@ -17,10 +17,11 @@ import {
   type WorkspacePlacement,
 } from '../workspace/workspaceInstances';
 import type { WorkspaceWidget } from '../workspace/workspaceTypes';
-import { DetachedShellWindow, ShellRail, ShellRoleMenu } from './ShellChrome';
+import { DetachedShellWindow, ShellRail, ShellRoleMenu, ShellThemeMenu } from './ShellChrome';
 import { isShellPanelAccessible } from './nav';
 import type { ShellRole } from './roles';
 import { defaultShellRole, getPanelLabel, getRoleLabel, normalizePanelKind } from './shellCopy';
+import { applyShellTheme, persistShellTheme, readStoredShellTheme, type ShellThemeId } from './themes';
 import { useResponsiveRail } from './useResponsiveRail';
 import './shell.css';
 
@@ -53,6 +54,7 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
   const activePanelLabel = activePanelKind ? getPanelLabel(activePanelKind) : 'Workspace';
   const { closeRailOnMobile, isRailOpen, menuToggleRef, setIsRailOpen } = useResponsiveRail();
   const [workspaceInstances, setWorkspaceInstances] = useState(getWorkspaceInstances);
+  const [activeTheme, setActiveTheme] = useState(readStoredShellTheme);
 
   useEffect(() => {
     const refreshInstances = () => setWorkspaceInstances(getWorkspaceInstances());
@@ -109,6 +111,11 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
         : `Mission Control Center — ${activeRoleLabel}`;
   }, [activePanelLabel, activePanelKind, activeRoleLabel, isDetachedWindow]);
 
+  useEffect(() => {
+    applyShellTheme(activeTheme);
+    persistShellTheme(activeTheme);
+  }, [activeTheme]);
+
   const navigateToPanel = (target: WorkspaceWidget['kind'] | null) => {
     closeRailOnMobile();
     onNavigate({ panelKind: target, role: activeRole });
@@ -145,15 +152,19 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
     updateWorkspaceInstancePlacement(id, placement);
     setWorkspaceInstances(getWorkspaceInstances());
   };
+  const selectTheme = (themeId: ShellThemeId) => {
+    setActiveTheme(themeId);
+  };
   const renderFooterNavigationButton = (key: string, withFocusRef = false) => (
     <ActionButton
       key={key}
       ref={withFocusRef ? menuToggleRef : undefined}
       variant="ghost"
       className="workspace-launch-button workspace-footer-button shell-footer-menu-button"
-      aria-label={isRailOpen ? 'Close workspace navigation' : 'Open workspace navigation'}
+      aria-label={isRailOpen ? 'Close workspace setup' : 'Open workspace setup'}
       aria-controls="shell-rail"
       aria-expanded={isRailOpen}
+      title={isRailOpen ? 'Close workspace setup' : 'Open workspace setup'}
       onClick={() => setIsRailOpen((current) => !current)}
     >
       <span className="shell-footer-menu-icon" aria-hidden="true">
@@ -162,10 +173,7 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
     </ActionButton>
   );
   const footerNavigationControl = !isWorkspaceExtension ? (
-    <>
-      {renderFooterNavigationButton('workspace-navigation-primary', true)}
-      {renderFooterNavigationButton('workspace-navigation-secondary')}
-    </>
+    renderFooterNavigationButton('workspace-navigation-primary', true)
   ) : null;
 
   if (isDetachedWindow && activePanelKind) {
@@ -196,7 +204,9 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
             aria-expanded={isRailOpen}
             onClick={() => setIsRailOpen((current) => !current)}
           >
-        ☰
+            <span className="shell-footer-menu-icon" aria-hidden="true">
+              <span />
+            </span>
           </ActionButton>
 
           <div
@@ -220,7 +230,10 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
         <Workspace
           topBarSlot={
             !isWorkspaceExtension ? (
-              <ShellRoleMenu activeRole={activeRole} activeRoleLabel={activeRoleLabel} onNavigateRole={navigateToRole} />
+              <>
+                <ShellThemeMenu activeTheme={activeTheme} onSelectTheme={selectTheme} />
+                <ShellRoleMenu activeRole={activeRole} activeRoleLabel={activeRoleLabel} onNavigateRole={navigateToRole} />
+              </>
             ) : null
           }
           footerSlot={footerNavigationControl}

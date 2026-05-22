@@ -1,52 +1,57 @@
-﻿import { WorkspaceActionRowList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
-import { type WorkspaceWidget } from '../workspaceTypes';
+import { WorkspaceActionRowList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import {
+  getManagedWidgetRows,
+  getTrackedWorkspaceWidgetGroups,
+  getWorkspaceWidgetGroupSummary,
+  type WorkspaceWidgetGroup,
+} from '../workspaceManagerModel';
 
 export function WindowManagerWidget({
-  widgets,
+  workspaceGroups,
   onFocusWidget,
   onTogglePinWidget,
   onCloseWidget,
 }: {
-  widgets: WorkspaceWidget[];
+  workspaceGroups: WorkspaceWidgetGroup[];
   onFocusWidget: (id: string) => void;
   onTogglePinWidget: (id: string) => void;
   onCloseWidget: (id: string) => void;
 }) {
-  const manageableWidgets = widgets.filter((widget) => widget.kind !== 'window-manager');
-  const visibleWidgets = manageableWidgets.filter((widget) => !widget.hidden);
-  const openWidgetCount = visibleWidgets.filter((widget) => widget.open).length;
+  const trackedGroups = getTrackedWorkspaceWidgetGroups(workspaceGroups);
+  const summary = getWorkspaceWidgetGroupSummary(trackedGroups);
 
   return (
     <WorkspaceContentShell className="window-manager-surface">
       <WorkspaceContentHeader
         eyebrow="Manager"
         title="Workspace widgets and pinned surfaces"
-        meta={`${openWidgetCount} open · ${visibleWidgets.length} visible · ${manageableWidgets.length} total`}
+        meta={`${summary.open} open - ${summary.visible} visible - ${summary.total} total`}
       />
       <WorkspaceSummaryPanel className="window-manager-note" title="window controls">
-        Pin widgets from this list or from each widget toolbar. Pinned widgets stay visible and cannot be closed until unpinned.
+        Widgets are grouped by workspace. Pin widgets from this list or from each widget toolbar.
       </WorkspaceSummaryPanel>
-      <WorkspaceSectionFrame className="window-manager-list-frame" eyebrow="manager" title="visible surfaces" meta={`${visibleWidgets.length} tracked`}>
-        {visibleWidgets.length > 0 ? (
-          <WorkspaceActionRowList
-            className="window-manager-list"
-            ariaLabel="Visible workspace widgets"
-            rows={visibleWidgets.map((widget) => ({
-              id: widget.id,
-              primary: widget.title,
-              secondary: widget.open ? 'open' : 'minimized',
-              meta: `${widget.kind} · z${widget.zIndex}${widget.pinned ? ' · pinned' : ''}`,
-              pinned: widget.pinned,
-            }))}
-            onFocusRow={onFocusWidget}
-            onTogglePinRow={onTogglePinWidget}
-            onCloseRow={onCloseWidget}
-          />
-        ) : (
-          <p className="window-manager-empty">No visible widgets are active in this workspace.</p>
-        )}
-      </WorkspaceSectionFrame>
+      {trackedGroups.map((group) => (
+        <WorkspaceSectionFrame
+          key={group.workspaceId}
+          className="window-manager-list-frame"
+          eyebrow={group.active ? 'current workspace' : 'workspace'}
+          title={group.label}
+          meta={`${group.visibleWidgets.length} visible - ${group.openWidgetCount} open`}
+        >
+          {group.visibleWidgets.length > 0 ? (
+            <WorkspaceActionRowList
+              className="window-manager-list"
+              ariaLabel={`Visible widgets in ${group.label}`}
+              rows={getManagedWidgetRows(group)}
+              onFocusRow={onFocusWidget}
+              onTogglePinRow={onTogglePinWidget}
+              onCloseRow={onCloseWidget}
+            />
+          ) : (
+            <p className="window-manager-empty">No visible widgets are active in this workspace.</p>
+          )}
+        </WorkspaceSectionFrame>
+      ))}
     </WorkspaceContentShell>
   );
 }
-

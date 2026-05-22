@@ -210,6 +210,43 @@ const widgetIconDefinitions: Record<WidgetKind, WidgetIconDefinition> = {
       'M5 17h.1',
     ],
   },
+  'command-inbox': {
+    paths: [
+      'M5 5h14v14H5z',
+      'M8 9h8',
+      'M8 13h5',
+      'M15 15l2 2 4-5',
+    ],
+  },
+  notifications: {
+    paths: [
+      'M12 5a5 5 0 0 0-5 5v3l-2 3h14l-2-3v-3a5 5 0 0 0-5-5z',
+      'M10 19a2 2 0 0 0 4 0',
+      'M18 7l2-2',
+    ],
+  },
+  'integration-registry': {
+    paths: [
+      'M6 7h5v5H6z',
+      'M13 12h5v5h-5z',
+      'M11 9h2',
+      'M9 12v3h4',
+      'M18 9h2',
+      'M4 15h2',
+    ],
+  },
+  'agent-control': {
+    paths: [
+      'M12 5a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V9a4 4 0 0 1 4-4z',
+      'M7 19a5 5 0 0 1 10 0',
+      'M4 8h2',
+      'M18 8h2',
+      'M12 2v2',
+      'M9 11h.1',
+      'M15 11h.1',
+      'M10 15h4',
+    ],
+  },
 };
 
 export function WorkspaceWidgetIcon({ kind }: { kind: WidgetKind }) {

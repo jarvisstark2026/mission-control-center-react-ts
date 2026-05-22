@@ -1,18 +1,24 @@
 import type { ReactNode } from 'react';
 
 import type { LocalFileRecord, LocalFolderEntry } from './workspaceLocalFiles';
+import type { ShellRole } from '../shell/roles';
+import type { AgentControlState } from '../agent-control';
+import type { MissionControlRuntime } from '../mission-control';
 import type { WorkspaceWidgetGroup } from './workspaceManagerModel';
 import type { MarketGraph } from './workspaceMarketData';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { WidgetScrollPane } from './workspaceBlocks';
 import {
   AudioWidget,
+  AgentControlWidget,
   BrowserWidget,
+  CommandInboxWidget,
   DiagramWidget,
   DocsWidget,
   FileExplorerWidget,
   GraphWidget,
   ImageWidget,
+  IntegrationRegistryWidget,
   LauncherWidget,
   ListWidget,
   LiveTvWidget,
@@ -20,6 +26,7 @@ import {
   ModelStudioWidget,
   NativeAppWidget,
   NewsWidget,
+  NotificationsWidget,
   OverviewWidget,
   PdfWidget,
   PreviewWidget,
@@ -53,6 +60,9 @@ export type WorkspaceWidgetContentProps = {
   onFocusWidget: (id: string) => void;
   onTogglePinWidget: (id: string) => void;
   onCloseWidget: (id: string) => void;
+  missionControl: MissionControlRuntime;
+  agentControl: AgentControlState;
+  activeRole: ShellRole;
 };
 
 type WorkspaceWidgetContentRendererProps = {
@@ -102,6 +112,9 @@ function renderWorkspaceWidgetContent({
   onFocusWidget,
   onTogglePinWidget,
   onCloseWidget,
+  missionControl,
+  agentControl,
+  activeRole,
 }: WorkspaceWidgetContentRendererProps) {
   switch (widget.kind) {
     case 'file-explorer':
@@ -125,7 +138,7 @@ function renderWorkspaceWidgetContent({
     case 'news':
       return <NewsWidget activeGraph={activeMarketGraph} onSelectGraph={onSelectMarketGraph} />;
     case 'launcher':
-      return <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} />;
+      return <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} activeRole={activeRole} />;
     case 'window-manager':
       return (
         <WindowManagerWidget
@@ -135,6 +148,14 @@ function renderWorkspaceWidgetContent({
           onCloseWidget={onCloseWidget}
         />
       );
+    case 'command-inbox':
+      return <CommandInboxWidget missionControl={missionControl} />;
+    case 'notifications':
+      return <NotificationsWidget missionControl={missionControl} />;
+    case 'integration-registry':
+      return <IntegrationRegistryWidget missionControl={missionControl} />;
+    case 'agent-control':
+      return <AgentControlWidget state={agentControl} role={activeRole} />;
     case '3d': {
       const previewFile = widget.previewFileId ? localFiles.find((record) => record.id === widget.previewFileId) ?? null : null;
       return <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} />;

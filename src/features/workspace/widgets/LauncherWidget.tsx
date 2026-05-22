@@ -1,4 +1,5 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
+import type { ShellRole } from '../../shell/roles';
 import { DesktopBridgePanel } from '../DesktopBridgePanel';
 import { WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
 import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from '../workspaceDesktopApps';
@@ -8,13 +9,14 @@ import { getWidgetLabel, getWorkspaceLauncherEntries } from '../workspaceWidgetC
 type LauncherWidgetProps = {
   onLaunchWorkspaceWidget: (kind: WorkspaceWidget['kind']) => void;
   workspaceWidgets: WorkspaceWidget[];
+  activeRole: ShellRole;
 };
 
-export function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: LauncherWidgetProps) {
+export function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets, activeRole }: LauncherWidgetProps) {
   const [desktopCommand, setDesktopCommand] = useState('');
   const [desktopApps, setDesktopApps] = useState<DesktopAppRecord[]>(defaultDesktopApps);
 
-  const workspaceApps = getWorkspaceLauncherEntries();
+  const workspaceApps = getWorkspaceLauncherEntries(activeRole);
 
   const openInstalledApp = () => {
     const nextName = desktopCommand.trim();
@@ -92,4 +94,3 @@ export function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets }: La
     </WorkspaceContentShell>
   );
 }
-

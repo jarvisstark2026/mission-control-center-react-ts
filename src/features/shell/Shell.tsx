@@ -228,6 +228,7 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
 
       <div className="shell-workspace">
         <Workspace
+          role={activeRole}
           topBarSlot={
             !isWorkspaceExtension ? (
               <>

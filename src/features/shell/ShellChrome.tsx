@@ -80,7 +80,7 @@ export function DetachedShellWindow({
           </div>
         </div>
 
-        <Workspace panelKind={activePanelKind} />
+        <Workspace panelKind={activePanelKind} role={activeRole} />
       </div>
     </section>
   );

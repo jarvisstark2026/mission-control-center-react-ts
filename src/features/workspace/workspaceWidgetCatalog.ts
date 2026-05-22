@@ -1,5 +1,6 @@
 import type { WorkspaceWidget } from './workspaceTypes';
 import type { WidgetBlueprint } from './workspaceStorage';
+import type { ShellRole } from '../shell/roles';
 
 export const workspaceShortcutKinds: WorkspaceWidget['kind'][] = [
   'overview',
@@ -27,6 +28,10 @@ export const workspaceShortcutKinds: WorkspaceWidget['kind'][] = [
   '3d-studio',
   'flow',
   'list',
+  'command-inbox',
+  'notifications',
+  'integration-registry',
+  'agent-control',
 ];
 
 type WorkspaceLauncherEntry = {
@@ -38,9 +43,25 @@ const workspaceLauncherNotes: Partial<Record<WorkspaceWidget['kind'], string>> =
   news: 'open graph library',
   'window-manager': 'track workspace widgets',
   'trading-graph': 'focus market chart',
+  'command-inbox': 'review approvals',
+  notifications: 'watch live alerts',
+  'integration-registry': 'inspect devices',
+  'agent-control': 'inspect Jarvis agent',
 };
 
 const workspaceLauncherKinds = workspaceShortcutKinds.filter((kind) => kind !== 'native-app');
+
+const workspaceWidgetAllowedRoles: Partial<Record<WorkspaceWidget['kind'], ShellRole[]>> = {
+  'agent-control': ['admin', 'support', 'home'],
+};
+
+export function isWorkspaceWidgetAllowedForRole(kind: WorkspaceWidget['kind'], role: ShellRole) {
+  return workspaceWidgetAllowedRoles[kind]?.includes(role) ?? true;
+}
+
+export function getWorkspaceShortcutKindsForRole(role: ShellRole) {
+  return workspaceShortcutKinds.filter((kind) => isWorkspaceWidgetAllowedForRole(kind, role));
+}
 
 export const widgetBlueprints: Record<WorkspaceWidget['kind'], WidgetBlueprint> = {
   overview: { title: 'Command core', subtitle: 'open / move / stack', surfaceAlpha: 0.11, lineAlpha: 0.18, minWidth: 300, minHeight: 180 },
@@ -68,6 +89,10 @@ export const widgetBlueprints: Record<WorkspaceWidget['kind'], WidgetBlueprint> 
   '3d-studio': { title: '3D studio', subtitle: 'gesture / simulate / sculpt', surfaceAlpha: 0.11, lineAlpha: 0.18, minWidth: 360, minHeight: 240 },
   flow: { title: 'Workflows', subtitle: 'library / steps / pdf', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 300, minHeight: 220 },
   list: { title: 'List', subtitle: 'inbox / next steps', surfaceAlpha: 0.075, lineAlpha: 0.14, minWidth: 260, minHeight: 150 },
+  'command-inbox': { title: 'Command inbox', subtitle: 'approvals / gates', surfaceAlpha: 0.088, lineAlpha: 0.17, minWidth: 320, minHeight: 240 },
+  notifications: { title: 'Notifications', subtitle: 'telemetry / alerts', surfaceAlpha: 0.082, lineAlpha: 0.16, minWidth: 320, minHeight: 240 },
+  'integration-registry': { title: 'Integration registry', subtitle: 'devices / permissions', surfaceAlpha: 0.084, lineAlpha: 0.16, minWidth: 340, minHeight: 260 },
+  'agent-control': { title: 'Agent control', subtitle: 'identity / jobs / permissions', surfaceAlpha: 0.086, lineAlpha: 0.17, minWidth: 360, minHeight: 280 },
 };
 
 type WidgetPresetLayout = Pick<WorkspaceWidget, 'id' | 'kind' | 'x' | 'y' | 'width' | 'height' | 'zIndex'> &
@@ -88,6 +113,10 @@ const widgetPresetLayouts: WidgetPresetLayout[] = [
   { id: 'file-explorer', kind: 'file-explorer', x: 60, y: 330, width: 380, height: 420, zIndex: 3, minWidth: 360, minHeight: 380 },
   { id: 'native-app', kind: 'native-app', x: 420, y: 320, width: 392, height: 238, zIndex: 4 },
   { id: 'window-manager', kind: 'window-manager', x: 840, y: 332, width: 344, height: 238, zIndex: 4 },
+  { id: 'command-inbox', kind: 'command-inbox', x: 24, y: 86, width: 390, height: 360, zIndex: 8, pinned: true },
+  { id: 'notifications', kind: 'notifications', x: 430, y: 86, width: 360, height: 300, zIndex: 7 },
+  { id: 'integration-registry', kind: 'integration-registry', x: 808, y: 86, width: 390, height: 340, zIndex: 6 },
+  { id: 'agent-control', kind: 'agent-control', x: 430, y: 404, width: 390, height: 360, zIndex: 6 },
   { id: 'sheet', kind: 'sheet', x: 120, y: 772, width: 408, height: 246, zIndex: 2 },
   { id: 'docs', kind: 'docs', x: 548, y: 786, width: 342, height: 232, zIndex: 2 },
   { id: 'slides', kind: 'slides', x: 912, y: 790, width: 330, height: 230, zIndex: 2 },
@@ -124,8 +153,10 @@ export function getWidgetLabel(kind: WorkspaceWidget['kind']) {
   return widgetBlueprints[kind].title;
 }
 
-export function getWorkspaceLauncherEntries(): WorkspaceLauncherEntry[] {
-  return workspaceLauncherKinds.map((kind) => ({
+export function getWorkspaceLauncherEntries(role?: ShellRole): WorkspaceLauncherEntry[] {
+  const kinds = role ? workspaceLauncherKinds.filter((kind) => isWorkspaceWidgetAllowedForRole(kind, role)) : workspaceLauncherKinds;
+
+  return kinds.map((kind) => ({
     kind,
     note: workspaceLauncherNotes[kind] ?? 'open in workspace',
   }));

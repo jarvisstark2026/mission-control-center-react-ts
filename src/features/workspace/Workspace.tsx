@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 
 import { StatusChip } from '../../components/ui/StatusChip';
 import { createId } from '../../lib/createId';
+import type { ShellRole } from '../shell/roles';
+import { createInitialAgentControlState } from '../agent-control';
+import { useMissionControl } from '../mission-control';
 import { WorkspaceButton } from './workspaceBlocks';
 import { WorkspaceAtmosphere, WorkspaceCanvas } from './WorkspaceCanvas';
 import { WorkspaceCloseScreenButton, WorkspaceNewScreenButton } from './WorkspaceScreenButton';
@@ -12,11 +15,19 @@ import type { WorkspaceWidget } from './workspaceTypes';
 import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
 import { createLocalFileRecord, clearPersistedLocalFiles, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readPersistedLocalFiles, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
 import { clampNumber, clearAllStoredWidgetStates, getWorkspaceWidgetStorageKey, loadStoredWidgetState, saveStoredWidgetState, subscribeStoredWidgetState } from './workspaceStorage';
-import { getFocusedWidget, getWidgetLabel, widgetBlueprints, widgetPresets, workspaceShortcutKinds } from './workspaceWidgetCatalog';
+import {
+  getFocusedWidget,
+  getWidgetLabel,
+  getWorkspaceShortcutKindsForRole,
+  isWorkspaceWidgetAllowedForRole,
+  widgetBlueprints,
+  widgetPresets,
+} from './workspaceWidgetCatalog';
 import { defaultMarketGraph, getMarketGraph, type MarketGraph } from './workspaceMarketData';
+import { createWorkspaceModePresetLayout, workspaceModePresets, type WorkspaceModePresetId } from './workspaceModePresets';
 import { WorkspaceWidgetCard, type WorkspaceWidgetRuntimeProps } from './workspaceWidgets';
 import { closeWorkspaceExtensionWindow, closeWorkspacePanelWindow, openWorkspaceExtensionWindow, returnToWorkspaceHub } from './workspacePanelWindows';
-import { isWorkspaceExtensionUrl } from './workspacePanelRouting';
+import { getCurrentShellRole, isWorkspaceExtensionUrl } from './workspacePanelRouting';
 import { getAdjacentWorkspaceInstance, getWorkspaceInstanceId, getWorkspaceInstances, subscribeWorkspaceInstances, type WorkspaceTransferDirection } from './workspaceInstances';
 import { playWidgetAddedSound } from './workspaceSound';
 import { publishWidgetTransfer, subscribeWidgetTransfer, type WorkspaceWidgetTransferAnimation } from './workspaceWidgetTransfer';
@@ -27,6 +38,8 @@ const workspaceTransferOutDurationMs = 180;
 const workspaceTransferAnimationDurationMs = 240;
 
 const defaultOpenKinds = new Set<WorkspaceWidget['kind']>([
+  'command-inbox',
+  'notifications',
   'overview',
   'graph',
   'trading-graph',
@@ -141,6 +154,12 @@ type WorkspaceProps = {
   panelKind?: WorkspaceWidget['kind'] | null;
   topBarSlot?: ReactNode;
   footerSlot?: ReactNode;
+  role?: ShellRole;
+};
+
+type WorkspaceCatalogSnapshot = {
+  version: number;
+  instances: ReturnType<typeof getWorkspaceInstances>;
 };
 
 type ActiveWidgetTransferAnimation = WorkspaceWidgetTransferAnimation & {
@@ -181,6 +200,16 @@ function getWorkspacePlaneSize(bounds: { width: number; height: number }) {
     minWidth: Math.max(320, bounds.width),
     minHeight: Math.max(240, bounds.height),
   };
+}
+
+function useEventCallback<TArgs extends unknown[], TReturn>(callback: (...args: TArgs) => TReturn) {
+  const callbackRef = useRef(callback);
+
+  useLayoutEffect(() => {
+    callbackRef.current = callback;
+  });
+
+  return useCallback((...args: TArgs) => callbackRef.current(...args), []);
 }
 
 function getWidgetRenderHeight(widget: WorkspaceWidget) {
@@ -286,9 +315,12 @@ function getWorkspaceTransferDirection({
   return candidates.filter((candidate) => candidate.active).sort((left, right) => right.distance - left.distance)[0]?.direction ?? null;
 }
 
-export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = null }: WorkspaceProps) {
+export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = null, role }: WorkspaceProps) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const planeRef = useRef<HTMLDivElement | null>(null);
+  const activeRole = role ?? getCurrentShellRole();
+  const missionControl = useMissionControl(activeRole);
+  const agentControl = useMemo(() => createInitialAgentControlState(), []);
   const isWorkspaceExtension = isWorkspaceExtensionUrl();
   const workspaceInstanceId = getWorkspaceInstanceId();
   const currentWorkspaceId = isWorkspaceExtension ? workspaceInstanceId ?? 'workspace-extension' : 'main';
@@ -315,14 +347,26 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
   const persistedLocalFilesLoadedRef = useRef(false);
   const [activeMarketGraphId, setActiveMarketGraphId] = useState(defaultMarketGraph.id);
   const [widgetMenuOpen, setWidgetMenuOpen] = useState(false);
-  const [, setWorkspaceCatalogVersion] = useState(0);
-  const bumpWorkspaceCatalogVersion = useCallback(() => setWorkspaceCatalogVersion((version) => version + 1), []);
-  const workspaceInstances = getWorkspaceInstances();
-  const workspaceInstanceIds = workspaceInstances.map((instance) => instance.id).join('|');
+  const [presetMenuOpen, setPresetMenuOpen] = useState(false);
+  const [workspaceCatalog, setWorkspaceCatalog] = useState<WorkspaceCatalogSnapshot>(() => ({
+    version: 0,
+    instances: getWorkspaceInstances(),
+  }));
+  const bumpWorkspaceCatalogVersion = useCallback(
+    () =>
+      setWorkspaceCatalog((current) => ({
+        version: current.version + 1,
+        instances: getWorkspaceInstances(),
+      })),
+    [],
+  );
+  const { instances: workspaceInstances, version: workspaceCatalogVersion } = workspaceCatalog;
+  const workspaceInstanceIds = useMemo(() => workspaceInstances.map((instance) => instance.id).join('|'), [workspaceInstances]);
   const extensionWorkspaceNumber = isWorkspaceExtension
     ? workspaceInstances.filter((instance) => instance.kind === 'extension').findIndex((instance) => instance.id === currentWorkspaceId) + 1
     : 0;
   const extensionWorkspaceLabel = extensionWorkspaceNumber > 0 ? `Workspace ${extensionWorkspaceNumber}` : 'Workspace';
+  const workspaceShortcutKindsForRole = useMemo(() => getWorkspaceShortcutKindsForRole(activeRole), [activeRole]);
   const canBrowseFolder = typeof getDirectoryPicker() === 'function';
   const canPersistWidgetState = !panelKind && !(currentWorkspaceId === 'main' && bounds.width < 860);
   const clearPendingWidgetSave = () => {
@@ -335,13 +379,13 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     clearPendingWidgetSave();
     void saveStoredWidgetState(nextWidgets, currentWorkspaceId);
   };
-  const finishInteraction = () => {
+  const finishInteraction = useEventCallback(() => {
     const interaction = interactionRef.current;
     interactionRef.current = null;
     if (interaction?.workspaceId === currentWorkspaceId) {
       persistWidgetState();
     }
-  };
+  });
   const startWidgetTransferAnimation = useCallback((animation: ActiveWidgetTransferAnimation) => {
     if (transferAnimationTimeoutRef.current !== null) {
       window.clearTimeout(transferAnimationTimeoutRef.current);
@@ -514,7 +558,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
       window.removeEventListener('pointercancel', finishInteraction);
       window.removeEventListener('blur', finishInteraction);
     };
-  });
+  }, [finishInteraction]);
 
   useEffect(
     () => () => {
@@ -542,6 +586,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
   const resetWorkspaceLayout = () => {
     interactionRef.current = null;
     setWidgetMenuOpen(false);
+    setPresetMenuOpen(false);
     const resetWidgets = currentWorkspaceId === 'main' ? createInitialWidgetState() : createBlankWidgetState();
     widgetsRef.current = resetWidgets;
     void clearAllStoredWidgetStates(getWorkspaceInstances().map((workspace) => workspace.id));
@@ -554,6 +599,16 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
 
   const closeBlankWorkspaceExtension = () => {
     closeWorkspaceExtensionWindow();
+  };
+
+  const applyWorkspaceModePreset = (presetId: WorkspaceModePresetId) => {
+    interactionRef.current = null;
+    setWidgetMenuOpen(false);
+    setPresetMenuOpen(false);
+    const nextWidgets = createWorkspaceModePresetLayout(presetId, widgetsRef.current, bounds);
+    widgetsRef.current = nextWidgets;
+    setWidgets(nextWidgets);
+    persistWidgetState(nextWidgets);
   };
 
   const raiseWidget = (id: string) => {
@@ -1037,6 +1092,8 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
 
   const openWorkspaceWidget = (kind: WorkspaceWidget['kind']) => {
     setWidgetMenuOpen(false);
+    if (!isWorkspaceWidgetAllowedForRole(kind, activeRole)) return;
+
     const target = widgetsRef.current.find((widget) => widget.kind === kind);
     if (target) {
       if (!target.open || target.hidden) {
@@ -1050,7 +1107,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     setWidgets((current) => {
       const highest = current.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
       const nextWidget = getFocusedWidget(kind, bounds.width || 1200, bounds.height || 800);
-      const next = [...current, { ...nextWidget, zIndex: highest + 1 }];
+      const next = [...current, { ...nextWidget, pinned: false, zIndex: highest + 1 }];
       widgetsRef.current = next;
       return next;
     });
@@ -1185,21 +1242,71 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     void clearPersistedLocalFiles();
   };
 
+  const onStartDrag = useEventCallback(startDrag);
+  const onStartResize = useEventCallback(startResize);
+  const onToggleOpen = useEventCallback(toggleWidget);
+  const onTogglePin = useEventCallback(toggleWidgetPin);
+  const onRecenter = useEventCallback(recenterWidget);
+  const onClose = useEventCallback(closeWidget);
+  const onBrowseFiles = useEventCallback(importLocalFiles);
+  const onBrowseFolder = useEventCallback(browseFolder);
+  const onOpenPreview = useEventCallback(openLocalPreview);
+  const onSelectFile = useEventCallback(setSelectedLocalFileId);
+  const onClearFiles = useEventCallback(clearLocalFiles);
+  const onLaunchWorkspaceWidget = useEventCallback(openWorkspaceWidget);
+  const onSelectMarketGraph = useEventCallback(openMarketGraph);
+  const onFocusWidget = useEventCallback(focusManagedWidget);
+  const onTogglePinWidget = useEventCallback(toggleManagedWidgetPin);
+  const onCloseWidget = useEventCallback(closeManagedWidget);
+
   const activeMarketGraph = useMemo(() => getMarketGraph(activeMarketGraphId), [activeMarketGraphId]);
   const workspacePlaneSize = useMemo(() => getWorkspacePlaneSize(bounds), [bounds]);
-  const workspaceWidgetGroups = workspaceInstances.map((workspace) => ({
-    workspaceId: workspace.id,
-    label: workspace.label,
-    active: workspace.id === currentWorkspaceId,
-    widgets: workspace.id === currentWorkspaceId ? widgets : loadWidgetStateForWorkspace(workspace.id),
-  }));
+  const externalWorkspaceWidgetGroups = useMemo(
+    () => {
+      const storageRevision = workspaceCatalogVersion;
+      void storageRevision;
+
+      return workspaceInstances
+        .filter((workspace) => workspace.id !== currentWorkspaceId)
+        .map((workspace) => ({
+          workspaceId: workspace.id,
+          label: workspace.label,
+          active: false,
+          widgets: loadWidgetStateForWorkspace(workspace.id),
+        }));
+    },
+    [currentWorkspaceId, workspaceCatalogVersion, workspaceInstances],
+  );
+  const workspaceWidgetGroups = useMemo(
+    () =>
+      workspaceInstances.map((workspace) => {
+        if (workspace.id === currentWorkspaceId) {
+          return {
+            workspaceId: workspace.id,
+            label: workspace.label,
+            active: true,
+            widgets,
+          };
+        }
+
+        return (
+          externalWorkspaceWidgetGroups.find((group) => group.workspaceId === workspace.id) ?? {
+            workspaceId: workspace.id,
+            label: workspace.label,
+            active: false,
+            widgets: loadWidgetStateForWorkspace(workspace.id),
+          }
+        );
+      }),
+    [currentWorkspaceId, externalWorkspaceWidgetGroups, widgets, workspaceInstances],
+  );
   const widgetRuntimeProps: WorkspaceWidgetRuntimeProps = {
-    onStartDrag: startDrag,
-    onStartResize: startResize,
-    onToggleOpen: toggleWidget,
-    onTogglePin: toggleWidgetPin,
-    onRecenter: recenterWidget,
-    onClose: closeWidget,
+    onStartDrag,
+    onStartResize,
+    onToggleOpen,
+    onTogglePin,
+    onRecenter,
+    onClose,
     localFiles,
     activeLocalFileId,
     selectedLocalFileId,
@@ -1207,18 +1314,21 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     folderPath,
     canBrowseFolder,
     activeMarketGraph,
-    onBrowseFiles: importLocalFiles,
-    onBrowseFolder: browseFolder,
-    onOpenPreview: openLocalPreview,
-    onSelectFile: setSelectedLocalFileId,
-    onClearFiles: clearLocalFiles,
-    onLaunchWorkspaceWidget: openWorkspaceWidget,
-    onSelectMarketGraph: openMarketGraph,
+    onBrowseFiles,
+    onBrowseFolder,
+    onOpenPreview,
+    onSelectFile,
+    onClearFiles,
+    onLaunchWorkspaceWidget,
+    onSelectMarketGraph,
     workspaceWidgets: widgets,
     workspaceWidgetGroups,
-    onFocusWidget: focusManagedWidget,
-    onTogglePinWidget: toggleManagedWidgetPin,
-    onCloseWidget: closeManagedWidget,
+    onFocusWidget,
+    onTogglePinWidget,
+    onCloseWidget,
+    missionControl,
+    agentControl,
+    activeRole,
   };
 
   if (panelKind) {
@@ -1296,7 +1406,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
             </WorkspaceButton>
             {widgetMenuOpen ? (
               <div className="workspace-widget-menu-panel" role="menu" aria-label="Open widget menu">
-                {workspaceShortcutKinds.map((kind) => (
+                {workspaceShortcutKindsForRole.map((kind) => (
                   <button
                     key={kind}
                     type="button"
@@ -1310,6 +1420,35 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
               </div>
             ) : null}
           </div>
+          {!isWorkspaceExtension ? (
+            <div className="workspace-widget-menu workspace-preset-menu">
+              <WorkspaceButton
+                variant="compact"
+                className="workspace-launch-button workspace-widget-menu-trigger"
+                aria-expanded={presetMenuOpen}
+                aria-haspopup="menu"
+                onClick={() => setPresetMenuOpen((open) => !open)}
+              >
+                Mode preset
+              </WorkspaceButton>
+              {presetMenuOpen ? (
+                <div className="workspace-widget-menu-panel workspace-preset-menu-panel" role="menu" aria-label="Workspace mode presets">
+                  {workspaceModePresets.map((preset) => (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      className="workspace-widget-menu-item workspace-preset-menu-item"
+                      role="menuitem"
+                      onClick={() => applyWorkspaceModePreset(preset.id)}
+                    >
+                      <strong>{preset.label}</strong>
+                      <small>{preset.note}</small>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           {topBarSlot}
         </div>
       </div>

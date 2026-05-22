@@ -23,4 +23,7 @@ export { LiveTvWidget } from './LiveTvWidget';
 export { FileExplorerWidget } from './FileExplorerWidget';
 export { NativeAppWidget } from './NativeAppWidget';
 export { WindowManagerWidget } from './WindowManagerWidget';
-
+export { CommandInboxWidget } from './CommandInboxWidget';
+export { NotificationsWidget } from './NotificationsWidget';
+export { IntegrationRegistryWidget } from './IntegrationRegistryWidget';
+export { AgentControlWidget } from './AgentControlWidget';

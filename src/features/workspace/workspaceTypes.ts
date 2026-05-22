@@ -23,7 +23,11 @@ export type WidgetKind =
   | '3d'
   | '3d-studio'
   | 'flow'
-  | 'list';
+  | 'list'
+  | 'command-inbox'
+  | 'notifications'
+  | 'integration-registry'
+  | 'agent-control';
 
 export type WorkspaceWidget = {
   id: string;
@@ -71,6 +75,10 @@ export const workspaceWidgetKinds: WidgetKind[] = [
   '3d-studio',
   'flow',
   'list',
+  'command-inbox',
+  'notifications',
+  'integration-registry',
+  'agent-control',
 ];
 
 export function isWorkspaceWidgetKind(value: string): value is WidgetKind {

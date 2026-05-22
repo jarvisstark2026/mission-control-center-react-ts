@@ -48,8 +48,9 @@ export function WorkspaceWindow({
       )}
       style={
         {
-          left: `${widget.x}px`,
-          top: `${widget.y}px`,
+          left: '0px',
+          top: '0px',
+          translate: `${widget.x}px ${widget.y}px`,
           width: `${widget.width}px`,
           height: `${widget.open ? widget.height : 58}px`,
           zIndex: widget.zIndex,

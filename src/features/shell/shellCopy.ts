@@ -29,6 +29,10 @@ const panelLabels: Partial<Record<WorkspaceWidget['kind'], string>> = {
   '3d-studio': '3D studio',
   flow: 'Workflows',
   list: 'List',
+  'command-inbox': 'Command inbox',
+  notifications: 'Notifications',
+  'integration-registry': 'Integration registry',
+  'agent-control': 'Agent control',
 };
 
 export function getPanelLabel(panelKind: WorkspaceWidget['kind'] | null | undefined) {

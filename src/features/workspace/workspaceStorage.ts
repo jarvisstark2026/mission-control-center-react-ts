@@ -39,6 +39,12 @@ export function loadStoredWidgetState({
 
   try {
     const presetIds = new Set(presets.map((preset) => preset.id));
+    const presetSingletonKinds = new Set<WorkspaceWidget['kind']>([
+      'command-inbox',
+      'notifications',
+      'integration-registry',
+      'agent-control',
+    ]);
     const byId = new Map(parsed.filter(isStoredWidgetRecord).map((item) => [item.id, item]));
     const normalizedPresets = presets.map((preset) => {
       const stored = byId.get(preset.id);
@@ -70,7 +76,13 @@ export function loadStoredWidgetState({
 
     const dynamicWidgets = parsed
       .filter((item): item is Partial<WorkspaceWidget> & { id: string; kind: WorkspaceWidget['kind'] } =>
-        Boolean(isStoredWidgetRecord(item) && !presetIds.has(item.id) && item.kind && isWorkspaceWidgetKind(item.kind)),
+        Boolean(
+          isStoredWidgetRecord(item) &&
+            !presetIds.has(item.id) &&
+            item.kind &&
+            isWorkspaceWidgetKind(item.kind) &&
+            !presetSingletonKinds.has(item.kind),
+        ),
       )
       .map((stored) => {
         const kind = stored.kind;

@@ -36,6 +36,11 @@ describe('Workspace header controls', () => {
     expect(widget).not.toHaveClass('is-pinned');
   };
 
+  const expectWidgetPosition = (widget: HTMLElement | null, x: number, y: number) => {
+    expect(widget).toHaveStyle({ left: '0px', top: '0px' });
+    expect(widget?.style.translate).toBe(`${x}px ${y}px`);
+  };
+
   it('opens a blank workspace extension without clearing the current workspace', () => {
     const focus = vi.fn();
     const open = vi.spyOn(window, 'open').mockReturnValue({ focus } as unknown as Window);
@@ -83,7 +88,7 @@ describe('Workspace header controls', () => {
     expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('main'))).toBeNull();
     expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('workspace-right'))).toBeNull();
     expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('stale-workspace'))).toBeNull();
-    expect(container.querySelector<HTMLElement>('.workspace-widget.kind-overview')).toHaveStyle({ left: '44px', top: '74px' });
+    expectWidgetPosition(container.querySelector<HTMLElement>('.workspace-widget.kind-overview'), 44, 74);
   });
 
   it('closes the workspace extension button back to the hub when the window cannot close itself', () => {
@@ -127,7 +132,7 @@ describe('Workspace header controls', () => {
     expect(getManagerCard()).toHaveTextContent(/double-click to focus/i);
 
     const managerWidget = container.querySelector<HTMLElement>('.workspace-widget.kind-window-manager');
-    expect(managerWidget).toHaveStyle({ left: '340px', top: '265px' });
+    expectWidgetPosition(managerWidget, 340, 265);
     expect(managerWidget?.querySelector('.widget-scroll-pane')).toBeInTheDocument();
     expect(managerWidget?.querySelector('.workspace-content-head.window-manager-head')).not.toBeInTheDocument();
   });
@@ -175,8 +180,90 @@ describe('Workspace header controls', () => {
 
     const audioWidget = container.querySelector<HTMLElement>('.workspace-widget.kind-audio');
     expect(audioWidget).toHaveClass('is-open');
-    expect(audioWidget).toHaveStyle({ left: '340px', top: '287px' });
+    expectWidgetPosition(audioWidget, 340, 287);
     expect(oscillatorStarts).toHaveLength(3);
+  });
+
+  it('opens operational core widgets from the shared widget menu', () => {
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
+    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Command inbox' }));
+    expect(currentRender.getAllByText('primary approval queue').length).toBeGreaterThan(0);
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
+    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Notifications' }));
+    expect(currentRender.getByText('live telemetry and alerts')).toBeInTheDocument();
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
+    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Integration registry' }));
+    expect(currentRender.getByText('devices, heartbeats, and permissions')).toBeInTheDocument();
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
+    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Agent control' }));
+    expect(currentRender.getAllByText('identity / jobs / permissions').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText('Jarvis Prime').length).toBeGreaterThan(0);
+  }, 10000);
+
+  it('opens Agent Control from the launcher and hides it from guest launch surfaces', () => {
+    const adminWorkspace = render(<Workspace role="admin" />);
+    const adminRender = within(adminWorkspace.container);
+    const launcherWidget = adminWorkspace.container.querySelector<HTMLElement>('.workspace-widget.kind-launcher');
+
+    expect(launcherWidget).toBeInTheDocument();
+
+    const agentLauncherCard = within(launcherWidget as HTMLElement).getByRole('button', { name: /agent control/i });
+    fireEvent.doubleClick(agentLauncherCard);
+
+    expect(adminRender.getAllByText('identity / jobs / permissions').length).toBeGreaterThan(0);
+
+    adminWorkspace.unmount();
+    window.localStorage.clear();
+
+    const guestWorkspace = render(<Workspace role="guest" />);
+    const guestRender = within(guestWorkspace.container);
+    fireEvent.click(guestRender.getByRole('button', { name: 'Open widget' }));
+
+    expect(guestRender.queryByRole('menuitem', { name: 'Agent control' })).not.toBeInTheDocument();
+    const guestLauncherWidget = guestWorkspace.container.querySelector<HTMLElement>('.workspace-widget.kind-launcher');
+    expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent control/i })).not.toBeInTheDocument();
+  });
+
+  it('keeps command approvals role gated inside the command inbox', () => {
+    const adminWorkspace = render(<Workspace role="admin" />);
+    const adminRender = within(adminWorkspace.container);
+
+    fireEvent.click(adminRender.getByRole('button', { name: 'Open widget' }));
+    fireEvent.click(adminRender.getByRole('menuitem', { name: 'Command inbox' }));
+    fireEvent.click(adminRender.getAllByRole('button', { name: 'Approve' })[0]);
+
+    expect(adminRender.getAllByText('queued').length).toBeGreaterThan(0);
+
+    adminWorkspace.unmount();
+    window.localStorage.clear();
+
+    const guestWorkspace = render(<Workspace role="guest" />);
+    const guestRender = within(guestWorkspace.container);
+    fireEvent.click(guestRender.getByRole('button', { name: 'Open widget' }));
+    fireEvent.click(guestRender.getByRole('menuitem', { name: 'Command inbox' }));
+
+    expect(guestRender.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
+    expect(guestRender.getAllByText('Read-only for this access scope.').length).toBeGreaterThan(0);
+  }, 10000);
+
+  it('applies role-oriented mode presets to reduce workspace setup friction', () => {
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Mode preset' }));
+    fireEvent.click(currentRender.getByRole('menuitem', { name: /Security mode/i }));
+
+    expect(container.querySelector('.workspace-widget.kind-command-inbox')).toHaveClass('is-open', 'is-pinned');
+    expect(container.querySelector('.workspace-widget.kind-notifications')).toHaveClass('is-open');
+    expect(container.querySelector('.workspace-widget.kind-map')).toHaveClass('is-open');
+    expect(container.querySelector('.workspace-widget.kind-integration-registry')).toHaveClass('is-open');
+    expect(container.querySelector('.workspace-widget.kind-agent-control')).not.toBeInTheDocument();
   });
 
   it('keeps minimized visible widgets tracked in Manager', () => {
@@ -303,7 +390,7 @@ describe('Workspace header controls', () => {
     fireEvent.pointerDown(commandCoreWidget as HTMLElement, { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(canvas as HTMLElement, { clientX: 400, clientY: 320, pointerId: 1 });
 
-    expect(commandCoreWidget).toHaveStyle({ left: '44px', top: '74px' });
+    expectWidgetPosition(commandCoreWidget, 44, 74);
   });
 
   it('pins visible widgets from Manager rows', () => {
@@ -505,7 +592,7 @@ describe('Workspace header controls', () => {
     fireEvent.pointerDown(overviewWidget as HTMLElement, { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(canvas as HTMLElement, { clientX: 100, clientY: -400, pointerId: 1 });
 
-    expect(overviewWidget).toHaveStyle({ top: '0px' });
+    expectWidgetPosition(overviewWidget, 44, 0);
   });
 
   it('keeps widgets inside a screen edge without a neighboring workspace', () => {
@@ -542,7 +629,7 @@ describe('Workspace header controls', () => {
     fireEvent.pointerDown(overviewWidget as HTMLElement, { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
     fireEvent.pointerMove(canvas as HTMLElement, { clientX: 1400, clientY: 120, pointerId: 1 });
 
-    expect(overviewWidget).toHaveStyle({ left: '610px' });
+    expectWidgetPosition(overviewWidget, 610, 94);
     expect(container.querySelector('.workspace-widget.kind-overview')).toBeInTheDocument();
   });
 

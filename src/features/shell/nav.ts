@@ -44,6 +44,30 @@ export const shellNavItems: ShellNavItem[] = [
     panelKind: 'window-manager',
   },
   {
+    id: 'command-inbox',
+    label: 'Command inbox',
+    hint: 'approval gates and blocked actions',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
+    id: 'notifications',
+    label: 'Notifications',
+    hint: 'live telemetry and alerts',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
+    id: 'integration-registry',
+    label: 'Integration registry',
+    hint: 'devices, heartbeats, and permissions',
+    allowedRoles: ['admin', 'support'],
+  },
+  {
+    id: 'agent-control',
+    label: 'Agent control',
+    hint: 'agent identity, jobs, usage, and permissions',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
     id: 'schedule',
     label: 'Schedule',
     hint: 'day blocks and next actions',

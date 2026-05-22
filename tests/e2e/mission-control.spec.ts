@@ -12,6 +12,12 @@ test('operational core widgets launch and use mock live data', async ({ page }) 
   await expect(page.getByText('primary approval queue').first()).toBeVisible();
   await page.getByRole('button', { name: 'Approve' }).first().click();
   await expect(page.getByText('queued', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('succeeded', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText(/Mock gateway completed/).first()).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByText('primary approval queue').first()).toBeVisible();
+  await expect(page.getByText('succeeded', { exact: true }).first()).toBeVisible();
 
   await openWidget(page, 'Notifications');
   await expect(page.getByText('live telemetry and alerts')).toBeVisible();

@@ -28,10 +28,28 @@ export type MissionNotification = {
 
 export type CommandScope = 'household' | 'system' | 'support' | 'security';
 export type CommandRisk = 'safe' | 'elevated' | 'critical';
-export type CommandStatus = 'pending' | 'approved' | 'rejected' | 'blocked' | 'overridden';
+export type CommandStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'blocked'
+  | 'overridden'
+  | 'queued'
+  | 'running'
+  | 'succeeded'
+  | 'failed';
 export type CommandAction = 'approve' | 'reject' | 'block' | 'override';
 export type CommandExecutionStatus = 'not-started' | 'queued' | 'running' | 'succeeded' | 'failed' | 'blocked';
-export type CommandAuditEventType = 'proposed' | 'approved' | 'rejected' | 'blocked' | 'overridden' | 'queued' | 'failed';
+export type CommandAuditEventType =
+  | 'proposed'
+  | 'approved'
+  | 'rejected'
+  | 'blocked'
+  | 'overridden'
+  | 'queued'
+  | 'running'
+  | 'succeeded'
+  | 'failed';
 
 export type CommandAgentProvenance = {
   agentId: string;

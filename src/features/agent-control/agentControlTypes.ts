@@ -65,7 +65,7 @@ export type AgentActivity = {
   detail: string;
   timestamp: string;
   source: string;
-  status?: AgentJobStatus | 'approved' | 'blocked' | 'rejected' | 'sent';
+  status?: AgentJobStatus | 'approved' | 'blocked' | 'rejected' | 'sent' | 'overridden' | 'queued' | 'running' | 'succeeded' | 'failed';
   visibleTo: AgentVisibleRole[];
 };
 

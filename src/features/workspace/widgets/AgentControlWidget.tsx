@@ -5,6 +5,7 @@ import {
   canViewAgentControl,
   getAgentJobSummary,
   getAgentUsageApprovalRate,
+  getCommandAuditAgentActivity,
   getVisibleAgentActivity,
   getVisibleAgentJobs,
   getVisibleAgentPermissions,
@@ -13,6 +14,7 @@ import {
   type AgentPermission,
   type AgentScheduledJob,
 } from '../../agent-control';
+import type { MissionControlRuntime } from '../../mission-control';
 import {
   WorkspaceButton,
   WorkspaceContentHeader,
@@ -78,7 +80,15 @@ function AgentActivityRow({ activity }: { activity: AgentActivity }) {
   );
 }
 
-export function AgentControlWidget({ state, role }: { state: AgentControlState; role: ShellRole }) {
+export function AgentControlWidget({
+  state,
+  role,
+  missionControl,
+}: {
+  state: AgentControlState;
+  role: ShellRole;
+  missionControl: MissionControlRuntime;
+}) {
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
 
   if (!canViewAgentControl(role)) {
@@ -99,7 +109,10 @@ export function AgentControlWidget({ state, role }: { state: AgentControlState; 
 
   const jobs = getVisibleAgentJobs(state, role);
   const permissions = getVisibleAgentPermissions(state, role);
-  const activity = getVisibleAgentActivity(state, role);
+  const activity = [
+    ...getCommandAuditAgentActivity(missionControl.state.commands, role),
+    ...getVisibleAgentActivity(state, role),
+  ].sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp));
   const summary = getAgentJobSummary(jobs);
   const editable = canEditAgentSettings(role);
   const approvalRate = getAgentUsageApprovalRate(state);

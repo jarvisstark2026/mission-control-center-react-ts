@@ -5,9 +5,11 @@ import {
   canViewAgentControl,
   createInitialAgentControlState,
   getAgentJobSummary,
+  getCommandAuditAgentActivity,
   getVisibleAgentJobs,
   getVisibleAgentPermissions,
 } from './agentControlModel';
+import { createInitialMissionControlState, missionControlReducer } from '../mission-control';
 
 describe('agentControlModel', () => {
   it('gates Agent Control visibility by role', () => {
@@ -43,5 +45,19 @@ describe('agentControlModel', () => {
     expect(summary.paused).toBe(1);
     expect(summary.failed).toBe(1);
     expect(summary.nextRunAt).toBe('2026-05-22T18:05:00.000Z');
+  });
+
+  it('derives agent activity from command audit records', () => {
+    const state = missionControlReducer(createInitialMissionControlState(), {
+      type: 'command-action',
+      commandId: 'command-evening-routine',
+      action: 'approve',
+      role: 'home',
+    });
+
+    const activity = getCommandAuditAgentActivity(state.commands, 'admin');
+
+    expect(activity.some((item) => item.title === 'Run evening routine' && item.status === 'approved')).toBe(true);
+    expect(getCommandAuditAgentActivity(state.commands, 'guest')).toHaveLength(0);
   });
 });

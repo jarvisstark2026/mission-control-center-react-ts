@@ -9,6 +9,7 @@ import {
 import type {
   CommandAuditEntry,
   CommandAction,
+  CommandExecutionStatus,
   CommandExecutionState,
   CommandRequest,
   CommandStatus,
@@ -23,6 +24,7 @@ export const missionControlBufferLimits = {
   telemetry: 72,
   notifications: 36,
   commands: 48,
+  auditEntries: 18,
 };
 
 export type MissionControlReducerAction =
@@ -39,6 +41,15 @@ export type MissionControlReducerAction =
       commandId: string;
       action: CommandAction;
       role: ShellRole;
+    }
+  | {
+      type: 'command-execution';
+      commandId: string;
+      status: Extract<CommandExecutionStatus, 'queued' | 'running' | 'succeeded' | 'failed'>;
+      result: string;
+      actor: string;
+      timestamp: string;
+      rollbackAvailable?: boolean;
     }
   | {
       type: 'acknowledge-notification';
@@ -66,6 +77,10 @@ function upsertNewest<T extends { id: string }>(items: T[], nextItem: T, limit: 
 
 function updateById<T extends { id: string }>(items: T[], id: string, update: (item: T) => T) {
   return items.map((item) => (item.id === id ? update(item) : item));
+}
+
+function capCommandAuditTrail(auditTrail: CommandAuditEntry[]) {
+  return auditTrail.slice(-missionControlBufferLimits.auditEntries);
 }
 
 export function createInitialMissionControlState(): MissionControlState {
@@ -114,6 +129,12 @@ function getCommandStatusForAction(action: CommandAction): CommandStatus {
   return 'overridden';
 }
 
+function getCommandStatusForExecution(status: CommandExecutionStatus): CommandStatus {
+  if (status === 'blocked') return 'blocked';
+  if (status === 'not-started') return 'pending';
+  return status;
+}
+
 function getCommandAuditTypeForAction(action: CommandAction): CommandAuditEntry['type'] {
   if (action === 'approve') return 'approved';
   if (action === 'reject') return 'rejected';
@@ -139,16 +160,54 @@ function getCommandExecutionForDecision(command: CommandRequest, action: Command
   };
 }
 
+function createCommandAuditEntryForType({
+  command,
+  type,
+  actor,
+  timestamp,
+  detail,
+}: {
+  command: CommandRequest;
+  type: CommandAuditEntry['type'];
+  actor: string;
+  timestamp: string;
+  detail: string;
+}): CommandAuditEntry {
+  return {
+    id: `audit-${command.id}-${type}-${timestamp}`,
+    type,
+    actor,
+    timestamp,
+    detail,
+  };
+}
+
 function createCommandAuditEntry(command: CommandRequest, action: CommandAction, role: ShellRole, timestamp: string): CommandAuditEntry {
   const type = getCommandAuditTypeForAction(action);
 
-  return {
-    id: `audit-${command.id}-${type}-${timestamp}`,
+  return createCommandAuditEntryForType({
+    command,
     type,
     actor: role,
     timestamp,
     detail: `${command.title} was ${type} by ${role}.`,
-  };
+  });
+}
+
+function createCommandExecutionAuditEntry(
+  command: CommandRequest,
+  status: Extract<CommandExecutionStatus, 'queued' | 'running' | 'succeeded' | 'failed'>,
+  actor: string,
+  timestamp: string,
+  result: string,
+): CommandAuditEntry {
+  return createCommandAuditEntryForType({
+    command,
+    type: status,
+    actor,
+    timestamp,
+    detail: result,
+  });
 }
 
 function createCommandDecisionNotification(command: CommandRequest, status: CommandStatus, role: ShellRole): MissionNotification {
@@ -228,13 +287,29 @@ function transitionCommand(state: MissionControlState, commandId: string, action
 
   const status = getCommandStatusForAction(action);
   const decidedAt = nowIso();
+  const commandStatus: CommandStatus = action === 'approve' || action === 'override' ? 'queued' : status;
+  const execution = getCommandExecutionForDecision(command, action, decidedAt);
+  const auditTrail = [createCommandAuditEntry(command, action, role, decidedAt)];
+
+  if (execution.status === 'queued') {
+    auditTrail.push(
+      createCommandExecutionAuditEntry(
+        command,
+        'queued',
+        'command-gateway',
+        decidedAt,
+        'Command accepted by the browser gateway queue.',
+      ),
+    );
+  }
+
   const nextCommand = {
     ...command,
-    status,
+    status: commandStatus,
     decidedAt,
     decidedBy: role,
-    execution: getCommandExecutionForDecision(command, action, decidedAt),
-    auditTrail: [...command.auditTrail, createCommandAuditEntry(command, action, role, decidedAt)],
+    execution,
+    auditTrail: capCommandAuditTrail([...command.auditTrail, ...auditTrail]),
   };
 
   return {
@@ -251,6 +326,47 @@ function transitionCommand(state: MissionControlState, commandId: string, action
     ),
     version: state.version + 1,
     lastUpdatedAt: decidedAt,
+  };
+}
+
+function transitionCommandExecution(
+  state: MissionControlState,
+  commandId: string,
+  status: Extract<CommandExecutionStatus, 'queued' | 'running' | 'succeeded' | 'failed'>,
+  result: string,
+  actor: string,
+  timestamp: string,
+  rollbackAvailable?: boolean,
+) {
+  const command = state.commands.find((item) => item.id === commandId);
+  if (!command || command.status === 'pending') return state;
+
+  const nextCommand = {
+    ...command,
+    status: getCommandStatusForExecution(status),
+    execution: {
+      ...command.execution,
+      status,
+      result,
+      rollbackAvailable: rollbackAvailable ?? command.execution.rollbackAvailable,
+      startedAt: command.execution.startedAt ?? (status === 'queued' || status === 'running' ? timestamp : undefined),
+      completedAt: status === 'succeeded' || status === 'failed' ? timestamp : command.execution.completedAt,
+    },
+    auditTrail: capCommandAuditTrail([
+      ...command.auditTrail,
+      createCommandExecutionAuditEntry(command, status, actor, timestamp, result),
+    ]),
+  };
+
+  return {
+    ...state,
+    commands: upsertNewest(
+      state.commands.map((item) => (item.id === commandId ? nextCommand : item)),
+      nextCommand,
+      missionControlBufferLimits.commands,
+    ),
+    version: state.version + 1,
+    lastUpdatedAt: timestamp,
   };
 }
 
@@ -274,6 +390,18 @@ export function missionControlReducer(
 
   if (action.type === 'command-action') {
     return transitionCommand(state, action.commandId, action.action, action.role);
+  }
+
+  if (action.type === 'command-execution') {
+    return transitionCommandExecution(
+      state,
+      action.commandId,
+      action.status,
+      action.result,
+      action.actor,
+      action.timestamp,
+      action.rollbackAvailable,
+    );
   }
 
   if (action.type === 'acknowledge-notification') {

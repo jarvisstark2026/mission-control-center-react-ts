@@ -155,7 +155,7 @@ function renderWorkspaceWidgetContent({
     case 'integration-registry':
       return <IntegrationRegistryWidget missionControl={missionControl} />;
     case 'agent-control':
-      return <AgentControlWidget state={agentControl} role={activeRole} />;
+      return <AgentControlWidget state={agentControl} role={activeRole} missionControl={missionControl} />;
     case '3d': {
       const previewFile = widget.previewFileId ? localFiles.find((record) => record.id === widget.previewFileId) ?? null : null;
       return <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} />;

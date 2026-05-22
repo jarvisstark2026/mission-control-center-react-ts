@@ -33,13 +33,14 @@ export function CommandInboxWidget({ missionControl }: { missionControl: Mission
   const pendingCommands = commands.filter((command) => command.status === 'pending');
   const completedCommands = commands.filter((command) => command.status !== 'pending');
   const nextCommand = pendingCommands[0];
+  const gatewayLabel = missionControl.commandGatewayMode === 'backend' ? 'backend gateway' : 'local gateway';
 
   return (
     <WorkspaceContentShell className="mission-control-surface command-inbox-surface">
       <WorkspaceContentHeader
         eyebrow="Command inbox"
         title="primary approval queue"
-        metaEyebrow={missionControl.state.connection === 'connected' ? 'live backend' : 'mock/local'}
+        metaEyebrow={missionControl.state.connection === 'connected' ? 'live telemetry' : 'mock telemetry'}
         meta={missionControl.role}
       />
       <WorkspaceSummaryPanel
@@ -52,13 +53,13 @@ export function CommandInboxWidget({ missionControl }: { missionControl: Mission
       <WorkspaceSectionFrame
         className="mission-control-list-frame command-inbox-mode-frame"
         eyebrow="execution mode"
-        title={missionControl.state.connection === 'connected' ? 'backend connected' : 'mock command lane'}
+        title={gatewayLabel}
         meta={`${pendingCommands.length} pending`}
       >
-        <div className="mission-control-row command-inbox-mode-row" data-state={missionControl.state.connection}>
+        <div className="mission-control-row command-inbox-mode-row" data-state={missionControl.commandGatewayMode}>
           <span>command endpoint</span>
-          <strong>{missionControl.state.connection === 'connected' ? 'live' : 'local mock'}</strong>
-          <small>approvals do not execute real actions yet</small>
+          <strong>{missionControl.commandGatewayMode === 'backend' ? 'live adapter' : 'browser mock'}</strong>
+          <small>{missionControl.commandGatewayMode === 'backend' ? 'approval posts to configured endpoint' : 'approval is persisted locally and simulated'}</small>
         </div>
       </WorkspaceSectionFrame>
 
@@ -132,8 +133,9 @@ export function CommandInboxWidget({ missionControl }: { missionControl: Mission
             {completedCommands.slice(0, 6).map((command) => (
               <div className="mission-control-row" key={command.id} role="listitem" data-state={command.status}>
                 <span>{command.title}</span>
-                <strong>{command.execution.status}</strong>
-                <small>{command.decidedBy ?? 'system'} / {command.auditTrail.length} audit</small>
+                <strong>{command.status}</strong>
+                <small>{command.execution.status} / {command.decidedBy ?? 'system'} / {command.auditTrail.length} audit</small>
+                <p>{command.execution.result}</p>
               </div>
             ))}
           </div>

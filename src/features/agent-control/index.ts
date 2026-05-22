@@ -4,6 +4,7 @@ export {
   createInitialAgentControlState,
   getAgentJobSummary,
   getAgentUsageApprovalRate,
+  getCommandAuditAgentActivity,
   getVisibleAgentActivity,
   getVisibleAgentJobs,
   getVisibleAgentPermissions,

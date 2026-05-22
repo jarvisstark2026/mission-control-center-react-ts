@@ -1,4 +1,5 @@
 import type { ShellRole } from '../shell/roles';
+import type { CommandAuditEntry, CommandRequest } from '../mission-control';
 import { mockAgentControlState } from './agentControlMock';
 import type {
   AgentActivity,
@@ -26,6 +27,17 @@ function isVisibleRole(role: ShellRole): role is AgentVisibleRole {
 
 function canSeeRecord(role: ShellRole, visibleTo: AgentVisibleRole[]) {
   return isVisibleRole(role) && visibleTo.includes(role);
+}
+
+function getCommandActivityKind(type: CommandAuditEntry['type']): AgentActivity['kind'] {
+  if (type === 'failed') return 'failure';
+  if (type === 'approved' || type === 'overridden') return 'approval';
+  if (type === 'queued' || type === 'running' || type === 'succeeded') return 'execution';
+  return 'proposal';
+}
+
+function getCommandActivityStatus(type: CommandAuditEntry['type']): AgentActivity['status'] {
+  return type === 'proposed' ? 'sent' : type;
 }
 
 export function createInitialAgentControlState(): AgentControlState {
@@ -63,6 +75,26 @@ export function getVisibleAgentPermissions(state: AgentControlState, role: Shell
 export function getVisibleAgentActivity(state: AgentControlState, role: ShellRole): AgentActivity[] {
   if (!canViewAgentControl(role)) return [];
   return state.activity.filter((activity) => canSeeRecord(role, activity.visibleTo));
+}
+
+export function getCommandAuditAgentActivity(commands: CommandRequest[], role: ShellRole): AgentActivity[] {
+  if (!canViewAgentControl(role) || !isVisibleRole(role)) return [];
+
+  return commands
+    .flatMap((command) =>
+      command.auditTrail.map((entry) => ({
+        id: `${command.id}-${entry.id}`,
+        kind: getCommandActivityKind(entry.type),
+        title: command.title,
+        detail: entry.detail,
+        timestamp: entry.timestamp,
+        source: command.agent.agentName,
+        status: getCommandActivityStatus(entry.type),
+        visibleTo: ['admin', 'support', 'home'] as AgentVisibleRole[],
+      })),
+    )
+    .filter((activity) => canSeeRecord(role, activity.visibleTo))
+    .sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp));
 }
 
 function countJobsByStatus(jobs: AgentScheduledJob[], status: AgentJobStatus) {

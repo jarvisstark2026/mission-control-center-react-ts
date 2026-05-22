@@ -99,7 +99,11 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.missionControl.state.version === right.missionControl.state.version
       );
     case 'agent-control':
-      return left.activeRole === right.activeRole && left.agentControl.version === right.agentControl.version;
+      return (
+        left.activeRole === right.activeRole &&
+        left.agentControl.version === right.agentControl.version &&
+        left.missionControl.state.version === right.missionControl.state.version
+      );
     case '3d':
       return left.widget.previewFileId === right.widget.previewFileId && left.localFiles === right.localFiles;
     default:

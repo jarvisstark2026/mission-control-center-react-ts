@@ -61,9 +61,13 @@ describe('missionControlReducer', () => {
       role: 'admin',
     });
     expect(adminOverride.commands[0]?.id).toBe('command-lockdown-test');
-    expect(adminOverride.commands[0]?.status).toBe('overridden');
+    expect(adminOverride.commands[0]?.status).toBe('queued');
     expect(adminOverride.commands[0]?.execution.status).toBe('queued');
-    expect(adminOverride.commands[0]?.auditTrail.at(-1)?.type).toBe('overridden');
+    expect(adminOverride.commands[0]?.auditTrail.map((entry) => entry.type)).toEqual([
+      'proposed',
+      'overridden',
+      'queued',
+    ]);
     expect(adminOverride.notifications[0]?.relatedCommandId).toBe('command-lockdown-test');
   });
 
@@ -84,14 +88,57 @@ describe('missionControlReducer', () => {
     });
     const approvedCommand = approved.commands.find((item) => item.id === 'command-evening-routine');
 
-    expect(approvedCommand?.status).toBe('approved');
+    expect(approvedCommand?.status).toBe('queued');
     expect(approvedCommand?.execution).toMatchObject({
       status: 'queued',
       rollbackAvailable: true,
     });
-    expect(approvedCommand?.auditTrail.at(-1)).toMatchObject({
+    expect(approvedCommand?.auditTrail.find((entry) => entry.type === 'approved')).toMatchObject({
       actor: 'home',
       type: 'approved',
+    });
+  });
+
+  it('moves approved commands through execution states', () => {
+    const state = createInitialMissionControlState();
+    const approved = missionControlReducer(state, {
+      type: 'command-action',
+      commandId: 'command-evening-routine',
+      action: 'approve',
+      role: 'home',
+    });
+
+    const running = missionControlReducer(approved, {
+      type: 'command-execution',
+      commandId: 'command-evening-routine',
+      status: 'running',
+      result: 'Local gateway is executing the command.',
+      actor: 'mock-command-gateway',
+      timestamp: '2026-05-22T19:00:00.000Z',
+    });
+    const runningCommand = running.commands.find((command) => command.id === 'command-evening-routine');
+
+    expect(runningCommand?.status).toBe('running');
+    expect(runningCommand?.execution.status).toBe('running');
+    expect(runningCommand?.auditTrail.at(-1)?.type).toBe('running');
+
+    const succeeded = missionControlReducer(running, {
+      type: 'command-execution',
+      commandId: 'command-evening-routine',
+      status: 'succeeded',
+      result: 'Mock command completed.',
+      actor: 'mock-command-gateway',
+      timestamp: '2026-05-22T19:00:01.000Z',
+      rollbackAvailable: true,
+    });
+    const succeededCommand = succeeded.commands.find((command) => command.id === 'command-evening-routine');
+
+    expect(succeededCommand?.status).toBe('succeeded');
+    expect(succeededCommand?.execution).toMatchObject({
+      status: 'succeeded',
+      result: 'Mock command completed.',
+      rollbackAvailable: true,
+      completedAt: '2026-05-22T19:00:01.000Z',
     });
   });
 

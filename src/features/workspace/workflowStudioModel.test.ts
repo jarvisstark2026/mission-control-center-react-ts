@@ -7,6 +7,8 @@ import {
   getWorkflowSteps,
   workflowSkills,
 } from './workflowStudioModel';
+import { createInitialAgentControlState, getAgentDescriptorById } from '../agent-control';
+import { createWorkflowStepCommandEvent, startWorkflowRun, syncWorkflowRunWithCommands } from './workflowRunModel';
 
 describe('workflow studio model', () => {
   it('creates saved workflows with generated ids when drafts are new', () => {
@@ -39,5 +41,57 @@ describe('workflow studio model', () => {
     expect(html).toContain('Use A &amp; B safely');
     expect(html).toContain('Review &lt;markup&gt;');
     expect(html).not.toContain('<script>alert');
+  });
+
+  it('starts a runbook and creates approval commands for agent-owned steps', () => {
+    const agentControl = createInitialAgentControlState();
+    const agent = getAgentDescriptorById(agentControl, 'jarvis-workflow');
+    const run = startWorkflowRun(createWorkflowDraft('agent-brief'), agent, '2026-05-22T20:00:00.000Z');
+    const approvalStep = run.steps.find((step) => step.approvalRequirement === 'command');
+
+    expect(run.steps[0]?.assignee).toBe('user');
+    expect(approvalStep?.status).toBe('waiting-approval');
+
+    const event = approvalStep ? createWorkflowStepCommandEvent(run, approvalStep.id, agent) : null;
+
+    expect(event).toMatchObject({
+      type: 'command',
+      command: {
+        source: 'workflow-runbook',
+        agent: {
+          agentId: 'jarvis-workflow',
+        },
+        workflow: {
+          runId: run.id,
+          stepId: approvalStep?.id,
+        },
+      },
+    });
+  });
+
+  it('updates workflow run steps from command decisions', () => {
+    const agentControl = createInitialAgentControlState();
+    const agent = getAgentDescriptorById(agentControl, 'jarvis-workflow');
+    const run = startWorkflowRun(createWorkflowDraft('agent-brief'), agent);
+    const approvalStep = run.steps.find((step) => step.approvalRequirement === 'command');
+    const event = approvalStep ? createWorkflowStepCommandEvent(run, approvalStep.id, agent) : null;
+
+    if (!event || event.type !== 'command' || !approvalStep) {
+      throw new Error('Expected workflow command event');
+    }
+
+    const synced = syncWorkflowRunWithCommands(run, [
+      {
+        ...event.command,
+        status: 'succeeded',
+        execution: {
+          ...event.command.execution,
+          status: 'succeeded',
+          result: 'Workflow step completed.',
+        },
+      },
+    ]);
+
+    expect(synced.steps.find((step) => step.id === approvalStep.id)?.status).toBe('completed');
   });
 });

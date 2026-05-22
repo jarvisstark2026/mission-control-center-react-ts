@@ -29,6 +29,8 @@ describe('agentTaskingStorage', () => {
           reasoning: 'Status check needs a gated approval.',
           risk: 'safe',
           scope: 'support',
+          agentId: 'jarvis-support',
+          agentName: 'Jarvis Support',
           timestamp: '2026-05-22T20:00:00.000Z',
         },
       ],

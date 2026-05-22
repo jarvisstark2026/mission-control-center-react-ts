@@ -6,6 +6,7 @@ import {
   createInitialAgentControlState,
   getAgentJobSummary,
   getCommandAuditAgentActivity,
+  getVisibleAgentDescriptors,
   getVisibleAgentJobs,
   getVisibleAgentPermissions,
 } from './agentControlModel';
@@ -17,6 +18,15 @@ describe('agentControlModel', () => {
     expect(canViewAgentControl('support')).toBe(true);
     expect(canViewAgentControl('home')).toBe(true);
     expect(canViewAgentControl('guest')).toBe(false);
+  });
+
+  it('exposes a role-filtered multi-agent registry', () => {
+    const state = createInitialAgentControlState();
+
+    expect(getVisibleAgentDescriptors(state, 'admin').map((agent) => agent.id)).toContain('jarvis-security');
+    expect(getVisibleAgentDescriptors(state, 'home').map((agent) => agent.id)).toContain('jarvis-home');
+    expect(getVisibleAgentDescriptors(state, 'home').map((agent) => agent.id)).not.toContain('jarvis-security');
+    expect(getVisibleAgentDescriptors(state, 'guest')).toHaveLength(0);
   });
 
   it('allows only admins to edit agent settings', () => {

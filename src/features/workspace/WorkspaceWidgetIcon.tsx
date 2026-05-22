@@ -256,6 +256,18 @@ const widgetIconDefinitions: Record<WidgetKind, WidgetIconDefinition> = {
       'M18 5l1 1-3 3-1-1z',
     ],
   },
+  'home-systems': {
+    paths: [
+      'M4 11l8-7 8 7',
+      'M6 10v10h12V10',
+      'M9 20v-6h6v6',
+      'M8 8h3',
+      'M14 8h2',
+      'M18 15h3',
+      'M19.5 13.5v3',
+      'M4 15h2',
+    ],
+  },
 };
 
 export function WorkspaceWidgetIcon({ kind }: { kind: WidgetKind }) {

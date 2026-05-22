@@ -1,19 +1,47 @@
 ﻿import { useEffect, useState } from 'react';
 import { createId } from '../../../lib/createId';
+import { getAgentDescriptorById, getVisibleAgentDescriptors, type AgentControlState } from '../../agent-control';
+import type { MissionControlRuntime } from '../../mission-control';
+import type { ShellRole } from '../../shell/roles';
+import { StatusSummary, WorkflowStepCard } from '../operationalBlocks';
 import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from '../workflowStudioModel';
+import { createWorkflowStepCommandEvent, startWorkflowRun, syncWorkflowRunWithCommands, type WorkflowRun } from '../workflowRunModel';
 
-export function WorkflowWidget() {
+export function WorkflowWidget({
+  missionControl,
+  agentControl,
+  role,
+}: {
+  missionControl: MissionControlRuntime;
+  agentControl: AgentControlState;
+  role: ShellRole;
+}) {
   const [savedWorkflows, setSavedWorkflows] = useState<SavedWorkflow[]>(() => loadSavedWorkflows());
   const [draft, setDraft] = useState<WorkflowDraft>(() => createWorkflowDraft('workflow-studio'));
   const [newStep, setNewStep] = useState('');
   const [status, setStatus] = useState('Ready to build a workflow.');
+  const [activeRun, setActiveRun] = useState<WorkflowRun | null>(null);
+  const visibleAgents = getVisibleAgentDescriptors(agentControl, role);
+  const defaultAgent = visibleAgents.find((agent) => agent.specialty === 'workflow') ?? visibleAgents[0] ?? getAgentDescriptorById(agentControl, agentControl.activeAgentId);
+  const [selectedAgentId, setSelectedAgentId] = useState(defaultAgent.id);
+  const selectedAgent = getAgentDescriptorById(agentControl, selectedAgentId);
 
   useEffect(() => {
     if (!saveSavedWorkflows(savedWorkflows)) {
       setStatus('Workflow library could not be saved locally.');
     }
   }, [savedWorkflows]);
+
+  useEffect(() => {
+    if (!activeRun) return;
+    const nextRun = syncWorkflowRunWithCommands(activeRun, missionControl.state.commands);
+    const currentSignature = activeRun.steps.map((step) => `${step.id}:${step.status}:${step.commandId ?? ''}`).join('|');
+    const nextSignature = nextRun.steps.map((step) => `${step.id}:${step.status}:${step.commandId ?? ''}`).join('|');
+    if (currentSignature !== nextSignature || activeRun.status !== nextRun.status) {
+      setActiveRun(nextRun);
+    }
+  }, [activeRun, missionControl.state.commands]);
 
   const template = getWorkflowTemplate(draft.templateId);
   const steps = getWorkflowSteps(draft);
@@ -72,6 +100,35 @@ export function WorkflowWidget() {
     setDraft(createWorkflowDraft(template.id));
     setNewStep('');
     setStatus(`Started a new ${template.title} workflow.`);
+  };
+
+  const startRun = () => {
+    const nextRun = startWorkflowRun(draft, selectedAgent);
+    setActiveRun(nextRun);
+    setStatus(`Started runbook for ${nextRun.workflowName}.`);
+  };
+
+  const stageWorkflowStep = (stepId: string) => {
+    if (!activeRun) return;
+    const event = createWorkflowStepCommandEvent(activeRun, stepId, selectedAgent);
+    if (!event) return;
+
+    missionControl.ingestEvents([event]);
+    setActiveRun((current) =>
+      current
+        ? {
+            ...current,
+            status: 'waiting-approval',
+            updatedAt: new Date().toISOString(),
+            steps: current.steps.map((step) =>
+              step.id === stepId && event.type === 'command'
+                ? { ...step, status: 'waiting-approval', commandId: event.command.id }
+                : step,
+            ),
+          }
+        : current,
+    );
+    setStatus('Workflow step sent to Command Inbox for approval.');
   };
 
   const saveWorkflow = () => {
@@ -164,6 +221,56 @@ export function WorkflowWidget() {
         <WorkspaceButton variant="secondary" className="workflow-action is-muted" onClick={startNewWorkflow}>
           New workflow
         </WorkspaceButton>
+      </WorkspaceSectionFrame>
+
+      <WorkspaceSectionFrame
+        className="workflow-runbook-frame"
+        eyebrow="runbook"
+        title="live workflow bridge"
+        meta={activeRun ? activeRun.status : 'not started'}
+      >
+        <StatusSummary
+          label="Current run"
+          title={activeRun ? activeRun.workflowName : 'No active run'}
+          detail={
+            activeRun
+              ? 'Agent-owned steps can stage approval requests directly into Command Inbox.'
+              : 'Start a run to turn this saved workflow into an agent/user handoff path.'
+          }
+          meta={selectedAgent.name}
+        />
+        <div className="workflow-agent-selector" role="group" aria-label="Workflow agent assignment">
+          {visibleAgents.map((agent) => (
+            <button
+              key={agent.id}
+              type="button"
+              aria-pressed={selectedAgentId === agent.id}
+              onClick={() => setSelectedAgentId(agent.id)}
+            >
+              <span>{agent.specialty}</span>
+              <strong>{agent.name}</strong>
+            </button>
+          ))}
+        </div>
+        <WorkspaceButton className="workflow-action" onClick={startRun}>
+          Start runbook
+        </WorkspaceButton>
+        {activeRun ? (
+          <div className="workflow-run-step-list" role="list" aria-label="Active workflow run steps">
+            {activeRun.steps.map((step, index) => (
+              <WorkflowStepCard
+                key={step.id}
+                index={index + 1}
+                title={step.title}
+                assignee={step.assignee === 'user' ? 'User' : step.assignee === 'agent-team' ? 'Agent team' : selectedAgent.name}
+                status={step.status}
+                approval={step.approvalRequirement === 'command' ? 'Command Inbox approval' : 'No approval required'}
+                actionLabel={step.approvalRequirement === 'command' && !step.commandId ? 'Stage approval' : undefined}
+                onAction={step.approvalRequirement === 'command' && !step.commandId ? () => stageWorkflowStep(step.id) : undefined}
+              />
+            ))}
+          </div>
+        ) : null}
       </WorkspaceSectionFrame>
 
       <div className="workflow-layout">

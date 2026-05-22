@@ -4,6 +4,7 @@ import { mockAgentControlState } from './agentControlMock';
 import type {
   AgentActivity,
   AgentControlState,
+  AgentDescriptor,
   AgentJobStatus,
   AgentPermission,
   AgentScheduledJob,
@@ -44,6 +45,7 @@ export function createInitialAgentControlState(): AgentControlState {
   return {
     ...mockAgentControlState,
     identity: { ...mockAgentControlState.identity },
+    agents: mockAgentControlState.agents.map((agent) => ({ ...agent, visibleTo: [...agent.visibleTo] })),
     usage: { ...mockAgentControlState.usage },
     jobs: mockAgentControlState.jobs.map((job) => ({ ...job, visibleTo: [...job.visibleTo] })),
     permissions: mockAgentControlState.permissions.map((permission) => ({
@@ -75,6 +77,28 @@ export function getVisibleAgentPermissions(state: AgentControlState, role: Shell
 export function getVisibleAgentActivity(state: AgentControlState, role: ShellRole): AgentActivity[] {
   if (!canViewAgentControl(role)) return [];
   return state.activity.filter((activity) => canSeeRecord(role, activity.visibleTo));
+}
+
+export function getVisibleAgentDescriptors(state: AgentControlState, role: ShellRole): AgentDescriptor[] {
+  if (!canViewAgentControl(role)) return [];
+  return state.agents.filter((agent) => canSeeRecord(role, agent.visibleTo));
+}
+
+export function getAgentDescriptorById(state: AgentControlState, agentId: string): AgentDescriptor {
+  const agent = state.agents.find((item) => item.id === agentId) ?? state.agents.find((item) => item.id === state.activeAgentId);
+  if (agent) return agent;
+  return {
+    id: state.identity.id,
+    name: state.identity.name,
+    specialty: 'coordinator',
+    provider: state.identity.provider,
+    model: state.identity.model,
+    profile: state.identity.profile,
+    status: state.identity.status,
+    connection: state.identity.connection,
+    summary: state.identity.currentTask,
+    visibleTo: ['admin', 'support', 'home'],
+  };
 }
 
 export function getCommandAuditAgentActivity(commands: CommandRequest[], role: ShellRole): AgentActivity[] {

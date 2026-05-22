@@ -36,10 +36,10 @@ const modeLayouts: Record<WorkspaceModePresetId, PresetWidgetLayout[]> = {
   ],
   home: [
     { kind: 'command-inbox', x: 24, y: 76, width: 390, height: 360, zIndex: 9, pinned: true },
-    { kind: 'schedule', x: 430, y: 76, width: 340, height: 300, zIndex: 8 },
-    { kind: 'notifications', x: 786, y: 76, width: 360, height: 300, zIndex: 7 },
+    { kind: 'home-systems', x: 430, y: 76, width: 430, height: 420, zIndex: 8 },
+    { kind: 'notifications', x: 876, y: 76, width: 360, height: 300, zIndex: 7 },
     { kind: 'map', x: 24, y: 452, width: 360, height: 260, zIndex: 6 },
-    { kind: 'list', x: 400, y: 452, width: 330, height: 220, zIndex: 5 },
+    { kind: 'schedule', x: 400, y: 512, width: 340, height: 240, zIndex: 5 },
   ],
   support: [
     { kind: 'command-inbox', x: 24, y: 76, width: 390, height: 390, zIndex: 10, pinned: true },

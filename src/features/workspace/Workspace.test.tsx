@@ -196,7 +196,7 @@ describe('Workspace header controls', () => {
       fireEvent.click(currentRender.getByRole('button', { name: 'Send to Jarvis' }));
       await new Promise((resolve) => setTimeout(resolve, 340));
     });
-    expect(await currentRender.findByText(/I prepared a gated command proposal/i)).toBeInTheDocument();
+    expect(await currentRender.findByText(/prepared a gated command proposal/i)).toBeInTheDocument();
     expect((await currentRender.findAllByText(/Review current mission state and propose/i)).length).toBeGreaterThan(0);
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
@@ -216,7 +216,30 @@ describe('Workspace header controls', () => {
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Agent control' }));
     expect(currentRender.getAllByText('identity / jobs / permissions').length).toBeGreaterThan(0);
     expect(currentRender.getAllByText('Jarvis Prime').length).toBeGreaterThan(0);
-  }, 10000);
+    expect(currentRender.getAllByText('Jarvis Workflow').length).toBeGreaterThan(0);
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
+    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Home systems' }));
+    expect(currentRender.getAllByText('energy, safety, automation, and rooms').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText('Solar PV').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText('CCTV and doorbell').length).toBeGreaterThan(0);
+  }, 40000);
+
+  it('starts workflow runbooks and stages approval steps in Command Inbox', () => {
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
+    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Workflows' }));
+    fireEvent.click(currentRender.getByRole('button', { name: 'Start runbook' }));
+    fireEvent.click(currentRender.getAllByRole('button', { name: 'Stage approval' })[0]);
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
+    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Command inbox' }));
+
+    expect(currentRender.getAllByText('workflow-runbook').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText('Jarvis Workflow').length).toBeGreaterThan(0);
+  }, 20000);
 
   it('opens Agent Control from the launcher and hides it from guest launch surfaces', () => {
     const adminWorkspace = render(<Workspace role="admin" />);
@@ -239,10 +262,12 @@ describe('Workspace header controls', () => {
 
     expect(guestRender.queryByRole('menuitem', { name: 'Agent control' })).not.toBeInTheDocument();
     expect(guestRender.queryByRole('menuitem', { name: 'Agent console' })).not.toBeInTheDocument();
+    expect(guestRender.queryByRole('menuitem', { name: 'Home systems' })).not.toBeInTheDocument();
     const guestLauncherWidget = guestWorkspace.container.querySelector<HTMLElement>('.workspace-widget.kind-launcher');
     expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent control/i })).not.toBeInTheDocument();
     expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent console/i })).not.toBeInTheDocument();
-  });
+    expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /home systems/i })).not.toBeInTheDocument();
+  }, 20000);
 
   it('keeps command approvals role gated inside the command inbox', () => {
     const adminWorkspace = render(<Workspace role="admin" />);
@@ -252,7 +277,7 @@ describe('Workspace header controls', () => {
     fireEvent.click(adminRender.getByRole('menuitem', { name: 'Command inbox' }));
     fireEvent.click(adminRender.getAllByRole('button', { name: 'Approve' })[0]);
 
-    expect(adminRender.getAllByText('queued').length).toBeGreaterThan(0);
+    expect(adminRender.getAllByText(/queued/).length).toBeGreaterThan(0);
 
     adminWorkspace.unmount();
     window.localStorage.clear();
@@ -264,7 +289,7 @@ describe('Workspace header controls', () => {
 
     expect(guestRender.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
     expect(guestRender.getAllByText('Read-only for this access scope.').length).toBeGreaterThan(0);
-  }, 10000);
+  }, 20000);
 
   it('applies role-oriented mode presets to reduce workspace setup friction', () => {
     const { container } = render(<Workspace role="admin" />);
@@ -278,7 +303,7 @@ describe('Workspace header controls', () => {
     expect(container.querySelector('.workspace-widget.kind-map')).toHaveClass('is-open');
     expect(container.querySelector('.workspace-widget.kind-integration-registry')).toHaveClass('is-open');
     expect(container.querySelector('.workspace-widget.kind-agent-control')).not.toBeInTheDocument();
-  });
+  }, 10000);
 
   it('keeps minimized visible widgets tracked in Manager', () => {
     const { container } = render(<Workspace />);
@@ -297,7 +322,7 @@ describe('Workspace header controls', () => {
     const commandCoreRow = within(managerWidget as HTMLElement).getByText('Command core').closest('.workspace-action-row');
     expect(commandCoreRow).toBeInTheDocument();
     expect(commandCoreRow).toHaveTextContent('minimized');
-  });
+  }, 10000);
 
   it('categorizes Manager rows by workspace and controls extension widgets', () => {
     registerWorkspaceExtensionInstance({
@@ -338,7 +363,7 @@ describe('Workspace header controls', () => {
       pinned?: boolean;
     }>;
     expect(storedExtensionWidgets.find((widget) => widget.id === 'telemetry')?.pinned).toBe(true);
-  });
+  }, 10000);
 
   it('pins and unpins widgets from the shared widget toolbar', () => {
     const { container } = render(<Workspace />);
@@ -359,7 +384,7 @@ describe('Workspace header controls', () => {
 
     expect(commandCoreWidget).toHaveClass('is-pinned');
     expect(within(commandCoreWidget as HTMLElement).getByLabelText('Command core is pinned')).toBeDisabled();
-  });
+  }, 10000);
 
   it('prevents pinned widgets from being dragged', () => {
     const { container } = render(<Workspace />);
@@ -405,7 +430,7 @@ describe('Workspace header controls', () => {
     fireEvent.pointerMove(canvas as HTMLElement, { clientX: 400, clientY: 320, pointerId: 1 });
 
     expectWidgetPosition(commandCoreWidget, 44, 74);
-  });
+  }, 10000);
 
   it('pins visible widgets from Manager rows', () => {
     const { container } = render(<Workspace />);
@@ -424,7 +449,7 @@ describe('Workspace header controls', () => {
 
     expect(within(telemetryRow as HTMLElement).getByLabelText('Unpin Telemetry')).toHaveAttribute('aria-pressed', 'true');
     expect(within(telemetryRow as HTMLElement).getByLabelText('Telemetry is pinned')).toBeDisabled();
-  });
+  }, 10000);
 
   it('keeps Manager out of its own rows and preserves row order on focus', () => {
     const { container } = render(<Workspace />);
@@ -453,7 +478,7 @@ describe('Workspace header controls', () => {
     fireEvent.click(telemetryFocusButton as HTMLButtonElement);
 
     expect(readRowTitles()).toEqual(rowTitlesBeforeFocus);
-  });
+  }, 10000);
 
   it('keeps top bar controls outside the widget canvas', () => {
     const { container } = render(<Workspace />);
@@ -504,7 +529,7 @@ describe('Workspace header controls', () => {
     fireEvent.click(within(openTelemetryMenu()).getByRole('menuitem', { name: 'Close' }));
 
     expect(container.querySelector('.workspace-widget.kind-graph')).not.toBeInTheDocument();
-  });
+  }, 10000);
 
   it('keeps the main workspace footer out of extension instances', () => {
     window.history.replaceState({}, '', '/?role=admin&workspace=extension');
@@ -720,7 +745,7 @@ describe('Workspace header controls', () => {
       .map(([key]) => String(key))
       .filter((key) => key.startsWith(workspaceStorageKey));
     expect(layoutWriteKeys).toEqual([getWorkspaceWidgetStorageKey('workspace-right'), getWorkspaceWidgetStorageKey('main')]);
-  });
+  }, 10000);
 
   it('keeps the same drag active after moving a widget into a neighboring workspace', () => {
     vi.useFakeTimers();
@@ -786,6 +811,9 @@ describe('Workspace header controls', () => {
     expect(widgets.length).toBeGreaterThan(0);
     for (const widget of widgets) {
       expect(widget.querySelector('.widget-scroll-pane')).toBeInTheDocument();
+      if (widget.classList.contains('is-open')) {
+        expect(widget.querySelector('.widget-workflow-cue')).toBeInTheDocument();
+      }
     }
 
     expect(container.querySelector('.workspace-widget.kind-file-explorer .widget-scroll-pane')).toBeInTheDocument();

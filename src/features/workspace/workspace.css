@@ -1553,6 +1553,78 @@
   touch-action: pan-y;
 }
 
+.widget-workflow-cue {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(160px, 0.48fr);
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(86, 221, 255, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(86, 221, 255, 0.052), rgba(255, 255, 255, 0.012) 52%, rgba(255, 188, 92, 0.026)),
+    rgba(7, 17, 27, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+}
+
+.widget-scroll-pane > .widget-workflow-cue + .workspace-content-shell {
+  min-height: auto;
+}
+
+.widget-workflow-cue-primary,
+.widget-workflow-cue-secondary,
+.widget-workflow-cue-secondary div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.widget-workflow-cue-secondary {
+  align-content: space-between;
+  justify-items: end;
+  text-align: right;
+}
+
+.widget-workflow-cue span,
+.widget-workflow-cue small {
+  display: block;
+  color: var(--glass-muted);
+  font-size: 0.54rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.widget-workflow-cue strong {
+  display: block;
+  color: rgba(239, 247, 255, 0.92);
+  font-size: 0.82rem;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.widget-workflow-cue p {
+  margin: 0;
+  color: rgba(226, 238, 248, 0.72);
+  font-size: 0.66rem;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.widget-workflow-cue small {
+  display: inline-grid;
+  place-items: center;
+  min-height: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.095);
+  border-radius: 999px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.026);
+  color: rgba(239, 247, 255, 0.7);
+  white-space: nowrap;
+}
+
 .launcher-grid,
 .browser-bookmarks,
 .live-tv-preset-list,
@@ -3864,8 +3936,15 @@
 .workspace-summary-panel p {
   margin: 0;
   color: var(--glass-muted);
-  font-size: 0.58rem;
+  font-size: 0.66rem;
   line-height: 1.5;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.workspace-summary-panel strong {
+  letter-spacing: 0.03em;
+  text-transform: none;
 }
 
 .workspace-section-head {
@@ -4207,6 +4286,251 @@
   letter-spacing: 0.02em;
 }
 
+.operational-status-summary,
+.operational-attention-card,
+.operational-workflow-step {
+  border: 1px solid rgba(86, 221, 255, 0.14);
+  border-radius: 8px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.044), rgba(255, 255, 255, 0.014)),
+    rgba(7, 17, 27, 0.34);
+}
+
+.operational-status-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 13px 14px;
+}
+
+.operational-status-summary span,
+.operational-status-summary small,
+.operational-card-head span,
+.operational-evidence-block span,
+.operational-agent-attribution span,
+.operational-audit-row span,
+.operational-workflow-step span,
+.operational-workflow-step small {
+  display: block;
+  color: var(--glass-muted);
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.operational-status-summary strong,
+.operational-card-head strong,
+.operational-evidence-block strong,
+.operational-agent-attribution strong,
+.operational-audit-row strong,
+.operational-workflow-step strong {
+  display: block;
+  color: rgba(239, 247, 255, 0.92);
+  font-size: 0.82rem;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.operational-status-summary p,
+.operational-card-body p,
+.operational-evidence-block p,
+.operational-audit-row p {
+  margin: 4px 0 0;
+  color: rgba(226, 238, 248, 0.72);
+  font-size: 0.66rem;
+  line-height: 1.55;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+
+.operational-attention-card {
+  display: grid;
+  gap: 12px;
+  padding: 13px;
+}
+
+.operational-attention-card[data-state='critical'],
+.operational-attention-card[data-state='blocked'],
+.operational-attention-card[data-state='offline'],
+.operational-workflow-step[data-state='blocked'],
+.operational-workflow-step[data-state='failed'] {
+  border-color: rgba(255, 112, 112, 0.38);
+}
+
+.operational-attention-card[data-state='elevated'],
+.operational-attention-card[data-state='warning'],
+.operational-attention-card[data-state='waiting-approval'] {
+  border-color: var(--jarvis-amber-line);
+}
+
+.operational-card-head,
+.operational-action-strip,
+.operational-agent-attribution,
+.operational-workflow-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.operational-card-body {
+  display: grid;
+  gap: 10px;
+}
+
+.operational-evidence-block {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.085);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.operational-action-strip {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.operational-risk-badge,
+.operational-permission-badge {
+  display: inline-grid;
+  place-items: center;
+  min-height: 22px;
+  border: 1px solid rgba(86, 221, 255, 0.2);
+  border-radius: 999px;
+  padding: 0 8px;
+  color: rgba(239, 247, 255, 0.84);
+  background: rgba(86, 221, 255, 0.06);
+  font-size: 0.52rem;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.operational-risk-badge[data-state='critical'],
+.operational-risk-badge[data-state='blocked'],
+.operational-risk-badge[data-state='failed'],
+.operational-permission-badge[data-state='blocked'] {
+  border-color: rgba(255, 112, 112, 0.38);
+  background: rgba(255, 112, 112, 0.08);
+}
+
+.operational-risk-badge[data-state='elevated'],
+.operational-risk-badge[data-state='waiting-approval'],
+.operational-permission-badge[data-state='execute'] {
+  border-color: var(--jarvis-amber-line);
+  background: rgba(255, 188, 92, 0.08);
+}
+
+.operational-agent-attribution {
+  justify-content: flex-start;
+}
+
+.operational-agent-attribution small {
+  color: rgba(226, 238, 248, 0.58);
+  font-size: 0.56rem;
+}
+
+.operational-audit-list,
+.workflow-run-step-list {
+  display: grid;
+  gap: 8px;
+}
+
+.operational-audit-row {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.095);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.018);
+}
+
+.operational-empty {
+  margin: 0;
+  color: rgba(226, 238, 248, 0.66);
+  font-size: 0.64rem;
+  line-height: 1.5;
+}
+
+.operational-workflow-step {
+  justify-content: stretch;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.operational-step-index {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(86, 221, 255, 0.24);
+  border-radius: 999px;
+  color: rgba(239, 247, 255, 0.86);
+  font-weight: 900;
+}
+
+.operational-step-status {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.operational-step-action {
+  min-height: 26px;
+  font-size: 0.52rem;
+}
+
+.workflow-runbook-frame {
+  gap: 10px;
+}
+
+.workflow-agent-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.workflow-agent-selector button {
+  display: grid;
+  gap: 3px;
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.028);
+  color: rgba(239, 247, 255, 0.84);
+  cursor: pointer;
+  text-align: left;
+}
+
+.workflow-agent-selector button[aria-pressed='true'] {
+  border-color: rgba(86, 221, 255, 0.38);
+  background: rgba(86, 221, 255, 0.085);
+}
+
+.workflow-agent-selector span,
+.workflow-agent-selector strong {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.workflow-agent-selector span {
+  color: var(--glass-muted);
+  font-size: 0.52rem;
+}
+
+.workflow-agent-selector strong {
+  font-size: 0.62rem;
+}
+
 .agent-control-surface {
   gap: 13px;
 }
@@ -4284,6 +4608,224 @@
 .agent-console-submit {
   justify-self: start;
   min-height: 30px;
+}
+
+.home-systems-surface {
+  gap: 13px;
+}
+
+.home-energy-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(116px, 1fr));
+}
+
+.home-systems-flow-frame {
+  border-color: rgba(86, 221, 255, 0.16);
+}
+
+.home-energy-flow {
+  display: grid;
+  gap: 10px;
+}
+
+.home-energy-daily {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.home-energy-chart-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+
+.home-energy-toggle-master {
+  min-height: 28px;
+}
+
+.home-energy-series-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.105);
+  border-radius: 999px;
+  padding: 0 10px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(230, 241, 249, 0.74);
+  cursor: pointer;
+  font-size: 0.54rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-energy-series-toggle span {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--series-color);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--series-color) 72%, transparent);
+}
+
+.home-energy-series-toggle[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--series-color) 48%, rgba(255, 255, 255, 0.14));
+  background: color-mix(in srgb, var(--series-color) 11%, rgba(255, 255, 255, 0.035));
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.home-energy-chart-shell {
+  position: relative;
+  min-height: 250px;
+  border: 1px solid rgba(86, 221, 255, 0.12);
+  border-radius: 10px;
+  padding: 16px 14px 28px 44px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 30% 18%, rgba(86, 221, 255, 0.09), transparent 38%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012)),
+    rgba(4, 12, 20, 0.3);
+}
+
+.home-energy-chart {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 210px;
+  overflow: visible;
+}
+
+.home-energy-chart-grid-line {
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 0.35;
+}
+
+.home-energy-chart-line,
+.home-energy-chart-line-shadow {
+  fill: none;
+  stroke: var(--series-color);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.home-energy-chart-line-shadow {
+  opacity: 0.18;
+  stroke-width: 4.8;
+  filter: blur(1px);
+}
+
+.home-energy-chart-line {
+  stroke-width: 1.65;
+  opacity: 0.9;
+}
+
+.home-energy-chart-axis {
+  position: absolute;
+  z-index: 2;
+  color: rgba(226, 238, 248, 0.48);
+  font-size: 0.52rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.home-energy-chart-axis-y {
+  inset: 16px auto 28px 12px;
+  display: grid;
+  align-content: space-between;
+}
+
+.home-energy-chart-axis-x {
+  left: 44px;
+  right: 14px;
+  bottom: 9px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.home-energy-total-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.home-energy-total-pill {
+  display: grid;
+  gap: 3px;
+  min-height: 58px;
+  border: 1px solid color-mix(in srgb, var(--series-color) 24%, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: color-mix(in srgb, var(--series-color) 7%, rgba(255, 255, 255, 0.025));
+}
+
+.home-energy-total-pill span,
+.home-energy-total-pill small {
+  color: rgba(226, 238, 248, 0.58);
+  font-size: 0.52rem;
+  font-weight: 850;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.home-energy-total-pill strong {
+  color: rgba(246, 250, 255, 0.92);
+  font-size: 0.76rem;
+}
+
+.home-energy-track {
+  position: relative;
+  min-height: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, rgba(255, 112, 112, 0.12), rgba(86, 221, 255, 0.12)),
+    rgba(5, 13, 22, 0.38);
+}
+
+.home-energy-fill {
+  position: absolute;
+  inset-block: 3px;
+  left: 3px;
+  border-radius: 999px;
+}
+
+.home-energy-fill-consumption {
+  background: linear-gradient(90deg, rgba(255, 188, 92, 0.78), rgba(255, 188, 92, 0.18));
+}
+
+.home-energy-fill-generation {
+  background: linear-gradient(90deg, rgba(86, 221, 255, 0.84), rgba(120, 255, 210, 0.28));
+  mix-blend-mode: screen;
+}
+
+.home-energy-flow-copy,
+.home-system-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.home-system-category-list {
+  display: grid;
+  gap: 10px;
+}
+
+.home-system-category-frame {
+  gap: 10px;
+}
+
+.home-system-card {
+  min-height: 132px;
+}
+
+.home-system-badge-stack {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
 }
 
 .agent-control-summary {
@@ -4530,9 +5072,22 @@
   color: rgba(255, 255, 255, 0.62);
 }
 
+.market-graph-item[data-state='live'] {
+  border-color: rgba(102, 232, 255, 0.28);
+}
+
+.market-graph-item[data-state='static'] {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.market-live-alert {
+  border-color: rgba(255, 183, 77, 0.22);
+  background: rgba(255, 183, 77, 0.08);
+}
+
 .trading-graph-surface {
   display: grid;
-  grid-template-rows: auto auto minmax(120px, 1fr);
+  grid-template-rows: auto auto auto minmax(120px, 1fr);
   gap: 10px;
   align-content: stretch;
 }
@@ -4620,6 +5175,9 @@
   position: relative;
   min-height: 0;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  background: rgba(4, 12, 20, 0.2);
 }
 
 .trading-graph-grid {
@@ -4645,6 +5203,37 @@
   border-color: rgba(255, 255, 255, 0.5);
   opacity: 0.7;
   clip-path: polygon(0 48%, 10% 52%, 24% 38%, 39% 42%, 51% 24%, 66% 30%, 78% 16%, 100% 20%, 100% 100%, 0 100%);
+}
+
+.trading-graph-sparkline {
+  position: absolute;
+  inset: 9% 6% 12% 6%;
+  width: 88%;
+  height: 79%;
+  overflow: visible;
+}
+
+.trading-graph-sparkline-line,
+.trading-graph-sparkline-shadow {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.trading-graph-sparkline-shadow {
+  stroke: rgba(102, 232, 255, 0.18);
+  stroke-width: 7;
+  filter: blur(2px);
+}
+
+.trading-graph-sparkline-line {
+  stroke: rgba(231, 246, 255, 0.92);
+  stroke-width: 2.6;
+}
+
+.trading-graph-stage[data-status='static'] .trading-graph-sparkline-line {
+  stroke-dasharray: 4 5;
+  stroke: rgba(255, 255, 255, 0.66);
 }
 
 .trading-graph-volume {
@@ -5156,6 +5745,15 @@
 }
 
 @media (max-width: 560px) {
+  .widget-workflow-cue {
+    grid-template-columns: 1fr;
+  }
+
+  .widget-workflow-cue-secondary {
+    justify-items: start;
+    text-align: left;
+  }
+
   .workspace-head {
     padding: 8px;
     gap: 6px;

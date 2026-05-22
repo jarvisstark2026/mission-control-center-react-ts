@@ -28,3 +28,4 @@ export { NotificationsWidget } from './NotificationsWidget';
 export { IntegrationRegistryWidget } from './IntegrationRegistryWidget';
 export { AgentControlWidget } from './AgentControlWidget';
 export { AgentConsoleWidget } from './AgentConsoleWidget';
+export { HomeSystemsWidget } from './HomeSystemsWidget';

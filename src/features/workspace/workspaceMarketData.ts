@@ -60,6 +60,7 @@ export const marketCategories: MarketCategory[] = [
 ];
 
 const marketGraphIndex = new Map(marketCategories.flatMap((category) => category.graphs.map((graph) => [graph.id, graph] as const)));
+export const marketGraphs = marketCategories.flatMap((category) => category.graphs);
 export const defaultMarketGraph = marketCategories[0]?.graphs[0] ?? {
   id: 'spx',
   categoryId: 'equities',

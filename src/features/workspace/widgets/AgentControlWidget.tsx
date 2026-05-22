@@ -6,6 +6,7 @@ import {
   getAgentJobSummary,
   getAgentUsageApprovalRate,
   getCommandAuditAgentActivity,
+  getVisibleAgentDescriptors,
   getVisibleAgentActivity,
   getVisibleAgentJobs,
   getVisibleAgentPermissions,
@@ -15,6 +16,7 @@ import {
   type AgentScheduledJob,
 } from '../../agent-control';
 import type { MissionControlRuntime } from '../../mission-control';
+import { AgentAttribution, PermissionBadge, StatusSummary } from '../operationalBlocks';
 import {
   WorkspaceButton,
   WorkspaceContentHeader,
@@ -64,7 +66,7 @@ function AgentPermissionRow({ permission, editable }: { permission: AgentPermiss
   return (
     <div className="mission-control-row agent-control-permission-row" data-state={permission.level}>
       <span>{permission.label}</span>
-      <strong>{permission.level}</strong>
+      <strong><PermissionBadge level={permission.level} /></strong>
       <small>{editable ? 'editable' : `${permission.category} / ${permission.risk}`}</small>
     </div>
   );
@@ -108,6 +110,7 @@ export function AgentControlWidget({
   }
 
   const jobs = getVisibleAgentJobs(state, role);
+  const agents = getVisibleAgentDescriptors(state, role);
   const permissions = getVisibleAgentPermissions(state, role);
   const activity = [
     ...getCommandAuditAgentActivity(missionControl.state.commands, role),
@@ -126,9 +129,13 @@ export function AgentControlWidget({
         meta={state.identity.connection}
       />
 
-      <WorkspaceSummaryPanel className="mission-control-summary agent-control-summary" title={state.identity.name}>
-        {state.identity.currentTask}
-      </WorkspaceSummaryPanel>
+      <StatusSummary
+        className="agent-control-summary"
+        label="Active coordinator"
+        title={state.identity.name}
+        detail={state.identity.currentTask}
+        meta={state.identity.connection}
+      />
 
       <WorkspaceMetricGrid
         className="mission-control-metrics agent-control-metrics"
@@ -175,6 +182,25 @@ export function AgentControlWidget({
             <p>Profile and permission changes are displayed here first, then will move behind an admin command approval.</p>
           </div>
         ) : null}
+      </WorkspaceSectionFrame>
+
+      <WorkspaceSectionFrame
+        className="mission-control-list-frame"
+        eyebrow="agent registry"
+        title="available agents"
+        meta={`${agents.length} visible`}
+      >
+        <div className="mission-control-card-list" role="list" aria-label="Agent registry">
+          {agents.map((agent) => (
+            <article className="mission-control-card agent-control-card" key={agent.id} role="listitem" data-state={agent.connection}>
+              <div className="mission-control-card-head">
+                <AgentAttribution agent={agent} profile={`${agent.provider} / ${agent.model}`} />
+                <small>{agent.connection}</small>
+              </div>
+              <p>{agent.summary}</p>
+            </article>
+          ))}
+        </div>
       </WorkspaceSectionFrame>
 
       <WorkspaceSectionFrame

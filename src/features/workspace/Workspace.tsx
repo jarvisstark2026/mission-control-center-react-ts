@@ -24,6 +24,7 @@ import {
   widgetPresets,
 } from './workspaceWidgetCatalog';
 import { defaultMarketGraph, getMarketGraph, type MarketGraph } from './workspaceMarketData';
+import { useMarketLiveData } from './workspaceMarketLiveData';
 import { createWorkspaceModePresetLayout, workspaceModePresets, type WorkspaceModePresetId } from './workspaceModePresets';
 import { WorkspaceWidgetCard, type WorkspaceWidgetRuntimeProps } from './workspaceWidgets';
 import { closeWorkspaceExtensionWindow, closeWorkspacePanelWindow, openWorkspaceExtensionWindow, returnToWorkspaceHub } from './workspacePanelWindows';
@@ -321,6 +322,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
   const activeRole = role ?? getCurrentShellRole();
   const missionControl = useMissionControl(activeRole);
   const agentControl = useMemo(() => createInitialAgentControlState(), []);
+  const marketLiveData = useMarketLiveData();
   const isWorkspaceExtension = isWorkspaceExtensionUrl();
   const workspaceInstanceId = getWorkspaceInstanceId();
   const currentWorkspaceId = isWorkspaceExtension ? workspaceInstanceId ?? 'workspace-extension' : 'main';
@@ -1314,6 +1316,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     folderPath,
     canBrowseFolder,
     activeMarketGraph,
+    marketLiveData,
     onBrowseFiles,
     onBrowseFolder,
     onOpenPreview,

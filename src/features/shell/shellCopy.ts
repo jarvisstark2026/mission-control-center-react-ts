@@ -34,6 +34,7 @@ const panelLabels: Partial<Record<WorkspaceWidget['kind'], string>> = {
   'integration-registry': 'Integration registry',
   'agent-control': 'Agent control',
   'agent-console': 'Agent console',
+  'home-systems': 'Home systems',
 };
 
 export function getPanelLabel(panelKind: WorkspaceWidget['kind'] | null | undefined) {

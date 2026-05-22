@@ -16,6 +16,7 @@ function createRequest(overrides: Partial<AgentTaskRequest> = {}): AgentTaskRequ
     scope: 'support',
     risk: 'safe',
     role: 'support',
+    targetAgentId: 'jarvis-support',
     requestedAt: '2026-05-22T20:00:00.000Z',
     ...overrides,
   };
@@ -60,6 +61,8 @@ describe('agentTaskingModel', () => {
     expect(result.proposals[0]).toMatchObject({
       scope: 'support',
       risk: 'safe',
+      agentId: 'jarvis-support',
+      agentName: 'Jarvis Support',
     });
     expect(commandEvent).toMatchObject({
       type: 'command',

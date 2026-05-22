@@ -56,6 +56,12 @@ export const shellNavItems: ShellNavItem[] = [
     allowedRoles: ['admin', 'home', 'support'],
   },
   {
+    id: 'home-systems',
+    label: 'Home systems',
+    hint: 'energy, safety, and home automation',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
     id: 'integration-registry',
     label: 'Integration registry',
     hint: 'devices, heartbeats, and permissions',

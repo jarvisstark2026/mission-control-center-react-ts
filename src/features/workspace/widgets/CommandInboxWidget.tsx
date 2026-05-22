@@ -1,5 +1,6 @@
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame } from '../workspaceBlocks';
 import { getAllowedCommandActions, type CommandAction, type CommandRequest, type MissionControlRuntime } from '../../mission-control';
+import { AgentAttribution, AttentionCard, AuditList, EvidenceBlock, StatusSummary } from '../operationalBlocks';
 
 const commandActionLabels: Record<CommandAction, string> = {
   approve: 'Approve',
@@ -43,12 +44,38 @@ export function CommandInboxWidget({ missionControl }: { missionControl: Mission
         metaEyebrow={missionControl.state.connection === 'connected' ? 'live telemetry' : 'mock telemetry'}
         meta={missionControl.role}
       />
-      <WorkspaceSummaryPanel
-        className="mission-control-summary"
+      <StatusSummary
+        label="Human workstream"
         title={nextCommand ? `Next action: ${nextCommand.title}` : 'No pending action'}
-      >
-        Command Inbox is the main human workstream. The agent can propose and explain actions; operators approve, reject, block, or override by role.
-      </WorkspaceSummaryPanel>
+        detail="Agents can propose and explain actions. Operators approve, reject, block, or override by role."
+        meta={missionControl.role}
+      />
+
+      {nextCommand ? (
+        <AttentionCard
+          label={`${nextCommand.scope} / ${nextCommand.source}`}
+          title={nextCommand.title}
+          risk={nextCommand.risk}
+          actions={
+            getAllowedCommandActions(nextCommand, missionControl.role).length ? (
+              <>
+                {getAllowedCommandActions(nextCommand, missionControl.role).map((action) => (
+                  <CommandActionButton key={action} action={action} command={nextCommand} missionControl={missionControl} />
+                ))}
+              </>
+            ) : (
+              <p className="mission-control-muted">Read-only for this access scope.</p>
+            )
+          }
+        >
+          <AgentAttribution
+            agent={{ name: nextCommand.agent.agentName, specialty: 'proposal owner' }}
+            profile={nextCommand.agent.profile}
+          />
+          <EvidenceBlock label="Why">{nextCommand.reasoning}</EvidenceBlock>
+          <EvidenceBlock label="Expected result">{nextCommand.expectedResult}</EvidenceBlock>
+        </AttentionCard>
+      ) : null}
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame command-inbox-mode-frame"
@@ -128,20 +155,16 @@ export function CommandInboxWidget({ missionControl }: { missionControl: Mission
         title="recent decisions"
         meta={`${completedCommands.length} resolved`}
       >
-        {completedCommands.length ? (
-          <div className="mission-control-compact-list" role="list" aria-label="Resolved command requests">
-            {completedCommands.slice(0, 6).map((command) => (
-              <div className="mission-control-row" key={command.id} role="listitem" data-state={command.status}>
-                <span>{command.title}</span>
-                <strong>{command.status}</strong>
-                <small>{command.execution.status} / {command.decidedBy ?? 'system'} / {command.auditTrail.length} audit</small>
-                <p>{command.execution.result}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="mission-control-empty">No command decisions yet.</p>
-        )}
+        <AuditList
+          empty="No command decisions yet."
+          items={completedCommands.slice(0, 6).map((command) => ({
+            id: command.id,
+            title: command.title,
+            detail: command.execution.result,
+            meta: `${command.status} / ${command.decidedBy ?? 'system'} / ${command.auditTrail.length} audit`,
+            state: command.status,
+          }))}
+        />
       </WorkspaceSectionFrame>
     </WorkspaceContentShell>
   );

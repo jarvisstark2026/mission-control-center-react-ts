@@ -6,8 +6,10 @@ import type { AgentControlState } from '../agent-control';
 import type { MissionControlRuntime } from '../mission-control';
 import type { WorkspaceWidgetGroup } from './workspaceManagerModel';
 import type { MarketGraph } from './workspaceMarketData';
+import type { MarketLiveState } from './workspaceMarketLiveData';
 import type { WorkspaceWidget } from './workspaceTypes';
 import { WidgetScrollPane } from './workspaceBlocks';
+import { WorkspaceWidgetWorkflowCue } from './WorkspaceWidgetWorkflowCue';
 import {
   AudioWidget,
   AgentConsoleWidget,
@@ -18,6 +20,7 @@ import {
   DocsWidget,
   FileExplorerWidget,
   GraphWidget,
+  HomeSystemsWidget,
   ImageWidget,
   IntegrationRegistryWidget,
   LauncherWidget,
@@ -49,6 +52,7 @@ export type WorkspaceWidgetContentProps = {
   folderPath: string | null;
   canBrowseFolder: boolean;
   activeMarketGraph: MarketGraph;
+  marketLiveData: MarketLiveState;
   onBrowseFiles: (files: FileList | File[]) => Promise<LocalFileRecord[]>;
   onBrowseFolder: () => void;
   onOpenPreview: (file: LocalFileRecord) => void;
@@ -88,7 +92,6 @@ const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], () => React
   'native-app': () => <NativeAppWidget />,
   video: () => <VideoWidget />,
   '3d-studio': () => <ModelStudioWidget />,
-  flow: () => <WorkflowWidget />,
   list: () => <ListWidget />,
 };
 
@@ -101,6 +104,7 @@ function renderWorkspaceWidgetContent({
   folderPath,
   canBrowseFolder,
   activeMarketGraph,
+  marketLiveData,
   onBrowseFiles,
   onBrowseFolder,
   onOpenPreview,
@@ -135,9 +139,9 @@ function renderWorkspaceWidgetContent({
         />
       );
     case 'trading-graph':
-      return <TradingGraphWidget graph={activeMarketGraph} />;
+      return <TradingGraphWidget graph={activeMarketGraph} marketLiveData={marketLiveData} />;
     case 'news':
-      return <NewsWidget activeGraph={activeMarketGraph} onSelectGraph={onSelectMarketGraph} />;
+      return <NewsWidget activeGraph={activeMarketGraph} marketLiveData={marketLiveData} onSelectGraph={onSelectMarketGraph} />;
     case 'launcher':
       return <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} activeRole={activeRole} />;
     case 'window-manager':
@@ -158,7 +162,11 @@ function renderWorkspaceWidgetContent({
     case 'agent-control':
       return <AgentControlWidget state={agentControl} role={activeRole} missionControl={missionControl} />;
     case 'agent-console':
-      return <AgentConsoleWidget role={activeRole} missionControl={missionControl} />;
+      return <AgentConsoleWidget role={activeRole} missionControl={missionControl} agentControl={agentControl} />;
+    case 'home-systems':
+      return <HomeSystemsWidget role={activeRole} missionControl={missionControl} />;
+    case 'flow':
+      return <WorkflowWidget role={activeRole} missionControl={missionControl} agentControl={agentControl} />;
     case '3d': {
       const previewFile = widget.previewFileId ? localFiles.find((record) => record.id === widget.previewFileId) ?? null : null;
       return <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} />;
@@ -171,5 +179,12 @@ function renderWorkspaceWidgetContent({
 }
 
 export function WorkspaceWidgetContent(props: WorkspaceWidgetContentRendererProps) {
-  return <WidgetScrollPane>{renderWorkspaceWidgetContent(props)}</WidgetScrollPane>;
+  const showWorkflowCue = props.widget.open && !props.widget.hidden;
+
+  return (
+    <WidgetScrollPane>
+      {showWorkflowCue ? <WorkspaceWidgetWorkflowCue kind={props.widget.kind} /> : null}
+      {renderWorkspaceWidgetContent(props)}
+    </WidgetScrollPane>
+  );
 }

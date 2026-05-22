@@ -33,6 +33,7 @@ export const workspaceShortcutKinds: WorkspaceWidget['kind'][] = [
   'integration-registry',
   'agent-control',
   'agent-console',
+  'home-systems',
 ];
 
 type WorkspaceLauncherEntry = {
@@ -49,6 +50,7 @@ const workspaceLauncherNotes: Partial<Record<WorkspaceWidget['kind'], string>> =
   'integration-registry': 'inspect devices',
   'agent-control': 'inspect Jarvis agent',
   'agent-console': 'task Jarvis safely',
+  'home-systems': 'monitor the home',
 };
 
 const workspaceLauncherKinds = workspaceShortcutKinds.filter((kind) => kind !== 'native-app');
@@ -56,6 +58,7 @@ const workspaceLauncherKinds = workspaceShortcutKinds.filter((kind) => kind !== 
 const workspaceWidgetAllowedRoles: Partial<Record<WorkspaceWidget['kind'], ShellRole[]>> = {
   'agent-control': ['admin', 'support', 'home'],
   'agent-console': ['admin', 'support', 'home'],
+  'home-systems': ['admin', 'support', 'home'],
 };
 
 export function isWorkspaceWidgetAllowedForRole(kind: WorkspaceWidget['kind'], role: ShellRole) {
@@ -97,6 +100,7 @@ export const widgetBlueprints: Record<WorkspaceWidget['kind'], WidgetBlueprint> 
   'integration-registry': { title: 'Integration registry', subtitle: 'devices / permissions', surfaceAlpha: 0.084, lineAlpha: 0.16, minWidth: 340, minHeight: 260 },
   'agent-control': { title: 'Agent control', subtitle: 'identity / jobs / permissions', surfaceAlpha: 0.086, lineAlpha: 0.17, minWidth: 360, minHeight: 280 },
   'agent-console': { title: 'Agent console', subtitle: 'tasking / proposals', surfaceAlpha: 0.088, lineAlpha: 0.17, minWidth: 360, minHeight: 300 },
+  'home-systems': { title: 'Home systems', subtitle: 'energy / safety / automation', surfaceAlpha: 0.086, lineAlpha: 0.17, minWidth: 360, minHeight: 300 },
 };
 
 type WidgetPresetLayout = Pick<WorkspaceWidget, 'id' | 'kind' | 'x' | 'y' | 'width' | 'height' | 'zIndex'> &
@@ -122,6 +126,7 @@ const widgetPresetLayouts: WidgetPresetLayout[] = [
   { id: 'integration-registry', kind: 'integration-registry', x: 808, y: 86, width: 390, height: 340, zIndex: 6 },
   { id: 'agent-control', kind: 'agent-control', x: 430, y: 404, width: 390, height: 360, zIndex: 6 },
   { id: 'agent-console', kind: 'agent-console', x: 836, y: 444, width: 390, height: 360, zIndex: 6 },
+  { id: 'home-systems', kind: 'home-systems', x: 24, y: 772, width: 430, height: 360, zIndex: 5 },
   { id: 'sheet', kind: 'sheet', x: 120, y: 772, width: 408, height: 246, zIndex: 2 },
   { id: 'docs', kind: 'docs', x: 548, y: 786, width: 342, height: 232, zIndex: 2 },
   { id: 'slides', kind: 'slides', x: 912, y: 790, width: 330, height: 230, zIndex: 2 },

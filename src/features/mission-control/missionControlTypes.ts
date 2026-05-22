@@ -57,6 +57,12 @@ export type CommandAgentProvenance = {
   profile: string;
 };
 
+export type CommandWorkflowLink = {
+  runId: string;
+  stepId: string;
+  workflowName: string;
+};
+
 export type CommandExecutionState = {
   status: CommandExecutionStatus;
   result: string;
@@ -87,6 +93,7 @@ export type CommandRequest = {
   requestedAt: string;
   execution: CommandExecutionState;
   auditTrail: CommandAuditEntry[];
+  workflow?: CommandWorkflowLink;
   decidedAt?: string;
   decidedBy?: ShellRole;
 };

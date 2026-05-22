@@ -86,7 +86,11 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
       );
     case 'trading-graph':
     case 'news':
-      return left.activeMarketGraph.id === right.activeMarketGraph.id;
+      return (
+        left.activeMarketGraph.id === right.activeMarketGraph.id &&
+        left.marketLiveData.status === right.marketLiveData.status &&
+        left.marketLiveData.updatedAt === right.marketLiveData.updatedAt
+      );
     case 'launcher':
       return getWidgetCollectionSignature(left.workspaceWidgets) === getWidgetCollectionSignature(right.workspaceWidgets);
     case 'window-manager':
@@ -94,6 +98,7 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
     case 'command-inbox':
     case 'notifications':
     case 'integration-registry':
+    case 'home-systems':
       return (
         left.missionControl.role === right.missionControl.role &&
         left.missionControl.state.version === right.missionControl.state.version

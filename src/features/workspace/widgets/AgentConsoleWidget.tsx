@@ -7,8 +7,10 @@ import {
   useAgentTasking,
   type AgentTaskScope,
 } from '../../agent-tasking';
+import { getAgentDescriptorById, getVisibleAgentDescriptors, type AgentControlState } from '../../agent-control';
 import type { CommandRisk, MissionControlRuntime } from '../../mission-control';
 import type { ShellRole } from '../../shell/roles';
+import { AgentAttribution, AttentionCard, EvidenceBlock, StatusSummary } from '../operationalBlocks';
 import {
   WorkspaceButton,
   WorkspaceContentHeader,
@@ -57,15 +59,21 @@ function formatTime(value: string) {
 export function AgentConsoleWidget({
   role,
   missionControl,
+  agentControl,
 }: {
   role: ShellRole;
   missionControl: MissionControlRuntime;
+  agentControl: AgentControlState;
 }) {
   const tasking = useAgentTasking(role, missionControl.ingestEvents);
   const availableScopes = useMemo(() => getAgentTaskScopesForRole(role), [role]);
+  const visibleAgents = useMemo(() => getVisibleAgentDescriptors(agentControl, role), [agentControl, role]);
+  const defaultAgent = visibleAgents.find((agent) => agent.specialty === 'coordinator') ?? visibleAgents[0] ?? getAgentDescriptorById(agentControl, agentControl.activeAgentId);
   const [objective, setObjective] = useState(() => getDefaultObjective(role));
   const [scope, setScope] = useState<AgentTaskScope>(() => getDefaultScope(role));
   const [risk, setRisk] = useState<CommandRisk>(() => getDefaultRisk(role));
+  const [targetAgentId, setTargetAgentId] = useState(defaultAgent.id);
+  const targetAgent = getAgentDescriptorById(agentControl, targetAgentId);
   const canView = canViewAgentConsole(role);
   const canSubmit = canSubmitAgentTask(role, { scope, risk });
 
@@ -86,7 +94,7 @@ export function AgentConsoleWidget({
   }
 
   const submitTask = () => {
-    void tasking.submitTask(objective, scope, risk);
+    void tasking.submitTask(objective, scope, risk, targetAgent.id);
   };
 
   return (
@@ -98,9 +106,12 @@ export function AgentConsoleWidget({
         meta={tasking.gatewayMode}
       />
 
-      <WorkspaceSummaryPanel className="mission-control-summary" title="Ask Jarvis for a proposed action">
-        Agent Console creates proposals only. Command Inbox remains the approval and execution gate.
-      </WorkspaceSummaryPanel>
+      <StatusSummary
+        label="Tasking status"
+        title="Proposal only"
+        detail="Agent Console creates proposals only. Command Inbox remains the approval and execution gate."
+        meta={tasking.state.status}
+      />
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame agent-console-compose"
@@ -108,6 +119,23 @@ export function AgentConsoleWidget({
         title="objective"
         meta={tasking.state.status}
       >
+        <AttentionCard label="Selected agent" title={targetAgent.name} risk={risk}>
+          <AgentAttribution agent={targetAgent} profile={targetAgent.profile} />
+          <p>{targetAgent.summary}</p>
+        </AttentionCard>
+        <div className="agent-console-selector-row" role="group" aria-label="Target agent">
+          {visibleAgents.map((agent) => (
+            <button
+              key={agent.id}
+              type="button"
+              className="agent-console-chip"
+              aria-pressed={targetAgentId === agent.id}
+              onClick={() => setTargetAgentId(agent.id)}
+            >
+              {agent.name}
+            </button>
+          ))}
+        </div>
         <label className="agent-console-field">
           <span>objective</span>
           <textarea
@@ -165,8 +193,8 @@ export function AgentConsoleWidget({
             {tasking.state.proposals.slice(0, 5).map((proposal) => (
               <div className="mission-control-row" key={proposal.id} role="listitem" data-state={proposal.risk}>
                 <span>{proposal.title}</span>
-                <strong>{proposal.scope}</strong>
-                <small>{proposal.risk} / {formatTime(proposal.timestamp)}</small>
+                <strong>{proposal.agentName ?? 'Jarvis Prime'}</strong>
+                <small>{proposal.scope} / {proposal.risk} / {formatTime(proposal.timestamp)}</small>
                 <p>{proposal.reasoning}</p>
               </div>
             ))}
@@ -187,7 +215,7 @@ export function AgentConsoleWidget({
             <div className="mission-control-row" key={message.id} role="listitem" data-state={message.author}>
               <span>{message.author}</span>
               <strong>{formatTime(message.timestamp)}</strong>
-              <p>{message.body}</p>
+              <EvidenceBlock label="message">{message.body}</EvidenceBlock>
             </div>
           ))}
         </div>

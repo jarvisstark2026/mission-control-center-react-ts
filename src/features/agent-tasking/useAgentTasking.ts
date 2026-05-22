@@ -16,7 +16,7 @@ export type AgentTaskingRuntime = {
   role: ShellRole;
   state: AgentTaskingState;
   gatewayMode: AgentTaskGateway['mode'];
-  submitTask: (objective: string, scope: AgentTaskScope, risk: CommandRisk) => Promise<void>;
+  submitTask: (objective: string, scope: AgentTaskScope, risk: CommandRisk, targetAgentId: string) => Promise<void>;
 };
 
 type AgentTaskingImportMetaEnv = ImportMetaEnv & {
@@ -47,7 +47,7 @@ export function useAgentTasking(role: ShellRole, ingestEvents: (events: MissionC
   }, [state.messages, state.proposals]);
 
   const submitTask = useCallback(
-    async (objective: string, scope: AgentTaskScope, risk: CommandRisk) => {
+    async (objective: string, scope: AgentTaskScope, risk: CommandRisk, targetAgentId: string) => {
       const trimmedObjective = objective.trim();
       if (!trimmedObjective) return;
 
@@ -58,6 +58,7 @@ export function useAgentTasking(role: ShellRole, ingestEvents: (events: MissionC
         scope,
         risk,
         role,
+        targetAgentId,
         requestedAt,
       };
 

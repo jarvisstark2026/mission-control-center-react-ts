@@ -8,8 +8,22 @@ export type AgentPermissionRisk = 'low' | 'medium' | 'high';
 export type AgentPermissionCategory = 'files' | 'workspace' | 'integrations' | 'commands' | 'network' | 'automation';
 export type AgentActivityKind = 'proposal' | 'approval' | 'execution' | 'failure' | 'connection';
 export type AgentProfile = 'home-operator' | 'support-diagnostics' | 'security-watch' | 'guest-readonly';
+export type AgentSpecialty = 'coordinator' | 'support' | 'security' | 'home' | 'workflow';
 
 export type AgentVisibleRole = Exclude<ShellRole, 'guest'>;
+
+export type AgentDescriptor = {
+  id: string;
+  name: string;
+  specialty: AgentSpecialty;
+  provider: string;
+  model: string;
+  profile: AgentProfile;
+  status: 'available' | 'working' | 'waiting' | 'limited';
+  connection: AgentConnectionState;
+  summary: string;
+  visibleTo: AgentVisibleRole[];
+};
 
 export type AgentIdentity = {
   id: string;
@@ -71,6 +85,8 @@ export type AgentActivity = {
 
 export type AgentControlState = {
   identity: AgentIdentity;
+  agents: AgentDescriptor[];
+  activeAgentId: string;
   usage: AgentUsageSummary;
   jobs: AgentScheduledJob[];
   permissions: AgentPermission[];

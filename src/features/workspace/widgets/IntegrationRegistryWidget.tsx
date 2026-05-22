@@ -1,4 +1,5 @@
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame } from '../workspaceBlocks';
+import { PermissionBadge, StatusSummary } from '../operationalBlocks';
 import {
   canEditIntegrationPermission,
   type IntegrationPermission,
@@ -20,6 +21,10 @@ export function IntegrationRegistryWidget({ missionControl }: { missionControl: 
   const { devices, integrations } = missionControl.state;
   const summary = getIntegrationStatusSummary(integrations);
   const canEditPermissions = canEditIntegrationPermission(missionControl.role);
+  const integrationGroups = Array.from(new Set(integrations.map((integration) => integration.category))).map((category) => ({
+    category,
+    items: integrations.filter((integration) => integration.category === category),
+  }));
 
   return (
     <WorkspaceContentShell className="mission-control-surface integration-registry-surface">
@@ -29,12 +34,12 @@ export function IntegrationRegistryWidget({ missionControl }: { missionControl: 
         metaEyebrow="scope"
         meta={missionControl.role}
       />
-      <WorkspaceSummaryPanel
-        className="mission-control-summary"
+      <StatusSummary
+        label="Registry health"
         title={`${summary.online} online / ${summary.degraded} degraded / ${summary.offline} offline`}
-      >
-        Registry data is typed and permission-aware. Current records are local/mock until a real integration backend supplies heartbeats.
-      </WorkspaceSummaryPanel>
+        detail="Registry data is typed and permission-aware. Current records are local/mock until a real integration backend supplies heartbeats."
+        meta={missionControl.role}
+      />
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame"
@@ -43,31 +48,41 @@ export function IntegrationRegistryWidget({ missionControl }: { missionControl: 
         meta={`${integrations.length} tracked`}
       >
         <div className="mission-control-card-list" role="list" aria-label="Integration registry">
-          {integrations.map((integration) => (
-            <article className="mission-control-card" key={integration.id} role="listitem" data-state={integration.status}>
-              <div className="mission-control-card-head">
-                <div>
-                  <span>{integration.category} / {integration.status}</span>
-                  <strong>{integration.name}</strong>
-                </div>
-                <small>{integration.permission}</small>
-              </div>
-              <p>{integration.scope} scope / heartbeat {new Date(integration.heartbeatAt).toLocaleTimeString()}</p>
-              <div className="mission-control-actions">
-                {permissionOptions.map((permission) => (
-                  <WorkspaceButton
-                    key={permission}
-                    variant={integration.permission === permission ? 'primary' : 'secondary'}
-                    className="mission-control-action"
-                    disabled={!canEditPermissions}
-                    aria-pressed={integration.permission === permission}
-                    onClick={() => missionControl.setIntegrationPermission(integration.id, permission)}
-                  >
-                    {permission}
-                  </WorkspaceButton>
-                ))}
-              </div>
-            </article>
+          {integrationGroups.map((group) => (
+            <WorkspaceSectionFrame
+              key={group.category}
+              className="mission-control-list-frame"
+              eyebrow="system group"
+              title={group.category}
+              meta={`${group.items.length} records`}
+            >
+              {group.items.map((integration) => (
+                <article className="mission-control-card" key={integration.id} role="listitem" data-state={integration.status}>
+                  <div className="mission-control-card-head">
+                    <div>
+                      <span>{integration.status} / {integration.scope}</span>
+                      <strong>{integration.name}</strong>
+                    </div>
+                    <PermissionBadge level={integration.permission} />
+                  </div>
+                  <p>Heartbeat {new Date(integration.heartbeatAt).toLocaleTimeString()}.</p>
+                  <div className="mission-control-actions">
+                    {permissionOptions.map((permission) => (
+                      <WorkspaceButton
+                        key={permission}
+                        variant={integration.permission === permission ? 'primary' : 'secondary'}
+                        className="mission-control-action"
+                        disabled={!canEditPermissions}
+                        aria-pressed={integration.permission === permission}
+                        onClick={() => missionControl.setIntegrationPermission(integration.id, permission)}
+                      >
+                        {permission}
+                      </WorkspaceButton>
+                    ))}
+                  </div>
+                </article>
+              ))}
+            </WorkspaceSectionFrame>
           ))}
         </div>
       </WorkspaceSectionFrame>

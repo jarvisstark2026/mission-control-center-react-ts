@@ -20,6 +20,8 @@ export type AgentTaskProposal = {
   reasoning: string;
   risk: CommandRisk;
   scope: AgentTaskScope;
+  agentId: string;
+  agentName: string;
   timestamp: string;
 };
 
@@ -29,6 +31,7 @@ export type AgentTaskRequest = {
   scope: AgentTaskScope;
   risk: CommandRisk;
   role: ShellRole;
+  targetAgentId: string;
   requestedAt: string;
 };
 

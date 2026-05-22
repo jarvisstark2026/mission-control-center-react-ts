@@ -1,4 +1,5 @@
 import type { CommandRisk, MissionControlEvent } from '../mission-control';
+import { createInitialAgentControlState, getAgentDescriptorById } from '../agent-control';
 import type {
   AgentTaskGatewayMode,
   AgentTaskGatewayResult,
@@ -42,7 +43,8 @@ function createMockTaskResult(request: AgentTaskRequest): AgentTaskGatewayResult
   const commandId = `agent-task-${slug}-${Date.parse(request.requestedAt) || Date.now()}`;
   const risk = getCommandRisk(request);
   const title = request.objective.length > 52 ? `${request.objective.slice(0, 49).trim()}...` : request.objective;
-  const reasoning = `Jarvis mapped the objective to a ${request.scope} proposal and staged it for human approval.`;
+  const agent = getAgentDescriptorById(createInitialAgentControlState(), request.targetAgentId);
+  const reasoning = `${agent.name} mapped the objective to a ${request.scope} proposal and staged it for human approval.`;
   const expectedResult = `Command Inbox receives a pending ${request.scope} action. No execution happens until an allowed role approves it.`;
 
   const proposal: AgentTaskProposal = {
@@ -52,12 +54,14 @@ function createMockTaskResult(request: AgentTaskRequest): AgentTaskGatewayResult
     reasoning,
     risk,
     scope: request.scope,
+    agentId: agent.id,
+    agentName: agent.name,
     timestamp,
   };
   const message: AgentTaskMessage = {
     id: `agent-message-${commandId}`,
     author: 'agent',
-    body: `I prepared a gated command proposal for "${title}". Review it in Command Inbox before anything can run.`,
+    body: `${agent.name} prepared a gated command proposal for "${title}". Review it in Command Inbox before anything can run.`,
     timestamp,
   };
   const commandEvent: MissionControlEvent = {
@@ -68,9 +72,9 @@ function createMockTaskResult(request: AgentTaskRequest): AgentTaskGatewayResult
       summary: request.objective,
       source: 'agent-console',
       agent: {
-        agentId: 'jarvis-prime',
-        agentName: 'Jarvis Prime',
-        profile: request.scope === 'security' ? 'security-watch' : request.scope === 'support' ? 'support-diagnostics' : 'home-operator',
+        agentId: agent.id,
+        agentName: agent.name,
+        profile: agent.profile,
       },
       reasoning,
       expectedResult,
@@ -89,7 +93,7 @@ function createMockTaskResult(request: AgentTaskRequest): AgentTaskGatewayResult
           type: 'proposed',
           actor: 'agent-console',
           timestamp,
-          detail: `Jarvis proposed "${title}" from Agent Console.`,
+          detail: `${agent.name} proposed "${title}" from Agent Console.`,
         },
       ],
     },

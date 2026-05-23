@@ -80,19 +80,14 @@ const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], () => React
   sheet: () => <SpreadsheetWidget />,
   docs: () => <DocsWidget />,
   slides: () => <SlidesWidget />,
-  image: () => <ImageWidget />,
-  pdf: () => <PdfWidget />,
   audio: () => <AudioWidget />,
   map: () => <MapWidget />,
   diagram: () => <DiagramWidget />,
-  project: () => <ProjectWidget />,
-  schedule: () => <ScheduleWidget />,
   browser: () => <BrowserWidget />,
   'watch-video': () => <LiveTvWidget />,
   'native-app': () => <NativeAppWidget />,
   video: () => <VideoWidget />,
   '3d-studio': () => <ModelStudioWidget />,
-  list: () => <ListWidget />,
 };
 
 function renderWorkspaceWidgetContent({
@@ -142,6 +137,28 @@ function renderWorkspaceWidgetContent({
       return <TradingGraphWidget graph={activeMarketGraph} marketLiveData={marketLiveData} />;
     case 'news':
       return <NewsWidget activeGraph={activeMarketGraph} marketLiveData={marketLiveData} onSelectGraph={onSelectMarketGraph} />;
+    case 'project':
+      return <ProjectWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} />;
+    case 'schedule':
+      return <ScheduleWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} />;
+    case 'list':
+      return <ListWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} />;
+    case 'image': {
+      const imageFile =
+        localFiles.find((record) => record.id === activeLocalFileId && record.previewKind === 'image') ??
+        localFiles.find((record) => record.id === selectedLocalFileId && record.previewKind === 'image') ??
+        localFiles.find((record) => record.previewKind === 'image') ??
+        null;
+      return <ImageWidget file={imageFile} />;
+    }
+    case 'pdf': {
+      const pdfFile =
+        localFiles.find((record) => record.id === activeLocalFileId && record.previewKind === 'pdf') ??
+        localFiles.find((record) => record.id === selectedLocalFileId && record.previewKind === 'pdf') ??
+        localFiles.find((record) => record.previewKind === 'pdf') ??
+        null;
+      return <PdfWidget file={pdfFile} />;
+    }
     case 'launcher':
       return <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} activeRole={activeRole} />;
     case 'window-manager':

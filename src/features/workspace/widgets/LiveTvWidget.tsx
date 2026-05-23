@@ -1,15 +1,10 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
 import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { addLiveTvFavorite, createLiveTvSource, getLiveTvStreamType, loadLiveTvState, saveLiveTvState, type LocalLiveTvSource } from '../workspaceLiveTvModel';
+import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 
-type LiveTvSource = {
-  name: string;
-  badge: string;
-  description: string;
-  url: string;
-  streamType: 'hls' | 'mp4';
-};
-
-const liveTvSources: LiveTvSource[] = [
+const liveTvSources: LocalLiveTvSource[] = [
   {
     name: 'Home tuner',
     badge: 'LAN',
@@ -33,21 +28,24 @@ const liveTvSources: LiveTvSource[] = [
   },
 ];
 
-const defaultLiveTvSource = liveTvSources[0] ?? {
+const defaultLiveTvSource = liveTvSources.find((source) => source.streamType === 'mp4') ?? liveTvSources[0] ?? {
   name: 'Fallback clip',
   badge: 'MP4',
   description: 'basic playback fallback',
   url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-  streamType: 'mp4',
+  streamType: 'mp4' as const,
 };
 
 export function LiveTvWidget() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<{ destroy: () => void } | null>(null);
+  const [liveTvState, setLiveTvState] = usePersistentWorkspaceState(loadLiveTvState, saveLiveTvState);
   const [draftUrl, setDraftUrl] = useState(defaultLiveTvSource.url);
-  const [activeSource, setActiveSource] = useState<LiveTvSource>(defaultLiveTvSource);
+  const [draftName, setDraftName] = useState('Custom feed');
+  const [activeSource, setActiveSource] = useState<LocalLiveTvSource>(defaultLiveTvSource);
   const [status, setStatus] = useState('Ready');
   const [isLoading, setIsLoading] = useState(false);
+  const allSources = [...liveTvSources, ...liveTvState.favorites.filter((favorite) => !liveTvSources.some((source) => source.url === favorite.url))];
 
   useEffect(() => {
     let cancelled = false;
@@ -77,7 +75,6 @@ export function LiveTvWidget() {
       if (cancelled) return;
       setIsLoading(false);
       setStatus(`Live on ${source.name}`);
-      void video.play().catch(() => undefined);
     };
 
     const attachDirectSource = () => {
@@ -140,15 +137,16 @@ export function LiveTvWidget() {
     const nextUrl = draftUrl.trim();
     if (!nextUrl) return;
 
-    const isHlsFeed = /\.m3u8($|\?)/i.test(nextUrl);
+    setActiveSource(createLiveTvSource(nextUrl, draftName.trim() || 'Custom feed'));
+  };
 
-    setActiveSource({
-      name: 'Custom feed',
-      badge: isHlsFeed ? 'HLS' : 'URL',
-      description: 'your chosen internet TV source',
-      url: nextUrl,
-      streamType: isHlsFeed ? 'hls' : 'mp4',
-    });
+  const saveCustomFeed = () => {
+    const nextUrl = draftUrl.trim();
+    if (!nextUrl) return;
+
+    const source = createLiveTvSource(nextUrl, draftName.trim() || 'Custom feed');
+    setLiveTvState((current) => addLiveTvFavorite(current, source));
+    setActiveSource(source);
   };
 
   return (
@@ -161,31 +159,41 @@ export function LiveTvWidget() {
       />
 
       <WorkspaceSummaryPanel className="live-tv-status-panel" title={activeSource.description}>
-        Internet TV playback stays inside the shared workspace shell, with source presets and custom feeds kept as local widget controls.
+        Internet TV playback stays local to the browser. HLS playback is lazy-loaded only when the active source needs it.
       </WorkspaceSummaryPanel>
 
-      <WorkspaceSectionFrame className="live-tv-source-section" eyebrow="sources" title="channel presets" meta={`${liveTvSources.length} feeds`}>
+      <WorkspaceSectionFrame className="live-tv-source-section" eyebrow="sources" title="channel presets" meta={`${allSources.length} feeds`}>
         <WorkspaceCatalogGrid
           className="live-tv-preset-list"
           variant="live-tv"
           ariaLabel="Live TV sources"
-          items={liveTvSources.map((source) => ({
-            id: source.name,
+          items={allSources.map((source) => ({
+            id: source.url,
             label: source.name,
             note: source.description,
             badge: source.badge,
-            active: source.name === activeSource.name,
+            active: source.url === activeSource.url,
             state: source.streamType,
           }))}
           onSelect={(item) => {
-            const source = liveTvSources.find((candidate) => candidate.name === item.id) ?? defaultLiveTvSource;
+            const source = allSources.find((candidate) => candidate.url === item.id) ?? defaultLiveTvSource;
             setDraftUrl(source.url);
+            setDraftName(source.name);
             setActiveSource(source);
           }}
         />
       </WorkspaceSectionFrame>
 
       <WorkspaceSectionFrame className="live-tv-controls-section" eyebrow="stream" title="custom feed" meta="HLS / MP4">
+        <label className="live-tv-input">
+          <span>Source name</span>
+          <input
+            type="text"
+            value={draftName}
+            onChange={(event) => setDraftName(event.target.value)}
+            placeholder="Name this source"
+          />
+        </label>
         <label className="live-tv-input">
           <span>Channel or stream URL</span>
           <input
@@ -201,7 +209,10 @@ export function LiveTvWidget() {
           <WorkspaceButton className="live-tv-tune-button" onClick={tuneCustomFeed}>
             Tune feed
           </WorkspaceButton>
-          <small>Best with official HLS (.m3u8) feeds from your provider or home tuner.</small>
+          <WorkspaceButton variant="secondary" onClick={saveCustomFeed}>
+            Save favorite
+          </WorkspaceButton>
+          <small>{getLiveTvStreamType(draftUrl).toUpperCase()} detected. Use official feeds from your provider or tuner.</small>
         </div>
       </WorkspaceSectionFrame>
 
@@ -211,4 +222,3 @@ export function LiveTvWidget() {
     </WorkspaceContentShell>
   );
 }
-

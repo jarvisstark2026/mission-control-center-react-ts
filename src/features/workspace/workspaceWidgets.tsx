@@ -113,6 +113,13 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
       return left.activeRole === right.activeRole && left.missionControl.state.version === right.missionControl.state.version;
     case '3d':
       return left.widget.previewFileId === right.widget.previewFileId && left.localFiles === right.localFiles;
+    case 'image':
+    case 'pdf':
+      return (
+        left.localFiles === right.localFiles &&
+        left.activeLocalFileId === right.activeLocalFileId &&
+        left.selectedLocalFileId === right.selectedLocalFileId
+      );
     default:
       return true;
   }

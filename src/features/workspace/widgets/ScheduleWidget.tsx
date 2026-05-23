@@ -1,35 +1,191 @@
-﻿import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceRowList, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { useMemo, useState } from 'react';
 
-export function ScheduleWidget() {
-  const slots = [
-    { time: '07:30', label: 'Morning shift', note: 'brief / hydrate / review' },
-    { time: '12:15', label: 'Project block', note: 'deep work / build' },
-    { time: '16:30', label: 'Check-in', note: 'status / approvals' },
-    { time: '21:00', label: 'Wrap-up', note: 'handoff / tidy / plan' },
-  ];
+import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import {
+  completeScheduleBlock,
+  createScheduleBlock,
+  filterScheduleBlocks,
+  loadLocalSchedule,
+  postponeScheduleBlock,
+  removeScheduleBlock,
+  saveLocalSchedule,
+  updateScheduleBlock,
+  type LocalScheduleBlock,
+  type LocalScheduleStatus,
+} from '../workspaceScheduleModel';
+import type { WorkspaceWidget } from '../workspaceTypes';
+import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 
-  const rows = slots.map((slot) => ({
-    id: slot.time,
-    primary: slot.time,
-    secondary: slot.label,
-    meta: slot.note,
-  }));
+const scheduleFilters: LocalScheduleStatus[] = ['today', 'upcoming', 'done'];
+
+function getDraftFromBlock(block: LocalScheduleBlock) {
+  return {
+    time: block.time,
+    date: block.date,
+    title: block.title,
+    note: block.note,
+    linkedWorkflowTemplateId: block.linkedWorkflowTemplateId ?? '',
+  };
+}
+
+function getEmptyScheduleDraft() {
+  return {
+    time: '09:00',
+    date: new Date().toISOString().slice(0, 10),
+    title: '',
+    note: '',
+    linkedWorkflowTemplateId: '',
+  };
+}
+
+export function ScheduleWidget({
+  onLaunchWorkspaceWidget,
+}: {
+  onLaunchWorkspaceWidget?: (kind: WorkspaceWidget['kind']) => void;
+}) {
+  const [blocks, setBlocks] = usePersistentWorkspaceState(loadLocalSchedule, saveLocalSchedule);
+  const [activeFilter, setActiveFilter] = useState<LocalScheduleStatus>('today');
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [draft, setDraft] = useState(getEmptyScheduleDraft);
+
+  const visibleBlocks = useMemo(() => filterScheduleBlocks(blocks, activeFilter), [activeFilter, blocks]);
+  const openBlocks = blocks.filter((block) => block.status !== 'done');
+  const nextBlock = filterScheduleBlocks(blocks, 'today')[0] ?? filterScheduleBlocks(blocks, 'upcoming')[0] ?? null;
+
+  const resetDraft = () => {
+    setEditingBlockId(null);
+    setDraft(getEmptyScheduleDraft());
+  };
+
+  const saveDraft = () => {
+    if (!draft.title.trim()) return;
+
+    if (editingBlockId) {
+      setBlocks((current) =>
+        updateScheduleBlock(current, editingBlockId, {
+          time: draft.time,
+          date: draft.date,
+          title: draft.title,
+          note: draft.note,
+          linkedWorkflowTemplateId: draft.linkedWorkflowTemplateId.trim() || null,
+        }),
+      );
+    } else {
+      setBlocks((current) => [
+        ...current,
+        createScheduleBlock({
+          time: draft.time,
+          date: draft.date,
+          title: draft.title,
+          note: draft.note,
+          linkedWorkflowTemplateId: draft.linkedWorkflowTemplateId.trim() || null,
+        }),
+      ]);
+    }
+
+    resetDraft();
+  };
+
+  const startEditing = (block: LocalScheduleBlock) => {
+    setEditingBlockId(block.id);
+    setDraft(getDraftFromBlock(block));
+  };
 
   return (
     <WorkspaceContentShell className="schedule-surface">
       <WorkspaceContentHeader
         eyebrow="Schedule"
-        title="today / shift rhythm"
-        metaEyebrow="timeline"
-        meta={`${rows.length} blocks`}
+        title="daily routine"
+        metaEyebrow={activeFilter}
+        meta={`${visibleBlocks.length} shown - ${openBlocks.length} open`}
       />
-      <WorkspaceSummaryPanel className="schedule-summary" title="active day plan">
-        Shift rhythm, check-ins, and project blocks now share the same header-summary-section cadence as the Markets shell.
+      <WorkspaceSummaryPanel className="schedule-summary" title={nextBlock ? `Next: ${nextBlock.title}` : 'No open blocks'}>
+        {nextBlock
+          ? `${nextBlock.time} on ${nextBlock.date}. ${nextBlock.note}`
+          : 'Create a local schedule block to plan the day. Blocks stay in this browser.'}
       </WorkspaceSummaryPanel>
-      <WorkspaceSectionFrame className="schedule-section" eyebrow="agenda" title="active day plan" meta="local time">
-        <WorkspaceRowList className="schedule-rows" rows={rows} ariaLabel="Today schedule" />
+
+      <WorkspaceSectionFrame className="schedule-editor" eyebrow="local block" title={editingBlockId ? 'edit block' : 'create block'} meta="browser saved">
+        <div className="schedule-form">
+          <input
+            aria-label="Schedule block time"
+            type="time"
+            value={draft.time}
+            onChange={(event) => setDraft((current) => ({ ...current, time: event.target.value }))}
+          />
+          <input
+            aria-label="Schedule block date"
+            type="date"
+            value={draft.date}
+            onChange={(event) => setDraft((current) => ({ ...current, date: event.target.value }))}
+          />
+          <input
+            aria-label="Schedule block title"
+            value={draft.title}
+            onChange={(event) => setDraft((current) => ({ ...current, title: event.target.value }))}
+            onKeyDown={(event) => event.key === 'Enter' && saveDraft()}
+            placeholder="Block title"
+          />
+          <input
+            aria-label="Schedule block note"
+            value={draft.note}
+            onChange={(event) => setDraft((current) => ({ ...current, note: event.target.value }))}
+            placeholder="Notes / context"
+          />
+          <input
+            aria-label="Linked workflow template"
+            value={draft.linkedWorkflowTemplateId}
+            onChange={(event) => setDraft((current) => ({ ...current, linkedWorkflowTemplateId: event.target.value }))}
+            placeholder="Workflow template id"
+          />
+          <WorkspaceButton onClick={saveDraft}>{editingBlockId ? 'Save block' : 'Add block'}</WorkspaceButton>
+          {editingBlockId ? <WorkspaceButton variant="secondary" onClick={resetDraft}>Cancel</WorkspaceButton> : null}
+        </div>
+      </WorkspaceSectionFrame>
+
+      <WorkspaceSectionFrame className="schedule-section" eyebrow="agenda" title="local day plan" meta="today / upcoming / done">
+        <div className="schedule-filter-strip" role="tablist" aria-label="Schedule filters">
+          {scheduleFilters.map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              className={filter === activeFilter ? 'is-active' : undefined}
+              onClick={() => setActiveFilter(filter)}
+              role="tab"
+              aria-selected={filter === activeFilter}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+
+        <div className="schedule-rows" role="list" aria-label="Local schedule blocks">
+          {visibleBlocks.length ? visibleBlocks.map((block) => (
+            <article key={block.id} className="schedule-block-card" role="listitem" data-state={block.status}>
+              <div className="schedule-block-time">
+                <strong>{block.time}</strong>
+                <span>{block.date}</span>
+              </div>
+              <div className="schedule-block-main">
+                <strong>{block.title}</strong>
+                <p>{block.note}</p>
+                {block.linkedWorkflowTemplateId ? <small>Workflow: {block.linkedWorkflowTemplateId}</small> : null}
+              </div>
+              <div className="schedule-block-actions">
+                <WorkspaceButton variant="compact" onClick={() => startEditing(block)}>Edit</WorkspaceButton>
+                <WorkspaceButton variant="compact" onClick={() => setBlocks((current) => completeScheduleBlock(current, block.id))} disabled={block.status === 'done'}>Done</WorkspaceButton>
+                <WorkspaceButton variant="compact" onClick={() => setBlocks((current) => postponeScheduleBlock(current, block.id))}>Postpone</WorkspaceButton>
+                {block.linkedWorkflowTemplateId ? (
+                  <WorkspaceButton variant="compact" onClick={() => onLaunchWorkspaceWidget?.('flow')}>Start workflow</WorkspaceButton>
+                ) : null}
+                <WorkspaceButton variant="destructive" onClick={() => setBlocks((current) => removeScheduleBlock(current, block.id))}>Remove</WorkspaceButton>
+              </div>
+            </article>
+          )) : (
+            <div className="schedule-empty-state">No {activeFilter} blocks. Add one above or switch filters.</div>
+          )}
+        </div>
       </WorkspaceSectionFrame>
     </WorkspaceContentShell>
   );
 }
-

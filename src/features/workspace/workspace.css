@@ -5565,6 +5565,301 @@
 .pdf-lines span:nth-child(4) { width: 74%; }
 .pdf-lines span:nth-child(5) { width: 52%; }
 
+.schedule-editor,
+.task-board-editor {
+  display: grid;
+  gap: 8px;
+}
+
+.schedule-form,
+.task-board-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.schedule-form input,
+.task-board-form input,
+.docs-title-input,
+.docs-body-input,
+.sheet-grid input,
+.live-tv-input input {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.92);
+  outline: none;
+}
+
+.schedule-form input,
+.task-board-form input {
+  min-height: 34px;
+  padding: 8px 10px;
+}
+
+.schedule-form input:focus,
+.task-board-form input:focus,
+.docs-title-input:focus,
+.docs-body-input:focus,
+.sheet-grid input:focus,
+.live-tv-input input:focus {
+  border-color: rgba(86, 221, 255, 0.32);
+  box-shadow: 0 0 0 1px rgba(86, 221, 255, 0.08);
+}
+
+.schedule-filter-strip,
+.task-lane-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 8px;
+}
+
+.task-lane-tabs {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.schedule-filter-strip button,
+.task-lane-tabs button {
+  min-height: 34px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.76);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.58rem;
+  cursor: pointer;
+}
+
+.task-lane-tabs button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  text-align: left;
+}
+
+.task-lane-tabs span {
+  color: rgba(255, 255, 255, 0.56);
+}
+
+.schedule-filter-strip button:hover,
+.schedule-filter-strip button.is-active,
+.task-lane-tabs button:hover,
+.task-lane-tabs button.is-active {
+  border-color: rgba(86, 221, 255, 0.28);
+  background: rgba(86, 221, 255, 0.09);
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.schedule-rows,
+.task-board-lane {
+  display: grid;
+  gap: 8px;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+
+.schedule-block-card,
+.task-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.042), rgba(255, 255, 255, 0.014)),
+    rgba(255, 255, 255, 0.02);
+}
+
+.task-card {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.schedule-block-time,
+.schedule-block-main,
+.task-card-main {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+}
+
+.schedule-block-time strong,
+.schedule-block-time span,
+.schedule-block-main small,
+.task-card-main span,
+.task-card-main small,
+.task-card-controls label span,
+.docs-evidence-summary span,
+.sheet-summary-tile span {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.58rem;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.schedule-block-main strong,
+.task-card-main strong {
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.schedule-block-main p,
+.task-card-main p,
+.docs-evidence-summary small {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.66);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.schedule-block-actions,
+.task-card-controls {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.task-card-controls label {
+  display: inline-grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 6px;
+}
+
+.task-card-controls select {
+  min-height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background: rgba(8, 18, 30, 0.92);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.schedule-empty-state,
+.task-empty-state,
+.browser-empty-state {
+  padding: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 0.68rem;
+}
+
+.docs-evidence-summary {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.docs-evidence-summary strong {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.docs-title-input {
+  width: 100%;
+  min-height: 40px;
+  padding: 10px 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.docs-body-input {
+  width: 100%;
+  min-height: 210px;
+  resize: vertical;
+  padding: 12px;
+  line-height: 1.55;
+}
+
+.sheet-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.sheet-summary-tile {
+  display: grid;
+  gap: 2px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.sheet-summary-tile strong {
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.sheet-summary-tile small {
+  color: rgba(255, 255, 255, 0.58);
+  font-size: 0.56rem;
+}
+
+.sheet-grid {
+  grid-template-columns: 1.15fr repeat(4, minmax(76px, 1fr));
+}
+
+.sheet-grid input {
+  width: 100%;
+  min-width: 0;
+  border-radius: 0;
+}
+
+.image-preview-media,
+.pdf-preview-frame {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.image-preview-media {
+  object-fit: contain;
+  background: rgba(0, 0, 0, 0.16);
+}
+
+.browser-surface {
+  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+}
+
+.browser-bar {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.browser-history-section {
+  min-height: 0;
+}
+
+.browser-history-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 6px;
+}
+
+.news-watchlist-section {
+  display: grid;
+  gap: 8px;
+}
+
+.news-watchlist-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 
 @keyframes spin {
   from {

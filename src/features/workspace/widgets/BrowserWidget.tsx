@@ -1,18 +1,49 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
+
 import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { addBrowserBookmark, addBrowserHistory, loadBrowserState, normalizeBrowserUrl, saveBrowserState } from '../workspaceBrowserModel';
+import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 
 export function BrowserWidget() {
+  const [browserState, setBrowserState] = usePersistentWorkspaceState(loadBrowserState, saveBrowserState);
   const [url, setUrl] = useState('https://example.org');
   const [frameUrl, setFrameUrl] = useState(url);
+  const [frameStatus, setFrameStatus] = useState('Ready');
 
   const submitUrl = () => {
-    let next = url.trim();
+    const next = normalizeBrowserUrl(url);
     if (!next) return;
-    if (!/^https?:\/\//i.test(next)) {
-      next = `https://${next.replace(/^data:/i, '')}`;
-    }
+
+    setFrameStatus('Loading');
     setFrameUrl(next);
     setUrl(next);
+    setBrowserState((current) => addBrowserHistory(current, next));
+  };
+
+  const saveBookmark = () => {
+    const next = normalizeBrowserUrl(url || frameUrl);
+    if (!next) return;
+    setBrowserState((current) => addBrowserBookmark(current, next));
+  };
+
+  const bookmarkItems = browserState.bookmarks.map((bookmark) => ({
+    id: bookmark.url,
+    label: bookmark.label,
+    note: 'bookmark',
+    active: bookmark.url === frameUrl,
+  }));
+  const historyItems = browserState.history.map((history) => ({
+    id: history.url,
+    label: history.label,
+    note: new Date(history.visitedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    active: history.url === frameUrl,
+  }));
+
+  const navigateTo = (nextUrl: string) => {
+    setUrl(nextUrl);
+    setFrameUrl(nextUrl);
+    setFrameStatus('Loading');
+    setBrowserState((current) => addBrowserHistory(current, nextUrl));
   };
 
   return (
@@ -21,12 +52,12 @@ export function BrowserWidget() {
         className="browser-head"
         eyebrow="Browser"
         title="embedded web preview"
-        metaEyebrow="active URL"
+        metaEyebrow={frameStatus}
         meta={frameUrl.replace(/^https?:\/\//i, '')}
       />
 
-      <WorkspaceSummaryPanel className="browser-summary-panel" title="embedded preview">
-        Address controls and bookmarked pages now sit beneath the same status tier as Markets, while the iframe remains contained in the browser stage.
+      <WorkspaceSummaryPanel className="browser-summary-panel" title="local bookmarks and history">
+        Some websites block iframe embedding. If the preview stays blank, the URL is still saved in local history for quick handoff.
       </WorkspaceSummaryPanel>
 
       <WorkspaceSectionFrame className="browser-address-section" eyebrow="address" title="navigation controls" meta="URL / bookmarks">
@@ -39,24 +70,40 @@ export function BrowserWidget() {
             placeholder="Enter a website URL"
           />
           <WorkspaceButton className="browser-go-button" onClick={submitUrl}>Go</WorkspaceButton>
+          <WorkspaceButton variant="secondary" className="browser-save-button" onClick={saveBookmark}>Save bookmark</WorkspaceButton>
         </div>
         <WorkspaceCatalogGrid
           className="browser-bookmarks"
           variant="launcher"
           ariaLabel="Browser bookmarks"
-          items={['https://example.org', 'https://developer.mozilla.org', 'https://news.ycombinator.com'].map((bookmark) => ({
-            id: bookmark,
-            label: bookmark.replace('https://', ''),
-            note: 'bookmark',
-          }))}
-          onSelect={(item) => { setUrl(item.id); setFrameUrl(item.id); }}
+          items={bookmarkItems}
+          onSelect={(item) => navigateTo(item.id)}
         />
       </WorkspaceSectionFrame>
 
+      <WorkspaceSectionFrame className="browser-history-section" eyebrow="history" title="recent pages" meta={`${historyItems.length} saved`}>
+        {historyItems.length ? (
+          <WorkspaceCatalogGrid
+            className="browser-history-list"
+            variant="launcher"
+            ariaLabel="Browser history"
+            items={historyItems}
+            onSelect={(item) => navigateTo(item.id)}
+          />
+        ) : (
+          <div className="browser-empty-state">History appears after the first navigation.</div>
+        )}
+      </WorkspaceSectionFrame>
+
       <WorkspaceSectionFrame className="browser-frame-section" eyebrow="preview" title="remote page" meta="iframe">
-        <iframe title="Browser preview" src={frameUrl} className="browser-frame" />
+        <iframe
+          title="Browser preview"
+          src={frameUrl}
+          className="browser-frame"
+          onLoad={() => setFrameStatus('Loaded')}
+          onError={() => setFrameStatus('Blocked or unavailable')}
+        />
       </WorkspaceSectionFrame>
     </WorkspaceContentShell>
   );
 }
-

@@ -41,6 +41,12 @@ describe('Workspace header controls', () => {
     expect(widget?.style.translate).toBe(`${x}px ${y}px`);
   };
 
+  const getWidget = (container: HTMLElement, kind: string) => {
+    const widget = container.querySelector<HTMLElement>(`.workspace-widget.kind-${kind}`);
+    if (!widget) throw new Error(`${kind} widget was not rendered`);
+    return widget;
+  };
+
   it('opens a blank workspace extension without clearing the current workspace', () => {
     const focus = vi.fn();
     const open = vi.spyOn(window, 'open').mockReturnValue({ focus } as unknown as Window);
@@ -831,5 +837,76 @@ describe('Workspace header controls', () => {
 
     expect(container.querySelector('.workspace-widget.kind-file-explorer .widget-scroll-pane')).toBeInTheDocument();
     expect(container.querySelector('.widget-body-file-explorer')).not.toBeInTheDocument();
+  });
+
+  it('creates and completes local schedule blocks with browser persistence', () => {
+    const { container, unmount } = render(<Workspace />);
+    const scheduleWidget = within(getWidget(container, 'schedule'));
+
+    fireEvent.change(scheduleWidget.getByLabelText('Schedule block title'), { target: { value: 'Test schedule block' } });
+    fireEvent.change(scheduleWidget.getByLabelText('Schedule block note'), { target: { value: 'local proof' } });
+    fireEvent.click(scheduleWidget.getByRole('button', { name: 'Add block' }));
+    const createdScheduleCard = scheduleWidget.getByText('Test schedule block').closest('.schedule-block-card') as HTMLElement;
+    fireEvent.click(within(createdScheduleCard).getByRole('button', { name: 'Done' }));
+
+    unmount();
+    const { container: nextContainer } = render(<Workspace />);
+    const persistedSchedule = within(getWidget(nextContainer, 'schedule'));
+    fireEvent.click(persistedSchedule.getByRole('tab', { name: 'done' }));
+
+    expect(persistedSchedule.getByText('Test schedule block')).toBeInTheDocument();
+  });
+
+  it('creates local task cards and moves them between shared lanes', () => {
+    const { container } = render(<Workspace />);
+    const projectWidget = within(getWidget(container, 'list'));
+
+    fireEvent.change(projectWidget.getByLabelText('Task title'), { target: { value: 'Evidence follow-up' } });
+    fireEvent.change(projectWidget.getByLabelText('Task note'), { target: { value: 'needs local file' } });
+    fireEvent.click(projectWidget.getByRole('button', { name: 'Add task' }));
+    const createdTaskCard = projectWidget.getByText('Evidence follow-up').closest('.task-card') as HTMLElement;
+    fireEvent.click(within(createdTaskCard).getByRole('button', { name: 'Block' }));
+    fireEvent.click(projectWidget.getByRole('tab', { name: /Blocked/i }));
+
+    expect(projectWidget.getByText('Evidence follow-up')).toBeInTheDocument();
+    expect(projectWidget.getByText('needs local file')).toBeInTheDocument();
+  });
+
+  it('persists local docs and spreadsheet evidence edits', () => {
+    const { container, unmount } = render(<Workspace />);
+    const docsWidget = within(getWidget(container, 'docs'));
+    const sheetWidget = within(getWidget(container, 'sheet'));
+
+    fireEvent.change(docsWidget.getByLabelText('Document body'), { target: { value: 'Evidence note from local docs.' } });
+    fireEvent.change(sheetWidget.getByLabelText('Q1 row 1'), { target: { value: '42.5' } });
+
+    expect(docsWidget.getByDisplayValue('Evidence note from local docs.')).toBeInTheDocument();
+    expect(sheetWidget.getByText('115.6')).toBeInTheDocument();
+
+    unmount();
+    const { container: nextContainer } = render(<Workspace />);
+
+    expect(within(getWidget(nextContainer, 'docs')).getByDisplayValue('Evidence note from local docs.')).toBeInTheDocument();
+    expect(within(getWidget(nextContainer, 'sheet')).getByDisplayValue('42.5')).toBeInTheDocument();
+  });
+
+  it('stores browser bookmarks and live TV favorites locally', () => {
+    const { container } = render(<Workspace />);
+    const browserWidget = within(getWidget(container, 'browser'));
+    const liveTvWidget = within(getWidget(container, 'watch-video'));
+
+    fireEvent.change(browserWidget.getByLabelText('Browser URL'), { target: { value: 'openai.com' } });
+    fireEvent.click(browserWidget.getByRole('button', { name: 'Go' }));
+    fireEvent.click(browserWidget.getByRole('button', { name: 'Save bookmark' }));
+
+    expect(browserWidget.getAllByText('openai.com').length).toBeGreaterThan(0);
+
+    fireEvent.change(liveTvWidget.getByPlaceholderText('Name this source'), { target: { value: 'Local MP4' } });
+    fireEvent.change(liveTvWidget.getByPlaceholderText('Paste an official HLS / MP4 source'), {
+      target: { value: 'https://example.com/local.mp4' },
+    });
+    fireEvent.click(liveTvWidget.getByRole('button', { name: 'Save favorite' }));
+
+    expect(liveTvWidget.getAllByText('Local MP4').length).toBeGreaterThan(0);
   });
 });

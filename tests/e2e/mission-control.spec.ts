@@ -5,6 +5,12 @@ async function openWidget(page: import('@playwright/test').Page, widgetName: str
   await page.getByRole('menuitem', { name: widgetName }).click();
 }
 
+async function ensureWidgetOpen(locator: import('@playwright/test').Locator) {
+  if (await locator.evaluate((element) => element.classList.contains('is-closed'))) {
+    await locator.getByRole('button', { name: /^Maximize / }).click({ force: true });
+  }
+}
+
 test('operational core widgets launch and use mock live data', async ({ page }) => {
   await page.goto('/?role=admin');
 
@@ -83,4 +89,51 @@ test('guest access can read command inbox but cannot approve commands', async ({
   await expect(page.getByRole('menuitem', { name: 'Home systems' })).toBeVisible();
   await page.getByRole('menuitem', { name: 'Home systems' }).click();
   await expect(page.getByText('This access scope can monitor Home Systems but cannot stage home actions.')).toBeVisible();
+});
+
+test('local productivity widgets persist useful browser-only state', async ({ page }) => {
+  await page.goto('/?role=admin');
+
+  const scheduleWidget = page.locator('.workspace-widget.kind-schedule');
+  await ensureWidgetOpen(scheduleWidget);
+  await scheduleWidget.getByLabel('Schedule block title').fill('E2E local block');
+  await scheduleWidget.getByLabel('Schedule block note').fill('persists after reload');
+  await scheduleWidget.getByRole('button', { name: 'Add block' }).click();
+  await expect(scheduleWidget.getByText('E2E local block')).toBeVisible();
+
+  const taskWidget = page.locator('.workspace-widget.kind-list');
+  await ensureWidgetOpen(taskWidget);
+  await taskWidget.getByLabel('Task title').fill('E2E local task');
+  await taskWidget.getByLabel('Task note').fill('move to blocked');
+  await taskWidget.getByLabel('Task title').press('Enter');
+  const taskCard = taskWidget.locator('.task-card', { hasText: 'E2E local task' });
+  await expect(taskCard).toHaveCount(1);
+  await taskCard.getByLabel('Move E2E local task').selectOption('blocked');
+  await taskWidget.getByRole('tab', { name: /Blocked/i }).evaluate((element) => (element as HTMLElement).click());
+  await expect(taskWidget.getByText('E2E local task')).toBeVisible();
+
+  const browserWidget = page.locator('.workspace-widget.kind-browser');
+  await ensureWidgetOpen(browserWidget);
+  await browserWidget.getByLabel('Browser URL').fill('openai.com');
+  await browserWidget.getByRole('button', { name: 'Go' }).click({ force: true });
+  await browserWidget.getByRole('button', { name: 'Save bookmark' }).click({ force: true });
+  await expect(browserWidget.getByText('openai.com').first()).toBeVisible();
+
+  const liveTvWidget = page.locator('.workspace-widget.kind-watch-video');
+  await ensureWidgetOpen(liveTvWidget);
+  await liveTvWidget.getByPlaceholder('Name this source').fill('E2E MP4');
+  await liveTvWidget.getByPlaceholder('Paste an official HLS / MP4 source').fill('https://example.com/local.mp4');
+  await liveTvWidget.getByRole('button', { name: 'Save favorite' }).click({ force: true });
+  await expect(liveTvWidget.getByText('E2E MP4').first()).toBeVisible();
+
+  await page.reload();
+  await ensureWidgetOpen(page.locator('.workspace-widget.kind-schedule'));
+  await expect(page.locator('.workspace-widget.kind-schedule').getByText('E2E local block')).toBeVisible();
+  await ensureWidgetOpen(page.locator('.workspace-widget.kind-list'));
+  await page.locator('.workspace-widget.kind-list').getByRole('tab', { name: /Blocked/i }).evaluate((element) => (element as HTMLElement).click());
+  await expect(page.locator('.workspace-widget.kind-list').getByText('E2E local task')).toBeVisible();
+  await ensureWidgetOpen(page.locator('.workspace-widget.kind-browser'));
+  await expect(page.locator('.workspace-widget.kind-browser').getByText('openai.com').first()).toBeVisible();
+  await ensureWidgetOpen(page.locator('.workspace-widget.kind-watch-video'));
+  await expect(page.locator('.workspace-widget.kind-watch-video').getByText('E2E MP4').first()).toBeVisible();
 });

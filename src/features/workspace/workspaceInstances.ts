@@ -1,4 +1,6 @@
 import { buildWorkspaceHubUrl, isWorkspaceExtensionUrl } from './workspacePanelRouting';
+import { readLocalStorageJson, readStorageText, writeLocalStorageJson, writeStorageText } from './browserStorage';
+import { workspaceDefaultModeId } from './workspaceStorage';
 
 export type WorkspaceInstance = {
   id: string;
@@ -6,6 +8,8 @@ export type WorkspaceInstance = {
   kind: 'main' | 'extension';
   active: boolean;
   placement: WorkspacePlacement;
+  activeModeId: string;
+  restoreStatus: WorkspaceRestoreStatus;
   url?: string;
 };
 
@@ -21,6 +25,7 @@ export type WorkspacePlacement =
   | 'bottom-right';
 export type WorkspaceExtensionPlacement = Exclude<WorkspacePlacement, 'center'>;
 export type WorkspaceTransferDirection = 'left' | 'right' | 'up' | 'down';
+export type WorkspaceRestoreStatus = 'open' | 'restorable';
 
 type StoredWorkspaceInstance = {
   id: string;
@@ -29,6 +34,8 @@ type StoredWorkspaceInstance = {
   openedAt: number;
   lastSeenAt?: number;
   placement?: WorkspacePlacement;
+  activeModeId?: string;
+  restoreStatus?: WorkspaceRestoreStatus;
 };
 
 type WorkspaceInstanceMessage =
@@ -37,6 +44,7 @@ type WorkspaceInstanceMessage =
 
 const storageKey = 'mission-control.workspace-instances';
 const mainPlacementStorageKey = 'mission-control.workspace-main-placement';
+const mainModeStorageKey = 'mission-control.workspace-main-mode';
 const channelName = 'mission-control.workspace-instances';
 const localEventName = 'mission-control-workspace-instances-change';
 const instanceIdParam = 'workspaceId';
@@ -91,28 +99,15 @@ function createChannel() {
   return new BroadcastChannel(channelName);
 }
 
-function getStorage() {
-  if (typeof window === 'undefined') return null;
-  return window.localStorage;
-}
-
 function readStoredInstances() {
-  const storage = getStorage();
-  if (!storage) return [] as StoredWorkspaceInstance[];
+  const parsed = readLocalStorageJson<StoredWorkspaceInstance[]>(storageKey);
+  if (!Array.isArray(parsed)) return [];
 
-  try {
-    const parsed = JSON.parse(storage.getItem(storageKey) ?? '[]') as StoredWorkspaceInstance[];
-    return parsed.filter((instance) => instance.id && instance.url && instance.label);
-  } catch {
-    return [];
-  }
+  return parsed.filter((instance) => instance.id && instance.url && instance.label);
 }
 
 function writeStoredInstances(instances: StoredWorkspaceInstance[]) {
-  const storage = getStorage();
-  if (!storage) return;
-
-  storage.setItem(storageKey, JSON.stringify(instances));
+  writeLocalStorageJson(storageKey, instances);
 }
 
 function emitChanged() {
@@ -133,18 +128,28 @@ function isWorkspacePlacement(placement: unknown): placement is WorkspacePlaceme
 }
 
 function getMainWorkspacePlacement() {
-  const storage = getStorage();
-  if (!storage) return 'center' satisfies WorkspacePlacement;
-
-  const placement = storage.getItem(mainPlacementStorageKey);
+  const placement = readStorageText(mainPlacementStorageKey);
   return isWorkspacePlacement(placement) ? placement : 'center';
 }
 
 function writeMainWorkspacePlacement(placement: WorkspacePlacement) {
-  const storage = getStorage();
-  if (!storage) return;
+  writeStorageText(mainPlacementStorageKey, placement);
+}
 
-  storage.setItem(mainPlacementStorageKey, placement);
+function normalizeModeId(modeId: unknown) {
+  return typeof modeId === 'string' && modeId.trim() ? modeId.trim() : workspaceDefaultModeId;
+}
+
+function getMainWorkspaceModeId() {
+  return normalizeModeId(readStorageText(mainModeStorageKey));
+}
+
+function writeMainWorkspaceModeId(modeId: string) {
+  writeStorageText(mainModeStorageKey, normalizeModeId(modeId));
+}
+
+function getStoredRestoreStatus(instance: StoredWorkspaceInstance): WorkspaceRestoreStatus {
+  return instance.restoreStatus === 'open' ? 'open' : 'restorable';
 }
 
 function getStoredPlacement(instance: StoredWorkspaceInstance, index: number): WorkspacePlacement {
@@ -178,14 +183,36 @@ function normalizeWorkspaceLayout(instances: StoredWorkspaceInstance[], mainPlac
 }
 
 function upsertStoredInstance(instance: StoredWorkspaceInstance) {
-  const previous = readStoredInstances().find((item) => item.id === instance.id);
-  const instances = readStoredInstances().filter((item) => item.id !== instance.id);
-  writeStoredInstances([...instances, { ...previous, ...instance, lastSeenAt: instance.lastSeenAt ?? Date.now() }]);
+  const instances = readStoredInstances();
+  const previousIndex = instances.findIndex((item) => item.id === instance.id);
+  const previous = previousIndex >= 0 ? instances[previousIndex] : undefined;
+  const nextInstance = {
+    ...previous,
+    ...instance,
+    activeModeId: normalizeModeId(instance.activeModeId ?? previous?.activeModeId),
+    restoreStatus: instance.restoreStatus ?? previous?.restoreStatus ?? 'open',
+    lastSeenAt: instance.lastSeenAt ?? Date.now(),
+  };
+  const nextInstances =
+    previousIndex >= 0 ? instances.map((item, index) => (index === previousIndex ? nextInstance : item)) : [...instances, nextInstance];
+
+  writeStoredInstances(nextInstances);
   emitChanged();
 }
 
-function removeStoredInstance(id: string) {
-  writeStoredInstances(readStoredInstances().filter((instance) => instance.id !== id));
+function markStoredInstanceRestorable(id: string) {
+  const instances = readStoredInstances();
+  const nextInstances = instances.map((instance) =>
+    instance.id === id
+      ? {
+          ...instance,
+          restoreStatus: 'restorable' as const,
+          lastSeenAt: Date.now(),
+        }
+      : instance,
+  );
+
+  writeStoredInstances(nextInstances);
   openWindows.delete(id);
   emitChanged();
 }
@@ -220,6 +247,8 @@ export function getWorkspaceInstances() {
       kind: 'main',
       active: !isExtension,
       placement: normalizedLayout.mainPlacement,
+      activeModeId: getMainWorkspaceModeId(),
+      restoreStatus: 'open',
       url: mainUrl,
     },
     ...normalizedLayout.instances.map((instance, index) => ({
@@ -228,6 +257,8 @@ export function getWorkspaceInstances() {
       kind: 'extension' as const,
       active: isExtension && activeExtensionId === instance.id,
       placement: getStoredPlacement(instance, index),
+      activeModeId: normalizeModeId(instance.activeModeId),
+      restoreStatus: getStoredRestoreStatus(instance),
       url: instance.url,
     })),
   ] satisfies WorkspaceInstance[];
@@ -270,16 +301,20 @@ export function registerWorkspaceExtensionInstance({
     openWindows.set(id, popup);
   }
 
-  const existingCount = readStoredInstances().length;
-  if (existingCount >= maxWorkspaceExtensionInstances) return false;
+  const existingInstances = readStoredInstances();
+  const previous = existingInstances.find((instance) => instance.id === id);
+  const existingCount = existingInstances.length;
+  if (!previous && existingCount >= maxWorkspaceExtensionInstances) return false;
 
   upsertStoredInstance({
     id,
-    label: `Workspace ${existingCount + 1}`,
+    label: previous?.label ?? `Workspace ${existingCount + 1}`,
     url,
-    openedAt: now,
+    openedAt: previous?.openedAt ?? now,
     lastSeenAt: now,
-    placement: getDefaultPlacement(existingCount),
+    placement: previous?.placement ?? getDefaultPlacement(existingCount),
+    activeModeId: previous?.activeModeId ?? workspaceDefaultModeId,
+    restoreStatus: 'open',
   });
   return true;
 }
@@ -295,8 +330,60 @@ export function markCurrentWorkspaceExtensionOpen() {
     url: window.location.href,
     openedAt: now,
     lastSeenAt: now,
+    restoreStatus: 'open',
   });
   return id;
+}
+
+export function getWorkspaceActiveModeId(workspaceId: string) {
+  if (workspaceId === 'main') return getMainWorkspaceModeId();
+
+  const instance = readStoredInstances().find((item) => item.id === workspaceId);
+  return normalizeModeId(instance?.activeModeId);
+}
+
+export function updateWorkspaceActiveModeId(workspaceId: string, modeId: string) {
+  const normalizedModeId = normalizeModeId(modeId);
+
+  if (workspaceId === 'main') {
+    writeMainWorkspaceModeId(normalizedModeId);
+    emitChanged();
+    return true;
+  }
+
+  const instances = readStoredInstances();
+  const hasInstance = instances.some((instance) => instance.id === workspaceId);
+  if (!hasInstance) return false;
+
+  writeStoredInstances(instances.map((instance) => (instance.id === workspaceId ? { ...instance, activeModeId: normalizedModeId } : instance)));
+  emitChanged();
+  return true;
+}
+
+export function replaceWorkspaceActiveModeId(previousModeId: string, nextModeId = workspaceDefaultModeId) {
+  const previous = normalizeModeId(previousModeId);
+  const next = normalizeModeId(nextModeId);
+  let changed = false;
+
+  if (getMainWorkspaceModeId() === previous) {
+    writeMainWorkspaceModeId(next);
+    changed = true;
+  }
+
+  const instances = readStoredInstances();
+  const nextInstances = instances.map((instance) => {
+    if (normalizeModeId(instance.activeModeId) !== previous) return instance;
+
+    changed = true;
+    return { ...instance, activeModeId: next };
+  });
+
+  if (changed) {
+    writeStoredInstances(nextInstances);
+    emitChanged();
+  }
+
+  return changed;
 }
 
 export function updateWorkspaceInstancePlacement(id: string, placement: WorkspacePlacement) {
@@ -345,13 +432,14 @@ export function updateWorkspaceInstancePlacement(id: string, placement: Workspac
 export function markCurrentWorkspaceExtensionClosed() {
   const id = getWorkspaceInstanceId() ?? (isWorkspaceExtensionUrl() ? 'workspace-extension' : null);
   if (!id) return;
-  removeStoredInstance(id);
+  markStoredInstanceRestorable(id);
 }
 
 export function pruneClosedWorkspaceInstances() {
   const now = Date.now();
   const closedInstanceIds = readStoredInstances()
     .filter((instance) => {
+      if (instance.restoreStatus === 'restorable') return false;
       const popup = openWindows.get(instance.id);
 
       if (popup) return popup.closed;
@@ -362,7 +450,17 @@ export function pruneClosedWorkspaceInstances() {
   if (!closedInstanceIds.length) return false;
 
   const closedIdSet = new Set(closedInstanceIds);
-  writeStoredInstances(readStoredInstances().filter((instance) => !closedIdSet.has(instance.id)));
+  writeStoredInstances(
+    readStoredInstances().map((instance) =>
+      closedIdSet.has(instance.id)
+        ? {
+            ...instance,
+            restoreStatus: 'restorable' as const,
+            lastSeenAt: now,
+          }
+        : instance,
+    ),
+  );
   closedInstanceIds.forEach((id) => openWindows.delete(id));
   emitChanged();
   return true;
@@ -373,7 +471,7 @@ export function closeWorkspaceInstance(id: string) {
 
   const popup = openWindows.get(id);
   popup?.close();
-  removeStoredInstance(id);
+  markStoredInstanceRestorable(id);
 
   const channel = createChannel();
   channel?.postMessage({ type: 'close', id } satisfies WorkspaceInstanceMessage);
@@ -389,7 +487,7 @@ export function subscribeWorkspaceInstances(onChange: () => void) {
     if (event.data?.type === 'changed') onChange();
   };
   const handleStorage = (event: StorageEvent) => {
-    if (event.key === storageKey || event.key === mainPlacementStorageKey) onChange();
+    if (event.key === storageKey || event.key === mainPlacementStorageKey || event.key === mainModeStorageKey) onChange();
   };
 
   channel?.addEventListener('message', handleMessage);
@@ -403,6 +501,7 @@ export function subscribeWorkspaceInstances(onChange: () => void) {
     window.removeEventListener('storage', handleStorage);
   };
 }
+
 
 export function subscribeWorkspaceInstanceCloseRequests(id: string, onClose: () => void) {
   const channel = createChannel();

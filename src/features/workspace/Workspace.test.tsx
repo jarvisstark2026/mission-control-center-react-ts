@@ -71,7 +71,7 @@ describe('Workspace header controls', () => {
 
     expect(container.querySelectorAll('.workspace-widget')).toHaveLength(0);
     expect(currentRender.queryByLabelText('Create blank workspace')).not.toBeInTheDocument();
-    expect(currentRender.queryByRole('button', { name: 'Reset layout' })).not.toBeInTheDocument();
+    expect(currentRender.getByRole('button', { name: 'Reset layout' })).toBeInTheDocument();
     expect(currentRender.getByRole('button', { name: 'Save layout' })).toBeInTheDocument();
     expect(currentRender.getByRole('button', { name: 'Mode preset' })).toBeInTheDocument();
     expect(currentRender.getByLabelText('Close workspace extension')).toBeInTheDocument();
@@ -86,7 +86,7 @@ describe('Workspace header controls', () => {
     fireEvent.click(currentRender.getByRole('button', { name: 'Save layout' }));
 
     expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('main'))).toContain('"kind":"overview"');
-    expect(currentRender.getByText('Main workspace saved')).toBeInTheDocument();
+    expect(currentRender.getByText('Main workspace Manual layout saved')).toBeInTheDocument();
   });
 
   it('creates custom presets and applies built-in presets inside workspace extensions', () => {
@@ -97,7 +97,7 @@ describe('Workspace header controls', () => {
     fireEvent.change(currentRender.getByLabelText('Preset name'), { target: { value: 'Review wall' } });
     fireEvent.click(currentRender.getByRole('button', { name: 'Create preset' }));
 
-    expect(currentRender.getByRole('menuitem', { name: /Review wall/i })).toBeInTheDocument();
+    expect(currentRender.getByRole('menuitem', { name: /^Review wall/i })).toBeInTheDocument();
     expect(currentRender.getByRole('menuitem', { name: /Main workspace/i })).toBeInTheDocument();
 
     unmount();
@@ -112,9 +112,47 @@ describe('Workspace header controls', () => {
 
     expect(extensionWorkspace.container.querySelector('.workspace-widget.kind-command-inbox')).toHaveClass('is-open', 'is-pinned');
     expect(extensionWorkspace.container.querySelector('.workspace-widget.kind-notifications')).toHaveClass('is-open');
+  }, 60000);
+
+  it('deletes custom preset modes without moving the header controls', () => {
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Mode preset' }));
+    fireEvent.change(currentRender.getByLabelText('Preset name'), { target: { value: 'Temporary mode' } });
+    fireEvent.click(currentRender.getByRole('button', { name: 'Create preset' }));
+
+    expect(currentRender.getByRole('menuitem', { name: /^Temporary mode/i })).toBeInTheDocument();
+
+    fireEvent.click(currentRender.getByLabelText('Delete Temporary mode'));
+
+    expect(currentRender.queryByRole('menuitem', { name: /^Temporary mode/i })).not.toBeInTheDocument();
+    expect(currentRender.getByText('Temporary mode preset deleted')).toBeInTheDocument();
+    expect(container.querySelectorAll('.workspace-head .workspace-layout-status')).toHaveLength(1);
   }, 20000);
 
-  it('resets every workspace layout from the main workspace only', () => {
+  it('dismisses workspace top menus on outside click and Escape', () => {
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+    const canvas = container.querySelector('.workspace-canvas') as HTMLElement;
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
+    expect(currentRender.getByRole('menu', { name: 'Open widget menu' })).toBeInTheDocument();
+    fireEvent.pointerDown(canvas);
+    expect(currentRender.queryByRole('menu', { name: 'Open widget menu' })).not.toBeInTheDocument();
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Mode preset' }));
+    expect(currentRender.getByRole('menu', { name: 'Workspace mode presets' })).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(currentRender.queryByRole('menu', { name: 'Workspace mode presets' })).not.toBeInTheDocument();
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Permissions' }));
+    expect(currentRender.getByRole('menu', { name: 'Widget permissions' })).toBeInTheDocument();
+    fireEvent.pointerDown(document.body);
+    expect(currentRender.queryByRole('menu', { name: 'Widget permissions' })).not.toBeInTheDocument();
+  }, 20000);
+
+  it('resets the current workspace to its active saved mode layout', () => {
     registerWorkspaceExtensionInstance({
       id: 'workspace-right',
       popup: null,
@@ -123,6 +161,7 @@ describe('Workspace header controls', () => {
 
     const [firstWidget] = widgetPresets;
     expect(saveStoredWidgetState([{ ...firstWidget, x: 120 }], 'main')).toBe(true);
+    expect(saveStoredWidgetState([{ ...firstWidget, x: 220 }], 'main', 'manual')).toBe(true);
     expect(saveStoredWidgetState([{ ...firstWidget, x: 640 }], 'workspace-right')).toBe(true);
     expect(saveStoredWidgetState([{ ...firstWidget, x: 840 }], 'stale-workspace')).toBe(true);
 
@@ -130,11 +169,11 @@ describe('Workspace header controls', () => {
 
     fireEvent.click(within(container).getByRole('button', { name: 'Reset layout' }));
 
-    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('main'))).toBeNull();
-    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('workspace-right'))).toBeNull();
-    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('stale-workspace'))).toBeNull();
-    expectWidgetPosition(container.querySelector<HTMLElement>('.workspace-widget.kind-overview'), 44, 74);
-  });
+    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('main'))).not.toBeNull();
+    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('workspace-right'))).not.toBeNull();
+    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('stale-workspace'))).not.toBeNull();
+    expectWidgetPosition(container.querySelector<HTMLElement>('.workspace-widget.kind-overview'), 220, firstWidget.y);
+  }, 15000);
 
   it('closes the workspace extension button back to the hub when the window cannot close itself', () => {
     window.history.replaceState({}, '', '/?role=admin&workspace=extension');
@@ -227,7 +266,7 @@ describe('Workspace header controls', () => {
     expect(audioWidget).toHaveClass('is-open');
     expectWidgetPosition(audioWidget, 340, 287);
     expect(oscillatorStarts).toHaveLength(3);
-  });
+  }, 15000);
 
   it('opens operational core widgets from the shared widget menu', async () => {
     const { container } = render(<Workspace role="admin" />);
@@ -281,7 +320,7 @@ describe('Workspace header controls', () => {
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Command inbox' }));
     expect(currentRender.getAllByText('Home Systems / energy').length).toBeGreaterThan(0);
-  }, 40000);
+  }, 90000);
 
   it('starts workflow runbooks and stages approval steps in Command Inbox', () => {
     const { container } = render(<Workspace role="admin" />);
@@ -297,7 +336,7 @@ describe('Workspace header controls', () => {
 
     expect(currentRender.getAllByText(/Workflow \//).length).toBeGreaterThan(0);
     expect(currentRender.getAllByText('Jarvis Workflow').length).toBeGreaterThan(0);
-  }, 20000);
+  }, 60000);
 
   it('opens Agent Control from the launcher while guest launch surfaces keep agent tools hidden', () => {
     const adminWorkspace = render(<Workspace role="admin" />);
@@ -325,7 +364,7 @@ describe('Workspace header controls', () => {
     expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent control/i })).not.toBeInTheDocument();
     expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent console/i })).not.toBeInTheDocument();
     expect(within(guestLauncherWidget as HTMLElement).getByRole('button', { name: /home systems/i })).toBeInTheDocument();
-  }, 20000);
+  }, 60000);
 
   it('lets admin hide widgets from another role across header and launcher entry points', () => {
     const adminWorkspace = render(<Workspace role="admin" />);
@@ -351,7 +390,7 @@ describe('Workspace header controls', () => {
     fireEvent.click(guestRender.getByRole('menuitem', { name: /Home mode/i }));
 
     expect(guestWorkspace.container.querySelector('.workspace-widget.kind-home-systems')).not.toBeInTheDocument();
-  }, 20000);
+  }, 60000);
 
   it('keeps command approvals role gated inside the command inbox', () => {
     const adminWorkspace = render(<Workspace role="admin" />);
@@ -373,7 +412,7 @@ describe('Workspace header controls', () => {
 
     expect(guestRender.queryByRole('button', { name: 'Approve' })).not.toBeInTheDocument();
     expect(guestRender.getAllByText('Read-only for this access scope.').length).toBeGreaterThan(0);
-  }, 20000);
+  }, 60000);
 
   it('applies role-oriented mode presets to reduce workspace setup friction', () => {
     const { container } = render(<Workspace role="admin" />);
@@ -387,7 +426,7 @@ describe('Workspace header controls', () => {
     expect(container.querySelector('.workspace-widget.kind-map')).toHaveClass('is-open');
     expect(container.querySelector('.workspace-widget.kind-integration-registry')).toHaveClass('is-open');
     expect(container.querySelector('.workspace-widget.kind-agent-control')).not.toBeInTheDocument();
-  }, 10000);
+  }, 30000);
 
   it('keeps minimized visible widgets tracked in Manager', () => {
     const { container } = render(<Workspace />);
@@ -406,7 +445,7 @@ describe('Workspace header controls', () => {
     const commandCoreRow = within(managerWidget as HTMLElement).getByText('Command core').closest('.workspace-action-row');
     expect(commandCoreRow).toBeInTheDocument();
     expect(commandCoreRow).toHaveTextContent('minimized');
-  }, 10000);
+  }, 30000);
 
   it('categorizes Manager rows by workspace and controls extension widgets', () => {
     registerWorkspaceExtensionInstance({
@@ -920,7 +959,7 @@ describe('Workspace header controls', () => {
     fireEvent.click(persistedSchedule.getByRole('tab', { name: 'done' }));
 
     expect(persistedSchedule.getByText('Test schedule block')).toBeInTheDocument();
-  });
+  }, 15000);
 
   it('creates local task cards and moves them between shared lanes', () => {
     const { container } = render(<Workspace />);

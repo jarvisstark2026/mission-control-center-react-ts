@@ -55,11 +55,12 @@ export function closeWorkspaceExtensionWindow() {
   return true;
 }
 
-export function openWorkspaceExtensionWindow() {
+export function openWorkspaceExtensionWindow(workspaceInstanceId?: string) {
   if (typeof window === 'undefined') return false;
-  if (!canCreateWorkspaceExtensionInstance()) return false;
 
-  const instanceId = createWorkspaceInstanceId();
+  const instanceId = workspaceInstanceId ?? createWorkspaceInstanceId();
+  if (!workspaceInstanceId && !canCreateWorkspaceExtensionInstance()) return false;
+
   const url = buildWorkspaceExtensionWindowUrl(undefined, instanceId);
   const popup = window.open(url.toString(), '_blank', 'popup=yes,width=1440,height=960');
   if (!popup) {

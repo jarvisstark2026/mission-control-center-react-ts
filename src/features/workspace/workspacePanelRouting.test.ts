@@ -24,10 +24,11 @@ describe('workspace panel routing', () => {
   });
 
   it('removes detached workspace parameters when returning to the hub', () => {
-    const url = buildWorkspaceHubUrl('https://example.test/app?role=home&panel=docs&workspace=extension&view=compact');
+    const url = buildWorkspaceHubUrl('https://example.test/app?role=home&panel=docs&workspace=extension&workspaceId=workspace-1&view=compact');
 
     expect(url.searchParams.get('panel')).toBeNull();
     expect(url.searchParams.get('workspace')).toBeNull();
+    expect(url.searchParams.get('workspaceId')).toBeNull();
     expect(url.searchParams.get('role')).toBe('home');
     expect(url.searchParams.get('view')).toBe('compact');
   });

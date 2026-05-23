@@ -1,13 +1,23 @@
-import { readLocalStorageJson, removeLocalStorageItem, writeLocalStorageJson } from './browserStorage';
+import { listLocalStorageKeys, readLocalStorageJson, readStorageText, removeLocalStorageItem, writeLocalStorageJson } from './browserStorage';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from './workspaceTypes';
 
 export type WidgetBlueprint = Pick<WorkspaceWidget, 'title' | 'subtitle' | 'surfaceAlpha' | 'lineAlpha' | 'minWidth' | 'minHeight'>;
 
 export const workspaceStorageKey = 'mission-control-center.workspace.layout.v1';
 const workspaceLayoutStoragePrefix = `${workspaceStorageKey}.workspace.`;
+const workspaceModeLayoutStoragePrefix = `${workspaceStorageKey}.mode.`;
+export const workspaceDefaultModeId = 'manual';
 
 export function getWorkspaceWidgetStorageKey(workspaceId = 'main') {
   return workspaceId === 'main' ? workspaceStorageKey : `${workspaceLayoutStoragePrefix}${workspaceId}`;
+}
+
+function encodeLayoutKeyPart(value: string) {
+  return encodeURIComponent(value.trim() || workspaceDefaultModeId);
+}
+
+export function getWorkspaceModeWidgetStorageKey(workspaceId = 'main', modeId = workspaceDefaultModeId) {
+  return `${workspaceModeLayoutStoragePrefix}${encodeLayoutKeyPart(workspaceId)}.${encodeLayoutKeyPart(modeId)}`;
 }
 
 export function clampNumber(value: unknown, fallback: number, min: number, max: number) {
@@ -28,13 +38,21 @@ export function loadStoredWidgetState({
   defaultOpenKinds,
   blueprints,
   workspaceId = 'main',
+  modeId,
+  fallbackToWorkspace = true,
 }: {
   presets: WorkspaceWidget[];
   defaultOpenKinds: Set<WorkspaceWidget['kind']>;
   blueprints: Record<WorkspaceWidget['kind'], WidgetBlueprint>;
   workspaceId?: string;
+  modeId?: string | null;
+  fallbackToWorkspace?: boolean;
 }): WorkspaceWidget[] | null {
-  const parsed = readLocalStorageJson<Partial<WorkspaceWidget>[]>(getWorkspaceWidgetStorageKey(workspaceId));
+  const parsed =
+    modeId && modeId.trim()
+      ? readLocalStorageJson<Partial<WorkspaceWidget>[]>(getWorkspaceModeWidgetStorageKey(workspaceId, modeId)) ??
+        (fallbackToWorkspace ? readLocalStorageJson<Partial<WorkspaceWidget>[]>(getWorkspaceWidgetStorageKey(workspaceId)) : null)
+      : readLocalStorageJson<Partial<WorkspaceWidget>[]>(getWorkspaceWidgetStorageKey(workspaceId));
   if (!Array.isArray(parsed)) return null;
 
   try {
@@ -119,7 +137,7 @@ export function loadStoredWidgetState({
   }
 }
 
-export function saveStoredWidgetState(widgets: WorkspaceWidget[], workspaceId = 'main'): boolean {
+export function saveStoredWidgetState(widgets: WorkspaceWidget[], workspaceId = 'main', modeId?: string | null): boolean {
   const serializableWidgets = widgets.map((widget) => ({
     id: widget.id,
     kind: widget.kind,
@@ -138,7 +156,11 @@ export function saveStoredWidgetState(widgets: WorkspaceWidget[], workspaceId = 
     previewFileId: widget.previewFileId ?? null,
   }));
 
-  return writeLocalStorageJson(getWorkspaceWidgetStorageKey(workspaceId), serializableWidgets);
+  return writeLocalStorageJson(modeId ? getWorkspaceModeWidgetStorageKey(workspaceId, modeId) : getWorkspaceWidgetStorageKey(workspaceId), serializableWidgets);
+}
+
+export function hasStoredWidgetState(workspaceId = 'main', modeId?: string | null) {
+  return readStorageText(modeId ? getWorkspaceModeWidgetStorageKey(workspaceId, modeId) : getWorkspaceWidgetStorageKey(workspaceId)) !== null;
 }
 
 export function clearStoredWidgetState(workspaceId = 'main'): boolean {
@@ -146,16 +168,14 @@ export function clearStoredWidgetState(workspaceId = 'main'): boolean {
 }
 
 export function clearAllStoredWidgetStates(workspaceIds: Iterable<string> = ['main']): boolean {
-  if (typeof window === 'undefined') return false;
-
   const keys = new Set<string>();
   for (const workspaceId of workspaceIds) {
     keys.add(getWorkspaceWidgetStorageKey(workspaceId));
   }
 
   keys.add(workspaceStorageKey);
-  for (const key of Object.keys(window.localStorage)) {
-    if (key === workspaceStorageKey || key.startsWith(workspaceLayoutStoragePrefix)) {
+  for (const key of listLocalStorageKeys()) {
+    if (key === workspaceStorageKey || key.startsWith(workspaceLayoutStoragePrefix) || key.startsWith(workspaceModeLayoutStoragePrefix)) {
       keys.add(key);
     }
   }

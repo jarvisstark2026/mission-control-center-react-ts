@@ -3,13 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   canCreateWorkspaceExtensionInstance,
   getAdjacentWorkspaceInstance,
+  getWorkspaceActiveModeId,
   getCurrentWorkspaceId,
   getWorkspaceInstances,
   maxWorkspaceExtensionInstances,
   markCurrentWorkspaceExtensionClosed,
   markCurrentWorkspaceExtensionOpen,
   pruneClosedWorkspaceInstances,
+  replaceWorkspaceActiveModeId,
   registerWorkspaceExtensionInstance,
+  updateWorkspaceActiveModeId,
   updateWorkspaceInstancePlacement,
 } from './workspaceInstances';
 
@@ -25,7 +28,7 @@ describe('workspace instance registry', () => {
     vi.useRealTimers();
   });
 
-  it('removes fallback extension entries when an extension route closes without an id', () => {
+  it('keeps fallback extension entries restorable when an extension route closes without an id', () => {
     window.history.replaceState({}, '', '/?role=admin&workspace=extension');
 
     markCurrentWorkspaceExtensionOpen();
@@ -34,10 +37,11 @@ describe('workspace instance registry', () => {
 
     markCurrentWorkspaceExtensionClosed();
 
-    expect(getWorkspaceInstances().filter((instance) => instance.kind === 'extension')).toHaveLength(0);
+    expect(getWorkspaceInstances().filter((instance) => instance.kind === 'extension')).toHaveLength(1);
+    expect(getWorkspaceInstances().find((instance) => instance.id === 'workspace-extension')?.restoreStatus).toBe('restorable');
   });
 
-  it('prunes registered popup instances after their window closes', () => {
+  it('marks registered popup instances restorable after their window closes', () => {
     const popupState = { closed: false };
     const popup = popupState as unknown as Window;
 
@@ -52,7 +56,8 @@ describe('workspace instance registry', () => {
     popupState.closed = true;
 
     expect(pruneClosedWorkspaceInstances()).toBe(true);
-    expect(getWorkspaceInstances().filter((instance) => instance.kind === 'extension')).toHaveLength(0);
+    expect(getWorkspaceInstances().filter((instance) => instance.kind === 'extension')).toHaveLength(1);
+    expect(getWorkspaceInstances().find((instance) => instance.id === 'workspace-1')?.restoreStatus).toBe('restorable');
   });
 
   it('assigns and updates extension workspace placement', () => {
@@ -150,7 +155,7 @@ describe('workspace instance registry', () => {
     expect(getWorkspaceInstances().filter((instance) => instance.kind === 'extension')).toHaveLength(8);
   });
 
-  it('prunes legacy stored instances that no longer have a live heartbeat', () => {
+  it('marks legacy stored instances restorable when they no longer have a live heartbeat', () => {
     window.localStorage.setItem(
       'mission-control.workspace-instances',
       JSON.stringify([
@@ -166,7 +171,8 @@ describe('workspace instance registry', () => {
     expect(getWorkspaceInstances().filter((instance) => instance.kind === 'extension')).toHaveLength(1);
 
     expect(pruneClosedWorkspaceInstances()).toBe(true);
-    expect(getWorkspaceInstances().filter((instance) => instance.kind === 'extension')).toHaveLength(0);
+    expect(getWorkspaceInstances().filter((instance) => instance.kind === 'extension')).toHaveLength(1);
+    expect(getWorkspaceInstances().find((instance) => instance.id === 'workspace-legacy')?.restoreStatus).toBe('restorable');
   });
 
   it('keeps recent heartbeat instances that do not have a popup handle yet', () => {
@@ -185,6 +191,39 @@ describe('workspace instance registry', () => {
     vi.advanceTimersByTime(6001);
 
     expect(pruneClosedWorkspaceInstances()).toBe(true);
-    expect(getWorkspaceInstances().filter((instance) => instance.kind === 'extension')).toHaveLength(0);
+    expect(getWorkspaceInstances().filter((instance) => instance.kind === 'extension')).toHaveLength(1);
+    expect(getWorkspaceInstances().find((instance) => instance.id === 'workspace-recent')?.restoreStatus).toBe('restorable');
+  });
+
+  it('persists active mode per workspace', () => {
+    registerWorkspaceExtensionInstance({
+      id: 'workspace-1',
+      popup: null,
+      url: 'http://127.0.0.1:5173/?role=admin&workspace=extension&workspaceId=workspace-1',
+    });
+
+    expect(getWorkspaceActiveModeId('main')).toBe('manual');
+    expect(getWorkspaceActiveModeId('workspace-1')).toBe('manual');
+
+    expect(updateWorkspaceActiveModeId('main', 'admin-ops')).toBe(true);
+    expect(updateWorkspaceActiveModeId('workspace-1', 'security')).toBe(true);
+
+    expect(getWorkspaceInstances().find((instance) => instance.id === 'main')?.activeModeId).toBe('admin-ops');
+    expect(getWorkspaceInstances().find((instance) => instance.id === 'workspace-1')?.activeModeId).toBe('security');
+  });
+
+  it('replaces deleted active modes across workspaces', () => {
+    registerWorkspaceExtensionInstance({
+      id: 'workspace-1',
+      popup: null,
+      url: 'http://127.0.0.1:5173/?role=admin&workspace=extension&workspaceId=workspace-1',
+    });
+
+    updateWorkspaceActiveModeId('main', 'custom-review');
+    updateWorkspaceActiveModeId('workspace-1', 'custom-review');
+
+    expect(replaceWorkspaceActiveModeId('custom-review')).toBe(true);
+    expect(getWorkspaceActiveModeId('main')).toBe('manual');
+    expect(getWorkspaceActiveModeId('workspace-1')).toBe('manual');
   });
 });

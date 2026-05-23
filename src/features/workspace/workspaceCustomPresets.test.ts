@@ -5,6 +5,7 @@ import {
   createWorkspaceCustomPreset,
   createWorkspaceCustomPresetLayout,
   loadWorkspaceCustomPresets,
+  removeWorkspaceCustomPreset,
 } from './workspaceCustomPresets';
 import { widgetPresets } from './workspaceWidgetCatalog';
 
@@ -44,5 +45,19 @@ describe('workspace custom presets', () => {
 
     expect(restored[0]).toMatchObject({ x: 120, y: 90, open: true });
     expect(restored[1]).toMatchObject({ x: 200, y: 130, open: true });
+  });
+
+  it('removes a saved custom preset', () => {
+    const preset = createWorkspaceCustomPreset({
+      label: 'Temporary wall',
+      sourceWorkspaceId: 'main',
+      widgets: widgetPresets.slice(0, 2),
+    });
+
+    addWorkspaceCustomPreset(preset);
+
+    expect(loadWorkspaceCustomPresets()).toHaveLength(1);
+    expect(removeWorkspaceCustomPreset(preset.id)).toHaveLength(0);
+    expect(loadWorkspaceCustomPresets()).toHaveLength(0);
   });
 });

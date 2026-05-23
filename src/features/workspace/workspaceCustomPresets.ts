@@ -109,6 +109,12 @@ export function addWorkspaceCustomPreset(preset: WorkspaceCustomPreset, current 
   return next;
 }
 
+export function removeWorkspaceCustomPreset(presetId: string, current = loadWorkspaceCustomPresets()) {
+  const next = current.filter((item) => item.id !== presetId);
+  saveWorkspaceCustomPresets(next);
+  return next;
+}
+
 export function createWorkspaceCustomPresetLayout(
   preset: WorkspaceCustomPreset,
   currentWidgets: WorkspaceWidget[],

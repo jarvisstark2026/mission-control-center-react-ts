@@ -25,6 +25,7 @@ export function buildWorkspaceHubUrl(href = getCurrentHref()) {
   const url = new URL(href);
   url.searchParams.delete('panel');
   url.searchParams.delete(workspaceModeParam);
+  url.searchParams.delete(workspaceInstanceParam);
   return url;
 }
 

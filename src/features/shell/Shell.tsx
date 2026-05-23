@@ -144,6 +144,10 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
     closeWorkspaceInstance(id);
     setWorkspaceInstances(getWorkspaceInstances());
   };
+  const openWorkspaceExtensionInstance = (id: string) => {
+    openWorkspaceExtensionWindow(id);
+    setWorkspaceInstances(getWorkspaceInstances());
+  };
   const createWorkspaceExtensionInstance = () => {
     openWorkspaceExtensionWindow();
     setWorkspaceInstances(getWorkspaceInstances());
@@ -220,6 +224,7 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
             workspaceInstances={workspaceInstances}
             onCreateWorkspaceInstance={createWorkspaceExtensionInstance}
             onOpenMainWorkspace={openMainWorkspace}
+            onOpenWorkspaceInstance={openWorkspaceExtensionInstance}
             onCloseWorkspaceInstance={closeWorkspaceExtensionInstance}
             onPlaceWorkspaceInstance={placeWorkspaceExtensionInstance}
           />

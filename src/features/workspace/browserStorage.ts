@@ -1,8 +1,16 @@
-export function readLocalStorageJson<T>(key: string): T | null {
-  if (typeof window === 'undefined') return null;
+import { getWorkspacePersistenceAdapter } from './workspacePersistence';
 
+export function readStorageText(key: string): string | null {
+  return getWorkspacePersistenceAdapter().readText(key);
+}
+
+export function writeStorageText(key: string, value: string): boolean {
+  return getWorkspacePersistenceAdapter().writeText(key, value);
+}
+
+export function readLocalStorageJson<T>(key: string): T | null {
   try {
-    const raw = window.localStorage.getItem(key);
+    const raw = readStorageText(key);
     if (!raw) return null;
 
     return JSON.parse(raw) as T;
@@ -12,23 +20,17 @@ export function readLocalStorageJson<T>(key: string): T | null {
 }
 
 export function writeLocalStorageJson(key: string, value: unknown): boolean {
-  if (typeof window === 'undefined') return false;
-
   try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-    return true;
+    return writeStorageText(key, JSON.stringify(value));
   } catch {
     return false;
   }
 }
 
 export function removeLocalStorageItem(key: string): boolean {
-  if (typeof window === 'undefined') return false;
+  return getWorkspacePersistenceAdapter().remove(key);
+}
 
-  try {
-    window.localStorage.removeItem(key);
-    return true;
-  } catch {
-    return false;
-  }
+export function listLocalStorageKeys(): string[] {
+  return getWorkspacePersistenceAdapter().keys();
 }

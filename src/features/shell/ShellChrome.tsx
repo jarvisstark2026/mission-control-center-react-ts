@@ -1,8 +1,9 @@
-import { useState, type DragEvent } from 'react';
+import { useCallback, useRef, useState, type DragEvent } from 'react';
 
 import { ActionButton } from '../../components/ui/ActionButton';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { classNames } from '../../lib/classNames';
+import { useDismissibleMenu } from '../../lib/useDismissibleMenu';
 import { Workspace } from '../workspace/Workspace';
 import { WorkspaceNewScreenButton } from '../workspace/WorkspaceScreenButton';
 import {
@@ -91,6 +92,7 @@ export function ShellRail({
   workspaceInstances,
   onCreateWorkspaceInstance,
   onOpenMainWorkspace,
+  onOpenWorkspaceInstance,
   onCloseWorkspaceInstance,
   onPlaceWorkspaceInstance,
 }: {
@@ -98,6 +100,7 @@ export function ShellRail({
   workspaceInstances: WorkspaceInstance[];
   onCreateWorkspaceInstance: () => void;
   onOpenMainWorkspace: () => void;
+  onOpenWorkspaceInstance: (id: string) => void;
   onCloseWorkspaceInstance: (id: string) => void;
   onPlaceWorkspaceInstance: (id: string, placement: WorkspacePlacement) => void;
 }) {
@@ -171,17 +174,16 @@ export function ShellRail({
                 type="button"
                 className="shell-instance-button"
                 aria-current={instance.active ? 'page' : undefined}
-                onClick={instance.kind === 'main' ? onOpenMainWorkspace : undefined}
-                aria-disabled={instance.kind !== 'main' ? true : undefined}
+                onClick={instance.kind === 'main' ? onOpenMainWorkspace : () => onOpenWorkspaceInstance(instance.id)}
               >
                 <span>{instance.label}</span>
                 <small>
                   {instance.kind === 'main'
                     ? `Primary workspace - ${getPlacementLabel(instance.placement)}`
-                    : `${instance.active ? 'Current' : 'Extension'} - ${getPlacementLabel(instance.placement)}`}
+                    : `${instance.active ? 'Current' : instance.restoreStatus === 'open' ? 'Open' : 'Saved'} - ${getPlacementLabel(instance.placement)}`}
                 </small>
               </button>
-              {instance.kind === 'extension' ? (
+              {instance.kind === 'extension' && instance.restoreStatus === 'open' ? (
                 <button
                   type="button"
                   className="shell-instance-close"
@@ -244,14 +246,18 @@ export function ShellRoleMenu({
   onNavigateRole: (targetRole: ShellRole) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const closeMenu = useCallback(() => setIsOpen(false), []);
+
+  useDismissibleMenu(isOpen, menuRef, closeMenu);
 
   const selectRole = (targetRole: ShellRole) => {
-    setIsOpen(false);
+    closeMenu();
     onNavigateRole(targetRole);
   };
 
   return (
-    <div className="shell-role-menu">
+    <div className="shell-role-menu" ref={menuRef}>
       <button
         type="button"
         className="shell-role-menu-trigger"
@@ -291,15 +297,19 @@ export function ShellThemeMenu({
   onSelectTheme: (themeId: ShellThemeId) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const closeMenu = useCallback(() => setIsOpen(false), []);
   const activeThemeOption = shellThemeOptions.find((theme) => theme.id === activeTheme) ?? shellThemeOptions[0];
 
+  useDismissibleMenu(isOpen, menuRef, closeMenu);
+
   const selectTheme = (themeId: ShellThemeId) => {
-    setIsOpen(false);
+    closeMenu();
     onSelectTheme(themeId);
   };
 
   return (
-    <div className="shell-theme-menu">
+    <div className="shell-theme-menu" ref={menuRef}>
       <button
         type="button"
         className="shell-theme-menu-trigger"

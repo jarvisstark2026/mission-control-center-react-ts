@@ -1,7 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { widgetBlueprints, widgetPresets } from './workspaceWidgetCatalog';
-import { clearAllStoredWidgetStates, getWorkspaceWidgetStorageKey, loadStoredWidgetState, saveStoredWidgetState, workspaceStorageKey } from './workspaceStorage';
+import {
+  clearAllStoredWidgetStates,
+  getWorkspaceModeWidgetStorageKey,
+  getWorkspaceWidgetStorageKey,
+  hasStoredWidgetState,
+  loadStoredWidgetState,
+  saveStoredWidgetState,
+  workspaceStorageKey,
+} from './workspaceStorage';
 import type { WorkspaceWidget } from './workspaceTypes';
 
 const defaultOpenKinds = new Set<WorkspaceWidget['kind']>(['overview']);
@@ -62,17 +70,51 @@ describe('workspace storage', () => {
     expect(restoredExtension?.find((widget) => widget.id === firstWidget.id)?.x).toBe(640);
   });
 
+  it('stores explicit mode layouts separately from the last working workspace layout', () => {
+    const [firstWidget] = widgetPresets;
+    const workingWidget = { ...firstWidget, x: 120 };
+    const modeWidget = { ...firstWidget, x: 720 };
+
+    expect(saveStoredWidgetState([workingWidget], 'workspace-1')).toBe(true);
+    expect(saveStoredWidgetState([modeWidget], 'workspace-1', 'security')).toBe(true);
+
+    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('workspace-1'))).not.toBeNull();
+    expect(window.localStorage.getItem(getWorkspaceModeWidgetStorageKey('workspace-1', 'security'))).not.toBeNull();
+    expect(hasStoredWidgetState('workspace-1')).toBe(true);
+    expect(hasStoredWidgetState('workspace-1', 'security')).toBe(true);
+
+    const restoredWorking = loadStoredWidgetState({
+      presets: widgetPresets,
+      defaultOpenKinds,
+      blueprints: widgetBlueprints,
+      workspaceId: 'workspace-1',
+    });
+    const restoredMode = loadStoredWidgetState({
+      presets: widgetPresets,
+      defaultOpenKinds,
+      blueprints: widgetBlueprints,
+      workspaceId: 'workspace-1',
+      modeId: 'security',
+      fallbackToWorkspace: false,
+    });
+
+    expect(restoredWorking?.find((widget) => widget.id === firstWidget.id)?.x).toBe(120);
+    expect(restoredMode?.find((widget) => widget.id === firstWidget.id)?.x).toBe(720);
+  });
+
   it('clears main, registered, and stale workspace layout keys together', () => {
     const [firstWidget] = widgetPresets;
 
     expect(saveStoredWidgetState([{ ...firstWidget, x: 120 }], 'main')).toBe(true);
     expect(saveStoredWidgetState([{ ...firstWidget, x: 640 }], 'workspace-1')).toBe(true);
+    expect(saveStoredWidgetState([{ ...firstWidget, x: 720 }], 'workspace-1', 'security')).toBe(true);
     expect(saveStoredWidgetState([{ ...firstWidget, x: 840 }], 'stale-workspace')).toBe(true);
 
     expect(clearAllStoredWidgetStates(['main', 'workspace-1'])).toBe(true);
 
     expect(window.localStorage.getItem(workspaceStorageKey)).toBeNull();
     expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('workspace-1'))).toBeNull();
+    expect(window.localStorage.getItem(getWorkspaceModeWidgetStorageKey('workspace-1', 'security'))).toBeNull();
     expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('stale-workspace'))).toBeNull();
   });
 

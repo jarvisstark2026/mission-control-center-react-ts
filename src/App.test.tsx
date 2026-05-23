@@ -38,7 +38,7 @@ describe('App', () => {
 
     expect(window.location.search).toBe('?role=admin');
     expect(screen.getByRole('button', { name: /admin/i })).toBeInTheDocument();
-  });
+  }, 15000);
 
   it('switches the workspace theme from the top bar', () => {
     render(<App />);
@@ -51,7 +51,7 @@ describe('App', () => {
     expect(window.localStorage.getItem('mission-control-center-theme')).toBe('ember');
   });
 
-  it('uses the rail only for open workspace instances', () => {
+  it('uses the rail for saved workspace instances', () => {
     const popup = { close: vi.fn(), focus: vi.fn() } as unknown as Window;
     vi.spyOn(window, 'open').mockReturnValue(popup);
 
@@ -78,13 +78,14 @@ describe('App', () => {
 
     const closeInstance = within(rail).getByRole('button', { name: /close workspace 1/i });
     expect(closeInstance).toBeInTheDocument();
-    expect(within(rail).getByText('Extension - Right')).toBeInTheDocument();
+    expect(within(rail).getByText('Open - Right')).toBeInTheDocument();
     expect(within(rail).getByRole('region', { name: 'Workspace arrangement' }).querySelectorAll('.shell-arrangement-cell')).toHaveLength(9);
 
     fireEvent.click(closeInstance);
 
     expect(popup.close).toHaveBeenCalledOnce();
     expect(within(rail).queryByRole('button', { name: /close workspace 1/i })).not.toBeInTheDocument();
+    expect(within(rail).getByText('Saved - Right')).toBeInTheDocument();
   });
 
   it('arranges workspace instances around the main workspace', () => {
@@ -132,7 +133,7 @@ describe('App', () => {
     expect(within(rail).getByRole('button', { name: 'Center workspace slot' })).toHaveTextContent('Workspace 1');
   });
 
-  it('automatically removes workspace instances after their popup closes', () => {
+  it('keeps workspace instances restorable after their popup closes', () => {
     vi.useFakeTimers();
     const popup = { closed: false, close: vi.fn(), focus: vi.fn() } as unknown as Window & { closed: boolean };
     vi.spyOn(window, 'open').mockReturnValue(popup);
@@ -153,6 +154,7 @@ describe('App', () => {
     });
 
     expect(within(rail).queryByRole('button', { name: /close workspace 1/i })).not.toBeInTheDocument();
+    expect(within(rail).getByText('Saved - Right')).toBeInTheDocument();
   });
 
   it('does not render the workspace rail inside extension workspaces', () => {

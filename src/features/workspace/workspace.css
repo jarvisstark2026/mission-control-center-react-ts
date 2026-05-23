@@ -1904,9 +1904,14 @@
 }
 
 .workspace-layout-status {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  z-index: 4;
   display: inline-flex;
   align-items: center;
   min-height: 26px;
+  max-width: min(360px, calc(100vw - 32px));
   padding: 0 10px;
   border: 1px solid rgba(156, 211, 255, 0.2);
   border-radius: 999px;
@@ -1916,6 +1921,9 @@
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.32);
+  pointer-events: none;
 }
 
 .workspace-menu-section-label {
@@ -1932,6 +1940,39 @@
   gap: 7px;
   padding-top: 8px;
   border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.workspace-preset-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.workspace-preset-row .workspace-preset-menu-item {
+  width: 100%;
+}
+
+.workspace-preset-delete {
+  display: grid;
+  place-items: center;
+  min-width: 30px;
+  min-height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.064), rgba(255, 255, 255, 0.018)),
+    rgba(255, 255, 255, 0.026);
+  color: rgba(255, 255, 255, 0.68);
+}
+
+.workspace-preset-delete:hover,
+.workspace-preset-delete:focus-visible {
+  border-color: rgba(255, 139, 139, 0.42);
+  background:
+    linear-gradient(180deg, rgba(255, 139, 139, 0.12), rgba(255, 255, 255, 0.026)),
+    rgba(255, 86, 86, 0.06);
+  color: rgba(255, 236, 236, 0.92);
 }
 
 .workspace-preset-empty {

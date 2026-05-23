@@ -137,3 +137,38 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await ensureWidgetOpen(page.locator('.workspace-widget.kind-watch-video'));
   await expect(page.locator('.workspace-widget.kind-watch-video').getByText('E2E MP4').first()).toBeVisible();
 });
+
+test('layout admin saves modes per workspace and filters guest widgets', async ({ page }) => {
+  await page.goto('/?role=admin');
+
+  await page.getByRole('button', { name: 'Mode preset' }).click();
+  await page.getByLabel('Preset name').fill('E2E admin mode');
+  await page.getByRole('button', { name: 'Create preset' }).click();
+  await expect(page.getByText('E2E admin mode mode created and active')).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: /E2E admin mode Main workspace/i })).toBeVisible();
+  await page.getByRole('button', { name: 'Save layout' }).click();
+  await expect(page.getByText('Main workspace E2E admin mode saved')).toBeVisible();
+
+  await page.goto('/?role=admin&workspace=extension&workspaceId=e2e-extension');
+  await page.getByRole('button', { name: 'Mode preset' }).click();
+  await page.getByRole('menuitem', { name: /Security mode/i }).click();
+  await expect(page.locator('.workspace-widget.kind-command-inbox')).toHaveClass(/is-open/);
+  await page.getByRole('button', { name: 'Save layout' }).click();
+  await expect(page.getByText(/Workspace.*Security mode saved/)).toBeVisible();
+  await page.reload();
+  await expect(page.locator('.workspace-widget.kind-command-inbox')).toHaveClass(/is-open/);
+
+  await page.goto('/?role=admin');
+  await page.getByRole('button', { name: 'Permissions' }).click();
+  await page.getByRole('tab', { name: 'Guest' }).click();
+  const permissionsMenu = page.getByRole('menu', { name: 'Widget permissions' });
+  await permissionsMenu.getByLabel(/Home systems/i).uncheck();
+  await expect(page.getByText('Guest Home systems hidden')).toBeVisible();
+
+  await page.goto('/?role=guest');
+  await page.getByRole('button', { name: 'Open widget' }).click();
+  await expect(page.getByRole('menuitem', { name: 'Home systems' })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Mode preset' }).click();
+  await page.getByRole('menuitem', { name: /Home mode/i }).click();
+  await expect(page.locator('.workspace-widget.kind-home-systems')).toHaveCount(0);
+});

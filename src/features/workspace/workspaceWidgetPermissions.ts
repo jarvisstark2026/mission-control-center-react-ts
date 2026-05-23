@@ -76,3 +76,17 @@ export function updateWorkspaceWidgetPermission(
   saveWorkspaceWidgetPermissions(next);
   return next;
 }
+
+export function resetWorkspaceWidgetPermissionRole(
+  permissions: WorkspaceWidgetPermissionMatrix,
+  role: ShellRole,
+): WorkspaceWidgetPermissionMatrix {
+  if (role === 'admin') return permissions;
+
+  const next = {
+    ...permissions,
+    [role]: {},
+  };
+  saveWorkspaceWidgetPermissions(next);
+  return next;
+}

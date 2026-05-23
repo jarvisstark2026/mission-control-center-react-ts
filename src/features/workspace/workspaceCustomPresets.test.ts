@@ -6,6 +6,7 @@ import {
   createWorkspaceCustomPresetLayout,
   loadWorkspaceCustomPresets,
   removeWorkspaceCustomPreset,
+  updateWorkspaceCustomPresetLabel,
 } from './workspaceCustomPresets';
 import { widgetPresets } from './workspaceWidgetCatalog';
 
@@ -59,5 +60,18 @@ describe('workspace custom presets', () => {
     expect(loadWorkspaceCustomPresets()).toHaveLength(1);
     expect(removeWorkspaceCustomPreset(preset.id)).toHaveLength(0);
     expect(loadWorkspaceCustomPresets()).toHaveLength(0);
+  });
+
+  it('renames a saved custom preset', () => {
+    const preset = createWorkspaceCustomPreset({
+      label: 'Old wall',
+      sourceWorkspaceId: 'main',
+      widgets: widgetPresets.slice(0, 2),
+    });
+
+    addWorkspaceCustomPreset(preset);
+
+    expect(updateWorkspaceCustomPresetLabel(preset.id, '  New   wall  ')[0].label).toBe('New wall');
+    expect(loadWorkspaceCustomPresets()[0].label).toBe('New wall');
   });
 });

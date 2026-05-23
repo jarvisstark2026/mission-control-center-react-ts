@@ -98,7 +98,12 @@ describe('Workspace header controls', () => {
     fireEvent.click(currentRender.getByRole('button', { name: 'Create preset' }));
 
     expect(currentRender.getByRole('menuitem', { name: /^Review wall/i })).toBeInTheDocument();
+    expect(currentRender.getByText('Review wall mode created and active')).toBeInTheDocument();
     expect(currentRender.getByRole('menuitem', { name: /Main workspace/i })).toBeInTheDocument();
+    const customModeKey = Array.from({ length: window.localStorage.length }, (_, index) => window.localStorage.key(index)).find((key) =>
+      key?.startsWith('mission-control-center.workspace.layout.v1.mode.main.custom-'),
+    );
+    expect(customModeKey).toBeTruthy();
 
     unmount();
     window.history.replaceState({}, '', '/?role=admin&workspace=extension');
@@ -114,7 +119,7 @@ describe('Workspace header controls', () => {
     expect(extensionWorkspace.container.querySelector('.workspace-widget.kind-notifications')).toHaveClass('is-open');
   }, 60000);
 
-  it('deletes custom preset modes without moving the header controls', () => {
+  it('renames and deletes custom preset modes without moving the header controls', () => {
     const { container } = render(<Workspace role="admin" />);
     const currentRender = within(container);
 
@@ -124,10 +129,19 @@ describe('Workspace header controls', () => {
 
     expect(currentRender.getByRole('menuitem', { name: /^Temporary mode/i })).toBeInTheDocument();
 
-    fireEvent.click(currentRender.getByLabelText('Delete Temporary mode'));
+    fireEvent.click(currentRender.getByLabelText('Rename Temporary mode'));
+    fireEvent.change(currentRender.getByLabelText('Rename Temporary mode'), { target: { value: 'Review mode' } });
+    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Save' }));
 
     expect(currentRender.queryByRole('menuitem', { name: /^Temporary mode/i })).not.toBeInTheDocument();
-    expect(currentRender.getByText('Temporary mode preset deleted')).toBeInTheDocument();
+    expect(currentRender.getByRole('menuitem', { name: /^Review mode/i })).toBeInTheDocument();
+    expect(currentRender.getByText('Review mode preset renamed')).toBeInTheDocument();
+
+    fireEvent.click(currentRender.getByLabelText('Delete Review mode'));
+
+    expect(currentRender.queryByRole('menuitem', { name: /^Review mode/i })).not.toBeInTheDocument();
+    expect(currentRender.queryByRole('menuitem', { name: /^Temporary mode/i })).not.toBeInTheDocument();
+    expect(currentRender.getByText('Review mode preset deleted')).toBeInTheDocument();
     expect(container.querySelectorAll('.workspace-head .workspace-layout-status')).toHaveLength(1);
   }, 20000);
 
@@ -390,6 +404,31 @@ describe('Workspace header controls', () => {
     fireEvent.click(guestRender.getByRole('menuitem', { name: /Home mode/i }));
 
     expect(guestWorkspace.container.querySelector('.workspace-widget.kind-home-systems')).not.toBeInTheDocument();
+  }, 60000);
+
+  it('lets admin reset widget permissions for a role back to defaults', () => {
+    const adminWorkspace = render(<Workspace role="admin" />);
+    const adminRender = within(adminWorkspace.container);
+
+    fireEvent.click(adminRender.getByRole('button', { name: 'Permissions' }));
+    const permissionMenu = adminRender.getByRole('menu', { name: 'Widget permissions' });
+    fireEvent.click(within(permissionMenu).getByRole('tab', { name: 'Guest' }));
+    fireEvent.click(within(permissionMenu).getByLabelText(/Home systems/i));
+
+    expect(within(permissionMenu).getByText('hidden Â· custom override')).toBeInTheDocument();
+
+    fireEvent.click(within(permissionMenu).getByRole('button', { name: 'Reset role defaults' }));
+
+    expect(within(permissionMenu).getAllByText('visible Â· default').length).toBeGreaterThan(0);
+    expect(adminRender.getByText('Guest widget permissions reset')).toBeInTheDocument();
+
+    adminWorkspace.unmount();
+
+    const guestWorkspace = render(<Workspace role="guest" />);
+    const guestRender = within(guestWorkspace.container);
+    fireEvent.click(guestRender.getByRole('button', { name: 'Open widget' }));
+
+    expect(guestRender.getByRole('menuitem', { name: 'Home systems' })).toBeInTheDocument();
   }, 60000);
 
   it('keeps command approvals role gated inside the command inbox', () => {

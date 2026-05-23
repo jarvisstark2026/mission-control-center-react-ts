@@ -41,6 +41,7 @@ import {
   createWorkspaceCustomPresetLayout,
   loadWorkspaceCustomPresets,
   removeWorkspaceCustomPreset,
+  updateWorkspaceCustomPresetLabel,
   type WorkspaceCustomPreset,
 } from './workspaceCustomPresets';
 import { WorkspaceWidgetCard, type WorkspaceWidgetRuntimeProps } from './workspaceWidgets';
@@ -63,6 +64,7 @@ import {
   getDefaultWorkspaceWidgetPermission,
   isWorkspaceWidgetPermittedByPolicy,
   loadWorkspaceWidgetPermissions,
+  resetWorkspaceWidgetPermissionRole,
   updateWorkspaceWidgetPermission,
 } from './workspaceWidgetPermissions';
 import { VisualLab } from '../visual-lab/VisualLab';
@@ -408,6 +410,8 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
   const [layoutSaveStatus, setLayoutSaveStatus] = useState('');
   const layoutSaveStatusTimeoutRef = useRef<number | null>(null);
   const [customPresetName, setCustomPresetName] = useState('');
+  const [renamingPresetId, setRenamingPresetId] = useState<string | null>(null);
+  const [renamingPresetName, setRenamingPresetName] = useState('');
   const [customPresets, setCustomPresets] = useState(loadWorkspaceCustomPresets);
   const [activeWorkspaceModeId, setActiveWorkspaceModeId] = useState(initialWorkspaceModeId);
   const [widgetPermissions, setWidgetPermissions] = useState(loadWorkspaceWidgetPermissions);
@@ -666,7 +670,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     closeWorkspacePanelWindow();
   };
 
-  const filterWidgetsForActiveRole = (nextWidgets: WorkspaceWidget[]) =>
+  const filterWidgetsForActiveRole = useCallback((nextWidgets: WorkspaceWidget[]) =>
     nextWidgets.map((widget) =>
       isWorkspaceWidgetAllowedForRole(widget.kind, activeRole, widgetPermissions)
         ? widget
@@ -676,7 +680,27 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
             hidden: true,
             pinned: false,
           },
-    );
+    ), [activeRole, widgetPermissions]);
+
+  const workspaceWidgetsChanged = useCallback((left: WorkspaceWidget[], right: WorkspaceWidget[]) =>
+    left.length !== right.length ||
+    left.some((widget, index) => {
+      const nextWidget = right[index];
+      return !nextWidget || widget.id !== nextWidget.id || widget.open !== nextWidget.open || widget.hidden !== nextWidget.hidden || widget.pinned !== nextWidget.pinned;
+    }), []);
+
+  useEffect(() => {
+    if (activeRole === 'admin') return;
+
+    setWidgets((current) => {
+      const next = filterWidgetsForActiveRole(current);
+      if (!workspaceWidgetsChanged(current, next)) return current;
+
+      widgetsRef.current = next;
+      void saveStoredWidgetState(next, currentWorkspaceId);
+      return next;
+    });
+  }, [activeRole, currentWorkspaceId, filterWidgetsForActiveRole, workspaceWidgetsChanged]);
 
   const getPresetSourceLabel = (preset: WorkspaceCustomPreset) => {
     if (preset.sourceWorkspaceId === 'main') return 'Main workspace';
@@ -806,12 +830,19 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     const nextPresets = addWorkspaceCustomPreset(preset, customPresets);
     setCustomPresets(nextPresets);
     setCustomPresetName('');
-    showLayoutStatus(`${preset.label} preset saved`);
+    const nextModeId = commitActiveWorkspaceMode(preset.id);
+    const savedWorkingLayout = saveStoredWidgetState(widgetsRef.current, currentWorkspaceId);
+    const savedModeLayout = saveStoredWidgetState(widgetsRef.current, currentWorkspaceId, nextModeId);
+    showLayoutStatus(savedWorkingLayout && savedModeLayout ? `${preset.label} mode created and active` : `${preset.label} mode created`);
   };
 
   const deleteWorkspaceCustomPreset = (preset: WorkspaceCustomPreset) => {
     const nextPresets = removeWorkspaceCustomPreset(preset.id, customPresets);
     setCustomPresets(nextPresets);
+    if (renamingPresetId === preset.id) {
+      setRenamingPresetId(null);
+      setRenamingPresetName('');
+    }
 
     if (activeWorkspaceModeId === preset.id) {
       setActiveWorkspaceModeId(workspaceDefaultModeId);
@@ -822,8 +853,35 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     showLayoutStatus(`${preset.label} preset deleted`);
   };
 
+  const startRenamingCustomPreset = (preset: WorkspaceCustomPreset) => {
+    setRenamingPresetId(preset.id);
+    setRenamingPresetName(preset.label);
+  };
+
+  const cancelRenamingCustomPreset = () => {
+    setRenamingPresetId(null);
+    setRenamingPresetName('');
+  };
+
+  const renameWorkspaceCustomPreset = (preset: WorkspaceCustomPreset) => {
+    const nextPresets = updateWorkspaceCustomPresetLabel(preset.id, renamingPresetName, customPresets);
+    const nextPreset = nextPresets.find((item) => item.id === preset.id) ?? preset;
+    setCustomPresets(nextPresets);
+    setRenamingPresetId(null);
+    setRenamingPresetName('');
+    showLayoutStatus(`${nextPreset.label} preset renamed`);
+  };
+
+  const getRoleMenuLabel = (roleId: ShellRole) => shellScopes.find((scope) => scope.id === roleId)?.label ?? roleId;
+
   const setWidgetPermission = (roleId: ShellRole, kind: WorkspaceWidget['kind'], allowed: boolean) => {
     setWidgetPermissions((current) => updateWorkspaceWidgetPermission(current, roleId, kind, allowed));
+    showLayoutStatus(`${getRoleMenuLabel(roleId)} ${getWidgetLabel(kind)} ${allowed ? 'visible' : 'hidden'}`);
+  };
+
+  const resetWidgetPermissionsForRole = (roleId: ShellRole) => {
+    setWidgetPermissions((current) => resetWorkspaceWidgetPermissionRole(current, roleId));
+    showLayoutStatus(`${getRoleMenuLabel(roleId)} widget permissions reset`);
   };
 
   const raiseWidget = (id: string) => {
@@ -1663,7 +1721,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                   <button
                     key={preset.id}
                     type="button"
-                    className="workspace-widget-menu-item workspace-preset-menu-item"
+                    className={`workspace-widget-menu-item workspace-preset-menu-item${activeWorkspaceModeId === preset.id ? ' is-active' : ''}`}
                     role="menuitem"
                     onClick={() => applyWorkspaceModePreset(preset.id)}
                   >
@@ -1672,29 +1730,73 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                   </button>
                 ))}
                 <div className="workspace-menu-section-label">Custom presets</div>
-                {customPresets.map((preset) => (
-                  <div key={preset.id} className="workspace-preset-row" role="group" aria-label={`${preset.label} preset`}>
-                    <button
-                      type="button"
-                      className="workspace-widget-menu-item workspace-preset-menu-item"
-                      role="menuitem"
-                      onClick={() => applyWorkspaceCustomPreset(preset)}
-                    >
-                      <strong>{preset.label}</strong>
-                      <small>{getPresetMeta(preset)}</small>
-                    </button>
-                    <button
-                      type="button"
-                      className="workspace-preset-delete"
-                      role="menuitem"
-                      aria-label={`Delete ${preset.label}`}
-                      title={`Delete ${preset.label}`}
-                      onClick={() => deleteWorkspaceCustomPreset(preset)}
-                    >
-                      <span className="widget-control-icon widget-control-icon-close" aria-hidden="true" />
-                    </button>
-                  </div>
-                ))}
+                {customPresets.map((preset) => {
+                  const isRenaming = renamingPresetId === preset.id;
+
+                  return (
+                    <div key={preset.id} className="workspace-preset-row" role="group" aria-label={`${preset.label} preset`}>
+                      {isRenaming ? (
+                        <div className="workspace-preset-rename">
+                          <input
+                            value={renamingPresetName}
+                            onChange={(event) => setRenamingPresetName(event.target.value)}
+                            aria-label={`Rename ${preset.label}`}
+                          />
+                          <WorkspaceButton
+                            variant="compact"
+                            className="workspace-launch-button workspace-head-action"
+                            role="menuitem"
+                            onClick={() => renameWorkspaceCustomPreset(preset)}
+                          >
+                            Save
+                          </WorkspaceButton>
+                          <button
+                            type="button"
+                            className="workspace-preset-delete"
+                            role="menuitem"
+                            aria-label={`Cancel rename ${preset.label}`}
+                            title={`Cancel rename ${preset.label}`}
+                            onClick={cancelRenamingCustomPreset}
+                          >
+                            <span className="widget-control-icon widget-control-icon-close" aria-hidden="true" />
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            className={`workspace-widget-menu-item workspace-preset-menu-item${activeWorkspaceModeId === preset.id ? ' is-active' : ''}`}
+                            role="menuitem"
+                            onClick={() => applyWorkspaceCustomPreset(preset)}
+                          >
+                            <strong>{preset.label}</strong>
+                            <small>{getPresetMeta(preset)}</small>
+                          </button>
+                          <button
+                            type="button"
+                            className="workspace-preset-delete"
+                            role="menuitem"
+                            aria-label={`Rename ${preset.label}`}
+                            title={`Rename ${preset.label}`}
+                            onClick={() => startRenamingCustomPreset(preset)}
+                          >
+                            <span className="workspace-preset-edit-mark" aria-hidden="true">Aa</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="workspace-preset-delete"
+                            role="menuitem"
+                            aria-label={`Delete ${preset.label}`}
+                            title={`Delete ${preset.label}`}
+                            onClick={() => deleteWorkspaceCustomPreset(preset)}
+                          >
+                            <span className="widget-control-icon widget-control-icon-close" aria-hidden="true" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
                 {!customPresets.length ? <div className="workspace-preset-empty">No custom presets saved yet.</div> : null}
                 <div className="workspace-preset-create" role="group" aria-label="Create workspace preset">
                   <input
@@ -1749,6 +1851,16 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                       );
                     })}
                   </div>
+                  <div className="workspace-permission-tools">
+                    <span>{getRoleMenuLabel(permissionRole)} permissions</span>
+                    <WorkspaceButton
+                      variant="compact"
+                      className="workspace-launch-button workspace-head-action"
+                      onClick={() => resetWidgetPermissionsForRole(permissionRole)}
+                    >
+                      Reset role defaults
+                    </WorkspaceButton>
+                  </div>
                   <div className="workspace-permission-list">
                     {workspaceShortcutKinds.map((kind) => {
                       const allowed = isWorkspaceWidgetPermittedByPolicy(kind, permissionRole, widgetPermissions);
@@ -1758,7 +1870,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                         <label key={kind} className="workspace-permission-row">
                           <span>
                             <strong>{getWidgetLabel(kind)}</strong>
-                            <small>{defaultAllowed ? 'default allowed' : 'default hidden'}</small>
+                            <small>{allowed ? 'visible' : 'hidden'} Â· {allowed === defaultAllowed ? 'default' : 'custom override'}</small>
                           </span>
                           <input
                             type="checkbox"

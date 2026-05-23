@@ -115,6 +115,15 @@ export function removeWorkspaceCustomPreset(presetId: string, current = loadWork
   return next;
 }
 
+export function updateWorkspaceCustomPresetLabel(presetId: string, label: string, current = loadWorkspaceCustomPresets()) {
+  const normalizedLabel = normalizePresetLabel(label);
+  if (!normalizedLabel) return current;
+
+  const next = current.map((preset) => (preset.id === presetId ? { ...preset, label: normalizedLabel } : preset));
+  saveWorkspaceCustomPresets(next);
+  return next;
+}
+
 export function createWorkspaceCustomPresetLayout(
   preset: WorkspaceCustomPreset,
   currentWidgets: WorkspaceWidget[],

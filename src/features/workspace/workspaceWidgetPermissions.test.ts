@@ -4,6 +4,7 @@ import {
   getDefaultWorkspaceWidgetPermission,
   isWorkspaceWidgetPermittedByPolicy,
   loadWorkspaceWidgetPermissions,
+  resetWorkspaceWidgetPermissionRole,
   updateWorkspaceWidgetPermission,
 } from './workspaceWidgetPermissions';
 
@@ -25,5 +26,13 @@ describe('workspace widget permissions', () => {
 
     expect(isWorkspaceWidgetPermittedByPolicy('home-systems', 'guest', permissions)).toBe(false);
     expect(isWorkspaceWidgetPermittedByPolicy('home-systems', 'guest', loadWorkspaceWidgetPermissions())).toBe(false);
+  });
+
+  it('resets a role back to default widget permissions', () => {
+    const changed = updateWorkspaceWidgetPermission(loadWorkspaceWidgetPermissions(), 'guest', 'home-systems', false);
+    const reset = resetWorkspaceWidgetPermissionRole(changed, 'guest');
+
+    expect(isWorkspaceWidgetPermittedByPolicy('home-systems', 'guest', reset)).toBe(true);
+    expect(isWorkspaceWidgetPermittedByPolicy('home-systems', 'guest', loadWorkspaceWidgetPermissions())).toBe(true);
   });
 });

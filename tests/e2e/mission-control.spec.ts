@@ -40,8 +40,12 @@ test('operational core widgets launch and use mock live data', async ({ page }) 
 
   await openWidget(page, 'Home systems');
   await expect(page.getByText('energy, safety, automation, and rooms').first()).toBeVisible();
+  await expect(page.getByText('Daily load').first()).toBeVisible();
   await expect(page.getByText('Solar PV').first()).toBeVisible();
   await expect(page.getByText('Wall tablets').first()).toBeVisible();
+  const homePoolLayer = page.locator('.workspace-widget.kind-home-systems .home-energy-series-toggle', { hasText: 'Pool' });
+  await homePoolLayer.click();
+  await expect(homePoolLayer).toHaveAttribute('aria-pressed', 'true');
   await page.locator('.home-action-card', { hasText: 'Use solar surplus' }).getByRole('button', { name: 'Stage proposal' }).click();
   await expect(page.getByText('Sent to Command Inbox.')).toBeVisible();
 
@@ -59,7 +63,7 @@ test('workflow runbook can stage agent approval through Command Inbox', async ({
   await page.getByRole('button', { name: 'Stage approval' }).first().click();
 
   await openWidget(page, 'Command inbox');
-  await expect(page.getByText('workflow-runbook').first()).toBeVisible();
+  await expect(page.getByText(/Workflow \//).first()).toBeVisible();
   await expect(page.getByText('Jarvis Workflow').first()).toBeVisible();
   await page.getByRole('button', { name: 'Approve' }).first().click();
   await expect(page.getByText(/Mock gateway completed/).first()).toBeVisible();

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { getMockMissionControlEventBatch } from './missionControlMock';
+import { createHomeSystemActionEvents } from '../workspace/homeSystemsActions';
 import {
   canAcknowledgeNotifications,
   canEditIntegrationPermission,
@@ -96,6 +97,42 @@ describe('missionControlReducer', () => {
     expect(approvedCommand?.auditTrail.find((entry) => entry.type === 'approved')).toMatchObject({
       actor: 'home',
       type: 'approved',
+    });
+  });
+
+  it('accepts Home Systems proposals and preserves audit after approval', () => {
+    const state = createInitialMissionControlState();
+    const events = createHomeSystemActionEvents('use-solar-surplus', 'home', new Date('2026-05-23T10:00:00.000Z'));
+    const staged = missionControlReducer(state, { type: 'events', events });
+    const command = staged.commands.find((item) => item.source === 'home-systems:energy');
+
+    expect(command).toMatchObject({
+      title: 'Use solar surplus',
+      status: 'pending',
+      agent: {
+        agentName: 'Jarvis Home',
+      },
+      auditTrail: [
+        {
+          type: 'proposed',
+          actor: 'home-systems',
+        },
+      ],
+    });
+
+    const approved = missionControlReducer(staged, {
+      type: 'command-action',
+      commandId: command?.id ?? '',
+      action: 'approve',
+      role: 'home',
+    });
+    const approvedCommand = approved.commands.find((item) => item.id === command?.id);
+
+    expect(approvedCommand?.status).toBe('queued');
+    expect(approvedCommand?.auditTrail.map((entry) => entry.type)).toEqual(['proposed', 'approved', 'queued']);
+    expect(approved.notifications[0]).toMatchObject({
+      source: 'command-inbox',
+      relatedCommandId: command?.id,
     });
   });
 

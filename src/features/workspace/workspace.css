@@ -4640,6 +4640,23 @@
   align-items: center;
 }
 
+.home-energy-series-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  padding-left: 8px;
+}
+
+.home-energy-series-group small {
+  color: rgba(226, 238, 248, 0.46);
+  font-size: 0.5rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 .home-energy-toggle-master {
   min-height: 28px;
 }

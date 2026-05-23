@@ -96,6 +96,25 @@ describe('workflow studio model', () => {
     expect(synced.steps.find((step) => step.id === approvalStep.id)?.status).toBe('completed');
   });
 
+  it('uses home runbook command profiles for household workflow proposals', () => {
+    const agentControl = createInitialAgentControlState();
+    const agent = getAgentDescriptorById(agentControl, 'jarvis-workflow');
+    const run = startWorkflowRun(createWorkflowDraft('solar-surplus-optimization'), agent);
+    const approvalStep = run.steps.find((step) => step.approvalRequirement === 'command');
+    const event = approvalStep ? createWorkflowStepCommandEvent(run, approvalStep.id, agent) : null;
+
+    expect(event).toMatchObject({
+      type: 'command',
+      command: {
+        scope: 'household',
+        risk: 'safe',
+        execution: {
+          rollbackAvailable: true,
+        },
+      },
+    });
+  });
+
   it('includes operational runbooks for home, support, and safety workflows', () => {
     expect(workflowTemplates.map((template) => template.id)).toEqual(expect.arrayContaining([
       'solar-surplus-optimization',

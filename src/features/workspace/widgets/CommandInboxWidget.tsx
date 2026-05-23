@@ -9,6 +9,34 @@ const commandActionLabels: Record<CommandAction, string> = {
   override: 'Override',
 };
 
+function getCommandOriginLabel(command: CommandRequest) {
+  if (command.source.startsWith('home-systems:')) {
+    return `Home Systems / ${command.source.replace('home-systems:', '')}`;
+  }
+
+  if (command.source === 'workflow-runbook') {
+    return command.workflow ? `Workflow / ${command.workflow.workflowName}` : 'Workflow runbook';
+  }
+
+  if (command.source.startsWith('agent-console')) {
+    return 'Agent Console';
+  }
+
+  return command.source;
+}
+
+function formatDateTime(value: string) {
+  const time = Date.parse(value);
+  if (!Number.isFinite(time)) return value;
+
+  return new Intl.DateTimeFormat('en', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(time));
+}
+
 function CommandActionButton({
   action,
   command,
@@ -35,6 +63,7 @@ export function CommandInboxWidget({ missionControl }: { missionControl: Mission
   const completedCommands = commands.filter((command) => command.status !== 'pending');
   const nextCommand = pendingCommands[0];
   const gatewayLabel = missionControl.commandGatewayMode === 'backend' ? 'backend gateway' : 'local gateway';
+  const nextAllowedActions = nextCommand ? getAllowedCommandActions(nextCommand, missionControl.role) : [];
 
   return (
     <WorkspaceContentShell className="mission-control-surface command-inbox-surface">
@@ -57,9 +86,9 @@ export function CommandInboxWidget({ missionControl }: { missionControl: Mission
           title={nextCommand.title}
           risk={nextCommand.risk}
           actions={
-            getAllowedCommandActions(nextCommand, missionControl.role).length ? (
+            nextAllowedActions.length ? (
               <>
-                {getAllowedCommandActions(nextCommand, missionControl.role).map((action) => (
+                {nextAllowedActions.map((action) => (
                   <CommandActionButton key={action} action={action} command={nextCommand} missionControl={missionControl} />
                 ))}
               </>
@@ -72,10 +101,30 @@ export function CommandInboxWidget({ missionControl }: { missionControl: Mission
             agent={{ name: nextCommand.agent.agentName, specialty: 'proposal owner' }}
             profile={nextCommand.agent.profile}
           />
+          <EvidenceBlock label="Origin" title={getCommandOriginLabel(nextCommand)}>
+            Requested {formatDateTime(nextCommand.requestedAt)}. Source remains evidence-only until this inbox approves the command.
+          </EvidenceBlock>
           <EvidenceBlock label="Why">{nextCommand.reasoning}</EvidenceBlock>
           <EvidenceBlock label="Expected result">{nextCommand.expectedResult}</EvidenceBlock>
-          <EvidenceBlock label="Origin">{nextCommand.source}</EvidenceBlock>
-          <EvidenceBlock label="Execution state">{nextCommand.execution.result}</EvidenceBlock>
+          <EvidenceBlock label="Role gate" title={nextAllowedActions.length ? nextAllowedActions.join(' / ') : 'read only'}>
+            {nextAllowedActions.length ? `This ${missionControl.role} scope can decide the request.` : 'This access scope can inspect the proposal but cannot execute it.'}
+          </EvidenceBlock>
+          <EvidenceBlock label="Execution state" title={nextCommand.execution.status}>{nextCommand.execution.result}</EvidenceBlock>
+          {nextCommand.workflow ? (
+            <EvidenceBlock label="Workflow link" title={nextCommand.workflow.workflowName}>
+              Step {nextCommand.workflow.stepId} waits for this decision before the runbook can progress.
+            </EvidenceBlock>
+          ) : null}
+          <AuditList
+            empty="No audit events yet."
+            items={nextCommand.auditTrail.slice(-4).map((entry) => ({
+              id: entry.id,
+              title: entry.detail,
+              meta: `${entry.type} / ${entry.actor}`,
+              detail: formatDateTime(entry.timestamp),
+              state: entry.type,
+            }))}
+          />
         </AttentionCard>
       ) : null}
 
@@ -110,7 +159,7 @@ export function CommandInboxWidget({ missionControl }: { missionControl: Mission
                       <span>{command.scope} / {command.risk}</span>
                       <strong>{command.title}</strong>
                     </div>
-                    <small>{command.source}</small>
+                    <small>{getCommandOriginLabel(command)}</small>
                   </div>
                   <p>{command.summary}</p>
                   <div className="command-inbox-explain">

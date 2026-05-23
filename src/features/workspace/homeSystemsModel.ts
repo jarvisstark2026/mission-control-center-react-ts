@@ -56,6 +56,31 @@ export type HomeEnergySeriesTotal = HomeEnergySeries & {
   peakKw: number;
 };
 
+export type HomeEnergyDailySummary = {
+  consumptionKwh: number;
+  generationKwh: number;
+  gridImportKwh: number;
+  estimatedGridExportKwh: number;
+  batteryChargeKwh: number;
+  batteryDischargeKwh: number;
+  batteryNetKwh: number;
+  evKwh: number;
+  acKwh: number;
+  socketsKwh: number;
+  appliancesKwh: number;
+  poolKwh: number;
+  flexibleLoadKwh: number;
+  peakKw: number;
+  selfSupplyEstimatePercent: number;
+  largestLoad: HomeEnergySeriesTotal;
+};
+
+export type HomeEnergySeriesGroup = {
+  group: HomeEnergySeries['group'];
+  label: string;
+  series: HomeEnergySeries[];
+};
+
 export type HomeSystemRecord = {
   id: string;
   name: string;
@@ -335,6 +360,70 @@ export function getHomeEnergySeriesTotals(
       peakKw: Number(peakKw.toFixed(1)),
     };
   });
+}
+
+function getHomeEnergyTotalById(totals: HomeEnergySeriesTotal[], seriesId: HomeEnergySeriesId) {
+  return totals.find((series) => series.id === seriesId)?.totalKwh ?? 0;
+}
+
+function getEstimatedGridExportKwh(samples: HomeEnergyDailySample[] = homeEnergyDailyProfile) {
+  return Number(samples.reduce((total, sample, index) => {
+    const nextSample = samples[index + 1];
+    const hours = nextSample ? Math.max(0, nextSample.hour - sample.hour) : 0;
+    const trackedLoadKw = sample.evChargeKw + sample.acKw + sample.powerSocketsKw + sample.appliancesKw + sample.poolKw;
+    const availableKw = sample.solarPvKw + sample.gridImportKw + sample.batteryDischargeKw;
+    const usedKw = trackedLoadKw + sample.batteryChargeKw;
+
+    return total + Math.max(0, availableKw - usedKw) * hours;
+  }, 0).toFixed(1));
+}
+
+export function getHomeEnergyDailySummary(samples: HomeEnergyDailySample[] = homeEnergyDailyProfile): HomeEnergyDailySummary {
+  const totals = getHomeEnergySeriesTotals(samples);
+  const loadTotals = totals.filter((series) => series.group === 'load');
+  const fallbackLoad = loadTotals[0] ?? totals[0];
+  if (!fallbackLoad) {
+    throw new Error('Home energy summary requires at least one energy series.');
+  }
+  const consumptionKwh = Number(loadTotals.reduce((total, series) => total + series.totalKwh, 0).toFixed(1));
+  const generationKwh = getHomeEnergyTotalById(totals, 'solarPvKw');
+  const estimatedGridExportKwh = getEstimatedGridExportKwh(samples);
+  const largestLoad = loadTotals.reduce(
+    (largest, series) => (series.totalKwh > largest.totalKwh ? series : largest),
+    fallbackLoad,
+  );
+  const batteryChargeKwh = getHomeEnergyTotalById(totals, 'batteryChargeKw');
+  const batteryDischargeKwh = getHomeEnergyTotalById(totals, 'batteryDischargeKw');
+  const localSupplyKwh = Math.max(0, generationKwh + batteryDischargeKwh - estimatedGridExportKwh);
+
+  return {
+    consumptionKwh,
+    generationKwh,
+    gridImportKwh: getHomeEnergyTotalById(totals, 'gridImportKw'),
+    estimatedGridExportKwh,
+    batteryChargeKwh,
+    batteryDischargeKwh,
+    batteryNetKwh: Number((batteryChargeKwh - batteryDischargeKwh).toFixed(1)),
+    evKwh: getHomeEnergyTotalById(totals, 'evChargeKw'),
+    acKwh: getHomeEnergyTotalById(totals, 'acKw'),
+    socketsKwh: getHomeEnergyTotalById(totals, 'powerSocketsKw'),
+    appliancesKwh: getHomeEnergyTotalById(totals, 'appliancesKw'),
+    poolKwh: getHomeEnergyTotalById(totals, 'poolKw'),
+    flexibleLoadKwh: Number((getHomeEnergyTotalById(totals, 'evChargeKw') + getHomeEnergyTotalById(totals, 'poolKw')).toFixed(1)),
+    peakKw: getHomeEnergyDailyPeak(samples),
+    selfSupplyEstimatePercent: consumptionKwh <= 0 ? 100 : Math.min(100, Math.round((localSupplyKwh / consumptionKwh) * 100)),
+    largestLoad,
+  };
+}
+
+export function getHomeEnergySeriesGroups(series: HomeEnergySeries[] = homeEnergySeries): HomeEnergySeriesGroup[] {
+  const groups: HomeEnergySeriesGroup[] = [
+    { group: 'supply', label: 'Supply', series: series.filter((item) => item.group === 'supply') },
+    { group: 'storage', label: 'Storage', series: series.filter((item) => item.group === 'storage') },
+    { group: 'load', label: 'Loads', series: series.filter((item) => item.group === 'load') },
+  ];
+
+  return groups.filter((group) => group.series.length > 0);
 }
 
 export function getVisibleHomeEnergySeriesTotals(visibleSeriesIds: HomeEnergySeriesId[]) {

@@ -37,7 +37,7 @@ export function IntegrationRegistryWidget({ missionControl }: { missionControl: 
       <StatusSummary
         label="Registry health"
         title={`${summary.online} online / ${summary.degraded} degraded / ${summary.offline} offline`}
-        detail="Registry data is typed and permission-aware. Current records are local/mock until a real integration backend supplies heartbeats."
+        detail="Registry data is typed and permission-aware. It tracks health and allowed access; it does not execute actions. Command Inbox remains the only execution gate."
         meta={missionControl.role}
       />
 
@@ -65,7 +65,10 @@ export function IntegrationRegistryWidget({ missionControl }: { missionControl: 
                     </div>
                     <PermissionBadge level={integration.permission} />
                   </div>
-                  <p>Heartbeat {new Date(integration.heartbeatAt).toLocaleTimeString()}.</p>
+                  <p>
+                    Heartbeat {new Date(integration.heartbeatAt).toLocaleTimeString()}. Scope {integration.scope}; actions from this
+                    system must arrive as proposals before they can run.
+                  </p>
                   <div className="mission-control-actions">
                     {permissionOptions.map((permission) => (
                       <WorkspaceButton

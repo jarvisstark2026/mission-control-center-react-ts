@@ -1,6 +1,6 @@
 import { createId } from '../../lib/createId';
 import type { AgentDescriptor } from '../agent-control';
-import type { CommandRequest, MissionControlEvent } from '../mission-control';
+import type { CommandRequest, CommandRisk, CommandScope, MissionControlEvent } from '../mission-control';
 import { getWorkflowSteps, getWorkflowTemplate, type WorkflowDraft } from './workflowStudioModel';
 
 export type WorkflowStepStatus = 'pending' | 'active' | 'waiting-approval' | 'running' | 'completed' | 'blocked' | 'failed';
@@ -27,6 +27,31 @@ export type WorkflowRun = {
   updatedAt: string;
   steps: WorkflowRunStep[];
 };
+
+type WorkflowCommandProfile = {
+  scope: CommandScope;
+  risk: CommandRisk;
+  systemLabel: string;
+};
+
+const workflowCommandProfiles: Record<string, WorkflowCommandProfile> = {
+  'solar-surplus-optimization': { scope: 'household', risk: 'safe', systemLabel: 'Home energy' },
+  'night-energy-saving': { scope: 'household', risk: 'safe', systemLabel: 'Home energy' },
+  'leave-home-security': { scope: 'security', risk: 'critical', systemLabel: 'Home security' },
+  'support-diagnostics': { scope: 'support', risk: 'elevated', systemLabel: 'Support diagnostics' },
+  'emergency-safety-check': { scope: 'security', risk: 'critical', systemLabel: 'Emergency safety' },
+};
+
+function getWorkflowCommandProfile(run: WorkflowRun, agent: AgentDescriptor): WorkflowCommandProfile {
+  const templateProfile = workflowCommandProfiles[run.templateId];
+  if (templateProfile) return templateProfile;
+
+  return {
+    scope: agent.specialty === 'home' ? 'household' : agent.specialty === 'security' ? 'security' : 'system',
+    risk: agent.specialty === 'security' ? 'critical' : 'elevated',
+    systemLabel: agent.specialty,
+  };
+}
 
 export function startWorkflowRun(workflow: WorkflowDraft, agent: AgentDescriptor, now = new Date().toISOString()): WorkflowRun {
   const workflowId = workflow.id ?? createId('workflow');
@@ -62,6 +87,7 @@ export function createWorkflowStepCommandEvent(run: WorkflowRun, stepId: string,
 
   const timestamp = new Date().toISOString();
   const commandId = `workflow-command-${run.id}-${step.id}`;
+  const commandProfile = getWorkflowCommandProfile(run, agent);
 
   return {
     type: 'command',
@@ -75,16 +101,16 @@ export function createWorkflowStepCommandEvent(run: WorkflowRun, stepId: string,
         agentName: agent.name,
         profile: agent.profile,
       },
-      reasoning: `${agent.name} needs approval before continuing this workflow step.`,
-      expectedResult: `The workflow run advances after Command Inbox approves this step.`,
-      scope: agent.specialty === 'home' ? 'household' : agent.specialty === 'security' ? 'security' : 'system',
-      risk: agent.specialty === 'security' ? 'critical' : 'elevated',
+      reasoning: `${agent.name} needs approval before continuing this ${commandProfile.systemLabel} workflow step.`,
+      expectedResult: `The workflow run advances after Command Inbox approves this ${commandProfile.systemLabel} step.`,
+      scope: commandProfile.scope,
+      risk: commandProfile.risk,
       status: 'pending',
       requestedAt: timestamp,
       execution: {
         status: 'not-started',
         result: 'Waiting in Command Inbox before this workflow step can continue.',
-        rollbackAvailable: agent.specialty === 'home',
+        rollbackAvailable: commandProfile.risk === 'safe',
       },
       workflow: {
         runId: run.id,

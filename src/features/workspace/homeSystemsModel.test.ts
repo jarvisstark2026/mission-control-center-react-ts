@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest';
 import {
   defaultVisibleHomeEnergySeriesIds,
   getHomeEnergyDailyPeak,
+  getHomeEnergyDailySummary,
   getHomeEnergyBalance,
+  getHomeEnergySeriesGroups,
   getHomeEnergySeriesTotals,
   getVisibleHomeEnergySeriesTotals,
   getHomeSystemGroups,
@@ -70,6 +72,26 @@ describe('homeSystemsModel', () => {
     });
     expect(totals.find((series) => series.id === 'evChargeKw')?.totalKwh).toBeGreaterThan(15);
     expect(getHomeEnergyDailyPeak()).toBe(6.2);
+  });
+
+  it('summarizes the daily home energy flow for operator decisions', () => {
+    const summary = getHomeEnergyDailySummary();
+
+    expect(summary.generationKwh).toBe(48.4);
+    expect(summary.consumptionKwh).toBeGreaterThan(70);
+    expect(summary.gridImportKwh).toBeGreaterThan(25);
+    expect(summary.estimatedGridExportKwh).toBeGreaterThanOrEqual(0);
+    expect(summary.flexibleLoadKwh).toBeCloseTo(summary.evKwh + summary.poolKwh, 1);
+    expect(summary.largestLoad.id).toBe('evChargeKw');
+    expect(summary.selfSupplyEstimatePercent).toBeGreaterThan(0);
+  });
+
+  it('groups graph layers by supply, storage, and load', () => {
+    const groups = getHomeEnergySeriesGroups();
+
+    expect(groups.map((group) => group.group)).toEqual(['supply', 'storage', 'load']);
+    expect(groups.find((group) => group.group === 'load')?.series.map((series) => series.id)).toContain('acKw');
+    expect(groups.flatMap((group) => group.series)).toHaveLength(homeEnergySeries.length);
   });
 
   it('filters visible daily energy graph totals without changing source data', () => {

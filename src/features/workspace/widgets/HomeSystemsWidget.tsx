@@ -9,7 +9,9 @@ import { useHomeSystemsData } from '../homeSystemsAdapter';
 import {
   defaultVisibleHomeEnergySeriesIds,
   getHomeEnergyBalance,
+  getHomeEnergyDailySummary,
   getHomeEnergyDailyPeak,
+  getHomeEnergySeriesGroups,
   getHomeEnergySeriesTotals,
   getHomeSystemGroups,
   getHomeSystemHealthSummary,
@@ -78,14 +80,16 @@ export function HomeSystemsWidget({
     () => seriesTotals.filter((series) => visibleSeriesIds.includes(series.id)),
     [seriesTotals, visibleSeriesIds],
   );
+  const dailySummary = useMemo(() => getHomeEnergyDailySummary(dailyProfile), [dailyProfile]);
+  const seriesGroups = useMemo(() => getHomeEnergySeriesGroups(), []);
   const maxKw = useMemo(() => getHomeEnergyDailyPeak(dailyProfile), [dailyProfile]);
   const mainTotals = {
-    grid: seriesTotals.find((series) => series.id === 'gridImportKw')?.totalKwh ?? 0,
-    solar: seriesTotals.find((series) => series.id === 'solarPvKw')?.totalKwh ?? 0,
-    battery: seriesTotals.find((series) => series.id === 'batteryChargeKw')?.totalKwh ?? 0,
-    ev: seriesTotals.find((series) => series.id === 'evChargeKw')?.totalKwh ?? 0,
-    ac: seriesTotals.find((series) => series.id === 'acKw')?.totalKwh ?? 0,
-    sockets: seriesTotals.find((series) => series.id === 'powerSocketsKw')?.totalKwh ?? 0,
+    grid: dailySummary.gridImportKwh,
+    solar: dailySummary.generationKwh,
+    battery: dailySummary.batteryChargeKwh,
+    ev: dailySummary.evKwh,
+    ac: dailySummary.acKwh,
+    sockets: dailySummary.socketsKwh,
   };
   const toggleSeries = (seriesId: HomeEnergySeriesId) => {
     setVisibleSeriesIds((current) => {
@@ -123,14 +127,21 @@ export function HomeSystemsWidget({
       <WorkspaceMetricGrid
         className="mission-control-metrics home-energy-metrics"
         metrics={[
+          { label: 'Daily load', value: formatKwh(dailySummary.consumptionKwh) },
+          { label: 'Daily generation', value: formatKwh(dailySummary.generationKwh) },
           { label: 'Today grid', value: formatKwh(mainTotals.grid) },
-          { label: 'Today solar', value: formatKwh(mainTotals.solar) },
+          { label: 'Grid export', value: formatKwh(dailySummary.estimatedGridExportKwh) },
           { label: 'To battery', value: formatKwh(mainTotals.battery) },
+          { label: 'Battery net', value: `${dailySummary.batteryNetKwh >= 0 ? '+' : ''}${formatKwh(dailySummary.batteryNetKwh)}` },
           { label: 'Car charging', value: formatKwh(mainTotals.ev) },
           { label: 'AC load', value: formatKwh(mainTotals.ac) },
           { label: 'Power slots', value: formatKwh(mainTotals.sockets) },
+          { label: 'Appliances', value: formatKwh(dailySummary.appliancesKwh) },
+          { label: 'Pool', value: formatKwh(dailySummary.poolKwh) },
           { label: 'Net balance', value: `${balance.netKw >= 0 ? '+' : ''}${formatKw(balance.netKw)}` },
           { label: 'Self supply', value: `${balance.selfSupplyPercent}%` },
+          { label: 'Daily self supply', value: `${dailySummary.selfSupplyEstimatePercent}%` },
+          { label: 'Largest load', value: dailySummary.largestLoad.shortLabel },
           { label: 'Battery', value: `${snapshot.batteryPercent}%` },
           { label: 'EV range', value: `${snapshot.evRangeKm} km` },
         ]}
@@ -138,7 +149,7 @@ export function HomeSystemsWidget({
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame home-systems-flow-frame"
-        eyebrow="energy"
+        eyebrow="monitoring"
         title="daily energy graph"
         meta={`${visibleSeries.length} active / ${homeEnergySeries.length} layers`}
       >
@@ -150,23 +161,28 @@ export function HomeSystemsWidget({
             <WorkspaceButton variant="compact" className="home-energy-toggle-master" onClick={() => setVisibleSeriesIds(homeEnergySeries.map((series) => series.id))}>
               All layers
             </WorkspaceButton>
-            {homeEnergySeries.map((series) => {
-              const active = visibleSeriesIds.includes(series.id);
+            {seriesGroups.map((group) => (
+              <div className="home-energy-series-group" key={group.group}>
+                <small>{group.label}</small>
+                {group.series.map((series) => {
+                  const active = visibleSeriesIds.includes(series.id);
 
-              return (
-                <button
-                  key={series.id}
-                  type="button"
-                  className="home-energy-series-toggle"
-                  aria-pressed={active}
-                  onClick={() => toggleSeries(series.id)}
-                  style={{ '--series-color': series.color } as CSSProperties}
-                >
-                  <span />
-                  {series.shortLabel}
-                </button>
-              );
-            })}
+                  return (
+                    <button
+                      key={series.id}
+                      type="button"
+                      className="home-energy-series-toggle"
+                      aria-pressed={active}
+                      onClick={() => toggleSeries(series.id)}
+                      style={{ '--series-color': series.color } as CSSProperties}
+                    >
+                      <span />
+                      {series.shortLabel}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
 
           <div className="home-energy-chart-shell">
@@ -219,11 +235,14 @@ export function HomeSystemsWidget({
           </div>
 
           <div className="home-energy-flow-copy">
-            <EvidenceBlock label="Live balance" title={netDirection}>
+            <EvidenceBlock label="Current state" title={netDirection}>
               Current generation is {formatKw(snapshot.generationKw)} against {formatKw(snapshot.consumptionKw)} home load.
             </EvidenceBlock>
-            <EvidenceBlock label="Useful layers" title="solar / grid / battery / EV / AC / sockets">
-              Toggle layers to isolate where energy went across the day without leaving the home control workflow.
+            <EvidenceBlock label="Daily priority" title={`${dailySummary.largestLoad.shortLabel} is the largest tracked load`}>
+              Flexible loads account for {formatKwh(dailySummary.flexibleLoadKwh)} today. Use proposals below to move them into solar surplus.
+            </EvidenceBlock>
+            <EvidenceBlock label="Evidence for decisions" title="source / trend / impact">
+              These readings are monitoring evidence only. Control proposals still require Command Inbox approval.
             </EvidenceBlock>
           </div>
         </div>

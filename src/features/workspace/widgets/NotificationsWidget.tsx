@@ -4,6 +4,7 @@ import { AttentionCard, StatusSummary } from '../operationalBlocks';
 
 export function NotificationsWidget({ missionControl }: { missionControl: MissionControlRuntime }) {
   const { notifications, telemetry, connection } = missionControl.state;
+  const commandTitleById = new Map(missionControl.state.commands.map((command) => [command.id, command.title]));
   const unreadNotifications = notifications.filter((notification) => !notification.acknowledged);
   const canAcknowledge = canAcknowledgeNotifications(missionControl.role);
   const latestTelemetry = telemetry[0];
@@ -89,7 +90,11 @@ export function NotificationsWidget({ missionControl }: { missionControl: Missio
                     }
                   >
                     <p>{notification.body}</p>
-                    {notification.relatedCommandId ? <small>Related command: {notification.relatedCommandId}</small> : null}
+                    {notification.relatedCommandId ? (
+                      <small>
+                        Related command: {commandTitleById.get(notification.relatedCommandId) ?? notification.relatedCommandId}
+                      </small>
+                    ) : null}
                   </AttentionCard>
                 ))}
               </WorkspaceSectionFrame>

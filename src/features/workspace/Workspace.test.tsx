@@ -221,8 +221,13 @@ describe('Workspace header controls', () => {
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Home systems' }));
     expect(currentRender.getAllByText('energy, safety, automation, and rooms').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText('Daily load').length).toBeGreaterThan(0);
     expect(currentRender.getAllByText('Solar PV').length).toBeGreaterThan(0);
     expect(currentRender.getAllByText('CCTV and doorbell').length).toBeGreaterThan(0);
+    const poolLayerToggle = currentRender.getAllByRole('button', { name: 'Pool' })[0];
+    expect(poolLayerToggle).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(poolLayerToggle);
+    expect(poolLayerToggle).toHaveAttribute('aria-pressed', 'true');
     const solarActionCard = currentRender.getByText('Use solar surplus').closest('.operational-attention-card');
     expect(solarActionCard).toBeInTheDocument();
     fireEvent.click(within(solarActionCard as HTMLElement).getByRole('button', { name: 'Stage proposal' }));
@@ -230,7 +235,7 @@ describe('Workspace header controls', () => {
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Command inbox' }));
-    expect(currentRender.getAllByText('home-systems:energy').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText('Home Systems / energy').length).toBeGreaterThan(0);
   }, 40000);
 
   it('starts workflow runbooks and stages approval steps in Command Inbox', () => {
@@ -245,7 +250,7 @@ describe('Workspace header controls', () => {
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Command inbox' }));
 
-    expect(currentRender.getAllByText('workflow-runbook').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText(/Workflow \//).length).toBeGreaterThan(0);
     expect(currentRender.getAllByText('Jarvis Workflow').length).toBeGreaterThan(0);
   }, 20000);
 

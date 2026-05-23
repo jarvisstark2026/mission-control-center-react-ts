@@ -259,6 +259,53 @@
   cursor: pointer;
 }
 
+.shell-instance-row,
+.shell-arrangement-content {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 6px;
+}
+
+.shell-instance-row strong {
+  margin-left: auto;
+  color: var(--color-text-primary);
+  font-size: 0.57rem;
+  letter-spacing: 0.14em;
+}
+
+.shell-instance-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.shell-instance-status-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: rgba(154, 190, 255, 0.44);
+  box-shadow: 0 0 10px rgba(117, 194, 255, 0.3);
+}
+
+.shell-instance-item.is-saved .shell-instance-status-dot,
+.shell-arrangement-cell.is-saved .shell-instance-status-dot {
+  background: rgba(255, 255, 255, 0.24);
+  box-shadow: none;
+}
+
+.shell-instance-item.is-saved .shell-instance-button,
+.shell-arrangement-cell.is-saved {
+  border-style: dashed;
+  color: var(--color-text-muted);
+}
+
+.shell-instance-item.is-saved .shell-instance-row strong {
+  color: var(--color-text-muted);
+}
+
 .shell-instance-close {
   position: absolute;
   top: 6px;
@@ -346,8 +393,9 @@
   border-color: rgba(154, 190, 255, 0.28);
 }
 
-.shell-instance-list span,
-.shell-instance-button span {
+.shell-instance-name,
+.shell-arrangement-cell > span,
+.shell-arrangement-content span:last-child {
   text-transform: uppercase;
   letter-spacing: 0;
   font-size: 0.72rem;

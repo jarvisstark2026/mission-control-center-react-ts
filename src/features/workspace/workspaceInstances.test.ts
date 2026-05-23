@@ -2,10 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   canCreateWorkspaceExtensionInstance,
+  closeWorkspaceInstance,
   getAdjacentWorkspaceInstance,
+  getOpenAdjacentWorkspaceInstance,
   getWorkspaceActiveModeId,
   getCurrentWorkspaceId,
   getWorkspaceInstances,
+  isWorkspaceInstanceOpen,
   maxWorkspaceExtensionInstances,
   markCurrentWorkspaceExtensionClosed,
   markCurrentWorkspaceExtensionOpen,
@@ -134,6 +137,32 @@ describe('workspace instance registry', () => {
     expect(getAdjacentWorkspaceInstance('main', 'left')?.id).toBe('workspace-left');
     expect(getAdjacentWorkspaceInstance('workspace-right', 'left')?.id).toBe('main');
     expect(getAdjacentWorkspaceInstance('workspace-right', 'right')).toBeNull();
+    expect(getOpenAdjacentWorkspaceInstance('main', 'right')?.id).toBe('workspace-right');
+  });
+
+  it('resolves only open workspaces as edge transfer targets', () => {
+    registerWorkspaceExtensionInstance({
+      id: 'workspace-right',
+      popup: null,
+      url: 'http://127.0.0.1:5173/?role=admin&workspace=extension&workspaceId=workspace-right',
+    });
+    updateWorkspaceInstancePlacement('main', 'center');
+    updateWorkspaceInstancePlacement('workspace-right', 'right');
+
+    const mainWorkspace = getWorkspaceInstances().find((instance) => instance.id === 'main');
+    const rightWorkspace = getWorkspaceInstances().find((instance) => instance.id === 'workspace-right');
+
+    expect(mainWorkspace && isWorkspaceInstanceOpen(mainWorkspace)).toBe(true);
+    expect(rightWorkspace && isWorkspaceInstanceOpen(rightWorkspace)).toBe(true);
+    expect(getOpenAdjacentWorkspaceInstance('main', 'right')?.id).toBe('workspace-right');
+
+    closeWorkspaceInstance('workspace-right');
+
+    const savedRightWorkspace = getWorkspaceInstances().find((instance) => instance.id === 'workspace-right');
+    expect(savedRightWorkspace?.restoreStatus).toBe('restorable');
+    expect(savedRightWorkspace && isWorkspaceInstanceOpen(savedRightWorkspace)).toBe(false);
+    expect(getAdjacentWorkspaceInstance('main', 'right')?.id).toBe('workspace-right');
+    expect(getOpenAdjacentWorkspaceInstance('main', 'right')).toBeNull();
   });
 
   it('supports eight extension workspaces around the main workspace', () => {

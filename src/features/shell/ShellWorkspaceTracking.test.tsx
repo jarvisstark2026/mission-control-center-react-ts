@@ -36,7 +36,7 @@ describe('Shell workspace tracking', () => {
     fireEvent.click(screen.getAllByLabelText('Open workspace setup')[0]);
     const rail = screen.getByLabelText('Workspace navigation');
 
-    expect(within(rail).getByText('Saved - Right')).toBeInTheDocument();
+    expect(within(rail).getByRole('button', { name: /workspace 1, saved, right/i })).toBeInTheDocument();
     expect(within(rail).queryByRole('button', { name: /close workspace 1/i })).not.toBeInTheDocument();
   });
 });

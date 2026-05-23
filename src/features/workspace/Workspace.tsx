@@ -48,7 +48,8 @@ import { WorkspaceWidgetCard, type WorkspaceWidgetRuntimeProps } from './workspa
 import { closeWorkspaceExtensionWindow, closeWorkspacePanelWindow, openWorkspaceExtensionWindow, returnToWorkspaceHub } from './workspacePanelWindows';
 import { getCurrentShellRole, isWorkspaceExtensionUrl } from './workspacePanelRouting';
 import {
-  getAdjacentWorkspaceInstance,
+  getOpenAdjacentWorkspaceInstance,
+  isWorkspaceInstanceOpen,
   getWorkspaceActiveModeId,
   getWorkspaceInstanceId,
   getWorkspaceInstances,
@@ -384,6 +385,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
   const hasStoredWidgets = hasStoredWidgetState(currentWorkspaceId);
   const widgetsRef = useRef(initialWidgets);
   const interactionRef = useRef<InteractionState | null>(null);
+  const maximizedWidgetSnapshotsRef = useRef<Record<string, Pick<WorkspaceWidget, 'x' | 'y' | 'width' | 'height'>>>({});
   const transferAnimationTimeoutRef = useRef<number | null>(null);
   const transferCommitTimeoutsRef = useRef<Array<{ id: number; widgetId: string }>>([]);
   const compactLayoutAppliedRef = useRef(hasStoredWidgets || isWorkspaceExtension);
@@ -1078,7 +1080,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
         visibleTop: 0,
         widget: currentWidget,
       });
-      const transferTarget = transferDirection ? getAdjacentWorkspaceInstance(interaction.workspaceId, transferDirection) : null;
+      const transferTarget = transferDirection ? getOpenAdjacentWorkspaceInstance(interaction.workspaceId, transferDirection) : null;
 
       if (transferDirection && transferTarget && transferTarget.id !== interaction.workspaceId) {
         const transferredWidget = transferWidgetToWorkspace({
@@ -1121,6 +1123,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     const isClosed = !currentWidget.open;
     const edge = interaction.edge ?? 'corner';
     let nextLeft = interaction.startLeft;
+    let nextTop = interaction.startTop;
     let nextWidth = interaction.startWidth;
     let nextHeight = interaction.startHeight;
 
@@ -1129,6 +1132,9 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
       nextWidth = interaction.startWidth - deltaX;
     } else if (edge === 'right') {
       nextWidth = interaction.startWidth + deltaX;
+    } else if (edge === 'top') {
+      nextTop = interaction.startTop + deltaY;
+      nextHeight = interaction.startHeight - deltaY;
     } else if (edge === 'bottom') {
       nextHeight = interaction.startHeight + deltaY;
     } else {
@@ -1139,6 +1145,12 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     if (isClosed) {
       nextHeight = interaction.startHeight;
       if (edge !== 'left') nextLeft = interaction.startLeft;
+      if (edge === 'top') nextTop = interaction.startTop;
+    }
+
+    if (edge === 'top' && nextTop < 0) {
+      nextHeight = interaction.startHeight + interaction.startTop;
+      nextTop = 0;
     }
 
     nextWidth = Math.max(currentWidget.minWidth, nextWidth);
@@ -1148,13 +1160,17 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
       nextLeft = interaction.startLeft + (interaction.startWidth - currentWidget.minWidth);
     }
 
+    if (edge === 'top' && nextHeight === currentWidget.minHeight) {
+      nextTop = Math.max(0, interaction.startTop + (interaction.startHeight - currentWidget.minHeight));
+    }
+
     setWidgets((current) => {
       const next = current.map((widget) =>
         widget.id === interaction.id
           ? {
               ...widget,
               x: edge === 'left' ? nextLeft : widget.x,
-              y: widget.y,
+              y: edge === 'top' ? nextTop : widget.y,
               width: nextWidth,
               height: nextHeight,
             }
@@ -1224,7 +1240,56 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     });
   };
 
+  const maximizeWidget = (id: string) => {
+    const canvasSize = getEffectiveCanvasSize(canvasRef.current, bounds);
+
+    setWidgets((current) => {
+      const highest = current.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
+      const existingSnapshot = maximizedWidgetSnapshotsRef.current[id];
+
+      const next = current.map((widget) => {
+        if (widget.id !== id) return widget;
+
+        if (existingSnapshot) {
+          return {
+            ...widget,
+            ...existingSnapshot,
+            open: true,
+            hidden: false,
+            zIndex: highest + 1,
+          };
+        }
+
+        maximizedWidgetSnapshotsRef.current[id] = {
+          x: widget.x,
+          y: widget.y,
+          width: widget.width,
+          height: widget.height,
+        };
+
+        return {
+          ...widget,
+          x: 0,
+          y: 0,
+          width: Math.max(widget.minWidth, Math.floor(canvasSize.width)),
+          height: Math.max(widget.minHeight, Math.floor(canvasSize.height)),
+          open: true,
+          hidden: false,
+          zIndex: highest + 1,
+        };
+      });
+
+      if (existingSnapshot) {
+        delete maximizedWidgetSnapshotsRef.current[id];
+      }
+
+      widgetsRef.current = next;
+      return next;
+    });
+  };
+
   const closeWidget = (id: string) => {
+    delete maximizedWidgetSnapshotsRef.current[id];
     setWidgets((current) =>
       current.map((widget) =>
         widget.id === id
@@ -1519,6 +1584,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
   const onStartResize = useEventCallback(startResize);
   const onToggleOpen = useEventCallback(toggleWidget);
   const onTogglePin = useEventCallback(toggleWidgetPin);
+  const onMaximize = useEventCallback(maximizeWidget);
   const onRecenter = useEventCallback(recenterWidget);
   const onClose = useEventCallback(closeWidget);
   const onBrowseFiles = useEventCallback(importLocalFiles);
@@ -1540,7 +1606,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
       void storageRevision;
 
       return workspaceInstances
-        .filter((workspace) => workspace.id !== currentWorkspaceId)
+        .filter((workspace) => workspace.id !== currentWorkspaceId && isWorkspaceInstanceOpen(workspace))
         .map((workspace) => ({
           workspaceId: workspace.id,
           label: workspace.label,
@@ -1552,7 +1618,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
   );
   const workspaceWidgetGroups = useMemo(
     () =>
-      workspaceInstances.map((workspace) => {
+      workspaceInstances.filter(isWorkspaceInstanceOpen).map((workspace) => {
         if (workspace.id === currentWorkspaceId) {
           return {
             workspaceId: workspace.id,
@@ -1578,6 +1644,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     onStartResize,
     onToggleOpen,
     onTogglePin,
+    onMaximize,
     onRecenter,
     onClose,
     localFiles,

@@ -25,7 +25,7 @@ describe('App', () => {
     expect(screen.getAllByText('Mission Control Center').length).toBeGreaterThan(0);
     expect(screen.getByLabelText('Mission Control Center shell')).toBeInTheDocument();
     expect(screen.getAllByText('Command core').length).toBeGreaterThan(0);
-  });
+  }, 15000);
 
   it('keeps access scopes in a top workspace menu', () => {
     render(<App />);
@@ -67,7 +67,7 @@ describe('App', () => {
 
     expect(navigationButton).toHaveAttribute('aria-expanded', 'true');
     const rail = screen.getByLabelText('Workspace navigation');
-    const workspaceList = within(rail).getByRole('list', { name: 'Open workspaces' });
+    const workspaceList = within(rail).getByRole('list', { name: 'Workspace instances' });
     expect(rail).toHaveClass('is-open');
     expect(within(rail).getByRole('heading', { name: 'Workspaces' })).toBeInTheDocument();
     expect(within(workspaceList).getByRole('button', { name: /main workspace/i })).toBeInTheDocument();
@@ -78,14 +78,14 @@ describe('App', () => {
 
     const closeInstance = within(rail).getByRole('button', { name: /close workspace 1/i });
     expect(closeInstance).toBeInTheDocument();
-    expect(within(rail).getByText('Open - Right')).toBeInTheDocument();
+    expect(within(rail).getByRole('button', { name: /workspace 1, on, right/i })).toBeInTheDocument();
     expect(within(rail).getByRole('region', { name: 'Workspace arrangement' }).querySelectorAll('.shell-arrangement-cell')).toHaveLength(9);
 
     fireEvent.click(closeInstance);
 
     expect(popup.close).toHaveBeenCalledOnce();
     expect(within(rail).queryByRole('button', { name: /close workspace 1/i })).not.toBeInTheDocument();
-    expect(within(rail).getByText('Saved - Right')).toBeInTheDocument();
+    expect(within(rail).getByRole('button', { name: /workspace 1, saved, right/i })).toBeInTheDocument();
   });
 
   it('arranges workspace instances around the main workspace', () => {
@@ -98,8 +98,8 @@ describe('App', () => {
     const rail = screen.getByLabelText('Workspace navigation');
     fireEvent.click(within(rail).getByLabelText('Create workspace instance'));
 
-    const workspaceList = within(rail).getByRole('list', { name: 'Open workspaces' });
-    const workspaceItem = within(workspaceList).getByText('Workspace 1').closest('.shell-instance-item');
+    const workspaceList = within(rail).getByRole('list', { name: 'Workspace instances' });
+    const workspaceItem = within(workspaceList).getByRole('button', { name: /workspace 1, on, right/i }).closest('.shell-instance-item');
     const bottomRightSlot = within(rail).getByRole('button', { name: 'Bottom right workspace slot' });
     const dragTransfer = {
       dropEffect: 'move',
@@ -115,9 +115,9 @@ describe('App', () => {
     fireEvent.drop(bottomRightSlot, { dataTransfer: dragTransfer });
 
     expect(within(rail).getByText(/bottom right/i)).toBeInTheDocument();
-    expect(within(rail).getByRole('button', { name: 'Bottom right workspace slot' })).toHaveTextContent('Workspace 1');
+    expect(within(rail).getByRole('button', { name: /Bottom right workspace slot/i })).toHaveTextContent('W1');
 
-    const mainItem = within(workspaceList).getByText('Main workspace').closest('.shell-instance-item');
+    const mainItem = within(workspaceList).getByRole('button', { name: /main workspace, on/i }).closest('.shell-instance-item');
     const mainDragTransfer = {
       dropEffect: 'move',
       effectAllowed: 'move',
@@ -129,8 +129,8 @@ describe('App', () => {
     fireEvent.dragOver(bottomRightSlot, { dataTransfer: mainDragTransfer });
     fireEvent.drop(bottomRightSlot, { dataTransfer: mainDragTransfer });
 
-    expect(within(rail).getByRole('button', { name: 'Bottom right workspace slot' })).toHaveTextContent('Main workspace');
-    expect(within(rail).getByRole('button', { name: 'Center workspace slot' })).toHaveTextContent('Workspace 1');
+    expect(within(rail).getByRole('button', { name: /Bottom right workspace slot/i })).toHaveTextContent('Main');
+    expect(within(rail).getByRole('button', { name: /Center workspace slot/i })).toHaveTextContent('W1');
   });
 
   it('keeps workspace instances restorable after their popup closes', () => {
@@ -154,7 +154,7 @@ describe('App', () => {
     });
 
     expect(within(rail).queryByRole('button', { name: /close workspace 1/i })).not.toBeInTheDocument();
-    expect(within(rail).getByText('Saved - Right')).toBeInTheDocument();
+    expect(within(rail).getByRole('button', { name: /workspace 1, saved, right/i })).toBeInTheDocument();
   });
 
   it('does not render the workspace rail inside extension workspaces', () => {

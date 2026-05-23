@@ -14,6 +14,7 @@ type WorkspaceWidgetCardProps = {
   onStartResize: (event: ReactPointerEvent<HTMLElement>, id: string, edge: ResizeEdge) => void;
   onToggleOpen: (id: string) => void;
   onTogglePin: (id: string) => void;
+  onMaximize: (id: string) => void;
   onRecenter: (id: string) => void;
   onClose: (id: string) => void;
   showChrome?: boolean;
@@ -141,6 +142,7 @@ function WorkspaceWidgetCardComponent({
   onStartResize,
   onToggleOpen,
   onTogglePin,
+  onMaximize,
   onRecenter,
   onClose,
   showChrome = true,
@@ -155,6 +157,7 @@ function WorkspaceWidgetCardComponent({
       onStartResize={onStartResize}
       onToggleOpen={onToggleOpen}
       onTogglePin={onTogglePin}
+      onMaximize={onMaximize}
       onRecenter={onRecenter}
       onClose={onClose}
       showChrome={showChrome}

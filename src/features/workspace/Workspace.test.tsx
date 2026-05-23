@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Workspace } from './Workspace';
-import { registerWorkspaceExtensionInstance } from './workspaceInstances';
+import { closeWorkspaceInstance, registerWorkspaceExtensionInstance } from './workspaceInstances';
 import { getWorkspaceWidgetStorageKey, saveStoredWidgetState, workspaceStorageKey } from './workspaceStorage';
 import { widgetPresets } from './workspaceWidgetCatalog';
 
@@ -39,6 +39,14 @@ describe('Workspace header controls', () => {
   const expectWidgetPosition = (widget: HTMLElement | null, x: number, y: number) => {
     expect(widget).toHaveStyle({ left: '0px', top: '0px' });
     expect(widget?.style.translate).toBe(`${x}px ${y}px`);
+  };
+
+  const readWidgetTranslate = (widget: HTMLElement) => {
+    const [x = '0px', y = '0px'] = widget.style.translate.split(' ');
+    return {
+      x: Number.parseFloat(x),
+      y: Number.parseFloat(y),
+    };
   };
 
   const getWidget = (container: HTMLElement, kind: string) => {
@@ -594,6 +602,80 @@ describe('Workspace header controls', () => {
     expectWidgetPosition(commandCoreWidget, 44, 74);
   }, 10000);
 
+  it('resizes open widgets from the top edge without a visible grip', () => {
+    const { container } = render(<Workspace />);
+    const canvas = container.querySelector<HTMLElement>('.workspace-canvas');
+    const overviewWidget = container.querySelector<HTMLElement>('.workspace-widget.kind-overview');
+
+    expect(canvas).toBeInTheDocument();
+    expect(overviewWidget).toBeInTheDocument();
+
+    Object.defineProperty(canvas, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({
+        bottom: 800,
+        height: 800,
+        left: 0,
+        right: 1200,
+        top: 0,
+        width: 1200,
+        x: 0,
+        y: 0,
+        toJSON: () => undefined,
+      }),
+    });
+
+    const topHandle = within(overviewWidget as HTMLElement).getByLabelText('Resize Command core from the top edge');
+    expect(topHandle.querySelector('.widget-resize-grip')).not.toBeInTheDocument();
+
+    const startPosition = readWidgetTranslate(overviewWidget as HTMLElement);
+    const startHeight = Number.parseFloat((overviewWidget as HTMLElement).style.height);
+
+    fireEvent.pointerDown(topHandle, { button: 0, clientX: 220, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(canvas as HTMLElement, { clientX: 220, clientY: 80, pointerId: 1 });
+
+    expectWidgetPosition(overviewWidget, startPosition.x, startPosition.y - 20);
+    expect(overviewWidget).toHaveStyle({ height: `${startHeight + 20}px` });
+  }, 10000);
+
+  it('fills the current workspace from the shared widget toolbar and restores the previous size', () => {
+    const { container } = render(<Workspace />);
+    const canvas = container.querySelector<HTMLElement>('.workspace-canvas');
+    const overviewWidget = container.querySelector<HTMLElement>('.workspace-widget.kind-overview');
+
+    expect(canvas).toBeInTheDocument();
+    expect(overviewWidget).toBeInTheDocument();
+
+    Object.defineProperty(canvas, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({
+        bottom: 620,
+        height: 620,
+        left: 0,
+        right: 900,
+        top: 0,
+        width: 900,
+        x: 0,
+        y: 0,
+        toJSON: () => undefined,
+      }),
+    });
+
+    const startPosition = readWidgetTranslate(overviewWidget as HTMLElement);
+    const startWidth = (overviewWidget as HTMLElement).style.width;
+    const startHeight = (overviewWidget as HTMLElement).style.height;
+
+    fireEvent.click(within(overviewWidget as HTMLElement).getByLabelText('Fill workspace with Command core'));
+
+    expectWidgetPosition(overviewWidget, 0, 0);
+    expect(overviewWidget).toHaveStyle({ width: '900px', height: '620px' });
+
+    fireEvent.click(within(overviewWidget as HTMLElement).getByLabelText('Fill workspace with Command core'));
+
+    expectWidgetPosition(overviewWidget, startPosition.x, startPosition.y);
+    expect(overviewWidget).toHaveStyle({ width: startWidth, height: startHeight });
+  }, 10000);
+
   it('pins visible widgets from Manager rows', () => {
     const { container } = render(<Workspace />);
     const currentRender = within(container);
@@ -832,6 +914,52 @@ describe('Workspace header controls', () => {
 
     expectWidgetPosition(overviewWidget, 610, 94);
     expect(container.querySelector('.workspace-widget.kind-overview')).toBeInTheDocument();
+  });
+
+  it('keeps widgets inside a screen edge when the adjacent workspace is saved', () => {
+    registerWorkspaceExtensionInstance({
+      id: 'workspace-right',
+      popup: null,
+      url: 'http://127.0.0.1:5173/?role=admin&workspace=extension&workspaceId=workspace-right',
+    });
+    closeWorkspaceInstance('workspace-right');
+
+    const { container } = render(<Workspace />);
+    const canvas = container.querySelector<HTMLElement>('.workspace-canvas');
+    const plane = container.querySelector<HTMLElement>('.workspace-canvas-plane');
+    const overviewWidget = container.querySelector<HTMLElement>('.workspace-widget.kind-overview');
+
+    expect(canvas).toBeInTheDocument();
+    expect(plane).toBeInTheDocument();
+    expect(overviewWidget).toBeInTheDocument();
+    unpinCommandCore(overviewWidget as HTMLElement);
+
+    const rect = {
+      bottom: 800,
+      height: 800,
+      left: 0,
+      right: 1000,
+      top: 0,
+      width: 1000,
+      x: 0,
+      y: 0,
+      toJSON: () => undefined,
+    };
+    Object.defineProperty(canvas, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => rect,
+    });
+    Object.defineProperty(plane, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => rect,
+    });
+
+    fireEvent.pointerDown(overviewWidget as HTMLElement, { button: 0, clientX: 100, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(canvas as HTMLElement, { clientX: 1000, clientY: 120, pointerId: 1 });
+
+    expectWidgetPosition(overviewWidget, 610, 94);
+    expect(overviewWidget).not.toHaveClass('is-transfer-outgoing');
+    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('workspace-right'))).toBeNull();
   });
 
   it('moves a dragged widget to the adjacent workspace edge target', () => {

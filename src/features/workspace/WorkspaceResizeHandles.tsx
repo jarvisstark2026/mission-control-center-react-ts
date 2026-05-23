@@ -2,12 +2,12 @@ import type { PointerEvent as ReactPointerEvent } from 'react';
 
 import type { WorkspaceWidget } from './workspaceTypes';
 
-export type ResizeEdge = 'corner' | 'left' | 'right' | 'bottom';
+export type ResizeEdge = 'corner' | 'left' | 'right' | 'top' | 'bottom';
 
 type ResizeHandleSpec = {
   edge: ResizeEdge;
   className: string;
-  gripClassName: string;
+  gripClassName?: string;
   label: string;
 };
 
@@ -29,6 +29,11 @@ const resizeHandleSpecs: ResizeHandleSpec[] = [
     className: 'widget-resize-handle-right widget-resize-handle-side',
     gripClassName: 'widget-resize-grip-vertical',
     label: 'Resize {title} from the right edge',
+  },
+  {
+    edge: 'top',
+    className: 'widget-resize-handle-top',
+    label: 'Resize {title} from the top edge',
   },
   {
     edge: 'bottom',
@@ -66,7 +71,7 @@ export function WidgetResizeHandles({
             aria-label={label}
             title={label}
           >
-            <span aria-hidden="true" className={`widget-resize-grip ${handle.gripClassName}`} />
+            {handle.gripClassName ? <span aria-hidden="true" className={`widget-resize-grip ${handle.gripClassName}`} /> : null}
           </button>
         );
       })}

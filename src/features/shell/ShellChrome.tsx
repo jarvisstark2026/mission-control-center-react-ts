@@ -7,6 +7,7 @@ import { useDismissibleMenu } from '../../lib/useDismissibleMenu';
 import { Workspace } from '../workspace/Workspace';
 import { WorkspaceNewScreenButton } from '../workspace/WorkspaceScreenButton';
 import {
+  isWorkspaceInstanceOpen,
   maxWorkspaceExtensionInstances,
   type WorkspaceInstance,
   type WorkspacePlacement,
@@ -120,6 +121,13 @@ export function ShellRail({
   const getPlacedInstance = (placement: WorkspaceInstance['placement']) =>
     workspaceInstances.find((instance) => instance.placement === placement);
   const getPlacementLabel = (placement: WorkspaceInstance['placement']) => placementLabels[placement];
+  const getWorkspaceStatusLabel = (instance: WorkspaceInstance) => (isWorkspaceInstanceOpen(instance) ? 'ON' : 'SAVED');
+  const getWorkspaceStatusClass = (instance: WorkspaceInstance) => (isWorkspaceInstanceOpen(instance) ? 'is-on' : 'is-saved');
+  const getCompactWorkspaceLabel = (instance: WorkspaceInstance) => {
+    if (instance.kind === 'main') return 'Main';
+    const number = instance.label.match(/\d+/)?.[0];
+    return number ? `W${number}` : instance.label;
+  };
   const arrangementSlots: WorkspaceInstance['placement'][] = [...workspacePlacements];
   const isAtWorkspaceCapacity = extensionInstances.length >= maxWorkspaceExtensionInstances;
   const startWorkspaceDrag = (event: DragEvent<HTMLElement>, id: string) => {
@@ -158,13 +166,13 @@ export function ShellRail({
             onClick={onCreateWorkspaceInstance}
           />
         </div>
-        <p className="shell-instance-copy">Open surfaces stay in the current workspace. Extension instances are listed here.</p>
+        <p className="shell-instance-copy">ON accepts edge transfers. SAVED keeps its layout.</p>
 
-        <ul className="shell-instance-list" aria-label="Open workspaces">
+        <ul className="shell-instance-list" aria-label="Workspace instances">
           {workspaceInstances.map((instance) => (
             <li
               key={instance.id}
-              className={classNames('shell-instance-item', instance.active && 'is-active')}
+              className={classNames('shell-instance-item', instance.active && 'is-active', getWorkspaceStatusClass(instance))}
               data-workspace-instance-id={instance.id}
               draggable
               onDragStart={(event) => startWorkspaceDrag(event, instance.id)}
@@ -173,17 +181,18 @@ export function ShellRail({
               <button
                 type="button"
                 className="shell-instance-button"
+                aria-label={`${instance.label}, ${getWorkspaceStatusLabel(instance)}, ${getPlacementLabel(instance.placement)}`}
                 aria-current={instance.active ? 'page' : undefined}
                 onClick={instance.kind === 'main' ? onOpenMainWorkspace : () => onOpenWorkspaceInstance(instance.id)}
               >
-                <span>{instance.label}</span>
-                <small>
-                  {instance.kind === 'main'
-                    ? `Primary workspace - ${getPlacementLabel(instance.placement)}`
-                    : `${instance.active ? 'Current' : instance.restoreStatus === 'open' ? 'Open' : 'Saved'} - ${getPlacementLabel(instance.placement)}`}
-                </small>
+                <span className="shell-instance-row">
+                  <span className="shell-instance-status-dot" aria-hidden="true" />
+                  <span className="shell-instance-name">{getCompactWorkspaceLabel(instance)}</span>
+                  <strong>{getWorkspaceStatusLabel(instance)}</strong>
+                </span>
+                <small>{getPlacementLabel(instance.placement)}</small>
               </button>
-              {instance.kind === 'extension' && instance.restoreStatus === 'open' ? (
+              {instance.kind === 'extension' && isWorkspaceInstanceOpen(instance) ? (
                 <button
                   type="button"
                   className="shell-instance-close"
@@ -212,11 +221,12 @@ export function ShellRail({
                     'shell-arrangement-cell',
                     placedInstance?.kind === 'main' && 'shell-arrangement-main',
                     placedInstance && 'is-occupied',
+                    placedInstance && getWorkspaceStatusClass(placedInstance),
                     draggedWorkspaceId && 'is-drop-target',
                   )}
                   data-placement={placement}
                   draggable={Boolean(placedInstance)}
-                  aria-label={`${getPlacementLabel(placement)} workspace slot`}
+                  aria-label={`${getPlacementLabel(placement)} workspace slot${placedInstance ? `, ${getWorkspaceStatusLabel(placedInstance)}` : ''}`}
                   onDragStart={placedInstance ? (event) => startWorkspaceDrag(event, placedInstance.id) : undefined}
                   onDragEnd={placedInstance ? () => setDraggedWorkspaceId(null) : undefined}
                   onDragOver={(event) => {
@@ -225,7 +235,14 @@ export function ShellRail({
                   }}
                   onDrop={(event) => moveWorkspaceToPlacement(event, placement)}
                 >
-                  <span>{placedInstance?.label ?? getPlacementLabel(placement)}</span>
+                  {placedInstance ? (
+                    <span className="shell-arrangement-content">
+                      <span className="shell-instance-status-dot" aria-hidden="true" />
+                      <span>{getCompactWorkspaceLabel(placedInstance)}</span>
+                    </span>
+                  ) : (
+                    <span>{getPlacementLabel(placement)}</span>
+                  )}
                 </button>
               );
             })}

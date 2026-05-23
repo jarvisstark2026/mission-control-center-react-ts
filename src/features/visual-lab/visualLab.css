@@ -1,7 +1,7 @@
 .visual-lab {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 0;
   overflow: hidden;
   pointer-events: none;
   isolation: isolate;
@@ -12,32 +12,30 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 40%, rgba(102, 154, 255, 0.12), transparent 34%),
-    radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.08), transparent 20%),
-    radial-gradient(circle at 84% 76%, rgba(255, 255, 255, 0.07), transparent 24%);
-  opacity: 0.95;
-  filter: blur(6px);
+    radial-gradient(circle at 50% 42%, rgba(86, 221, 255, 0.08), transparent 32%),
+    radial-gradient(circle at 18% 22%, rgba(255, 255, 255, 0.045), transparent 19%),
+    radial-gradient(circle at 84% 76%, rgba(255, 188, 92, 0.036), transparent 24%);
+  opacity: 0.82;
+  filter: blur(5px);
 }
 
 .visual-lab__grid {
   position: absolute;
   inset: -8% -2% -10%;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.08) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(93, 153, 255, 0.1), rgba(255, 255, 255, 0.02));
-  background-size: 90px 90px, 90px 90px, 100% 100%;
+    linear-gradient(rgba(86, 221, 255, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(86, 221, 255, 0.055) 1px, transparent 1px),
+    radial-gradient(circle at center, rgba(86, 221, 255, 0.08), rgba(255, 255, 255, 0.012) 52%, transparent 76%);
+  background-size: 72px 72px, 72px 72px, 100% 100%;
   background-position: center;
-  opacity: 0.2;
-  transform: perspective(1200px) rotateX(58deg) translateY(17%);
-  transform-origin: center bottom;
-  mask-image: radial-gradient(circle at center, black 0%, black 58%, transparent 100%);
-  animation: visualLabDrift 18s ease-in-out infinite alternate;
+  opacity: 0.16;
+  mask-image: radial-gradient(circle at center, black 0%, black 52%, transparent 100%);
+  animation: visualLabDrift 22s linear infinite;
 }
 
 .visual-lab__stage {
   position: absolute;
-  inset: 18% 10% 12%;
+  inset: 14% 8% 10%;
   display: grid;
   grid-template-columns: 1fr;
   align-items: center;
@@ -52,60 +50,137 @@
 
 .visual-lab__orb-shell {
   position: relative;
-  width: min(100%, 36rem);
+  width: min(72vw, 34rem);
   aspect-ratio: 1;
   display: grid;
   place-items: center;
+  opacity: 0.86;
 }
 
 .visual-lab__orb-halo,
 .visual-lab__orb-core,
 .visual-lab__orb-ring,
+.visual-lab__orb-arc,
+.visual-lab__neural-net,
+.visual-lab__waveform,
 .visual-lab__orb-glint {
   position: absolute;
   border-radius: 50%;
 }
 
 .visual-lab__orb-halo {
-  inset: 10%;
-  background: radial-gradient(circle, rgba(97, 142, 228, 0.18), transparent 68%);
-  filter: blur(16px);
-  animation: visualLabPulse 7s ease-in-out infinite;
+  inset: 8%;
+  background:
+    radial-gradient(circle, rgba(86, 221, 255, 0.1), transparent 62%),
+    radial-gradient(circle, rgba(255, 188, 92, 0.05), transparent 72%);
+  filter: blur(14px);
+  animation: visualLabPulse 6.5s ease-in-out infinite;
 }
 
 .visual-lab__orb-core {
-  inset: 22%;
+  inset: 34%;
   background:
-    radial-gradient(circle at 50% 50%, rgba(83, 135, 216, 0.92), rgba(36, 74, 140, 0.92) 54%, rgba(9, 18, 36, 0.98) 74%),
-    radial-gradient(circle at 38% 34%, rgba(125, 183, 255, 0.18), transparent 32%);
+    radial-gradient(circle at 50% 50%, rgba(86, 221, 255, 0.2), rgba(86, 221, 255, 0.065) 48%, transparent 72%),
+    conic-gradient(from 40deg, transparent 0deg, rgba(86, 221, 255, 0.22) 42deg, transparent 74deg, rgba(255, 188, 92, 0.16) 136deg, transparent 176deg, rgba(86, 221, 255, 0.18) 270deg, transparent 318deg);
   box-shadow:
-    inset 0 0 22px rgba(255, 255, 255, 0.08),
-    0 0 30px rgba(107, 164, 255, 0.2);
-  animation: visualLabFloat 10s ease-in-out infinite alternate;
+    inset 0 0 18px rgba(255, 255, 255, 0.055),
+    0 0 28px rgba(86, 221, 255, 0.18);
+  animation: visualLabBreath 3.8s ease-in-out infinite;
 }
 
 .visual-lab__orb-ring {
-  inset: 14%;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: inset 0 0 18px rgba(255, 255, 255, 0.03);
+  inset: 18%;
+  border: 1px solid rgba(86, 221, 255, 0.12);
+  box-shadow: inset 0 0 18px rgba(86, 221, 255, 0.025);
 }
 
 .visual-lab__orb-ring--a {
-  transform: rotateX(72deg) rotate(22deg);
+  animation: visualLabRotate 18s linear infinite;
 }
 
 .visual-lab__orb-ring--b {
-  inset: 18%;
-  transform: rotateX(72deg) rotate(-32deg);
+  inset: 26%;
+  border-color: rgba(255, 188, 92, 0.11);
+  animation: visualLabRotateReverse 14s linear infinite;
+}
+
+.visual-lab__orb-arc {
+  background:
+    conic-gradient(from 0deg, transparent 0deg 24deg, rgba(86, 221, 255, 0.28) 24deg 58deg, transparent 58deg 128deg, rgba(255, 188, 92, 0.2) 128deg 154deg, transparent 154deg 254deg, rgba(86, 221, 255, 0.22) 254deg 288deg, transparent 288deg 360deg);
+  mask: radial-gradient(circle, transparent 61%, black 62%, black 66%, transparent 67%);
+}
+
+.visual-lab__orb-arc--outer {
+  inset: 4%;
+  animation: visualLabRotate 26s linear infinite;
+}
+
+.visual-lab__orb-arc--inner {
+  inset: 14%;
+  opacity: 0.74;
+  animation: visualLabRotateReverse 18s linear infinite;
+}
+
+.visual-lab__neural-net {
+  inset: 24%;
+  background:
+    linear-gradient(20deg, transparent 26%, rgba(86, 221, 255, 0.16) 26.3%, transparent 27.2%),
+    linear-gradient(132deg, transparent 35%, rgba(86, 221, 255, 0.12) 35.3%, transparent 36.2%),
+    linear-gradient(72deg, transparent 46%, rgba(255, 188, 92, 0.1) 46.2%, transparent 47.1%);
+  opacity: 0.78;
+  animation: visualLabPulse 4.8s ease-in-out infinite;
+}
+
+.visual-lab__node {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgba(210, 239, 255, 0.72);
+  box-shadow: 0 0 12px rgba(86, 221, 255, 0.52);
+  animation: visualLabNode 2.8s ease-in-out infinite;
+}
+
+.visual-lab__node--1 { left: 18%; top: 26%; animation-delay: -0.2s; }
+.visual-lab__node--2 { left: 38%; top: 16%; animation-delay: -0.7s; }
+.visual-lab__node--3 { left: 68%; top: 24%; animation-delay: -1.1s; }
+.visual-lab__node--4 { left: 24%; top: 52%; animation-delay: -1.5s; }
+.visual-lab__node--5 { left: 50%; top: 46%; animation-delay: -0.4s; }
+.visual-lab__node--6 { left: 76%; top: 52%; animation-delay: -1.8s; }
+.visual-lab__node--7 { left: 34%; top: 76%; animation-delay: -2.1s; }
+.visual-lab__node--8 { left: 58%; top: 82%; animation-delay: -0.9s; }
+.visual-lab__node--9 { left: 82%; top: 72%; animation-delay: -2.4s; }
+
+.visual-lab__waveform {
+  left: 50%;
+  bottom: 18%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 42%;
+  height: 36px;
+  border-radius: 0;
+  transform: translateX(-50%);
+}
+
+.visual-lab__waveform span {
+  width: 2px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(86, 221, 255, 0.42);
+  box-shadow: 0 0 10px rgba(86, 221, 255, 0.24);
+  animation: visualLabWave 1.6s ease-in-out infinite;
+  animation-delay: calc(var(--bar-index) * -95ms);
 }
 
 @keyframes visualLabDrift {
   from {
-    transform: perspective(1200px) rotateX(58deg) translateY(17%) translateX(-0.6%);
+    background-position: center, center, 48% 50%;
   }
 
   to {
-    transform: perspective(1200px) rotateX(58deg) translateY(15.5%) translateX(0.8%);
+    background-position: center, center, 52% 51%;
   }
 }
 
@@ -122,30 +197,96 @@
   }
 }
 
-@keyframes visualLabFloat {
+@keyframes visualLabBreath {
   from {
-    transform: translate3d(-1px, 6px, 0) scale(0.995);
+    transform: scale(0.96);
+    opacity: 0.66;
+  }
+
+  50% {
+    transform: scale(1.05);
+    opacity: 0.94;
   }
 
   to {
-    transform: translate3d(1px, -8px, 0) scale(1.01);
+    transform: scale(0.98);
+    opacity: 0.72;
+  }
+}
+
+@keyframes visualLabRotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes visualLabRotateReverse {
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes visualLabNode {
+  0%,
+  100% {
+    transform: scale(0.82);
+    opacity: 0.42;
+  }
+
+  45% {
+    transform: scale(1.46);
+    opacity: 0.96;
+  }
+}
+
+@keyframes visualLabWave {
+  0%,
+  100% {
+    transform: scaleY(0.58);
+    opacity: 0.42;
+  }
+
+  50% {
+    transform: scaleY(1.9);
+    opacity: 0.92;
   }
 }
 
 @media (max-width: 980px) {
   .visual-lab__stage {
-    inset: 16% 3% 8%;
+    inset: 18% 2% 8%;
     grid-template-columns: 1fr;
   }
 
   .visual-lab__orb-shell {
-    width: min(88vw, 36rem);
+    width: min(96vw, 28rem);
+    opacity: 0.54;
+  }
+}
+
+@media (max-width: 560px) {
+  .visual-lab__stage {
+    inset: 20% -10% 10%;
+  }
+
+  .visual-lab__orb-shell {
+    width: min(128vw, 26rem);
+    opacity: 0.34;
+  }
+
+  .visual-lab__waveform {
+    bottom: 22%;
+    width: 36%;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .visual-lab__grid,
   .visual-lab__orb-halo,
-  .visual-lab__orb-core {
+  .visual-lab__orb-core,
+  .visual-lab__orb-ring,
+  .visual-lab__orb-arc,
+  .visual-lab__node,
+  .visual-lab__waveform span {
     animation: none;
   }
 

@@ -27,10 +27,6 @@ type TrackerGroupStyle = CSSProperties & {
   '--tracker-window-count': number;
 };
 
-type TrackerWindowStyle = CSSProperties & {
-  '--tracker-arc-y': string;
-};
-
 function getShortWorkspaceLabel(label: string, active: boolean) {
   if (active) return 'M';
 
@@ -200,16 +196,6 @@ export function WorkspaceWindowTracker({
     '--tracker-window-count': rows.length,
   });
 
-  const getTrackerWindowStyle = (index: number, total: number): TrackerWindowStyle => {
-    const center = (total - 1) / 2;
-    const distance = center > 0 ? Math.abs(index - center) / center : 1;
-    const lift = Math.round(-8 * (1 - Math.min(distance, 1)));
-
-    return {
-      '--tracker-arc-y': `${lift}px`,
-    };
-  };
-
   const actionMenuMarkup = actionMenu ? (
     createPortal(
       <div
@@ -274,7 +260,7 @@ export function WorkspaceWindowTracker({
                 </span>
                 <div className="workspace-tracker-window-set" aria-label={`${group.label} tracked windows`}>
                   <span className="workspace-tracker-window-set-corner" aria-hidden="true" />
-                  {rows.map((row, rowIndex) => {
+                  {rows.map((row) => {
                     const widget = getWidgetForManagedRow(group, row.id);
                     if (!widget) return null;
 
@@ -283,7 +269,6 @@ export function WorkspaceWindowTracker({
                         <button
                           type="button"
                           className={classNames('workspace-tracker-window', row.pinned && 'is-pinned', !widget.open && 'is-minimized')}
-                          style={getTrackerWindowStyle(rowIndex, rows.length)}
                           onClick={() => handleFocusWidget(row.id)}
                           onMouseDown={(event) => handleTrackerMouseDown(event, row)}
                           onPointerDown={(event) => handleTrackerPointerDown(event, row)}
@@ -305,9 +290,6 @@ export function WorkspaceWindowTracker({
                     );
                   })}
                 </div>
-                <span className="workspace-tracker-group-summary" aria-hidden="true">
-                  {group.openWidgetCount}/{rows.length}
-                </span>
               </section>
             );
           })}

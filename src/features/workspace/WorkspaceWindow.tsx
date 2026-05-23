@@ -15,6 +15,7 @@ export function WorkspaceWindow({
   onStartResize,
   onToggleOpen,
   onTogglePin,
+  onMaximize,
   onRecenter,
   onClose,
   showChrome = true,
@@ -27,6 +28,7 @@ export function WorkspaceWindow({
   onStartResize: (event: ReactPointerEvent<HTMLElement>, id: string, edge: ResizeEdge) => void;
   onToggleOpen: (id: string) => void;
   onTogglePin: (id: string) => void;
+  onMaximize: (id: string) => void;
   onRecenter: (id: string) => void;
   onClose: (id: string) => void;
   showChrome?: boolean;
@@ -86,6 +88,18 @@ export function WorkspaceWindow({
                 )}
                 aria-hidden="true"
               />
+            </button>
+            <button
+              type="button"
+              className="widget-maximize"
+              onClick={(event) => {
+                event.stopPropagation();
+                onMaximize(widget.id);
+              }}
+              aria-label={`Fill workspace with ${widget.title}`}
+              title={`Fill workspace with ${widget.title}`}
+            >
+              <span className="widget-control-icon widget-control-icon-fill" aria-hidden="true" />
             </button>
             <button
               type="button"

@@ -268,6 +268,10 @@ export function getWorkspaceInstances() {
   ] satisfies WorkspaceInstance[];
 }
 
+export function isWorkspaceInstanceOpen(instance: Pick<WorkspaceInstance, 'kind' | 'restoreStatus'>) {
+  return instance.kind === 'main' || instance.restoreStatus === 'open';
+}
+
 export function getAdjacentWorkspaceInstance(sourceWorkspaceId: string, direction: WorkspaceTransferDirection) {
   const instances = getWorkspaceInstances();
   const source = instances.find((instance) => instance.id === sourceWorkspaceId);
@@ -284,6 +288,11 @@ export function getAdjacentWorkspaceInstance(sourceWorkspaceId: string, directio
   });
 
   return targetPlacement ? instances.find((instance) => instance.placement === targetPlacement) ?? null : null;
+}
+
+export function getOpenAdjacentWorkspaceInstance(sourceWorkspaceId: string, direction: WorkspaceTransferDirection) {
+  const target = getAdjacentWorkspaceInstance(sourceWorkspaceId, direction);
+  return target && isWorkspaceInstanceOpen(target) ? target : null;
 }
 
 export function canCreateWorkspaceExtensionInstance() {

@@ -1,5 +1,6 @@
 import type { CommandRequest, MissionControlState, MissionNotification } from './missionControlTypes';
 import { missionControlBufferLimits } from './missionControlReducer';
+import { readStorageText, removeLocalStorageItem, writeStorageText } from '../workspace/browserStorage';
 
 const missionControlStorageKey = 'mission-control-state:v1';
 const persistedVersion = 1;
@@ -10,11 +11,6 @@ type MissionControlPersistedSnapshot = {
   notifications: MissionNotification[];
   lastUpdatedAt: string;
 };
-
-function getStorage() {
-  if (typeof window === 'undefined') return null;
-  return window.localStorage;
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -58,7 +54,7 @@ function mergeById<T extends { id: string }>(baseItems: T[], persistedItems: T[]
 }
 
 export function loadPersistedMissionControlState(initialState: MissionControlState): MissionControlState {
-  const snapshot = parseSnapshot(getStorage()?.getItem(missionControlStorageKey) ?? null);
+  const snapshot = parseSnapshot(readStorageText(missionControlStorageKey));
   if (!snapshot) return initialState;
 
   return {
@@ -71,9 +67,6 @@ export function loadPersistedMissionControlState(initialState: MissionControlSta
 }
 
 export function savePersistedMissionControlState(state: MissionControlState) {
-  const storage = getStorage();
-  if (!storage) return false;
-
   const snapshot: MissionControlPersistedSnapshot = {
     version: persistedVersion,
     commands: state.commands.slice(0, missionControlBufferLimits.commands),
@@ -82,13 +75,12 @@ export function savePersistedMissionControlState(state: MissionControlState) {
   };
 
   try {
-    storage.setItem(missionControlStorageKey, JSON.stringify(snapshot));
-    return true;
+    return writeStorageText(missionControlStorageKey, JSON.stringify(snapshot));
   } catch {
     return false;
   }
 }
 
 export function clearPersistedMissionControlState() {
-  getStorage()?.removeItem(missionControlStorageKey);
+  removeLocalStorageItem(missionControlStorageKey);
 }

@@ -1,5 +1,6 @@
 import type { AgentTaskingState } from './agentTaskingTypes';
 import { agentTaskingBufferLimits } from './agentTaskingModel';
+import { readStorageText, removeLocalStorageItem, writeStorageText } from '../workspace/browserStorage';
 
 const agentTaskingStorageKey = 'agent-tasking-state:v1';
 const persistedVersion = 1;
@@ -10,11 +11,6 @@ type AgentTaskingPersistedSnapshot = {
   proposals: AgentTaskingState['proposals'];
   updatedAt: string;
 };
-
-function getStorage() {
-  if (typeof window === 'undefined') return null;
-  return window.localStorage;
-}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -40,7 +36,7 @@ function parseSnapshot(value: string | null): AgentTaskingPersistedSnapshot | nu
 }
 
 export function loadPersistedAgentTaskingState(initialState: AgentTaskingState): AgentTaskingState {
-  const snapshot = parseSnapshot(getStorage()?.getItem(agentTaskingStorageKey) ?? null);
+  const snapshot = parseSnapshot(readStorageText(agentTaskingStorageKey));
   if (!snapshot) return initialState;
 
   return {
@@ -53,9 +49,6 @@ export function loadPersistedAgentTaskingState(initialState: AgentTaskingState):
 }
 
 export function savePersistedAgentTaskingState(state: AgentTaskingState) {
-  const storage = getStorage();
-  if (!storage) return false;
-
   const snapshot: AgentTaskingPersistedSnapshot = {
     version: persistedVersion,
     messages: state.messages.slice(0, agentTaskingBufferLimits.messages),
@@ -64,13 +57,12 @@ export function savePersistedAgentTaskingState(state: AgentTaskingState) {
   };
 
   try {
-    storage.setItem(agentTaskingStorageKey, JSON.stringify(snapshot));
-    return true;
+    return writeStorageText(agentTaskingStorageKey, JSON.stringify(snapshot));
   } catch {
     return false;
   }
 }
 
 export function clearPersistedAgentTaskingState() {
-  getStorage()?.removeItem(agentTaskingStorageKey);
+  removeLocalStorageItem(agentTaskingStorageKey);
 }

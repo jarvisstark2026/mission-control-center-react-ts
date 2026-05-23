@@ -1,3 +1,5 @@
+import { readStorageText, writeStorageText } from '../workspace/browserStorage';
+
 export const shellThemeOptions = [
   {
     id: 'jarvis',
@@ -32,10 +34,8 @@ export function isShellThemeId(value: unknown): value is ShellThemeId {
 }
 
 export function readStoredShellTheme(): ShellThemeId {
-  if (typeof window === 'undefined') return defaultShellThemeId;
-
   try {
-    const storedTheme = window.localStorage.getItem(shellThemeStorageKey);
+    const storedTheme = readStorageText(shellThemeStorageKey);
     return isShellThemeId(storedTheme) ? storedTheme : defaultShellThemeId;
   } catch {
     return defaultShellThemeId;
@@ -48,10 +48,8 @@ export function applyShellTheme(themeId: ShellThemeId) {
 }
 
 export function persistShellTheme(themeId: ShellThemeId) {
-  if (typeof window === 'undefined') return;
-
   try {
-    window.localStorage.setItem(shellThemeStorageKey, themeId);
+    writeStorageText(shellThemeStorageKey, themeId);
   } catch {
     // Theme persistence is optional; the active in-memory theme still applies.
   }

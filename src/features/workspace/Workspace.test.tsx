@@ -72,8 +72,47 @@ describe('Workspace header controls', () => {
     expect(container.querySelectorAll('.workspace-widget')).toHaveLength(0);
     expect(currentRender.queryByLabelText('Create blank workspace')).not.toBeInTheDocument();
     expect(currentRender.queryByRole('button', { name: 'Reset layout' })).not.toBeInTheDocument();
+    expect(currentRender.getByRole('button', { name: 'Save layout' })).toBeInTheDocument();
+    expect(currentRender.getByRole('button', { name: 'Mode preset' })).toBeInTheDocument();
     expect(currentRender.getByLabelText('Close workspace extension')).toBeInTheDocument();
   });
+
+  it('saves the current workspace layout explicitly from the top bar', () => {
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+
+    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('main'))).toBeNull();
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Save layout' }));
+
+    expect(window.localStorage.getItem(getWorkspaceWidgetStorageKey('main'))).toContain('"kind":"overview"');
+    expect(currentRender.getByText('Main workspace saved')).toBeInTheDocument();
+  });
+
+  it('creates custom presets and applies built-in presets inside workspace extensions', () => {
+    const { container, unmount } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Mode preset' }));
+    fireEvent.change(currentRender.getByLabelText('Preset name'), { target: { value: 'Review wall' } });
+    fireEvent.click(currentRender.getByRole('button', { name: 'Create preset' }));
+
+    expect(currentRender.getByRole('menuitem', { name: /Review wall/i })).toBeInTheDocument();
+    expect(currentRender.getByRole('menuitem', { name: /Main workspace/i })).toBeInTheDocument();
+
+    unmount();
+    window.history.replaceState({}, '', '/?role=admin&workspace=extension');
+    const extensionWorkspace = render(<Workspace role="admin" />);
+    const extensionRender = within(extensionWorkspace.container);
+
+    expect(extensionWorkspace.container.querySelectorAll('.workspace-widget')).toHaveLength(0);
+
+    fireEvent.click(extensionRender.getByRole('button', { name: 'Mode preset' }));
+    fireEvent.click(extensionRender.getByRole('menuitem', { name: /Security mode/i }));
+
+    expect(extensionWorkspace.container.querySelector('.workspace-widget.kind-command-inbox')).toHaveClass('is-open', 'is-pinned');
+    expect(extensionWorkspace.container.querySelector('.workspace-widget.kind-notifications')).toHaveClass('is-open');
+  }, 20000);
 
   it('resets every workspace layout from the main workspace only', () => {
     registerWorkspaceExtensionInstance({
@@ -286,6 +325,32 @@ describe('Workspace header controls', () => {
     expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent control/i })).not.toBeInTheDocument();
     expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent console/i })).not.toBeInTheDocument();
     expect(within(guestLauncherWidget as HTMLElement).getByRole('button', { name: /home systems/i })).toBeInTheDocument();
+  }, 20000);
+
+  it('lets admin hide widgets from another role across header and launcher entry points', () => {
+    const adminWorkspace = render(<Workspace role="admin" />);
+    const adminRender = within(adminWorkspace.container);
+
+    fireEvent.click(adminRender.getByRole('button', { name: 'Permissions' }));
+    const permissionMenu = adminRender.getByRole('menu', { name: 'Widget permissions' });
+    fireEvent.click(within(permissionMenu).getByRole('tab', { name: 'Guest' }));
+    fireEvent.click(within(permissionMenu).getByLabelText(/Home systems/i));
+
+    adminWorkspace.unmount();
+
+    const guestWorkspace = render(<Workspace role="guest" />);
+    const guestRender = within(guestWorkspace.container);
+
+    fireEvent.click(guestRender.getByRole('button', { name: 'Open widget' }));
+    expect(guestRender.queryByRole('menuitem', { name: 'Home systems' })).not.toBeInTheDocument();
+
+    const guestLauncherWidget = guestWorkspace.container.querySelector<HTMLElement>('.workspace-widget.kind-launcher');
+    expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /home systems/i })).not.toBeInTheDocument();
+
+    fireEvent.click(guestRender.getByRole('button', { name: 'Mode preset' }));
+    fireEvent.click(guestRender.getByRole('menuitem', { name: /Home mode/i }));
+
+    expect(guestWorkspace.container.querySelector('.workspace-widget.kind-home-systems')).not.toBeInTheDocument();
   }, 20000);
 
   it('keeps command approvals role gated inside the command inbox', () => {

@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
-import { addLiveTvFavorite, createLiveTvSource, getLiveTvStreamType, loadLiveTvState, saveLiveTvState, type LocalLiveTvSource } from '../workspaceLiveTvModel';
+import {
+  addLiveTvFavorite,
+  createLiveTvSource,
+  getLiveTvStreamType,
+  loadLiveTvState,
+  rememberLiveTvDraft,
+  saveLiveTvState,
+  type LocalLiveTvSource,
+} from '../workspaceLiveTvModel';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 
 const liveTvSources: LocalLiveTvSource[] = [
@@ -40,12 +48,27 @@ export function LiveTvWidget() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<{ destroy: () => void } | null>(null);
   const [liveTvState, setLiveTvState] = usePersistentWorkspaceState(loadLiveTvState, saveLiveTvState);
-  const [draftUrl, setDraftUrl] = useState(defaultLiveTvSource.url);
-  const [draftName, setDraftName] = useState('Custom feed');
-  const [activeSource, setActiveSource] = useState<LocalLiveTvSource>(defaultLiveTvSource);
+  const [draftUrl, setDraftUrl] = useState(liveTvState.draftSource?.url ?? defaultLiveTvSource.url);
+  const [draftName, setDraftName] = useState(liveTvState.draftSource?.name ?? 'Custom feed');
+  const [hasEditedDraft, setHasEditedDraft] = useState(Boolean(liveTvState.draftSource));
+  const [activeSource, setActiveSource] = useState<LocalLiveTvSource>(liveTvState.draftSource ?? defaultLiveTvSource);
   const [status, setStatus] = useState('Ready');
   const [isLoading, setIsLoading] = useState(false);
-  const allSources = [...liveTvSources, ...liveTvState.favorites.filter((favorite) => !liveTvSources.some((source) => source.url === favorite.url))];
+  const draftSource = draftUrl.trim() ? createLiveTvSource(draftUrl, draftName.trim() || 'Custom feed') : null;
+  const allSources = [
+    ...liveTvSources,
+    ...(draftSource && !liveTvSources.some((source) => source.url === draftSource.url) ? [draftSource] : []),
+    ...liveTvState.favorites.filter(
+      (favorite) =>
+        !liveTvSources.some((source) => source.url === favorite.url) &&
+        (!draftSource || favorite.url !== draftSource.url),
+    ),
+  ];
+
+  useEffect(() => {
+    if (!draftSource || !hasEditedDraft) return;
+    setLiveTvState((current) => rememberLiveTvDraft(current, draftSource));
+  }, [draftName, draftSource, draftUrl, hasEditedDraft, setLiveTvState]);
 
   useEffect(() => {
     let cancelled = false;
@@ -190,7 +213,10 @@ export function LiveTvWidget() {
           <input
             type="text"
             value={draftName}
-            onChange={(event) => setDraftName(event.target.value)}
+            onChange={(event) => {
+              setHasEditedDraft(true);
+              setDraftName(event.target.value);
+            }}
             placeholder="Name this source"
           />
         </label>
@@ -199,7 +225,10 @@ export function LiveTvWidget() {
           <input
             type="text"
             value={draftUrl}
-            onChange={(event) => setDraftUrl(event.target.value)}
+            onChange={(event) => {
+              setHasEditedDraft(true);
+              setDraftUrl(event.target.value);
+            }}
             onKeyDown={(event) => event.key === 'Enter' && tuneCustomFeed()}
             placeholder="Paste an official HLS / MP4 source"
           />

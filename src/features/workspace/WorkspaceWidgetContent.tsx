@@ -8,6 +8,7 @@ import type { WorkspaceWidgetGroup } from './workspaceManagerModel';
 import type { MarketGraph } from './workspaceMarketData';
 import type { MarketLiveState } from './workspaceMarketLiveData';
 import type { WorkspaceWidget } from './workspaceTypes';
+import type { WorkspaceWidgetPermissionMatrix } from './workspaceWidgetPermissions';
 import { WidgetScrollPane } from './workspaceBlocks';
 import { WorkspaceWidgetWorkflowCue } from './WorkspaceWidgetWorkflowCue';
 import {
@@ -68,6 +69,7 @@ export type WorkspaceWidgetContentProps = {
   missionControl: MissionControlRuntime;
   agentControl: AgentControlState;
   activeRole: ShellRole;
+  widgetPermissions: WorkspaceWidgetPermissionMatrix;
 };
 
 type WorkspaceWidgetContentRendererProps = {
@@ -115,6 +117,7 @@ function renderWorkspaceWidgetContent({
   missionControl,
   agentControl,
   activeRole,
+  widgetPermissions,
 }: WorkspaceWidgetContentRendererProps) {
   switch (widget.kind) {
     case 'file-explorer':
@@ -160,7 +163,14 @@ function renderWorkspaceWidgetContent({
       return <PdfWidget file={pdfFile} />;
     }
     case 'launcher':
-      return <LauncherWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} workspaceWidgets={workspaceWidgets} activeRole={activeRole} />;
+      return (
+        <LauncherWidget
+          onLaunchWorkspaceWidget={onLaunchWorkspaceWidget}
+          workspaceWidgets={workspaceWidgets}
+          activeRole={activeRole}
+          widgetPermissions={widgetPermissions}
+        />
+      );
     case 'window-manager':
       return (
         <WindowManagerWidget

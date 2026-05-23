@@ -1,6 +1,8 @@
 import type { WorkspaceWidget } from './workspaceTypes';
 import type { WidgetBlueprint } from './workspaceStorage';
 import type { ShellRole } from '../shell/roles';
+import type { WorkspaceWidgetPermissionMatrix } from './workspaceWidgetPermissions';
+import { getDefaultWorkspaceWidgetPermission, isWorkspaceWidgetPermittedByPolicy } from './workspaceWidgetPermissions';
 
 export const workspaceShortcutKinds: WorkspaceWidget['kind'][] = [
   'overview',
@@ -61,12 +63,17 @@ const workspaceWidgetAllowedRoles: Partial<Record<WorkspaceWidget['kind'], Shell
   'home-systems': ['admin', 'support', 'home', 'guest'],
 };
 
-export function isWorkspaceWidgetAllowedForRole(kind: WorkspaceWidget['kind'], role: ShellRole) {
-  return workspaceWidgetAllowedRoles[kind]?.includes(role) ?? true;
+export function isWorkspaceWidgetAllowedForRole(
+  kind: WorkspaceWidget['kind'],
+  role: ShellRole,
+  permissions?: WorkspaceWidgetPermissionMatrix,
+) {
+  if (permissions) return isWorkspaceWidgetPermittedByPolicy(kind, role, permissions);
+  return workspaceWidgetAllowedRoles[kind]?.includes(role) ?? getDefaultWorkspaceWidgetPermission(kind, role);
 }
 
-export function getWorkspaceShortcutKindsForRole(role: ShellRole) {
-  return workspaceShortcutKinds.filter((kind) => isWorkspaceWidgetAllowedForRole(kind, role));
+export function getWorkspaceShortcutKindsForRole(role: ShellRole, permissions?: WorkspaceWidgetPermissionMatrix) {
+  return workspaceShortcutKinds.filter((kind) => isWorkspaceWidgetAllowedForRole(kind, role, permissions));
 }
 
 export const widgetBlueprints: Record<WorkspaceWidget['kind'], WidgetBlueprint> = {
@@ -163,8 +170,8 @@ export function getWidgetLabel(kind: WorkspaceWidget['kind']) {
   return widgetBlueprints[kind].title;
 }
 
-export function getWorkspaceLauncherEntries(role?: ShellRole): WorkspaceLauncherEntry[] {
-  const kinds = role ? workspaceLauncherKinds.filter((kind) => isWorkspaceWidgetAllowedForRole(kind, role)) : workspaceLauncherKinds;
+export function getWorkspaceLauncherEntries(role?: ShellRole, permissions?: WorkspaceWidgetPermissionMatrix): WorkspaceLauncherEntry[] {
+  const kinds = role ? workspaceLauncherKinds.filter((kind) => isWorkspaceWidgetAllowedForRole(kind, role, permissions)) : workspaceLauncherKinds;
 
   return kinds.map((kind) => ({
     kind,

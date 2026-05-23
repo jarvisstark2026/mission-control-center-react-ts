@@ -3,7 +3,7 @@ import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 
 import { StatusChip } from '../../components/ui/StatusChip';
 import { createId } from '../../lib/createId';
-import type { ShellRole } from '../shell/roles';
+import { shellScopes, type ShellRole } from '../shell/roles';
 import { createInitialAgentControlState } from '../agent-control';
 import { useMissionControl } from '../mission-control';
 import { WorkspaceButton } from './workspaceBlocks';
@@ -20,18 +20,33 @@ import {
   getWidgetLabel,
   getWorkspaceShortcutKindsForRole,
   isWorkspaceWidgetAllowedForRole,
+  workspaceShortcutKinds,
   widgetBlueprints,
   widgetPresets,
 } from './workspaceWidgetCatalog';
 import { defaultMarketGraph, getMarketGraph, type MarketGraph } from './workspaceMarketData';
 import { useMarketLiveData } from './workspaceMarketLiveData';
 import { createWorkspaceModePresetLayout, workspaceModePresets, type WorkspaceModePresetId } from './workspaceModePresets';
+import {
+  addWorkspaceCustomPreset,
+  createWorkspaceCustomPreset,
+  createWorkspaceCustomPresetLayout,
+  loadWorkspaceCustomPresets,
+  type WorkspaceCustomPreset,
+} from './workspaceCustomPresets';
 import { WorkspaceWidgetCard, type WorkspaceWidgetRuntimeProps } from './workspaceWidgets';
 import { closeWorkspaceExtensionWindow, closeWorkspacePanelWindow, openWorkspaceExtensionWindow, returnToWorkspaceHub } from './workspacePanelWindows';
 import { getCurrentShellRole, isWorkspaceExtensionUrl } from './workspacePanelRouting';
 import { getAdjacentWorkspaceInstance, getWorkspaceInstanceId, getWorkspaceInstances, subscribeWorkspaceInstances, type WorkspaceTransferDirection } from './workspaceInstances';
 import { playWidgetAddedSound } from './workspaceSound';
 import { publishWidgetTransfer, subscribeWidgetTransfer, type WorkspaceWidgetTransferAnimation } from './workspaceWidgetTransfer';
+import {
+  editableWorkspacePermissionRoles,
+  getDefaultWorkspaceWidgetPermission,
+  isWorkspaceWidgetPermittedByPolicy,
+  loadWorkspaceWidgetPermissions,
+  updateWorkspaceWidgetPermission,
+} from './workspaceWidgetPermissions';
 import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
 
@@ -350,6 +365,13 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
   const [activeMarketGraphId, setActiveMarketGraphId] = useState(defaultMarketGraph.id);
   const [widgetMenuOpen, setWidgetMenuOpen] = useState(false);
   const [presetMenuOpen, setPresetMenuOpen] = useState(false);
+  const [permissionMenuOpen, setPermissionMenuOpen] = useState(false);
+  const [permissionRole, setPermissionRole] = useState<ShellRole>('home');
+  const [layoutSaveStatus, setLayoutSaveStatus] = useState('');
+  const layoutSaveStatusTimeoutRef = useRef<number | null>(null);
+  const [customPresetName, setCustomPresetName] = useState('');
+  const [customPresets, setCustomPresets] = useState(loadWorkspaceCustomPresets);
+  const [widgetPermissions, setWidgetPermissions] = useState(loadWorkspaceWidgetPermissions);
   const [workspaceCatalog, setWorkspaceCatalog] = useState<WorkspaceCatalogSnapshot>(() => ({
     version: 0,
     instances: getWorkspaceInstances(),
@@ -368,7 +390,11 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     ? workspaceInstances.filter((instance) => instance.kind === 'extension').findIndex((instance) => instance.id === currentWorkspaceId) + 1
     : 0;
   const extensionWorkspaceLabel = extensionWorkspaceNumber > 0 ? `Workspace ${extensionWorkspaceNumber}` : 'Workspace';
-  const workspaceShortcutKindsForRole = useMemo(() => getWorkspaceShortcutKindsForRole(activeRole), [activeRole]);
+  const currentWorkspaceLabel = isWorkspaceExtension ? extensionWorkspaceLabel : 'Main workspace';
+  const workspaceShortcutKindsForRole = useMemo(
+    () => getWorkspaceShortcutKindsForRole(activeRole, widgetPermissions),
+    [activeRole, widgetPermissions],
+  );
   const canBrowseFolder = typeof getDirectoryPicker() === 'function';
   const canPersistWidgetState = !panelKind && !(currentWorkspaceId === 'main' && bounds.width < 860);
   const clearPendingWidgetSave = () => {
@@ -570,6 +596,10 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
         window.clearTimeout(transferAnimationTimeoutRef.current);
       }
 
+      if (layoutSaveStatusTimeoutRef.current !== null) {
+        window.clearTimeout(layoutSaveStatusTimeoutRef.current);
+      }
+
       clearTransferCommitTimeouts();
     },
     [],
@@ -585,14 +615,64 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     closeWorkspacePanelWindow();
   };
 
+  const filterWidgetsForActiveRole = (nextWidgets: WorkspaceWidget[]) =>
+    nextWidgets.map((widget) =>
+      isWorkspaceWidgetAllowedForRole(widget.kind, activeRole, widgetPermissions)
+        ? widget
+        : {
+            ...widget,
+            open: false,
+            hidden: true,
+            pinned: false,
+          },
+    );
+
+  const getPresetSourceLabel = (preset: WorkspaceCustomPreset) => {
+    if (preset.sourceWorkspaceId === 'main') return 'Main workspace';
+    return workspaceInstances.find((workspace) => workspace.id === preset.sourceWorkspaceId)?.label ?? preset.sourceWorkspaceId;
+  };
+
+  const getPresetMeta = (preset: WorkspaceCustomPreset) => {
+    const createdDate = new Date(preset.createdAt);
+    const createdLabel = Number.isNaN(createdDate.getTime())
+      ? 'saved layout'
+      : createdDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    const openCount = preset.widgets.filter((widget) => widget.open && !widget.hidden).length;
+    return `${getPresetSourceLabel(preset)} · ${createdLabel} · ${openCount} open`;
+  };
+
+  const showLayoutStatus = (message: string) => {
+    setLayoutSaveStatus(message);
+    if (layoutSaveStatusTimeoutRef.current !== null) {
+      window.clearTimeout(layoutSaveStatusTimeoutRef.current);
+    }
+
+    layoutSaveStatusTimeoutRef.current = window.setTimeout(() => {
+      layoutSaveStatusTimeoutRef.current = null;
+      setLayoutSaveStatus('');
+    }, 2200);
+  };
+
+  const saveWorkspaceLayout = () => {
+    setWidgetMenuOpen(false);
+    setPresetMenuOpen(false);
+    setPermissionMenuOpen(false);
+    clearPendingWidgetSave();
+
+    const saved = saveStoredWidgetState(widgetsRef.current, currentWorkspaceId);
+    showLayoutStatus(saved ? `${currentWorkspaceLabel} saved` : 'Layout save failed');
+  };
+
   const resetWorkspaceLayout = () => {
     interactionRef.current = null;
     setWidgetMenuOpen(false);
     setPresetMenuOpen(false);
+    setPermissionMenuOpen(false);
     const resetWidgets = currentWorkspaceId === 'main' ? createInitialWidgetState() : createBlankWidgetState();
     widgetsRef.current = resetWidgets;
     void clearAllStoredWidgetStates(getWorkspaceInstances().map((workspace) => workspace.id));
     setWidgets(resetWidgets);
+    showLayoutStatus('All workspace layouts reset');
   };
 
   const openBlankWorkspaceExtension = () => {
@@ -607,10 +687,41 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     interactionRef.current = null;
     setWidgetMenuOpen(false);
     setPresetMenuOpen(false);
-    const nextWidgets = createWorkspaceModePresetLayout(presetId, widgetsRef.current, bounds);
+    setPermissionMenuOpen(false);
+    const preset = workspaceModePresets.find((item) => item.id === presetId);
+    const nextWidgets = filterWidgetsForActiveRole(createWorkspaceModePresetLayout(presetId, widgetsRef.current, bounds));
     widgetsRef.current = nextWidgets;
     setWidgets(nextWidgets);
     persistWidgetState(nextWidgets);
+    showLayoutStatus(`${preset?.label ?? 'Preset'} applied`);
+  };
+
+  const applyWorkspaceCustomPreset = (preset: WorkspaceCustomPreset) => {
+    interactionRef.current = null;
+    setWidgetMenuOpen(false);
+    setPresetMenuOpen(false);
+    setPermissionMenuOpen(false);
+    const nextWidgets = filterWidgetsForActiveRole(createWorkspaceCustomPresetLayout(preset, widgetsRef.current, bounds));
+    widgetsRef.current = nextWidgets;
+    setWidgets(nextWidgets);
+    persistWidgetState(nextWidgets);
+    showLayoutStatus(`${preset.label} applied`);
+  };
+
+  const saveWorkspaceCustomPreset = () => {
+    const preset = createWorkspaceCustomPreset({
+      label: customPresetName,
+      sourceWorkspaceId: currentWorkspaceId,
+      widgets: widgetsRef.current,
+    });
+    const nextPresets = addWorkspaceCustomPreset(preset, customPresets);
+    setCustomPresets(nextPresets);
+    setCustomPresetName('');
+    showLayoutStatus(`${preset.label} preset saved`);
+  };
+
+  const setWidgetPermission = (roleId: ShellRole, kind: WorkspaceWidget['kind'], allowed: boolean) => {
+    setWidgetPermissions((current) => updateWorkspaceWidgetPermission(current, roleId, kind, allowed));
   };
 
   const raiseWidget = (id: string) => {
@@ -1094,7 +1205,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
 
   const openWorkspaceWidget = (kind: WorkspaceWidget['kind']) => {
     setWidgetMenuOpen(false);
-    if (!isWorkspaceWidgetAllowedForRole(kind, activeRole)) return;
+    if (!isWorkspaceWidgetAllowedForRole(kind, activeRole, widgetPermissions)) return;
 
     const target = widgetsRef.current.find((widget) => widget.kind === kind);
     if (target) {
@@ -1332,6 +1443,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     missionControl,
     agentControl,
     activeRole,
+    widgetPermissions,
   };
 
   if (panelKind) {
@@ -1387,8 +1499,11 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
           </div>
         ) : null}
         <div className="workspace-launcher">
+          <WorkspaceButton variant="secondary" className="workspace-launch-button workspace-head-action" onClick={saveWorkspaceLayout}>
+            Save layout
+          </WorkspaceButton>
           {!isWorkspaceExtension ? (
-            <WorkspaceButton variant="secondary" className="workspace-launch-button is-muted" onClick={resetWorkspaceLayout}>
+            <WorkspaceButton variant="secondary" className="workspace-launch-button workspace-head-action is-muted" onClick={resetWorkspaceLayout}>
               Reset layout
             </WorkspaceButton>
           ) : null}
@@ -1403,7 +1518,11 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
               className="workspace-launch-button workspace-widget-menu-trigger"
               aria-expanded={widgetMenuOpen}
               aria-haspopup="menu"
-              onClick={() => setWidgetMenuOpen((open) => !open)}
+              onClick={() => {
+                setPresetMenuOpen(false);
+                setPermissionMenuOpen(false);
+                setWidgetMenuOpen((open) => !open);
+              }}
             >
               Open widget
             </WorkspaceButton>
@@ -1423,34 +1542,130 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
               </div>
             ) : null}
           </div>
-          {!isWorkspaceExtension ? (
-            <div className="workspace-widget-menu workspace-preset-menu">
+          <div className="workspace-widget-menu workspace-preset-menu">
+            <WorkspaceButton
+              variant="compact"
+              className="workspace-launch-button workspace-widget-menu-trigger"
+              aria-expanded={presetMenuOpen}
+              aria-haspopup="menu"
+              onClick={() => {
+                setWidgetMenuOpen(false);
+                setPermissionMenuOpen(false);
+                setPresetMenuOpen((open) => !open);
+              }}
+            >
+              Mode preset
+            </WorkspaceButton>
+            {presetMenuOpen ? (
+              <div className="workspace-widget-menu-panel workspace-preset-menu-panel" role="menu" aria-label="Workspace mode presets">
+                <div className="workspace-menu-section-label">Built-in modes</div>
+                {workspaceModePresets.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className="workspace-widget-menu-item workspace-preset-menu-item"
+                    role="menuitem"
+                    onClick={() => applyWorkspaceModePreset(preset.id)}
+                  >
+                    <strong>{preset.label}</strong>
+                    <small>Built-in · {preset.note}</small>
+                  </button>
+                ))}
+                <div className="workspace-menu-section-label">Custom presets</div>
+                {customPresets.map((preset) => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    className="workspace-widget-menu-item workspace-preset-menu-item"
+                    role="menuitem"
+                    onClick={() => applyWorkspaceCustomPreset(preset)}
+                  >
+                    <strong>{preset.label}</strong>
+                    <small>{getPresetMeta(preset)}</small>
+                  </button>
+                ))}
+                {!customPresets.length ? <div className="workspace-preset-empty">No custom presets saved yet.</div> : null}
+                <div className="workspace-preset-create" role="group" aria-label="Create workspace preset">
+                  <input
+                    value={customPresetName}
+                    onChange={(event) => setCustomPresetName(event.target.value)}
+                    placeholder={`${currentWorkspaceLabel} preset`}
+                    aria-label="Preset name"
+                  />
+                  <WorkspaceButton variant="compact" className="workspace-launch-button workspace-head-action" onClick={saveWorkspaceCustomPreset}>
+                    Create preset
+                  </WorkspaceButton>
+                </div>
+              </div>
+            ) : null}
+          </div>
+          {activeRole === 'admin' && !isWorkspaceExtension ? (
+            <div className="workspace-widget-menu workspace-permission-menu">
               <WorkspaceButton
                 variant="compact"
                 className="workspace-launch-button workspace-widget-menu-trigger"
-                aria-expanded={presetMenuOpen}
+                aria-expanded={permissionMenuOpen}
                 aria-haspopup="menu"
-                onClick={() => setPresetMenuOpen((open) => !open)}
+                onClick={() => {
+                  setWidgetMenuOpen(false);
+                  setPresetMenuOpen(false);
+                  setPermissionMenuOpen((open) => !open);
+                }}
               >
-                Mode preset
+                Permissions
               </WorkspaceButton>
-              {presetMenuOpen ? (
-                <div className="workspace-widget-menu-panel workspace-preset-menu-panel" role="menu" aria-label="Workspace mode presets">
-                  {workspaceModePresets.map((preset) => (
-                    <button
-                      key={preset.id}
-                      type="button"
-                      className="workspace-widget-menu-item workspace-preset-menu-item"
-                      role="menuitem"
-                      onClick={() => applyWorkspaceModePreset(preset.id)}
-                    >
-                      <strong>{preset.label}</strong>
-                      <small>{preset.note}</small>
-                    </button>
-                  ))}
+              {permissionMenuOpen ? (
+                <div className="workspace-widget-menu-panel workspace-permission-menu-panel" role="menu" aria-label="Widget permissions">
+                  <div className="workspace-permission-head">
+                    <strong>Widget permissions</strong>
+                    <small>Admin sets which widgets each access scope can open. This applies to Open Widget, Launcher, and presets.</small>
+                  </div>
+                  <div className="workspace-permission-tabs" role="tablist" aria-label="Permission roles">
+                    {editableWorkspacePermissionRoles.map((roleId) => {
+                      const roleLabel = shellScopes.find((scope) => scope.id === roleId)?.label ?? roleId;
+
+                      return (
+                        <button
+                          key={roleId}
+                          type="button"
+                          role="tab"
+                          aria-selected={permissionRole === roleId}
+                          className={permissionRole === roleId ? 'is-active' : undefined}
+                          onClick={() => setPermissionRole(roleId)}
+                        >
+                          {roleLabel}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="workspace-permission-list">
+                    {workspaceShortcutKinds.map((kind) => {
+                      const allowed = isWorkspaceWidgetPermittedByPolicy(kind, permissionRole, widgetPermissions);
+                      const defaultAllowed = getDefaultWorkspaceWidgetPermission(kind, permissionRole);
+
+                      return (
+                        <label key={kind} className="workspace-permission-row">
+                          <span>
+                            <strong>{getWidgetLabel(kind)}</strong>
+                            <small>{defaultAllowed ? 'default allowed' : 'default hidden'}</small>
+                          </span>
+                          <input
+                            type="checkbox"
+                            checked={allowed}
+                            onChange={(event) => setWidgetPermission(permissionRole, kind, event.target.checked)}
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
                 </div>
               ) : null}
             </div>
+          ) : null}
+          {layoutSaveStatus ? (
+            <span className="workspace-layout-status" role="status" aria-live="polite">
+              {layoutSaveStatus}
+            </span>
           ) : null}
           {topBarSlot}
         </div>

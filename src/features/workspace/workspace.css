@@ -1877,6 +1877,195 @@
   padding-inline: 0;
 }
 
+.workspace-head .workspace-launch-button:not(.workspace-new-screen-button) {
+  min-height: 34px;
+  padding-inline: 13px;
+  border-color: rgba(212, 232, 255, 0.15);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.072), rgba(255, 255, 255, 0.02)),
+    rgba(7, 18, 30, 0.52);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+.workspace-head .workspace-launch-button:not(.workspace-new-screen-button):hover,
+.workspace-head .workspace-launch-button:not(.workspace-new-screen-button):focus-visible {
+  border-color: rgba(156, 211, 255, 0.32);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.034)),
+    rgba(12, 28, 44, 0.72);
+  transform: translateY(-1px);
+}
+
+.workspace-head-action {
+  white-space: nowrap;
+}
+
+.workspace-layout-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 1px solid rgba(156, 211, 255, 0.2);
+  border-radius: 999px;
+  background: rgba(86, 221, 255, 0.08);
+  color: rgba(210, 239, 255, 0.86);
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.workspace-menu-section-label {
+  padding: 6px 4px 2px;
+  color: var(--glass-muted);
+  font-size: 0.54rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.workspace-preset-create {
+  display: grid;
+  gap: 7px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.workspace-preset-empty {
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 7px;
+  color: rgba(210, 224, 238, 0.58);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+}
+
+.workspace-preset-menu-panel {
+  width: min(330px, calc(100vw - 32px));
+}
+
+.workspace-preset-create input {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.035);
+  color: rgba(255, 255, 255, 0.9);
+  box-sizing: border-box;
+}
+
+.workspace-preset-create input::placeholder {
+  color: rgba(255, 255, 255, 0.42);
+}
+
+.workspace-permission-menu-panel {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(440px, calc(100vw - 32px));
+}
+
+.workspace-permission-head {
+  display: grid;
+  gap: 4px;
+  padding: 6px 6px 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.workspace-permission-head strong {
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 0.64rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.workspace-permission-head small {
+  color: rgba(210, 224, 238, 0.66);
+  font-size: 0.66rem;
+  line-height: 1.45;
+}
+
+.workspace-permission-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.workspace-permission-tabs button {
+  min-height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.76);
+  cursor: pointer;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.workspace-permission-tabs button.is-active {
+  border-color: rgba(156, 211, 255, 0.34);
+  background: rgba(86, 221, 255, 0.1);
+  color: rgba(239, 247, 255, 0.94);
+}
+
+.workspace-permission-list {
+  display: grid;
+  gap: 5px;
+  max-height: 310px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.workspace-permission-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 7px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.027);
+}
+
+.workspace-permission-row span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.workspace-permission-row strong,
+.workspace-permission-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-permission-row strong {
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.workspace-permission-row small {
+  color: rgba(210, 224, 238, 0.54);
+  font-size: 0.54rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.workspace-permission-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--jarvis-cyan);
+}
+
 .workspace-action-row {
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;

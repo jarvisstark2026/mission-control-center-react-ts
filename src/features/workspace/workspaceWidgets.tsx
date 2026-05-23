@@ -36,6 +36,12 @@ function getWorkspaceGroupSignature(groups: WorkspaceWidgetGroup[]) {
     .join('||');
 }
 
+function getPermissionSignature(permissions: WorkspaceWidgetContentProps['widgetPermissions']) {
+  return Object.entries(permissions)
+    .map(([role, rolePermissions]) => `${role}:${Object.entries(rolePermissions).map(([kind, allowed]) => `${kind}:${allowed ? 1 : 0}`).join(',')}`)
+    .join('|');
+}
+
 function isWidgetFrameEqual(left: WorkspaceWidget, right: WorkspaceWidget) {
   return (
     left === right ||
@@ -92,7 +98,11 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.marketLiveData.updatedAt === right.marketLiveData.updatedAt
       );
     case 'launcher':
-      return getWidgetCollectionSignature(left.workspaceWidgets) === getWidgetCollectionSignature(right.workspaceWidgets);
+      return (
+        left.activeRole === right.activeRole &&
+        getWidgetCollectionSignature(left.workspaceWidgets) === getWidgetCollectionSignature(right.workspaceWidgets) &&
+        getPermissionSignature(left.widgetPermissions) === getPermissionSignature(right.widgetPermissions)
+      );
     case 'window-manager':
       return getWorkspaceGroupSignature(left.workspaceWidgetGroups) === getWorkspaceGroupSignature(right.workspaceWidgetGroups);
     case 'command-inbox':

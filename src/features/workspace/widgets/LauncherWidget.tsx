@@ -5,18 +5,20 @@ import { WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, Wo
 import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from '../workspaceDesktopApps';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from '../workspaceTypes';
 import { getWidgetLabel, getWorkspaceLauncherEntries } from '../workspaceWidgetCatalog';
+import type { WorkspaceWidgetPermissionMatrix } from '../workspaceWidgetPermissions';
 
 type LauncherWidgetProps = {
   onLaunchWorkspaceWidget: (kind: WorkspaceWidget['kind']) => void;
   workspaceWidgets: WorkspaceWidget[];
   activeRole: ShellRole;
+  widgetPermissions: WorkspaceWidgetPermissionMatrix;
 };
 
-export function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets, activeRole }: LauncherWidgetProps) {
+export function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets, activeRole, widgetPermissions }: LauncherWidgetProps) {
   const [desktopCommand, setDesktopCommand] = useState('');
   const [desktopApps, setDesktopApps] = useState<DesktopAppRecord[]>(defaultDesktopApps);
 
-  const workspaceApps = getWorkspaceLauncherEntries(activeRole);
+  const workspaceApps = getWorkspaceLauncherEntries(activeRole, widgetPermissions);
 
   const openInstalledApp = () => {
     const nextName = desktopCommand.trim();

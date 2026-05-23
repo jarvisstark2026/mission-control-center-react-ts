@@ -7,9 +7,10 @@ import { closeWorkspaceExtensionWindow, openWorkspaceExtensionWindow } from '../
 import { isWorkspaceExtensionUrl } from '../workspace/workspacePanelRouting';
 import {
   closeWorkspaceInstance,
+  getWorkspaceInstanceId,
   getWorkspaceInstances,
-  markCurrentWorkspaceExtensionClosed,
   markCurrentWorkspaceExtensionOpen,
+  markWorkspaceInstanceRestorable,
   pruneClosedWorkspaceInstances,
   subscribeWorkspaceInstanceCloseRequests,
   subscribeWorkspaceInstances,
@@ -47,6 +48,7 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
   const activeRole = role ?? defaultShellRole;
   const activePanelKind = normalizePanelKind(panelKind);
   const isWorkspaceExtension = isWorkspaceExtensionUrl();
+  const workspaceLifecycleKey = isWorkspaceExtension ? `extension:${getWorkspaceInstanceId() ?? 'workspace-extension'}` : 'main';
   const canOpenPanel = isShellPanelAccessible(activeRole, activePanelKind);
   const isDetachedWindow = Boolean(activePanelKind && canOpenPanel);
   const canCloseDetachedWindow = typeof window !== 'undefined' && Boolean(window.opener);
@@ -65,7 +67,7 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
       : () => undefined;
     const unregisterExtensionUnload = currentExtensionId
       ? (() => {
-          const unregisterCurrentExtension = () => markCurrentWorkspaceExtensionClosed();
+          const unregisterCurrentExtension = () => markWorkspaceInstanceRestorable(currentExtensionId);
 
           window.addEventListener('pagehide', unregisterCurrentExtension);
           window.addEventListener('beforeunload', unregisterCurrentExtension);
@@ -99,9 +101,11 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
       unregisterExtensionUnload();
       unsubscribeInstances();
       unsubscribeCloseRequests();
-      markCurrentWorkspaceExtensionClosed();
+      if (currentExtensionId) {
+        markWorkspaceInstanceRestorable(currentExtensionId);
+      }
     };
-  }, []);
+  }, [workspaceLifecycleKey]);
 
   useEffect(() => {
     document.title = isDetachedWindow

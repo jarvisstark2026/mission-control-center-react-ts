@@ -217,6 +217,10 @@ function markStoredInstanceRestorable(id: string) {
   emitChanged();
 }
 
+export function markWorkspaceInstanceRestorable(id: string) {
+  markStoredInstanceRestorable(id);
+}
+
 export function createWorkspaceInstanceId() {
   return `workspace-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }

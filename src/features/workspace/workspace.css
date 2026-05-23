@@ -4775,6 +4775,22 @@
   font-size: 0.76rem;
 }
 
+.home-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.home-action-card {
+  min-height: 152px;
+}
+
+.home-action-card small {
+  color: rgba(226, 238, 248, 0.58);
+  font-size: 0.58rem;
+  line-height: 1.45;
+}
+
 .home-energy-track {
   position: relative;
   min-height: 18px;

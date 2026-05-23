@@ -15,6 +15,10 @@ export function NotificationsWidget({ missionControl }: { missionControl: Missio
     label: sample.label,
     value: `${sample.value}${sample.unit}`,
   }));
+  const sourceMetrics = Array.from(new Set(notifications.map((notification) => notification.source))).slice(0, 6).map((source) => ({
+    label: source,
+    value: notifications.filter((notification) => notification.source === source).length,
+  }));
 
   return (
     <WorkspaceContentShell className="mission-control-surface notifications-surface">
@@ -30,6 +34,15 @@ export function NotificationsWidget({ missionControl }: { missionControl: Missio
         detail="SSE is used when configured. Otherwise the deterministic mock stream keeps the operational surface alive and clearly marked."
         meta={`${unreadNotifications.length} unread`}
       />
+
+      <WorkspaceSectionFrame
+        className="mission-control-list-frame"
+        eyebrow="sources"
+        title="alert origins"
+        meta={`${sourceMetrics.length} groups`}
+      >
+        <WorkspaceMetricGrid className="mission-control-metrics" metrics={sourceMetrics} />
+      </WorkspaceSectionFrame>
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame"

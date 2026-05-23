@@ -5,6 +5,7 @@ import {
   createSavedWorkflow,
   createWorkflowDraft,
   getWorkflowSteps,
+  workflowTemplates,
   workflowSkills,
 } from './workflowStudioModel';
 import { createInitialAgentControlState, getAgentDescriptorById } from '../agent-control';
@@ -93,5 +94,15 @@ describe('workflow studio model', () => {
     ]);
 
     expect(synced.steps.find((step) => step.id === approvalStep.id)?.status).toBe('completed');
+  });
+
+  it('includes operational runbooks for home, support, and safety workflows', () => {
+    expect(workflowTemplates.map((template) => template.id)).toEqual(expect.arrayContaining([
+      'solar-surplus-optimization',
+      'leave-home-security',
+      'night-energy-saving',
+      'support-diagnostics',
+      'emergency-safety-check',
+    ]));
   });
 });

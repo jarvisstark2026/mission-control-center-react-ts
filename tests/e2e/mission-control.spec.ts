@@ -42,6 +42,13 @@ test('operational core widgets launch and use mock live data', async ({ page }) 
   await expect(page.getByText('energy, safety, automation, and rooms').first()).toBeVisible();
   await expect(page.getByText('Solar PV').first()).toBeVisible();
   await expect(page.getByText('Wall tablets').first()).toBeVisible();
+  await page.locator('.home-action-card', { hasText: 'Use solar surplus' }).getByRole('button', { name: 'Stage proposal' }).click();
+  await expect(page.getByText('Sent to Command Inbox.')).toBeVisible();
+
+  await openWidget(page, 'Command inbox');
+  await expect(page.getByText('Use solar surplus').first()).toBeVisible();
+  await page.locator('.mission-control-card', { hasText: 'Use solar surplus' }).getByRole('button', { name: 'Approve' }).click();
+  await expect(page.getByText(/Mock gateway completed/).first()).toBeVisible();
 });
 
 test('workflow runbook can stage agent approval through Command Inbox', async ({ page }) => {
@@ -69,5 +76,7 @@ test('guest access can read command inbox but cannot approve commands', async ({
   await page.getByRole('button', { name: 'Open widget' }).click();
   await expect(page.getByRole('menuitem', { name: 'Agent control' })).toHaveCount(0);
   await expect(page.getByRole('menuitem', { name: 'Agent console' })).toHaveCount(0);
-  await expect(page.getByRole('menuitem', { name: 'Home systems' })).toHaveCount(0);
+  await expect(page.getByRole('menuitem', { name: 'Home systems' })).toBeVisible();
+  await page.getByRole('menuitem', { name: 'Home systems' }).click();
+  await expect(page.getByText('This access scope can monitor Home Systems but cannot stage home actions.')).toBeVisible();
 });

@@ -223,6 +223,14 @@ describe('Workspace header controls', () => {
     expect(currentRender.getAllByText('energy, safety, automation, and rooms').length).toBeGreaterThan(0);
     expect(currentRender.getAllByText('Solar PV').length).toBeGreaterThan(0);
     expect(currentRender.getAllByText('CCTV and doorbell').length).toBeGreaterThan(0);
+    const solarActionCard = currentRender.getByText('Use solar surplus').closest('.operational-attention-card');
+    expect(solarActionCard).toBeInTheDocument();
+    fireEvent.click(within(solarActionCard as HTMLElement).getByRole('button', { name: 'Stage proposal' }));
+    expect(currentRender.getByText('Sent to Command Inbox.')).toBeInTheDocument();
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
+    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Command inbox' }));
+    expect(currentRender.getAllByText('home-systems:energy').length).toBeGreaterThan(0);
   }, 40000);
 
   it('starts workflow runbooks and stages approval steps in Command Inbox', () => {
@@ -241,7 +249,7 @@ describe('Workspace header controls', () => {
     expect(currentRender.getAllByText('Jarvis Workflow').length).toBeGreaterThan(0);
   }, 20000);
 
-  it('opens Agent Control from the launcher and hides it from guest launch surfaces', () => {
+  it('opens Agent Control from the launcher while guest launch surfaces keep agent tools hidden', () => {
     const adminWorkspace = render(<Workspace role="admin" />);
     const adminRender = within(adminWorkspace.container);
     const launcherWidget = adminWorkspace.container.querySelector<HTMLElement>('.workspace-widget.kind-launcher');
@@ -262,11 +270,11 @@ describe('Workspace header controls', () => {
 
     expect(guestRender.queryByRole('menuitem', { name: 'Agent control' })).not.toBeInTheDocument();
     expect(guestRender.queryByRole('menuitem', { name: 'Agent console' })).not.toBeInTheDocument();
-    expect(guestRender.queryByRole('menuitem', { name: 'Home systems' })).not.toBeInTheDocument();
+    expect(guestRender.getByRole('menuitem', { name: 'Home systems' })).toBeInTheDocument();
     const guestLauncherWidget = guestWorkspace.container.querySelector<HTMLElement>('.workspace-widget.kind-launcher');
     expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent control/i })).not.toBeInTheDocument();
     expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent console/i })).not.toBeInTheDocument();
-    expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /home systems/i })).not.toBeInTheDocument();
+    expect(within(guestLauncherWidget as HTMLElement).getByRole('button', { name: /home systems/i })).toBeInTheDocument();
   }, 20000);
 
   it('keeps command approvals role gated inside the command inbox', () => {

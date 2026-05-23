@@ -4,6 +4,8 @@ import type { ShellRole } from '../../shell/roles';
 import type { MissionControlRuntime } from '../../mission-control';
 import { AttentionCard, EvidenceBlock, PermissionBadge, RiskBadge, StatusSummary } from '../operationalBlocks';
 import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame } from '../workspaceBlocks';
+import { createHomeSystemActionEvents, getHomeSystemActionPlansForRole, type HomeSystemActionId } from '../homeSystemsActions';
+import { useHomeSystemsData } from '../homeSystemsAdapter';
 import {
   defaultVisibleHomeEnergySeriesIds,
   getHomeEnergyBalance,
@@ -12,9 +14,8 @@ import {
   getHomeSystemGroups,
   getHomeSystemHealthSummary,
   getHomeTabletPropagationSummary,
-  homeEnergyDailyProfile,
   homeEnergySeries,
-  homeEnergySnapshot,
+  type HomeEnergyDailySample,
   type HomeEnergySeries,
   type HomeEnergySeriesId,
   type HomeSystemStatus,
@@ -41,8 +42,8 @@ function formatKwh(value: number) {
   return `${value.toFixed(1)} kWh`;
 }
 
-function buildEnergySeriesPoints(series: HomeEnergySeries, maxKw: number) {
-  return homeEnergyDailyProfile
+function buildEnergySeriesPoints(series: HomeEnergySeries, dailyProfile: HomeEnergyDailySample[], maxKw: number) {
+  return dailyProfile
     .map((sample) => {
       const x = (sample.hour / 24) * 100;
       const y = 100 - (sample[series.id] / maxKw) * 100;
@@ -59,21 +60,25 @@ export function HomeSystemsWidget({
   missionControl: MissionControlRuntime;
 }) {
   const [visibleSeriesIds, setVisibleSeriesIds] = useState<HomeEnergySeriesId[]>(defaultVisibleHomeEnergySeriesIds);
-  const balance = getHomeEnergyBalance();
-  const summary = getHomeSystemHealthSummary();
-  const tabletSummary = getHomeTabletPropagationSummary();
-  const groups = getHomeSystemGroups();
+  const [stagedActionId, setStagedActionId] = useState<HomeSystemActionId | null>(null);
+  const homeSystems = useHomeSystemsData();
+  const { dailyProfile, records, snapshot, sourceStatus } = homeSystems;
+  const balance = getHomeEnergyBalance(snapshot);
+  const summary = getHomeSystemHealthSummary(records);
+  const tabletSummary = getHomeTabletPropagationSummary(records);
+  const groups = getHomeSystemGroups(records);
+  const actionPlans = getHomeSystemActionPlansForRole(role);
   const netDirection = balance.mode === 'exporting' ? 'export surplus' : balance.mode === 'importing' ? 'import required' : 'balanced';
   const visibleSeries = useMemo(
     () => homeEnergySeries.filter((series) => visibleSeriesIds.includes(series.id)),
     [visibleSeriesIds],
   );
-  const seriesTotals = useMemo(() => getHomeEnergySeriesTotals(), []);
+  const seriesTotals = useMemo(() => getHomeEnergySeriesTotals(dailyProfile), [dailyProfile]);
   const visibleSeriesTotals = useMemo(
     () => seriesTotals.filter((series) => visibleSeriesIds.includes(series.id)),
     [seriesTotals, visibleSeriesIds],
   );
-  const maxKw = useMemo(() => getHomeEnergyDailyPeak(), []);
+  const maxKw = useMemo(() => getHomeEnergyDailyPeak(dailyProfile), [dailyProfile]);
   const mainTotals = {
     grid: seriesTotals.find((series) => series.id === 'gridImportKw')?.totalKwh ?? 0,
     solar: seriesTotals.find((series) => series.id === 'solarPvKw')?.totalKwh ?? 0,
@@ -91,21 +96,28 @@ export function HomeSystemsWidget({
       return [...current, seriesId];
     });
   };
+  const stageHomeAction = (actionId: HomeSystemActionId) => {
+    const events = createHomeSystemActionEvents(actionId, role);
+    if (!events.length) return;
+
+    missionControl.ingestEvents(events);
+    setStagedActionId(actionId);
+  };
 
   return (
     <WorkspaceContentShell className="mission-control-surface home-systems-surface">
       <WorkspaceContentHeader
         eyebrow="Home systems"
         title="energy, safety, automation, and rooms"
-        metaEyebrow="access"
+        metaEyebrow={sourceStatus}
         meta={role}
       />
 
       <StatusSummary
         label="Whole-home state"
-        title={`${formatKw(homeEnergySnapshot.generationKw)} generating / ${formatKw(homeEnergySnapshot.consumptionKw)} consuming`}
-        detail="This widget is the home control surface: energy, Solar PV, EV charging, AC, appliances, automation, safety, cameras, pool, tablets, and other devices. Control actions should be staged through Command Inbox when the backend is connected."
-        meta={missionControl.state.connection}
+        title={`${formatKw(snapshot.generationKw)} generating / ${formatKw(snapshot.consumptionKw)} consuming`}
+        detail={homeSystems.error ?? 'This widget is the home control surface: energy, Solar PV, EV charging, AC, appliances, automation, safety, cameras, pool, tablets, and other devices. Control actions are staged through Command Inbox.'}
+        meta={sourceStatus}
       />
 
       <WorkspaceMetricGrid
@@ -119,8 +131,8 @@ export function HomeSystemsWidget({
           { label: 'Power slots', value: formatKwh(mainTotals.sockets) },
           { label: 'Net balance', value: `${balance.netKw >= 0 ? '+' : ''}${formatKw(balance.netKw)}` },
           { label: 'Self supply', value: `${balance.selfSupplyPercent}%` },
-          { label: 'Battery', value: `${homeEnergySnapshot.batteryPercent}%` },
-          { label: 'EV range', value: `${homeEnergySnapshot.evRangeKm} km` },
+          { label: 'Battery', value: `${snapshot.batteryPercent}%` },
+          { label: 'EV range', value: `${snapshot.evRangeKm} km` },
         ]}
       />
 
@@ -177,7 +189,7 @@ export function HomeSystemsWidget({
                 <line key={`x-${position}`} className="home-energy-chart-grid-line" x1={position} x2={position} y1="0" y2="100" />
               ))}
               {visibleSeries.map((series) => {
-                const points = buildEnergySeriesPoints(series, maxKw);
+                const points = buildEnergySeriesPoints(series, dailyProfile, maxKw);
 
                 return (
                   <g className="home-energy-chart-series" key={series.id} style={{ '--series-color': series.color } as CSSProperties}>
@@ -208,13 +220,48 @@ export function HomeSystemsWidget({
 
           <div className="home-energy-flow-copy">
             <EvidenceBlock label="Live balance" title={netDirection}>
-              Current generation is {formatKw(homeEnergySnapshot.generationKw)} against {formatKw(homeEnergySnapshot.consumptionKw)} home load.
+              Current generation is {formatKw(snapshot.generationKw)} against {formatKw(snapshot.consumptionKw)} home load.
             </EvidenceBlock>
             <EvidenceBlock label="Useful layers" title="solar / grid / battery / EV / AC / sockets">
               Toggle layers to isolate where energy went across the day without leaving the home control workflow.
             </EvidenceBlock>
           </div>
         </div>
+      </WorkspaceSectionFrame>
+
+      <WorkspaceSectionFrame
+        className="mission-control-list-frame home-action-frame"
+        eyebrow="actions"
+        title="stage home proposals"
+        meta={actionPlans.length ? 'Command Inbox gated' : 'read only'}
+      >
+        {actionPlans.length ? (
+          <div className="home-action-grid" role="list" aria-label="Home action proposals">
+            {actionPlans.map((plan) => (
+              <AttentionCard
+                key={plan.id}
+                className="home-action-card"
+                label={`${plan.sourceArea} / ${plan.scope}`}
+                title={plan.title}
+                risk={plan.risk}
+                actions={
+                  <WorkspaceButton
+                    variant={plan.risk === 'critical' ? 'destructive' : 'secondary'}
+                    className="mission-control-action"
+                    onClick={() => stageHomeAction(plan.id)}
+                  >
+                    Stage proposal
+                  </WorkspaceButton>
+                }
+              >
+                <p>{plan.summary}</p>
+                <small>{stagedActionId === plan.id ? 'Sent to Command Inbox.' : plan.expectedResult}</small>
+              </AttentionCard>
+            ))}
+          </div>
+        ) : (
+          <p className="mission-control-empty">This access scope can monitor Home Systems but cannot stage home actions.</p>
+        )}
       </WorkspaceSectionFrame>
 
       <AttentionCard
@@ -269,7 +316,7 @@ export function HomeSystemsWidget({
       <StatusSummary
         label="Control mode"
         title={getControlMode(role)}
-        detail="The first version is a typed local/mock dashboard. Backend adapters can later provide live meter, inverter, EV, alarm, camera, pool, tablet, and appliance state."
+        detail="This surface is backend-ready through VITE_HOME_SYSTEMS_API_URL. Until a local backend is connected, it uses typed mock energy, device, and automation data."
         meta={`${summary.total} tracked`}
       />
     </WorkspaceContentShell>

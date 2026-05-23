@@ -58,7 +58,7 @@ const workspaceLauncherKinds = workspaceShortcutKinds.filter((kind) => kind !== 
 const workspaceWidgetAllowedRoles: Partial<Record<WorkspaceWidget['kind'], ShellRole[]>> = {
   'agent-control': ['admin', 'support', 'home'],
   'agent-console': ['admin', 'support', 'home'],
-  'home-systems': ['admin', 'support', 'home'],
+  'home-systems': ['admin', 'support', 'home', 'guest'],
 };
 
 export function isWorkspaceWidgetAllowedForRole(kind: WorkspaceWidget['kind'], role: ShellRole) {

@@ -74,6 +74,8 @@ export function CommandInboxWidget({ missionControl }: { missionControl: Mission
           />
           <EvidenceBlock label="Why">{nextCommand.reasoning}</EvidenceBlock>
           <EvidenceBlock label="Expected result">{nextCommand.expectedResult}</EvidenceBlock>
+          <EvidenceBlock label="Origin">{nextCommand.source}</EvidenceBlock>
+          <EvidenceBlock label="Execution state">{nextCommand.execution.result}</EvidenceBlock>
         </AttentionCard>
       ) : null}
 

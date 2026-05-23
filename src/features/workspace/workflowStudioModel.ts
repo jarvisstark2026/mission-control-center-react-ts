@@ -51,6 +51,41 @@ export const workflowTemplates: WorkflowTemplate[] = [
     steps: ['Inspect the pattern', 'Write the skill rules', 'Add pitfalls', 'Validate the flow', 'Publish the skill'],
     skillIds: ['authoring', 'review', 'publishing'],
   },
+  {
+    id: 'solar-surplus-optimization',
+    title: 'Solar surplus optimization',
+    summary: 'Use Solar PV surplus for flexible home loads without bypassing approval.',
+    steps: ['Check solar surplus', 'Rank flexible loads', 'Stage EV or battery action', 'Approve in Command Inbox', 'Verify grid import dropped'],
+    skillIds: ['home-energy', 'planning', 'verification'],
+  },
+  {
+    id: 'leave-home-security',
+    title: 'Leave home security routine',
+    summary: 'Prepare the home for departure with automation and security checks.',
+    steps: ['Check occupancy state', 'Close automated windows', 'Verify cameras and doorbell', 'Stage alarm arm request', 'Confirm perimeter state'],
+    skillIds: ['home-automation', 'security', 'verification'],
+  },
+  {
+    id: 'night-energy-saving',
+    title: 'Night energy saving',
+    summary: 'Reduce overnight load while preserving comfort and safety.',
+    steps: ['Review next schedule block', 'Reduce AC load', 'Pause flexible appliances', 'Set pool pump to daytime', 'Confirm comfort band'],
+    skillIds: ['home-energy', 'planning', 'verification'],
+  },
+  {
+    id: 'support-diagnostics',
+    title: 'Support diagnostics',
+    summary: 'Collect non-invasive state before support changes anything.',
+    steps: ['Collect integration heartbeats', 'Review degraded devices', 'Stage diagnostic command', 'Capture findings', 'Escalate only if needed'],
+    skillIds: ['support', 'discovery', 'verification'],
+  },
+  {
+    id: 'emergency-safety-check',
+    title: 'Emergency safety check',
+    summary: 'Verify smoke, alarm, cameras, and access state without direct execution.',
+    steps: ['Confirm safety sensor state', 'Check alarm panel', 'Review CCTV/NVR health', 'Stage critical action if required', 'Record audit note'],
+    skillIds: ['security', 'review', 'verification'],
+  },
 ];
 
 export const workflowSkills: WorkflowSkill[] = [
@@ -62,6 +97,10 @@ export const workflowSkills: WorkflowSkill[] = [
   { id: 'pdf', title: 'PDF handout', summary: 'Prepare a print-ready export for sharing.' },
   { id: 'review', title: 'Review', summary: 'Catch edge cases before the workflow is published.' },
   { id: 'publishing', title: 'Publishing', summary: 'Package the workflow for reuse by others.' },
+  { id: 'home-energy', title: 'Home energy', summary: 'Balance Solar PV, grid import, battery, EV, AC, sockets, and pool loads.' },
+  { id: 'home-automation', title: 'Home automation', summary: 'Coordinate household actuators through Command Inbox instead of direct execution.' },
+  { id: 'security', title: 'Security', summary: 'Keep alarm, CCTV, and safety actions behind stricter approval.' },
+  { id: 'support', title: 'Support diagnostics', summary: 'Collect diagnostics without changing physical home state.' },
 ];
 
 export const workflowStudioStorageKey = 'mission-control-center.workflow-studio.v1';

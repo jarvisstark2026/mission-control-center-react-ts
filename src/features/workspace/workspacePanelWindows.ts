@@ -12,12 +12,6 @@ type TauriWindow = Window & {
   __TAURI_INTERNALS__?: unknown;
 };
 
-type TauriWorkspaceWindow = {
-  setFocus: () => Promise<void>;
-  once: (event: string, handler: () => void) => Promise<() => void>;
-  onCloseRequested?: (handler: () => void) => Promise<() => void>;
-};
-
 function isTauriRuntime() {
   return typeof window !== 'undefined' && Boolean((window as TauriWindow).__TAURI_INTERNALS__);
 }
@@ -28,14 +22,6 @@ function createTauriWorkspaceWindowLabel(instanceId: string) {
 
 function getTauriWindowUrl(url: URL) {
   return `${url.pathname}${url.search}${url.hash}`;
-}
-
-function trackTauriWorkspaceWindowClose(workspaceWindow: TauriWorkspaceWindow, instanceId: string) {
-  const unlistenPromise = workspaceWindow.onCloseRequested?.(() => {
-    markWorkspaceInstanceRestorable(instanceId);
-  });
-
-  void unlistenPromise?.catch(() => undefined);
 }
 
 function openTauriWorkspaceExtensionWindow(instanceId: string, url: URL) {
@@ -51,7 +37,6 @@ function openTauriWorkspaceExtensionWindow(instanceId: string, url: URL) {
       const existingWindow = await WebviewWindow.getByLabel(label).catch(() => null);
 
       if (existingWindow) {
-        trackTauriWorkspaceWindowClose(existingWindow, instanceId);
         await existingWindow.setFocus().catch(() => undefined);
         return;
       }
@@ -67,7 +52,6 @@ function openTauriWorkspaceExtensionWindow(instanceId: string, url: URL) {
         focus: true,
       });
 
-      trackTauriWorkspaceWindowClose(workspaceWindow, instanceId);
       void workspaceWindow.once('tauri://created', () => {
         void workspaceWindow.setFocus().catch(() => undefined);
       });
@@ -79,6 +63,15 @@ function openTauriWorkspaceExtensionWindow(instanceId: string, url: URL) {
       markWorkspaceInstanceRestorable(instanceId);
     });
 
+  return true;
+}
+
+function closeCurrentTauriWindow() {
+  if (!isTauriRuntime()) return false;
+
+  void import('@tauri-apps/api/window')
+    .then(({ getCurrentWindow }) => getCurrentWindow().close())
+    .catch(() => undefined);
   return true;
 }
 
@@ -110,6 +103,8 @@ export function returnToWorkspaceHub() {
 export function closeWorkspacePanelWindow() {
   if (typeof window === 'undefined') return false;
 
+  if (closeCurrentTauriWindow()) return true;
+
   window.close();
   if (!window.closed) {
     return returnToWorkspaceHub();
@@ -122,6 +117,8 @@ export function closeWorkspaceExtensionWindow() {
   if (typeof window === 'undefined') return false;
 
   markCurrentWorkspaceExtensionClosed();
+  if (closeCurrentTauriWindow()) return true;
+
   window.close();
   if (!window.closed) {
     return returnToWorkspaceHub();

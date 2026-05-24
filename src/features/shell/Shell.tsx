@@ -32,6 +32,10 @@ type ShellProps = {
   onNavigate: (nextLocation: { panelKind: WorkspaceWidget['kind'] | null; role: ShellRole }) => void;
 };
 
+type TauriWindow = Window & {
+  __TAURI_INTERNALS__?: unknown;
+};
+
 function closeDetachedWindow(navigateToPanel: (target: WorkspaceWidget['kind'] | null) => void) {
   if (window.opener) {
     window.close();
@@ -42,6 +46,28 @@ function closeDetachedWindow(navigateToPanel: (target: WorkspaceWidget['kind'] |
   }
 
   navigateToPanel(null);
+}
+
+function subscribeTauriWorkspaceFrameClose(workspaceId: string) {
+  if (typeof window === 'undefined' || !(window as TauriWindow).__TAURI_INTERNALS__) {
+    return () => undefined;
+  }
+
+  let unlisten: (() => void) | null = null;
+  void import('@tauri-apps/api/window')
+    .then(({ getCurrentWindow }) =>
+      getCurrentWindow().onCloseRequested(() => {
+        markWorkspaceInstanceRestorable(workspaceId);
+      }),
+    )
+    .then((nextUnlisten) => {
+      unlisten = nextUnlisten;
+    })
+    .catch(() => undefined);
+
+  return () => {
+    unlisten?.();
+  };
 }
 
 export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }: ShellProps) {
@@ -65,6 +91,7 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
     const unsubscribeCloseRequests = currentExtensionId
       ? subscribeWorkspaceInstanceCloseRequests(currentExtensionId, closeWorkspaceExtensionWindow)
       : () => undefined;
+    const unsubscribeTauriFrameClose = currentExtensionId ? subscribeTauriWorkspaceFrameClose(currentExtensionId) : () => undefined;
     const unregisterExtensionUnload = currentExtensionId
       ? (() => {
           const unregisterCurrentExtension = () => markWorkspaceInstanceRestorable(currentExtensionId);
@@ -99,6 +126,7 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
         window.clearInterval(pruneClosedInstancesInterval);
       }
       unregisterExtensionUnload();
+      unsubscribeTauriFrameClose();
       unsubscribeInstances();
       unsubscribeCloseRequests();
       if (currentExtensionId) {

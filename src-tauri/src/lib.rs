@@ -1,6 +1,6 @@
 use std::{collections::BTreeMap, fs, path::PathBuf};
 
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
 
 type DesktopState = BTreeMap<String, String>;
 
@@ -49,6 +49,28 @@ fn remove_app_state(app: AppHandle, key: String) -> Result<(), String> {
 
 pub fn run() {
     tauri::Builder::default()
+        .setup(|app| {
+            let main_window = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
+                .title("Mission Control Center")
+                .inner_size(1440.0, 960.0)
+                .min_inner_size(1100.0, 720.0)
+                .resizable(true)
+                .center()
+                .visible(true)
+                .focused(true)
+                .build()?;
+
+            let _ = main_window.show();
+            let _ = main_window.set_focus();
+
+            Ok(())
+        })
+        .on_page_load(|webview, _payload| {
+            if webview.label() == "main" {
+                let _ = webview.show();
+                let _ = webview.set_focus();
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             load_app_state,
             write_app_state,

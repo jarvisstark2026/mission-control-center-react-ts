@@ -14,11 +14,16 @@
       {
         "title": "Mission Control Center",
         "label": "main",
+        "create": false,
         "width": 1440,
         "height": 960,
         "minWidth": 1100,
         "minHeight": 720,
         "resizable": true,
+        "decorations": true,
+        "center": true,
+        "visible": true,
+        "focus": true,
         "fullscreen": false
       }
     ],

@@ -23,7 +23,7 @@
   position: absolute;
   z-index: 0;
   border-radius: 50%;
-  filter: blur(22px);
+  opacity: 0.72;
   pointer-events: none;
 }
 
@@ -33,7 +33,6 @@
   top: -130px;
   right: -100px;
   background: radial-gradient(circle, rgba(177, 215, 255, 0.044), transparent 68%);
-  animation: driftA 18s ease-in-out infinite alternate;
 }
 
 .workspace-atmosphere-b {
@@ -42,7 +41,6 @@
   left: -180px;
   bottom: -140px;
   background: radial-gradient(circle, rgba(255, 255, 255, 0.03), transparent 68%);
-  animation: driftB 24s ease-in-out infinite alternate;
 }
 
 .workspace-head {
@@ -997,19 +995,17 @@
     radial-gradient(circle at 88% 100%, rgba(255, 188, 92, 0.032), transparent 34%),
     var(--glass-panel-bg);
   box-shadow:
-    var(--glass-shadow),
-    0 0 28px rgba(86, 221, 255, 0.045),
+    0 14px 34px rgba(0, 0, 0, 0.3),
+    0 0 14px rgba(86, 221, 255, 0.028),
     inset 0 1px 0 rgba(255, 255, 255, 0.052);
   user-select: none;
   touch-action: none;
   cursor: grab;
   contain: layout paint style;
-  will-change: transform, opacity;
+  will-change: auto;
   transition:
     transform var(--motion-fast),
-    box-shadow var(--motion-fast),
-    opacity var(--motion-fast),
-    filter var(--motion-fast);
+    opacity var(--motion-fast);
 }
 
 .workspace-widget::before,
@@ -1050,8 +1046,8 @@
 .workspace-widget:hover {
   transform: translateY(-1px);
   box-shadow:
-    0 22px 54px rgba(0, 0, 0, 0.38),
-    0 0 34px rgba(86, 221, 255, 0.075),
+    0 18px 42px rgba(0, 0, 0, 0.34),
+    0 0 18px rgba(86, 221, 255, 0.052),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
@@ -1062,12 +1058,13 @@
 .workspace-widget:active {
   cursor: grabbing;
   transition: none;
+  will-change: transform;
 }
 
 .workspace-shell.is-interacting .workspace-widget {
   transition: none;
   box-shadow:
-    0 12px 24px rgba(0, 0, 0, 0.34),
+    0 8px 18px rgba(0, 0, 0, 0.28),
     inset 0 1px 0 rgba(255, 255, 255, 0.045);
 }
 

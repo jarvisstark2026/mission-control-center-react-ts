@@ -453,7 +453,6 @@
   text-align: left;
   cursor: pointer;
   box-shadow: var(--glass-shadow-soft);
-  backdrop-filter: var(--glass-blur-strong);
 }
 
 .shell-theme-menu-trigger {
@@ -471,7 +470,6 @@
   text-align: left;
   cursor: pointer;
   box-shadow: var(--glass-shadow-soft);
-  backdrop-filter: var(--glass-blur-strong);
 }
 
 .shell-role-menu-trigger span,
@@ -533,10 +531,7 @@
   box-shadow:
     var(--glass-shadow-overlay),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: var(--glass-blur-strong);
-  -webkit-backdrop-filter: var(--glass-blur-strong);
   contain: layout style;
-  will-change: transform;
 }
 
 .shell-theme-menu-panel {
@@ -553,10 +548,7 @@
   box-shadow:
     var(--glass-shadow-overlay),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  backdrop-filter: var(--glass-blur-strong);
-  -webkit-backdrop-filter: var(--glass-blur-strong);
   contain: layout style;
-  will-change: transform;
 }
 
 .shell-role-menu-item {

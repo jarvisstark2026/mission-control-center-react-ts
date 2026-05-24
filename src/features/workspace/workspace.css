@@ -206,6 +206,7 @@
   width: 60px;
   min-width: 60px;
   min-height: 60px;
+  margin-left: 10px;
   margin-bottom: 10px;
   margin-right: 9px;
   border-color: rgba(86, 221, 255, 0.28);
@@ -286,12 +287,12 @@
 .workspace-tracker-group {
   position: relative;
   display: grid;
-  grid-template-columns: 26px minmax(48px, auto);
+  grid-template-columns: 30px minmax(48px, auto);
   grid-template-rows: auto;
   grid-template-areas:
     'label windows';
   align-items: center;
-  gap: 6px;
+  gap: 9px;
   flex: 0 0 auto;
   min-height: 56px;
   min-width: 0;
@@ -309,7 +310,8 @@
 }
 
 .workspace-tracker-group + .workspace-tracker-group {
-  padding-left: 4px;
+  margin-left: 12px;
+  padding-left: 10px;
 }
 
 .workspace-tracker-group::before {
@@ -322,8 +324,8 @@
   grid-area: label;
   place-items: center;
   align-self: stretch;
-  width: 24px;
-  min-width: 24px;
+  width: 28px;
+  min-width: 28px;
   height: 34px;
   padding: 0;
   overflow: hidden;
@@ -6522,6 +6524,7 @@
     width: 52px;
     min-width: 52px;
     min-height: 52px;
+    margin-left: 8px;
     margin-right: 7px;
   }
 
@@ -6552,8 +6555,8 @@
   }
 
   .workspace-tracker-group {
-    grid-template-columns: 22px minmax(40px, auto);
-    gap: 4px;
+    grid-template-columns: 26px minmax(40px, auto);
+    gap: 7px;
   }
 
   .workspace-tracker-group::before {
@@ -6562,12 +6565,13 @@
   }
 
   .workspace-tracker-group + .workspace-tracker-group {
-    padding-left: 3px;
+    margin-left: 9px;
+    padding-left: 7px;
   }
 
   .workspace-tracker-group-label {
-    width: 22px;
-    min-width: 22px;
+    width: 24px;
+    min-width: 24px;
     height: 29px;
     padding: 0;
   }

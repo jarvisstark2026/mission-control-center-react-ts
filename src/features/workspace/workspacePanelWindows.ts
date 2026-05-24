@@ -12,6 +12,12 @@ type TauriWindow = Window & {
   __TAURI_INTERNALS__?: unknown;
 };
 
+type TauriWorkspaceWindow = {
+  setFocus: () => Promise<void>;
+  once: (event: string, handler: () => void) => Promise<() => void>;
+  onCloseRequested?: (handler: () => void) => Promise<() => void>;
+};
+
 function isTauriRuntime() {
   return typeof window !== 'undefined' && Boolean((window as TauriWindow).__TAURI_INTERNALS__);
 }
@@ -22,6 +28,14 @@ function createTauriWorkspaceWindowLabel(instanceId: string) {
 
 function getTauriWindowUrl(url: URL) {
   return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function trackTauriWorkspaceWindowClose(workspaceWindow: TauriWorkspaceWindow, instanceId: string) {
+  const unlistenPromise = workspaceWindow.onCloseRequested?.(() => {
+    markWorkspaceInstanceRestorable(instanceId);
+  });
+
+  void unlistenPromise?.catch(() => undefined);
 }
 
 function openTauriWorkspaceExtensionWindow(instanceId: string, url: URL) {
@@ -37,6 +51,7 @@ function openTauriWorkspaceExtensionWindow(instanceId: string, url: URL) {
       const existingWindow = await WebviewWindow.getByLabel(label).catch(() => null);
 
       if (existingWindow) {
+        trackTauriWorkspaceWindowClose(existingWindow, instanceId);
         await existingWindow.setFocus().catch(() => undefined);
         return;
       }
@@ -52,6 +67,7 @@ function openTauriWorkspaceExtensionWindow(instanceId: string, url: URL) {
         focus: true,
       });
 
+      trackTauriWorkspaceWindowClose(workspaceWindow, instanceId);
       void workspaceWindow.once('tauri://created', () => {
         void workspaceWindow.setFocus().catch(() => undefined);
       });

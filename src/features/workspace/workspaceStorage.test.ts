@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { workspacePersistenceChangeEventName } from './workspacePersistence';
 import { widgetBlueprints, widgetPresets } from './workspaceWidgetCatalog';
 import {
   clearAllStoredWidgetStates,
@@ -8,6 +9,7 @@ import {
   hasStoredWidgetState,
   loadStoredWidgetState,
   saveStoredWidgetState,
+  subscribeStoredWidgetState,
   workspaceStorageKey,
 } from './workspaceStorage';
 import type { WorkspaceWidget } from './workspaceTypes';
@@ -68,6 +70,30 @@ describe('workspace storage', () => {
 
     expect(restoredMain?.find((widget) => widget.id === firstWidget.id)?.x).toBe(120);
     expect(restoredExtension?.find((widget) => widget.id === firstWidget.id)?.x).toBe(640);
+  });
+
+  it('notifies workspace widget subscribers when a desktop persistence change arrives', () => {
+    let notificationCount = 0;
+    const workspaceId = 'workspace-1';
+    const storageKey = getWorkspaceWidgetStorageKey(workspaceId);
+    const unsubscribe = subscribeStoredWidgetState(workspaceId, () => {
+      notificationCount += 1;
+    });
+
+    window.dispatchEvent(
+      new CustomEvent(workspacePersistenceChangeEventName, {
+        detail: { key: storageKey, action: 'write', value: '[]' },
+      }),
+    );
+    window.dispatchEvent(
+      new CustomEvent(workspacePersistenceChangeEventName, {
+        detail: { key: getWorkspaceWidgetStorageKey('workspace-2'), action: 'write', value: '[]' },
+      }),
+    );
+
+    unsubscribe();
+
+    expect(notificationCount).toBe(1);
   });
 
   it('stores explicit mode layouts separately from the last working workspace layout', () => {

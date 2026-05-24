@@ -5,6 +5,20 @@ export type WorkspacePersistenceAdapter = {
   keys: () => string[];
 };
 
+export type WorkspacePersistenceChangeDetail = {
+  key: string;
+  action: 'write' | 'remove';
+  value?: string;
+};
+
+export const workspacePersistenceChangeEventName = 'mission-control-workspace-persistence-change';
+
+export function emitWorkspacePersistenceChange(detail: WorkspacePersistenceChangeDetail) {
+  if (typeof window === 'undefined') return;
+
+  window.dispatchEvent(new CustomEvent(workspacePersistenceChangeEventName, { detail }));
+}
+
 function getLocalStorage() {
   if (typeof window === 'undefined') return null;
   return window.localStorage;

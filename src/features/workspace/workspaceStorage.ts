@@ -1,4 +1,5 @@
 import { listLocalStorageKeys, readLocalStorageJson, readStorageText, removeLocalStorageItem, writeLocalStorageJson } from './browserStorage';
+import { workspacePersistenceChangeEventName, type WorkspacePersistenceChangeDetail } from './workspacePersistence';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from './workspaceTypes';
 
 export type WidgetBlueprint = Pick<WorkspaceWidget, 'title' | 'subtitle' | 'surfaceAlpha' | 'lineAlpha' | 'minWidth' | 'minHeight'>;
@@ -190,7 +191,15 @@ export function subscribeStoredWidgetState(workspaceId: string, onChange: () => 
   const handleStorage = (event: StorageEvent) => {
     if (event.key === storageKey) onChange();
   };
+  const handlePersistenceChange = (event: Event) => {
+    const detail = (event as CustomEvent<WorkspacePersistenceChangeDetail>).detail;
+    if (detail?.key === storageKey) onChange();
+  };
 
   window.addEventListener('storage', handleStorage);
-  return () => window.removeEventListener('storage', handleStorage);
+  window.addEventListener(workspacePersistenceChangeEventName, handlePersistenceChange);
+  return () => {
+    window.removeEventListener('storage', handleStorage);
+    window.removeEventListener(workspacePersistenceChangeEventName, handlePersistenceChange);
+  };
 }

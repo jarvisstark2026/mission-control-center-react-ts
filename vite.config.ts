@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   test: {
     exclude: ['**/node_modules/**', '**/dist/**', 'tests/e2e/**'],
+    fileParallelism: false,
   },
   preview: {
     host: '127.0.0.1',

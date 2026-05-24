@@ -55,5 +55,11 @@ npm run desktop:build
 
 `npm run desktop:build` produces the Windows installer under `src-tauri/target/release/bundle/nsis/` after the Rust/Windows prerequisites are installed.
 
+Current release outputs:
+- Release executable: `src-tauri/target/release/mission-control-center.exe`
+- Windows installer: `src-tauri/target/release/bundle/nsis/Mission Control Center_0.1.0_x64-setup.exe`
+
+For release-candidate checks, run the installed app or release executable with no Vite dev server running. Verify separate workspace windows, layout/mode persistence, fullscreen, and responsiveness against `docs/desktop-release-candidate-qa.md`.
+
 ## Plan
 See `docs/plans/2026-05-18-mission-control-center-react-ts.md`.

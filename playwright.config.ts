@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const nodeCommand = JSON.stringify(process.execPath);
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
@@ -10,7 +12,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1',
+    command: `${nodeCommand} ./node_modules/vite/bin/vite.js --host 127.0.0.1`,
     url: 'http://127.0.0.1:5173/?role=admin',
     reuseExistingServer: true,
     timeout: 120_000,

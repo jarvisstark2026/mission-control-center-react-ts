@@ -354,7 +354,9 @@
 
 .workspace-tracker-item {
   display: inline-flex;
-  min-width: 0;
+  flex: 0 0 48px;
+  width: 48px;
+  min-width: 48px;
 }
 
 .workspace-tracker-group-meter {
@@ -441,7 +443,7 @@
   z-index: 1;
   width: 48px;
   height: 48px;
-  min-width: 0;
+  min-width: 48px;
   padding: 0;
   overflow: visible;
   border: 0;
@@ -6387,10 +6389,17 @@
     max-width: calc(100vw - 100px);
   }
 
+  .workspace-tracker-item {
+    flex-basis: 42px;
+    width: 42px;
+    min-width: 42px;
+  }
+
   .workspace-tracker-window {
     grid-template-columns: 36px;
     width: 42px;
     height: 42px;
+    min-width: 42px;
   }
 
   .workspace-tracker-window:hover,
@@ -6585,11 +6594,18 @@
     min-height: 42px;
   }
 
+  .workspace-tracker-item {
+    flex-basis: 38px;
+    width: 38px;
+    min-width: 38px;
+  }
+
   .workspace-tracker-window {
     grid-template-columns: 1fr;
     place-content: center;
     width: 38px;
     height: 38px;
+    min-width: 38px;
     padding: 0;
   }
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 
 import type { ShellRole } from '../shell/roles';
 import {
@@ -45,8 +45,12 @@ export function useMissionControl(role: ShellRole): MissionControlRuntime {
   useEffect(() => {
     const transport = createMissionControlTransport(getMissionControlSseUrl());
     const connection = transport.connect(
-      (events) => dispatch({ type: 'events', events }),
-      (connectionState) => dispatch({ type: 'connection', connection: connectionState }),
+      (events) => {
+        startTransition(() => dispatch({ type: 'events', events }));
+      },
+      (connectionState) => {
+        startTransition(() => dispatch({ type: 'connection', connection: connectionState }));
+      },
     );
 
     return () => connection.close();
@@ -63,10 +67,12 @@ export function useMissionControl(role: ShellRole): MissionControlRuntime {
   const ingestEvents = useCallback((events: MissionControlEvent[]) => {
     if (!events.length) return;
 
-    dispatch({
-      type: 'events',
-      events,
-    } satisfies MissionControlReducerAction);
+    startTransition(() => {
+      dispatch({
+        type: 'events',
+        events,
+      } satisfies MissionControlReducerAction);
+    });
   }, []);
 
   const dispatchCommandAction = useCallback(
@@ -74,25 +80,29 @@ export function useMissionControl(role: ShellRole): MissionControlRuntime {
       const command = state.commands.find((item) => item.id === commandId);
       if (!command || !getAllowedCommandActions(command, role).includes(action)) return;
 
-      dispatch({
-        type: 'command-action',
-        commandId,
-        action,
-        role,
-      } satisfies MissionControlReducerAction);
+      startTransition(() => {
+        dispatch({
+          type: 'command-action',
+          commandId,
+          action,
+          role,
+        } satisfies MissionControlReducerAction);
+      });
 
       if (action !== 'approve' && action !== 'override') return;
 
       const requestedAt = new Date().toISOString();
       window.setTimeout(() => {
-        dispatch({
-          type: 'command-execution',
-          commandId,
-          status: 'running',
-          result: `${commandGateway.mode === 'backend' ? 'Backend' : 'Local mock'} gateway is executing the command.`,
-          actor: `${commandGateway.mode}-command-gateway`,
-          timestamp: new Date().toISOString(),
-        } satisfies MissionControlReducerAction);
+        startTransition(() => {
+          dispatch({
+            type: 'command-execution',
+            commandId,
+            status: 'running',
+            result: `${commandGateway.mode === 'backend' ? 'Backend' : 'Local mock'} gateway is executing the command.`,
+            actor: `${commandGateway.mode}-command-gateway`,
+            timestamp: new Date().toISOString(),
+          } satisfies MissionControlReducerAction);
+        });
       }, 90);
 
       void commandGateway
@@ -103,26 +113,30 @@ export function useMissionControl(role: ShellRole): MissionControlRuntime {
           requestedAt,
         })
         .then((result) => {
-          dispatch({
-            type: 'command-execution',
-            commandId,
-            status: result.status,
-            result: result.result,
-            actor: `${result.gatewayMode}-command-gateway`,
-            timestamp: result.completedAt,
-            rollbackAvailable: result.rollbackAvailable,
-          } satisfies MissionControlReducerAction);
+          startTransition(() => {
+            dispatch({
+              type: 'command-execution',
+              commandId,
+              status: result.status,
+              result: result.result,
+              actor: `${result.gatewayMode}-command-gateway`,
+              timestamp: result.completedAt,
+              rollbackAvailable: result.rollbackAvailable,
+            } satisfies MissionControlReducerAction);
+          });
         })
         .catch((error: unknown) => {
-          dispatch({
-            type: 'command-execution',
-            commandId,
-            status: 'failed',
-            result: error instanceof Error ? error.message : 'Command gateway failed before returning a result.',
-            actor: `${commandGateway.mode}-command-gateway`,
-            timestamp: new Date().toISOString(),
-            rollbackAvailable: false,
-          } satisfies MissionControlReducerAction);
+          startTransition(() => {
+            dispatch({
+              type: 'command-execution',
+              commandId,
+              status: 'failed',
+              result: error instanceof Error ? error.message : 'Command gateway failed before returning a result.',
+              actor: `${commandGateway.mode}-command-gateway`,
+              timestamp: new Date().toISOString(),
+              rollbackAvailable: false,
+            } satisfies MissionControlReducerAction);
+          });
         });
     },
     [commandGateway, role, state.commands],
@@ -130,23 +144,27 @@ export function useMissionControl(role: ShellRole): MissionControlRuntime {
 
   const acknowledgeNotification = useCallback(
     (notificationId: string) => {
-      dispatch({
-        type: 'acknowledge-notification',
-        notificationId,
-        role,
-      } satisfies MissionControlReducerAction);
+      startTransition(() => {
+        dispatch({
+          type: 'acknowledge-notification',
+          notificationId,
+          role,
+        } satisfies MissionControlReducerAction);
+      });
     },
     [role],
   );
 
   const setIntegrationPermission = useCallback(
     (integrationId: string, permission: IntegrationPermission) => {
-      dispatch({
-        type: 'set-integration-permission',
-        integrationId,
-        permission,
-        role,
-      } satisfies MissionControlReducerAction);
+      startTransition(() => {
+        dispatch({
+          type: 'set-integration-permission',
+          integrationId,
+          permission,
+          role,
+        } satisfies MissionControlReducerAction);
+      });
     },
     [role],
   );

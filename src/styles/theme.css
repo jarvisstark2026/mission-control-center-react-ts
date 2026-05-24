@@ -54,8 +54,8 @@
   --glass-shadow: 0 16px 42px rgba(0, 0, 0, 0.34);
   --glass-shadow-soft: 0 10px 28px rgba(0, 0, 0, 0.3);
   --glass-shadow-overlay: 0 22px 58px rgba(0, 0, 0, 0.44);
-  --glass-blur: blur(14px) saturate(1.02);
-  --glass-blur-strong: blur(18px) saturate(1.04);
+  --glass-blur: blur(9px) saturate(1.01);
+  --glass-blur-strong: blur(12px) saturate(1.02);
 
   --glass-panel-border: var(--glass-border-strong);
   --glass-panel-tint: var(--glass-panel-bg);
@@ -69,8 +69,8 @@
   --radius-pill: 999px;
   --tech-card-cut: 7px;
 
-  --motion-fast: 160ms ease;
-  --motion-panel: 180ms ease;
+  --motion-fast: 110ms ease;
+  --motion-panel: 130ms ease;
   --focus-ring: 0 0 0 1px rgba(86, 221, 255, 0.28), 0 0 0 4px rgba(86, 221, 255, 0.1);
 
   --app-background:
@@ -180,8 +180,8 @@
   --jarvis-amber-soft: rgba(157, 186, 204, 0.11);
   --jarvis-amber-line: rgba(157, 186, 204, 0.24);
   --glass-muted: rgba(224, 232, 240, 0.62);
-  --glass-blur: blur(12px) saturate(0.96);
-  --glass-blur-strong: blur(16px) saturate(0.98);
+  --glass-blur: blur(8px) saturate(0.96);
+  --glass-blur-strong: blur(10px) saturate(0.98);
   --app-background:
     radial-gradient(circle at top, rgba(184, 218, 240, 0.07), transparent 30%),
     linear-gradient(180deg, var(--color-bg-shell) 0%, #090e15 52%, #05070b 100%);

@@ -60,6 +60,7 @@ export function WorkspaceWindow({
           '--widget-line-alpha': widgetLineAlpha,
         } as CSSProperties
       }
+      data-widget-id={widget.id}
       onPointerDown={showChrome ? (event) => onStartDrag(event, widget.id) : undefined}
     >
       {showChrome ? (
@@ -70,7 +71,12 @@ export function WorkspaceWindow({
             <span className="widget-subtitle">{widget.subtitle}</span>
           </div>
 
-          <div className="widget-chrome-actions" role="toolbar" aria-label={`${widget.title} window controls`}>
+          <div
+            className="widget-chrome-actions"
+            role="toolbar"
+            aria-label={`${widget.title} window controls`}
+            onPointerDown={(event) => event.stopPropagation()}
+          >
             <button
               type="button"
               className="widget-toggle"
@@ -152,7 +158,7 @@ export function WorkspaceWindow({
       ) : null}
 
       <WorkspaceWidgetFrame kind={widget.kind} className={bodyClassName}>
-        {children}
+        {widget.open || !showChrome ? children : null}
       </WorkspaceWidgetFrame>
 
       <WidgetResizeHandles widget={widget} onStartResize={onStartResize} showChrome={showChrome} />

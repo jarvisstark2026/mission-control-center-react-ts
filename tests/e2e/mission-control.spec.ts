@@ -1,13 +1,22 @@
 import { expect, test } from '@playwright/test';
 
+async function clickControl(locator: import('@playwright/test').Locator) {
+  await locator.evaluate((element) => (element as HTMLButtonElement).click());
+}
+
+async function openWidgetMenu(page: import('@playwright/test').Page) {
+  await clickControl(page.getByRole('button', { name: 'Open widget' }));
+}
+
 async function openWidget(page: import('@playwright/test').Page, widgetName: string) {
-  await page.getByRole('button', { name: 'Open widget' }).click();
-  await page.getByRole('menuitem', { name: widgetName }).click();
+  await openWidgetMenu(page);
+  await clickControl(page.getByRole('menuitem', { name: widgetName }));
 }
 
 async function ensureWidgetOpen(locator: import('@playwright/test').Locator) {
   if (await locator.evaluate((element) => element.classList.contains('is-closed'))) {
-    await locator.getByRole('button', { name: /^Maximize / }).click({ force: true });
+    await locator.getByRole('button', { name: /^Maximize / }).evaluate((element) => (element as HTMLButtonElement).click());
+    await expect(locator).toHaveClass(/is-open/);
   }
 }
 
@@ -52,7 +61,11 @@ test('operational core widgets launch and use mock live data', async ({ page }) 
   const homePoolLayer = page.locator('.workspace-widget.kind-home-systems .home-energy-series-toggle', { hasText: 'Pool' });
   await homePoolLayer.click();
   await expect(homePoolLayer).toHaveAttribute('aria-pressed', 'true');
-  await page.locator('.home-action-card', { hasText: 'Use solar surplus' }).getByRole('button', { name: 'Stage proposal' }).click();
+  const solarSurplusProposal = page
+    .locator('.workspace-widget.kind-home-systems .home-action-card', { hasText: 'Use solar surplus' })
+    .getByRole('button', { name: 'Stage proposal' });
+  await solarSurplusProposal.scrollIntoViewIfNeeded();
+  await solarSurplusProposal.click();
   await expect(page.getByText('Sent to Command Inbox.')).toBeVisible();
 
   await openWidget(page, 'Command inbox');
@@ -83,7 +96,7 @@ test('guest access can read command inbox but cannot approve commands', async ({
   await expect(page.getByRole('button', { name: 'Approve' })).toHaveCount(0);
   await expect(page.getByText('Read-only for this access scope.').first()).toBeVisible();
 
-  await page.getByRole('button', { name: 'Open widget' }).click();
+  await openWidgetMenu(page);
   await expect(page.getByRole('menuitem', { name: 'Agent control' })).toHaveCount(0);
   await expect(page.getByRole('menuitem', { name: 'Agent console' })).toHaveCount(0);
   await expect(page.getByRole('menuitem', { name: 'Home systems' })).toBeVisible();
@@ -103,6 +116,7 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
 
   const taskWidget = page.locator('.workspace-widget.kind-list');
   await ensureWidgetOpen(taskWidget);
+  await expect(taskWidget.getByLabel('Task title')).toBeVisible();
   await taskWidget.getByLabel('Task title').fill('E2E local task');
   await taskWidget.getByLabel('Task note').fill('move to blocked');
   await taskWidget.getByLabel('Task title').press('Enter');
@@ -166,7 +180,7 @@ test('layout admin saves modes per workspace and filters guest widgets', async (
   await expect(page.getByText('Guest Home systems hidden')).toBeVisible();
 
   await page.goto('/?role=guest');
-  await page.getByRole('button', { name: 'Open widget' }).click();
+  await openWidgetMenu(page);
   await expect(page.getByRole('menuitem', { name: 'Home systems' })).toHaveCount(0);
   await page.getByRole('button', { name: 'Mode preset' }).click();
   await page.getByRole('menuitem', { name: /Home mode/i }).click();

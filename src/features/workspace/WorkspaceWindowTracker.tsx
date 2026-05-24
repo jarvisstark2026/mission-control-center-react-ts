@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type {
   CSSProperties,
@@ -36,23 +36,39 @@ function getShortWorkspaceLabel(label: string, active: boolean) {
   return label;
 }
 
-export function WorkspaceWindowTracker({
-  workspaceGroups,
-  onFocusWidget,
-  onTogglePinWidget,
-  onCloseWidget,
-}: {
+function getTrackerWidgetSignature(widget: WorkspaceWidgetGroup['widgets'][number]) {
+  return `${widget.id}:${widget.kind}:${widget.title}:${widget.open ? 1 : 0}:${widget.hidden ? 1 : 0}:${widget.pinned ? 1 : 0}:${widget.zIndex}`;
+}
+
+function getTrackerGroupsSignature(workspaceGroups: WorkspaceWidgetGroup[]) {
+  return workspaceGroups
+    .map((group) => `${group.workspaceId}:${group.label}:${group.active ? 1 : 0}:${group.widgets.map(getTrackerWidgetSignature).join('|')}`)
+    .join('||');
+}
+
+type WorkspaceWindowTrackerProps = {
   workspaceGroups: WorkspaceWidgetGroup[];
   onFocusWidget: (id: string) => void;
   onTogglePinWidget: (id: string) => void;
   onCloseWidget: (id: string) => void;
-}) {
+};
+
+function WorkspaceWindowTrackerComponent({
+  workspaceGroups,
+  onFocusWidget,
+  onTogglePinWidget,
+  onCloseWidget,
+}: WorkspaceWindowTrackerProps) {
   const [actionMenu, setActionMenu] = useState<TrackerActionMenu | null>(null);
   const trackerStripRef = useRef<HTMLDivElement | null>(null);
+  const trackerStripRectRef = useRef<DOMRect | null>(null);
   const autoScrollFrameRef = useRef<number | null>(null);
   const autoScrollVelocityRef = useRef(0);
   const trackedGroups = useMemo(() => getTrackedWorkspaceWidgetGroups(workspaceGroups), [workspaceGroups]);
-  const groupsWithVisibleWidgets = trackedGroups.filter((group) => group.visibleWidgets.length > 0);
+  const groupsWithVisibleWidgets = useMemo(
+    () => trackedGroups.filter((group) => group.visibleWidgets.length > 0),
+    [trackedGroups],
+  );
 
   useEffect(() => {
     if (!actionMenu) return undefined;
@@ -85,11 +101,16 @@ export function WorkspaceWindowTracker({
 
   const stopTrackerAutoScroll = () => {
     autoScrollVelocityRef.current = 0;
+    trackerStripRectRef.current = null;
 
     if (autoScrollFrameRef.current !== null) {
       window.cancelAnimationFrame(autoScrollFrameRef.current);
       autoScrollFrameRef.current = null;
     }
+  };
+
+  const refreshTrackerRect = () => {
+    trackerStripRectRef.current = trackerStripRef.current?.getBoundingClientRect() ?? null;
   };
 
   const tickTrackerAutoScroll = () => {
@@ -121,7 +142,8 @@ export function WorkspaceWindowTracker({
     }
 
     const edgeSize = 64;
-    const rect = trackerStrip.getBoundingClientRect();
+    const rect = trackerStripRectRef.current ?? trackerStrip.getBoundingClientRect();
+    trackerStripRectRef.current = rect;
     const distanceFromLeft = event.clientX - rect.left;
     const distanceFromRight = rect.right - event.clientX;
 
@@ -233,6 +255,7 @@ export function WorkspaceWindowTracker({
           className="workspace-tracker-strip"
           role="list"
           aria-label="Tracked workspace windows"
+          onPointerEnter={refreshTrackerRect}
           onPointerMove={handleTrackerPointerMove}
           onPointerLeave={stopTrackerAutoScroll}
           onBlur={stopTrackerAutoScroll}
@@ -302,3 +325,12 @@ export function WorkspaceWindowTracker({
     </div>
   );
 }
+
+export const WorkspaceWindowTracker = memo(
+  WorkspaceWindowTrackerComponent,
+  (left, right) =>
+    left.onFocusWidget === right.onFocusWidget &&
+    left.onTogglePinWidget === right.onTogglePinWidget &&
+    left.onCloseWidget === right.onCloseWidget &&
+    getTrackerGroupsSignature(left.workspaceGroups) === getTrackerGroupsSignature(right.workspaceGroups),
+);

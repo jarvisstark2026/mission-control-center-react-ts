@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Workspace } from './Workspace';
@@ -20,6 +20,7 @@ describe('Workspace header controls', () => {
   });
 
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
     vi.useRealTimers();
     Object.defineProperty(window, 'AudioContext', {
@@ -49,10 +50,49 @@ describe('Workspace header controls', () => {
     };
   };
 
+  const mockBrowserFullscreen = ({ reject = false }: { reject?: boolean } = {}) => {
+    let fullscreenElement: Element | null = null;
+    const requestFullscreen = vi.fn(async () => {
+      if (reject) throw new Error('fullscreen denied');
+      fullscreenElement = document.documentElement;
+      document.dispatchEvent(new Event('fullscreenchange'));
+    });
+    const exitFullscreen = vi.fn(async () => {
+      fullscreenElement = null;
+      document.dispatchEvent(new Event('fullscreenchange'));
+    });
+
+    Object.defineProperty(document, 'fullscreenElement', {
+      configurable: true,
+      get: () => fullscreenElement,
+    });
+    Object.defineProperty(document.documentElement, 'requestFullscreen', {
+      configurable: true,
+      value: requestFullscreen,
+    });
+    Object.defineProperty(document, 'exitFullscreen', {
+      configurable: true,
+      value: exitFullscreen,
+    });
+
+    return {
+      requestFullscreen,
+      exitFullscreen,
+    };
+  };
+
   const getWidget = (container: HTMLElement, kind: string) => {
     const widget = container.querySelector<HTMLElement>(`.workspace-widget.kind-${kind}`);
     if (!widget) throw new Error(`${kind} widget was not rendered`);
     return widget;
+  };
+
+  const getOpenWidget = (container: HTMLElement, kind: string) => {
+    const widget = getWidget(container, kind);
+    if (widget.classList.contains('is-closed')) {
+      fireEvent.click(within(widget).getByLabelText(/Maximize /i));
+    }
+    return getWidget(container, kind);
   };
 
   it('opens a blank workspace extension without clearing the current workspace', () => {
@@ -72,6 +112,22 @@ describe('Workspace header controls', () => {
     expect(focus).toHaveBeenCalledOnce();
   });
 
+  it('does not replace the current workspace when an extension window cannot open', () => {
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const { container } = render(<Workspace />);
+    const currentRender = within(container);
+
+    const initialWidgetCount = container.querySelectorAll('.workspace-widget').length;
+
+    fireEvent.click(currentRender.getByLabelText('Create blank workspace'));
+
+    expect(open).toHaveBeenCalledOnce();
+    expect(window.location.search).toBe('?role=support');
+    expect(currentRender.getByText('Workspace window could not open')).toBeInTheDocument();
+    expect(container.querySelectorAll('.workspace-widget')).toHaveLength(initialWidgetCount);
+    expect(container.querySelector('.workspace-extension-identity')).not.toBeInTheDocument();
+  });
+
   it('renders the workspace extension route as an empty canvas', () => {
     window.history.replaceState({}, '', '/?role=support&workspace=extension');
     const { container } = render(<Workspace />);
@@ -79,11 +135,54 @@ describe('Workspace header controls', () => {
 
     expect(container.querySelectorAll('.workspace-widget')).toHaveLength(0);
     expect(currentRender.queryByLabelText('Create blank workspace')).not.toBeInTheDocument();
+    expect(currentRender.getByRole('button', { name: 'Fullscreen' })).toBeInTheDocument();
     expect(currentRender.getByRole('button', { name: 'Reset layout' })).toBeInTheDocument();
     expect(currentRender.getByRole('button', { name: 'Save layout' })).toBeInTheDocument();
     expect(currentRender.getByRole('button', { name: 'Mode preset' })).toBeInTheDocument();
     expect(currentRender.getByLabelText('Close workspace extension')).toBeInTheDocument();
   });
+
+  it('toggles browser fullscreen from the workspace top bar', async () => {
+    const fullscreen = mockBrowserFullscreen();
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Fullscreen' }));
+
+    expect(fullscreen.requestFullscreen).toHaveBeenCalledOnce();
+    expect(await currentRender.findByRole('button', { name: 'Exit fullscreen' })).toBeInTheDocument();
+    expect(currentRender.getByText('Main workspace fullscreen')).toBeInTheDocument();
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Exit fullscreen' }));
+
+    expect(fullscreen.exitFullscreen).toHaveBeenCalledOnce();
+    expect(await currentRender.findByRole('button', { name: 'Fullscreen' })).toBeInTheDocument();
+    expect(currentRender.getByText('Main workspace windowed')).toBeInTheDocument();
+  }, 15000);
+
+  it('uses F11 to toggle fullscreen for the current workspace', async () => {
+    const fullscreen = mockBrowserFullscreen();
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+
+    fireEvent.keyDown(window, { key: 'F11' });
+
+    expect(fullscreen.requestFullscreen).toHaveBeenCalledOnce();
+    expect(await currentRender.findByRole('button', { name: 'Exit fullscreen' })).toBeInTheDocument();
+  }, 15000);
+
+  it('shows stable feedback when browser fullscreen is unavailable', async () => {
+    mockBrowserFullscreen({ reject: true });
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+
+    expect(currentRender.getByRole('button', { name: 'All screens' })).toBeDisabled();
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Fullscreen' }));
+
+    expect(await currentRender.findByText('Fullscreen unavailable in browser')).toBeInTheDocument();
+    expect(currentRender.getByRole('button', { name: 'Fullscreen' })).toBeInTheDocument();
+  }, 15000);
 
   it('saves the current workspace layout explicitly from the top bar', () => {
     const { container } = render(<Workspace role="admin" />);
@@ -1094,19 +1193,22 @@ describe('Workspace header controls', () => {
     expect(container.querySelector('.workspace-widget.kind-overview')).not.toBeInTheDocument();
   });
 
-  it('uses the shared widget scroll pane for every workspace widget', () => {
+  it('uses the shared widget scroll pane for open workspace widgets only', () => {
     const { container } = render(<Workspace />);
     const widgets = Array.from(container.querySelectorAll<HTMLElement>('.workspace-widget'));
 
     expect(widgets.length).toBeGreaterThan(0);
     for (const widget of widgets) {
-      expect(widget.querySelector('.widget-scroll-pane')).toBeInTheDocument();
       if (widget.classList.contains('is-open')) {
+        expect(widget.querySelector('.widget-scroll-pane')).toBeInTheDocument();
         expect(widget.querySelector('.widget-workflow-cue')).toBeInTheDocument();
+      } else {
+        expect(widget.querySelector('.widget-scroll-pane')).not.toBeInTheDocument();
       }
     }
 
-    expect(container.querySelector('.workspace-widget.kind-file-explorer .widget-scroll-pane')).toBeInTheDocument();
+    const fileExplorer = getOpenWidget(container, 'file-explorer');
+    expect(fileExplorer.querySelector('.widget-scroll-pane')).toBeInTheDocument();
     expect(container.querySelector('.widget-body-file-explorer')).not.toBeInTheDocument();
   });
 
@@ -1130,7 +1232,7 @@ describe('Workspace header controls', () => {
 
   it('creates local task cards and moves them between shared lanes', () => {
     const { container } = render(<Workspace />);
-    const projectWidget = within(getWidget(container, 'list'));
+    const projectWidget = within(getOpenWidget(container, 'list'));
 
     fireEvent.change(projectWidget.getByLabelText('Task title'), { target: { value: 'Evidence follow-up' } });
     fireEvent.change(projectWidget.getByLabelText('Task note'), { target: { value: 'needs local file' } });
@@ -1145,8 +1247,8 @@ describe('Workspace header controls', () => {
 
   it('persists local docs and spreadsheet evidence edits', () => {
     const { container, unmount } = render(<Workspace />);
-    const docsWidget = within(getWidget(container, 'docs'));
-    const sheetWidget = within(getWidget(container, 'sheet'));
+    const docsWidget = within(getOpenWidget(container, 'docs'));
+    const sheetWidget = within(getOpenWidget(container, 'sheet'));
 
     fireEvent.change(docsWidget.getByLabelText('Document body'), { target: { value: 'Evidence note from local docs.' } });
     fireEvent.change(sheetWidget.getByLabelText('Q1 row 1'), { target: { value: '42.5' } });
@@ -1157,14 +1259,14 @@ describe('Workspace header controls', () => {
     unmount();
     const { container: nextContainer } = render(<Workspace />);
 
-    expect(within(getWidget(nextContainer, 'docs')).getByDisplayValue('Evidence note from local docs.')).toBeInTheDocument();
-    expect(within(getWidget(nextContainer, 'sheet')).getByDisplayValue('42.5')).toBeInTheDocument();
+    expect(within(getOpenWidget(nextContainer, 'docs')).getByDisplayValue('Evidence note from local docs.')).toBeInTheDocument();
+    expect(within(getOpenWidget(nextContainer, 'sheet')).getByDisplayValue('42.5')).toBeInTheDocument();
   });
 
   it('stores browser bookmarks and live TV favorites locally', () => {
     const { container } = render(<Workspace />);
-    const browserWidget = within(getWidget(container, 'browser'));
-    const liveTvWidget = within(getWidget(container, 'watch-video'));
+    const browserWidget = within(getOpenWidget(container, 'browser'));
+    const liveTvWidget = within(getOpenWidget(container, 'watch-video'));
 
     fireEvent.change(browserWidget.getByLabelText('Browser URL'), { target: { value: 'openai.com' } });
     fireEvent.click(browserWidget.getByRole('button', { name: 'Go' }));

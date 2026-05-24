@@ -12,7 +12,17 @@ import {
 } from '../workspaceLiveTvModel';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 
+
+
+
 const liveTvSources: LocalLiveTvSource[] = [
+  {
+    name: 'RTP 1',
+    badge: 'LAN',
+    description: 'Direto',
+    url: 'https://streaming-live.rtp.pt/liverepeater/smil:rtp1HD.smil/playlist.m3u8?tk=1779591600_cf635b1a6af5bfe4ad3331d48d52e4a790974355',
+    streamType: 'hls',
+  },
   {
     name: 'Home tuner',
     badge: 'LAN',

@@ -534,6 +534,9 @@
     var(--glass-shadow-overlay),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: var(--glass-blur-strong);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  contain: layout style;
+  will-change: transform;
 }
 
 .shell-theme-menu-panel {
@@ -551,6 +554,9 @@
     var(--glass-shadow-overlay),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: var(--glass-blur-strong);
+  -webkit-backdrop-filter: var(--glass-blur-strong);
+  contain: layout style;
+  will-change: transform;
 }
 
 .shell-role-menu-item {

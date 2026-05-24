@@ -279,10 +279,12 @@
   overflow-y: hidden;
   margin-top: -34px;
   padding: 48px 42px 5px;
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
   overscroll-behavior-x: contain;
   mask-image: linear-gradient(90deg, transparent, black 34px, black calc(100% - 34px), transparent);
   scrollbar-width: none;
+  contain: layout style;
+  will-change: scroll-position;
 }
 
 .workspace-tracker-strip::-webkit-scrollbar {
@@ -767,6 +769,8 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
+  contain: layout style;
+  will-change: transform;
 }
 
 .workspace-widget-menu-item {
@@ -996,8 +1000,6 @@
     var(--glass-shadow),
     0 0 28px rgba(86, 221, 255, 0.045),
     inset 0 1px 0 rgba(255, 255, 255, 0.052);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
   user-select: none;
   touch-action: none;
   cursor: grab;
@@ -1059,6 +1061,29 @@
 
 .workspace-widget:active {
   cursor: grabbing;
+  transition: none;
+}
+
+.workspace-shell.is-interacting .workspace-widget {
+  transition: none;
+  box-shadow:
+    0 12px 24px rgba(0, 0, 0, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.workspace-shell.is-interacting .workspace-widget:hover {
+  transform: none;
+}
+
+.workspace-shell.is-interacting .workspace-widget::after {
+  opacity: 0.48;
+}
+
+.workspace-shell.is-interacting .workspace-atmosphere-a,
+.workspace-shell.is-interacting .workspace-atmosphere-b,
+.workspace-shell.is-interacting .workspace-atmosphere-brain-ring,
+.workspace-shell.is-interacting .workspace-atmosphere-core {
+  animation-play-state: paused;
 }
 
 .workspace-widget.is-closed {
@@ -1590,6 +1615,8 @@
   scrollbar-width: thin;
   scrollbar-color: rgba(226, 238, 248, 0.14) transparent;
   touch-action: pan-y;
+  content-visibility: auto;
+  contain-intrinsic-size: 460px;
 }
 
 .widget-workflow-cue {

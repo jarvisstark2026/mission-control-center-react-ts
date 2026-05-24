@@ -8,6 +8,7 @@
     "core:webview:allow-create-webview-window",
     "core:window:allow-get-all-windows",
     "core:window:allow-close",
+    "core:window:allow-destroy",
     "core:window:allow-is-fullscreen",
     "core:window:allow-set-fullscreen"
   ]

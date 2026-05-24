@@ -70,7 +70,7 @@ function closeCurrentTauriWindow() {
   if (!isTauriRuntime()) return false;
 
   void import('@tauri-apps/api/window')
-    .then(({ getCurrentWindow }) => getCurrentWindow().close())
+    .then(({ getCurrentWindow }) => getCurrentWindow().destroy())
     .catch(() => undefined);
   return true;
 }

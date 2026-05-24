@@ -133,6 +133,53 @@ describe('App', () => {
     expect(within(rail).getByRole('button', { name: /Center workspace slot/i })).toHaveTextContent('W1');
   });
 
+  it('arranges workspace instances with pointer movement for desktop webviews', () => {
+    const popup = { closed: false, close: vi.fn(), focus: vi.fn() } as unknown as Window;
+    vi.spyOn(window, 'open').mockReturnValue(popup);
+
+    render(<App />);
+
+    fireEvent.click(screen.getAllByLabelText('Open workspace setup')[0]);
+    const rail = screen.getByLabelText('Workspace navigation');
+    fireEvent.click(within(rail).getByLabelText('Create workspace instance'));
+
+    const sourceSlot = within(rail).getByRole('button', { name: /Right workspace slot, ON/i });
+    const targetSlot = within(rail).getByRole('button', { name: 'Top left workspace slot' });
+    const previousElementFromPoint = document.elementFromPoint;
+    const elementFromPoint = vi.fn(() => targetSlot);
+    Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: elementFromPoint });
+
+    try {
+      fireEvent.pointerDown(sourceSlot, { pointerId: 1, button: 0, pointerType: 'mouse', clientX: 120, clientY: 80 });
+      fireEvent.pointerUp(sourceSlot, { pointerId: 1, button: 0, pointerType: 'mouse', clientX: 20, clientY: 20 });
+
+      expect(elementFromPoint).toHaveBeenCalled();
+      expect(within(rail).getByRole('button', { name: /Top left workspace slot, ON/i })).toHaveTextContent('W1');
+    } finally {
+      Object.defineProperty(document, 'elementFromPoint', { configurable: true, value: previousElementFromPoint });
+    }
+  });
+
+  it('arranges workspace instances by selecting then placing a slot', () => {
+    const popup = { closed: false, close: vi.fn(), focus: vi.fn() } as unknown as Window;
+    vi.spyOn(window, 'open').mockReturnValue(popup);
+
+    render(<App />);
+
+    fireEvent.click(screen.getAllByLabelText('Open workspace setup')[0]);
+    const rail = screen.getByLabelText('Workspace navigation');
+    fireEvent.click(within(rail).getByLabelText('Create workspace instance'));
+
+    const sourceSlot = within(rail).getByRole('button', { name: /Right workspace slot, ON/i });
+    fireEvent.click(sourceSlot);
+
+    expect(sourceSlot).toHaveAttribute('aria-pressed', 'true');
+
+    fireEvent.click(within(rail).getByRole('button', { name: 'Top workspace slot' }));
+
+    expect(within(rail).getByRole('button', { name: /Top workspace slot, ON/i })).toHaveTextContent('W1');
+  });
+
   it('keeps workspace instances restorable after their popup closes', () => {
     vi.useFakeTimers();
     const popup = { closed: false, close: vi.fn(), focus: vi.fn() } as unknown as Window & { closed: boolean };

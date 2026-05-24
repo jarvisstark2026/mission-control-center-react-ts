@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type DragEvent } from 'react';
+import { useCallback, useRef, useState, type DragEvent, type PointerEvent } from 'react';
 
 import { ActionButton } from '../../components/ui/ActionButton';
 import { StatusChip } from '../../components/ui/StatusChip';
@@ -130,6 +130,12 @@ export function ShellRail({
   };
   const arrangementSlots: WorkspaceInstance['placement'][] = [...workspacePlacements];
   const isAtWorkspaceCapacity = extensionInstances.length >= maxWorkspaceExtensionInstances;
+  const isArrangementPlacement = (placement: string | undefined): placement is WorkspacePlacement =>
+    Boolean(placement && arrangementSlots.includes(placement as WorkspacePlacement));
+  const placeWorkspaceInstance = (id: string, placement: WorkspacePlacement) => {
+    onPlaceWorkspaceInstance(id, placement);
+    setDraggedWorkspaceId(null);
+  };
   const startWorkspaceDrag = (event: DragEvent<HTMLElement>, id: string) => {
     setDraggedWorkspaceId(id);
     event.dataTransfer.effectAllowed = 'move';
@@ -140,8 +146,38 @@ export function ShellRail({
     const draggedId = event.dataTransfer.getData('text/plain') || draggedWorkspaceId;
     if (!draggedId) return;
 
-    onPlaceWorkspaceInstance(draggedId, placement);
+    placeWorkspaceInstance(draggedId, placement);
+  };
+  const startWorkspacePointerDrag = (event: PointerEvent<HTMLElement>, id: string) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+    setDraggedWorkspaceId(id);
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+  const finishWorkspacePointerDrag = (event: PointerEvent<HTMLElement>) => {
+    if (!draggedWorkspaceId) return;
+
+    const target =
+      typeof document.elementFromPoint === 'function' ? document.elementFromPoint(event.clientX, event.clientY) : null;
+    const placementTarget = target?.closest<HTMLElement>('[data-placement]');
+    const placement = placementTarget?.dataset.placement;
+
+    if (isArrangementPlacement(placement)) {
+      placeWorkspaceInstance(draggedWorkspaceId, placement);
+      return;
+    }
+
     setDraggedWorkspaceId(null);
+  };
+  const selectOrPlaceArrangementWorkspace = (placement: WorkspacePlacement, placedInstance?: WorkspaceInstance) => {
+    if (draggedWorkspaceId) {
+      placeWorkspaceInstance(draggedWorkspaceId, placement);
+      return;
+    }
+
+    if (placedInstance) {
+      setDraggedWorkspaceId(placedInstance.id);
+    }
   };
 
   return (
@@ -221,19 +257,23 @@ export function ShellRail({
                     'shell-arrangement-cell',
                     placedInstance?.kind === 'main' && 'shell-arrangement-main',
                     placedInstance && 'is-occupied',
+                    placedInstance && draggedWorkspaceId === placedInstance.id && 'is-selected',
                     placedInstance && getWorkspaceStatusClass(placedInstance),
                     draggedWorkspaceId && 'is-drop-target',
                   )}
                   data-placement={placement}
-                  draggable={Boolean(placedInstance)}
+                  draggable={false}
                   aria-label={`${getPlacementLabel(placement)} workspace slot${placedInstance ? `, ${getWorkspaceStatusLabel(placedInstance)}` : ''}`}
-                  onDragStart={placedInstance ? (event) => startWorkspaceDrag(event, placedInstance.id) : undefined}
-                  onDragEnd={placedInstance ? () => setDraggedWorkspaceId(null) : undefined}
+                  aria-pressed={placedInstance && draggedWorkspaceId === placedInstance.id ? true : undefined}
                   onDragOver={(event) => {
                     event.preventDefault();
                     event.dataTransfer.dropEffect = 'move';
                   }}
                   onDrop={(event) => moveWorkspaceToPlacement(event, placement)}
+                  onClick={() => selectOrPlaceArrangementWorkspace(placement, placedInstance)}
+                  onPointerDown={placedInstance ? (event) => startWorkspacePointerDrag(event, placedInstance.id) : undefined}
+                  onPointerUp={finishWorkspacePointerDrag}
+                  onPointerCancel={() => setDraggedWorkspaceId(null)}
                 >
                   {placedInstance ? (
                     <span className="shell-arrangement-content">

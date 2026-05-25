@@ -186,3 +186,18 @@ test('layout admin saves modes per workspace and filters guest widgets', async (
   await page.getByRole('menuitem', { name: /Home mode/i }).click();
   await expect(page.locator('.workspace-widget.kind-home-systems')).toHaveCount(0);
 });
+
+test('browser workspace extension opens as a loaded workspace window', async ({ page }) => {
+  await page.goto('/?role=admin');
+
+  const [extensionPage] = await Promise.all([
+    page.waitForEvent('popup'),
+    page.getByLabel('Create blank workspace').click(),
+  ]);
+
+  await extensionPage.waitForLoadState('domcontentloaded');
+  await expect(extensionPage).toHaveURL(/workspace=extension/);
+  await expect(extensionPage.getByLabel('Close workspace extension')).toBeVisible();
+  await expect(extensionPage.getByLabel('Main workspace HUD')).toHaveCount(0);
+  await extensionPage.close();
+});

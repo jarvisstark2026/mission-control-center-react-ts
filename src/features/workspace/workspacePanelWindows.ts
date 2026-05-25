@@ -75,6 +75,25 @@ function closeCurrentTauriWindow() {
   return true;
 }
 
+function navigatePopupWindow(popup: Window, url: URL) {
+  const targetUrl = url.toString();
+
+  try {
+    if (typeof popup.location?.assign === 'function') {
+      popup.location.assign(targetUrl);
+      return;
+    }
+  } catch {
+    // Some embedded browser windows expose a partial Location object before navigation.
+  }
+
+  try {
+    popup.location.href = targetUrl;
+  } catch {
+    // The workspace is still registered, so the user can reopen it from the workspace menu.
+  }
+}
+
 export function openWorkspacePanelWindow(kind: WorkspaceWidget['kind']) {
   if (typeof window === 'undefined') return false;
 
@@ -138,7 +157,7 @@ export function openWorkspaceExtensionWindow(workspaceInstanceId?: string) {
     return true;
   }
 
-  const popup = window.open(url.toString(), '_blank', 'popup=yes,width=1440,height=960');
+  const popup = window.open('', '_blank', 'popup=yes,width=1440,height=960');
   if (!popup) {
     return false;
   }
@@ -147,6 +166,7 @@ export function openWorkspaceExtensionWindow(workspaceInstanceId?: string) {
     popup.close();
     return false;
   }
+  navigatePopupWindow(popup, url);
   popup.focus?.();
   return true;
 }

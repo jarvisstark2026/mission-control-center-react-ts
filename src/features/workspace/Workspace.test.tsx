@@ -97,7 +97,8 @@ describe('Workspace header controls', () => {
 
   it('opens a blank workspace extension without clearing the current workspace', () => {
     const focus = vi.fn();
-    const open = vi.spyOn(window, 'open').mockReturnValue({ focus } as unknown as Window);
+    const assign = vi.fn();
+    const open = vi.spyOn(window, 'open').mockReturnValue({ focus, location: { assign } } as unknown as Window);
     const { container } = render(<Workspace />);
 
     const initialWidgetCount = container.querySelectorAll('.workspace-widget').length;
@@ -107,8 +108,10 @@ describe('Workspace header controls', () => {
 
     expect(container.querySelectorAll('.workspace-widget')).toHaveLength(initialWidgetCount);
     expect(open).toHaveBeenCalledOnce();
-    expect(open.mock.calls[0]?.[0]).toContain('workspace=extension');
-    expect(open.mock.calls[0]?.[0]).not.toContain('panel=');
+    expect(open.mock.calls[0]?.[0]).toBe('');
+    expect(assign).toHaveBeenCalledOnce();
+    expect(assign.mock.calls[0]?.[0]).toContain('workspace=extension');
+    expect(assign.mock.calls[0]?.[0]).not.toContain('panel=');
     expect(focus).toHaveBeenCalledOnce();
   });
 

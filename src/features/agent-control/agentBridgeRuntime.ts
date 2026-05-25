@@ -1,4 +1,4 @@
-import type { MissionControlEvent } from '../mission-control';
+import { normalizeMissionControlEventList, type MissionControlEvent } from '../mission-control';
 import type {
   AgentActivity,
   AgentConnectorKind,
@@ -78,7 +78,11 @@ function normalizeProvider(value: unknown, fallback: AgentRuntimeProvider): Agen
 }
 
 function isMissionControlEventList(value: unknown): value is MissionControlEvent[] {
-  return Array.isArray(value);
+  return Array.isArray(value) && normalizeMissionControlEventList(value).length === value.length;
+}
+
+function normalizeBridgeMissionEvents(value: unknown): MissionControlEvent[] {
+  return normalizeMissionControlEventList(value);
 }
 
 function isAgentActivityList(value: unknown): value is AgentActivity[] {
@@ -115,17 +119,17 @@ export function isAgentBridgeStatusResponse(value: unknown): value is AgentBridg
 
 export function normalizeAgentBridgeEvent(payload: unknown): AgentBridgeEvent | null {
   if (isMissionControlEventList(payload)) {
-    return { type: 'mission-events', events: payload };
+    return { type: 'mission-events', events: normalizeBridgeMissionEvents(payload) };
   }
 
   if (!isRecord(payload)) return null;
 
   if (isMissionControlEventList(payload.events)) {
-    return { type: 'mission-events', events: payload.events };
+    return { type: 'mission-events', events: normalizeBridgeMissionEvents(payload.events) };
   }
 
   if (isMissionControlEventList(payload.missionControlEvents)) {
-    return { type: 'mission-events', events: payload.missionControlEvents };
+    return { type: 'mission-events', events: normalizeBridgeMissionEvents(payload.missionControlEvents) };
   }
 
   if (payload.type === 'status' && isAgentBridgeStatusResponse(payload.status)) {
@@ -259,7 +263,7 @@ export function applyAgentBridgeStatus(
 
   return {
     state: getUpdatedState(state, connectors, statePatch),
-    missionControlEvents: isMissionControlEventList(response.missionControlEvents) ? response.missionControlEvents : [],
+    missionControlEvents: normalizeBridgeMissionEvents(response.missionControlEvents),
   };
 }
 

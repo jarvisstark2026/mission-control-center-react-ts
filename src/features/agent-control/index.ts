@@ -24,6 +24,7 @@ export {
   selectAgentBridgeConnector,
 } from './agentBridgeRuntime';
 export { useAgentBridgeRuntime, type AgentBridgeRuntime } from './useAgentBridgeRuntime';
+export { readAgentBridgeSettings, writeAgentBridgeSettings, type AgentBridgeSettings } from './agentBridgeSettings';
 export type {
   AgentBridgeEvent,
   AgentBridgeRuntimeState,

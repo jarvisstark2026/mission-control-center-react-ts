@@ -32,6 +32,8 @@ export type AgentTaskRequest = {
   risk: CommandRisk;
   role: ShellRole;
   targetAgentId: string;
+  goalId?: string;
+  evidenceIds?: string[];
   requestedAt: string;
 };
 

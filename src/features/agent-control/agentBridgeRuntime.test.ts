@@ -75,6 +75,7 @@ describe('agentBridgeRuntime', () => {
       type: 'mission-events',
       events: [event],
     });
+    expect(normalizeAgentBridgeEvent({ missionControlEvents: [{ type: 'command', command: { id: '' } }] })).toBeNull();
   });
 
   it('routes SSE mission events through the shared event path', () => {
@@ -109,4 +110,3 @@ describe('agentBridgeRuntime', () => {
     expect(result.activeEngine).toBe('Hermes Core');
   });
 });
-

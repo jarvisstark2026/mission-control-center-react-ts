@@ -1,4 +1,5 @@
 import { getMockMissionControlEventBatch } from './missionControlMock';
+import { normalizeMissionControlEventList } from './missionControlValidation';
 import type { MissionControlConnectionState, MissionControlEvent } from './missionControlTypes';
 
 export type MissionControlEventHandler = (events: MissionControlEvent[]) => void;
@@ -16,11 +17,7 @@ export type MissionControlTransport = {
 };
 
 function normalizeMissionControlEvents(payload: unknown): MissionControlEvent[] {
-  if (Array.isArray(payload)) return payload as MissionControlEvent[];
-  if (payload && typeof payload === 'object' && Array.isArray((payload as { events?: unknown }).events)) {
-    return (payload as { events: MissionControlEvent[] }).events;
-  }
-  return payload ? [payload as MissionControlEvent] : [];
+  return normalizeMissionControlEventList(payload);
 }
 
 export function createSseMissionControlTransport(url: string): MissionControlTransport {
@@ -70,4 +67,3 @@ export function createMockMissionControlTransport(intervalMs = 2500): MissionCon
 export function createMissionControlTransport(url: string | undefined): MissionControlTransport {
   return url ? createSseMissionControlTransport(url) : createMockMissionControlTransport();
 }
-

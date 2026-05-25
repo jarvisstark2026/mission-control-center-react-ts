@@ -35,4 +35,5 @@ export {
   loadPersistedMissionControlState,
   savePersistedMissionControlState,
 } from './missionControlStorage';
+export { isMissionControlEvent, normalizeMissionControlEventList } from './missionControlValidation';
 export { useMissionControl, type MissionControlRuntime } from './useMissionControl';

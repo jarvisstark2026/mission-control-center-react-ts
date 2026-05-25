@@ -5,8 +5,9 @@ import { StatusChip } from '../../components/ui/StatusChip';
 import { createId } from '../../lib/createId';
 import { useDismissibleMenu } from '../../lib/useDismissibleMenu';
 import { shellScopes, type ShellRole } from '../shell/roles';
-import { useAgentBridgeRuntime } from '../agent-control';
+import { readAgentBridgeSettings, useAgentBridgeRuntime, writeAgentBridgeSettings, type AgentBridgeSettings } from '../agent-control';
 import { useMissionControl } from '../mission-control';
+import { useOperationalOs } from '../operational-os';
 import {
   WorkspaceHud,
   createWorkspaceHudSignals,
@@ -417,12 +418,14 @@ export function Workspace({
   const planeRef = useRef<HTMLDivElement | null>(null);
   const activeRole = role ?? getCurrentShellRole();
   const missionControl = useMissionControl(activeRole);
+  const [agentBridgeSettings, setAgentBridgeSettings] = useState<AgentBridgeSettings>(readAgentBridgeSettings);
   const agentBridge = useAgentBridgeRuntime({
-    localBridgeUrl: import.meta.env.VITE_AGENT_LOCAL_BRIDGE_URL,
-    remoteApiUrl: import.meta.env.VITE_AGENT_REMOTE_API_URL,
+    localBridgeUrl: agentBridgeSettings.localBridgeUrl || import.meta.env.VITE_AGENT_LOCAL_BRIDGE_URL,
+    remoteApiUrl: agentBridgeSettings.remoteApiUrl || import.meta.env.VITE_AGENT_REMOTE_API_URL,
     onMissionEvents: missionControl.ingestEvents,
   });
   const agentControl = agentBridge.state;
+  const operationalOs = useOperationalOs(missionControl.state.commands);
   const marketLiveData = useMarketLiveData();
   const isWorkspaceExtension = isWorkspaceExtensionUrl();
   const workspaceInstanceId = getWorkspaceInstanceId();
@@ -1817,6 +1820,9 @@ export function Workspace({
   const onFocusWidget = useEventCallback(focusManagedWidget);
   const onTogglePinWidget = useEventCallback(toggleManagedWidgetPin);
   const onCloseWidget = useEventCallback(closeManagedWidget);
+  const onUpdateAgentBridgeSettings = useEventCallback((settings: Pick<AgentBridgeSettings, 'localBridgeUrl' | 'remoteApiUrl'>) => {
+    setAgentBridgeSettings(writeAgentBridgeSettings(settings));
+  });
 
   const activeMarketGraph = useMemo(() => getMarketGraph(activeMarketGraphId), [activeMarketGraphId]);
   const workspacePlaneSize = useMemo(() => getWorkspacePlaneSize(bounds), [bounds]);
@@ -1902,7 +1908,10 @@ export function Workspace({
     onCloseWidget,
     missionControl,
     agentControl,
+    agentBridgeSettings,
+    onUpdateAgentBridgeSettings,
     agentTaskGateway: agentBridge.taskGateway,
+    operationalOs,
     activeRole,
     widgetPermissions,
   };

@@ -86,21 +86,47 @@
   --workspace-grid-background:
     linear-gradient(rgba(86, 221, 255, 0.025) 1px, transparent 1px),
     linear-gradient(90deg, rgba(86, 221, 255, 0.02) 1px, transparent 1px);
-  --workspace-head-background:
+  --forge-topbar-head-bg:
     linear-gradient(180deg, rgba(86, 221, 255, 0.045), rgba(255, 255, 255, 0.006)),
     rgba(3, 10, 18, 0.62);
-  --workspace-topbar-group-bg:
+  --forge-topbar-rail-bg:
     linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012)),
     rgba(8, 19, 30, 0.68);
-  --workspace-topbar-group-border: rgba(156, 211, 255, 0.2);
-  --workspace-topbar-control-bg: rgba(255, 255, 255, 0.035);
-  --workspace-topbar-control-hover-bg: rgba(86, 221, 255, 0.105);
-  --workspace-topbar-control-active-bg: rgba(86, 221, 255, 0.16);
-  --workspace-topbar-control-border: rgba(220, 236, 250, 0.17);
-  --workspace-topbar-control-glow: rgba(86, 221, 255, 0.2);
-  --workspace-topbar-logo-bg: rgba(86, 221, 255, 0.11);
-  --workspace-topbar-logo-line: rgba(86, 221, 255, 0.44);
-  --workspace-menu-max-height: calc(100dvh - 180px);
+  --forge-topbar-rail-border: rgba(156, 211, 255, 0.2);
+  --forge-topbar-rail-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.26),
+    0 0 22px rgba(86, 221, 255, 0.055);
+  --forge-topbar-control-bg: rgba(255, 255, 255, 0.035);
+  --forge-topbar-control-hover-bg: rgba(86, 221, 255, 0.105);
+  --forge-topbar-control-active-bg: rgba(86, 221, 255, 0.16);
+  --forge-topbar-control-border: rgba(220, 236, 250, 0.17);
+  --forge-topbar-control-light: rgba(86, 221, 255, 0.92);
+  --forge-topbar-control-glow: rgba(86, 221, 255, 0.2);
+  --forge-topbar-menu-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.068), rgba(255, 255, 255, 0.018)),
+    rgba(7, 18, 30, 0.94);
+  --forge-topbar-menu-border: rgba(156, 211, 255, 0.2);
+  --forge-topbar-menu-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --forge-topbar-logo-bg: rgba(86, 221, 255, 0.11);
+  --forge-topbar-logo-line: rgba(86, 221, 255, 0.44);
+  --forge-topbar-separator: rgba(156, 211, 255, 0.13);
+  --forge-topbar-muted: rgba(226, 238, 248, 0.62);
+  --forge-topbar-menu-max-height: calc(100dvh - 88px);
+
+  --workspace-head-background: var(--forge-topbar-head-bg);
+  --workspace-topbar-group-bg: var(--forge-topbar-rail-bg);
+  --workspace-topbar-group-border: var(--forge-topbar-rail-border);
+  --workspace-topbar-control-bg: var(--forge-topbar-control-bg);
+  --workspace-topbar-control-hover-bg: var(--forge-topbar-control-hover-bg);
+  --workspace-topbar-control-active-bg: var(--forge-topbar-control-active-bg);
+  --workspace-topbar-control-border: var(--forge-topbar-control-border);
+  --workspace-topbar-control-glow: var(--forge-topbar-control-glow);
+  --workspace-topbar-logo-bg: var(--forge-topbar-logo-bg);
+  --workspace-topbar-logo-line: var(--forge-topbar-logo-line);
+  --workspace-menu-max-height: var(--forge-topbar-menu-max-height);
   --workspace-footer-background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01)),
     radial-gradient(circle at 22% 0%, var(--jarvis-cyan-soft), transparent 38%),
@@ -127,6 +153,21 @@
   --theme-hud-primary: rgba(104, 232, 255, 0.94);
   --theme-hud-secondary: rgba(108, 146, 255, 0.86);
   --theme-hud-accent: rgba(118, 188, 255, 0.88);
+  --forge-topbar-head-bg:
+    linear-gradient(180deg, rgba(104, 232, 255, 0.052), rgba(255, 255, 255, 0.006)),
+    rgba(3, 14, 28, 0.64);
+  --forge-topbar-rail-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.012)),
+    rgba(6, 25, 43, 0.7);
+  --forge-topbar-rail-border: rgba(104, 232, 255, 0.24);
+  --forge-topbar-control-hover-bg: rgba(104, 232, 255, 0.12);
+  --forge-topbar-control-active-bg: rgba(104, 232, 255, 0.18);
+  --forge-topbar-control-light: rgba(104, 232, 255, 0.94);
+  --forge-topbar-control-glow: rgba(104, 232, 255, 0.22);
+  --forge-topbar-menu-border: rgba(104, 232, 255, 0.24);
+  --forge-topbar-logo-bg: rgba(104, 232, 255, 0.12);
+  --forge-topbar-logo-line: rgba(104, 232, 255, 0.48);
+  --forge-topbar-separator: rgba(104, 232, 255, 0.16);
   --app-background:
     radial-gradient(circle at top, rgba(104, 232, 255, 0.14), transparent 30%),
     linear-gradient(180deg, var(--color-bg-shell) 0%, #061326 52%, #020814 100%);
@@ -164,6 +205,21 @@
   --theme-hud-primary: rgba(255, 183, 92, 0.9);
   --theme-hud-secondary: rgba(255, 106, 116, 0.82);
   --theme-hud-accent: rgba(255, 130, 76, 0.92);
+  --forge-topbar-head-bg:
+    linear-gradient(180deg, rgba(255, 183, 92, 0.05), rgba(255, 255, 255, 0.006)),
+    rgba(18, 9, 5, 0.66);
+  --forge-topbar-rail-bg:
+    linear-gradient(180deg, rgba(255, 218, 178, 0.06), rgba(255, 255, 255, 0.012)),
+    rgba(24, 15, 10, 0.7);
+  --forge-topbar-rail-border: rgba(255, 183, 92, 0.22);
+  --forge-topbar-control-hover-bg: rgba(255, 183, 92, 0.105);
+  --forge-topbar-control-active-bg: rgba(255, 183, 92, 0.17);
+  --forge-topbar-control-light: rgba(255, 183, 92, 0.92);
+  --forge-topbar-control-glow: rgba(255, 130, 76, 0.2);
+  --forge-topbar-menu-border: rgba(255, 183, 92, 0.22);
+  --forge-topbar-logo-bg: rgba(255, 183, 92, 0.1);
+  --forge-topbar-logo-line: rgba(255, 183, 92, 0.44);
+  --forge-topbar-separator: rgba(255, 183, 92, 0.14);
   --glass-muted: rgba(255, 230, 207, 0.64);
   --app-background:
     radial-gradient(circle at top, rgba(255, 183, 92, 0.12), transparent 30%),
@@ -203,6 +259,21 @@
   --theme-hud-primary: rgba(184, 218, 240, 0.82);
   --theme-hud-secondary: rgba(224, 232, 240, 0.52);
   --theme-hud-accent: rgba(157, 186, 204, 0.78);
+  --forge-topbar-head-bg:
+    linear-gradient(180deg, rgba(184, 218, 240, 0.032), rgba(255, 255, 255, 0.004)),
+    rgba(8, 12, 19, 0.66);
+  --forge-topbar-rail-bg:
+    linear-gradient(180deg, rgba(244, 248, 252, 0.044), rgba(255, 255, 255, 0.01)),
+    rgba(15, 21, 29, 0.72);
+  --forge-topbar-rail-border: rgba(184, 218, 240, 0.17);
+  --forge-topbar-control-hover-bg: rgba(184, 218, 240, 0.08);
+  --forge-topbar-control-active-bg: rgba(184, 218, 240, 0.12);
+  --forge-topbar-control-light: rgba(184, 218, 240, 0.86);
+  --forge-topbar-control-glow: rgba(184, 218, 240, 0.14);
+  --forge-topbar-menu-border: rgba(184, 218, 240, 0.17);
+  --forge-topbar-logo-bg: rgba(184, 218, 240, 0.09);
+  --forge-topbar-logo-line: rgba(184, 218, 240, 0.34);
+  --forge-topbar-separator: rgba(184, 218, 240, 0.11);
   --glass-muted: rgba(224, 232, 240, 0.62);
   --glass-blur: blur(8px) saturate(0.96);
   --glass-blur-strong: blur(10px) saturate(0.98);

@@ -264,7 +264,11 @@ export function WorkflowWidget({
                 title={step.title}
                 assignee={step.assignee === 'user' ? 'User' : step.assignee === 'agent-team' ? 'Agent team' : selectedAgent.name}
                 status={step.status}
-                approval={step.approvalRequirement === 'command' ? 'Command Inbox approval' : 'No approval required'}
+                approval={
+                  step.approvalRequirement === 'command'
+                    ? `Command Inbox approval / ${step.requiredCapability ?? 'capability'}`
+                    : `${step.requiredCapability ?? 'operator'} / ${step.evidenceRequirement ?? 'evidence optional'}`
+                }
                 actionLabel={step.approvalRequirement === 'command' && !step.commandId ? 'Stage approval' : undefined}
                 onAction={step.approvalRequirement === 'command' && !step.commandId ? () => stageWorkflowStep(step.id) : undefined}
               />

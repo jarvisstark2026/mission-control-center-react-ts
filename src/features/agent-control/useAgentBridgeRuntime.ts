@@ -40,15 +40,15 @@ function getConnectorProbeOrder(connectors: AgentConnectorRecord[]) {
     .sort((left, right) => (left.sourcePriority ?? 99) - (right.sourcePriority ?? 99));
 }
 
-function createRuntimeOptions(options: AgentBridgeRuntimeOptions): AgentConnectorRuntimeOptions {
-  return {
-    localBridgeUrl: options.localBridgeUrl ?? defaultAgentLocalBridgeUrl,
-    remoteApiUrl: options.remoteApiUrl,
-  };
-}
-
 export function useAgentBridgeRuntime(options: AgentBridgeRuntimeOptions): AgentBridgeRuntime {
-  const [state, setState] = useState(() => createInitialAgentControlState(createRuntimeOptions(options)));
+  const runtimeConnectorOptions = useMemo(
+    (): AgentConnectorRuntimeOptions => ({
+      localBridgeUrl: options.localBridgeUrl ?? defaultAgentLocalBridgeUrl,
+      remoteApiUrl: options.remoteApiUrl,
+    }),
+    [options.localBridgeUrl, options.remoteApiUrl],
+  );
+  const [state, setState] = useState(() => createInitialAgentControlState(runtimeConnectorOptions));
   const bridgeRuntimeDisabled = Boolean(options.disabled || isRuntimeTestMode());
   const stateRef = useRef(state);
   const missionEventsRef = useRef(options.onMissionEvents);
@@ -60,6 +60,19 @@ export function useAgentBridgeRuntime(options: AgentBridgeRuntimeOptions): Agent
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useEffect(() => {
+    setState((current) => {
+      const nextState = createInitialAgentControlState(runtimeConnectorOptions);
+      return {
+        ...current,
+        connectors: nextState.connectors,
+        activeConnectorId: nextState.activeConnectorId,
+        version: current.version + 1,
+        updatedAt: new Date().toISOString(),
+      };
+    });
+  }, [runtimeConnectorOptions]);
 
   useEffect(() => {
     missionEventsRef.current = options.onMissionEvents;

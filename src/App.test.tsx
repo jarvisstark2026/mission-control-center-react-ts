@@ -40,6 +40,21 @@ describe('App', () => {
     expect(screen.getByRole('button', { name: /admin/i })).toBeInTheDocument();
   }, 15000);
 
+  it('renders the Mission Control top bar as grouped command controls', () => {
+    render(<App />);
+
+    expect(screen.getByLabelText('Mission Control')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /viewport controls/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /layout controls/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /widget launch controls/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /mode controls/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /visual controls/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /agent controls/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save layout/i })).toHaveAttribute('title', 'Save layout');
+    expect(screen.getByRole('button', { name: /reset layout/i })).toHaveAttribute('title', 'Reset layout');
+    expect(screen.getByRole('button', { name: /fullscreen/i })).toHaveAttribute('title', 'Fullscreen');
+  }, 15000);
+
   it('switches the workspace theme from the top bar', () => {
     render(<App />);
 

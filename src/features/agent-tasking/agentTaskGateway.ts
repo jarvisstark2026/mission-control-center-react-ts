@@ -1,4 +1,4 @@
-import type { CommandRisk, MissionControlEvent } from '../mission-control';
+import { normalizeMissionControlEventList, type CommandRisk, type MissionControlEvent } from '../mission-control';
 import { createInitialAgentControlState, getAgentDescriptorById } from '../agent-control/agentControlModel';
 import type {
   AgentTaskGatewayMode,
@@ -75,6 +75,8 @@ function createMockTaskResult(request: AgentTaskRequest): AgentTaskGatewayResult
       title,
       summary: request.objective,
       source: 'agent-console',
+      goalId: request.goalId,
+      evidenceIds: request.evidenceIds,
       agent: {
         agentId: agent.id,
         agentName: agent.name,
@@ -99,6 +101,17 @@ function createMockTaskResult(request: AgentTaskRequest): AgentTaskGatewayResult
           timestamp,
           detail: `${agent.name} proposed "${title}" from Agent Console.`,
         },
+        ...(request.goalId
+          ? [
+              {
+                id: `audit-${commandId}-goal`,
+                type: 'proposed' as const,
+                actor: 'goal-runtime',
+                timestamp,
+                detail: `Proposal linked to goal ${request.goalId}.`,
+              },
+            ]
+          : []),
       ],
     },
   };
@@ -137,6 +150,17 @@ function isAgentTaskGatewayResult(value: unknown): value is AgentTaskGatewayResu
   );
 }
 
+function normalizeAgentTaskGatewayResult(value: unknown): AgentTaskGatewayResult {
+  if (!isAgentTaskGatewayResult(value)) {
+    throw new Error('Agent bridge task endpoint returned an invalid proposal payload.');
+  }
+
+  return {
+    ...value,
+    missionControlEvents: normalizeMissionControlEventList(value.missionControlEvents),
+  };
+}
+
 function getBridgeTaskUrl(baseUrl: string) {
   return `${baseUrl.replace(/\/+$/u, '')}/tasks`;
 }
@@ -170,11 +194,7 @@ export function createBackendAgentTaskGateway(url: string): AgentTaskGateway {
       }
 
       const body: unknown = await response.json();
-      if (!isAgentTaskGatewayResult(body)) {
-        throw new Error('Agent task backend returned an invalid proposal payload.');
-      }
-
-      return body;
+      return normalizeAgentTaskGatewayResult(body);
     },
   };
 }
@@ -202,11 +222,7 @@ export function createBridgeAgentTaskGateway(
       }
 
       const body: unknown = await response.json();
-      if (!isAgentTaskGatewayResult(body)) {
-        throw new Error('Agent bridge task endpoint returned an invalid proposal payload.');
-      }
-
-      return body;
+      return normalizeAgentTaskGatewayResult(body);
     },
   };
 }

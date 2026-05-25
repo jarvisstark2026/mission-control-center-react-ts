@@ -3,8 +3,10 @@ import type { ReactNode } from 'react';
 import type { LocalFileRecord, LocalFolderEntry } from './workspaceLocalFiles';
 import type { ShellRole } from '../shell/roles';
 import type { AgentControlState } from '../agent-control';
+import type { AgentBridgeSettings } from '../agent-control';
 import type { AgentTaskGateway } from '../agent-tasking';
 import type { MissionControlRuntime } from '../mission-control';
+import type { OperationalOsRuntime } from '../operational-os';
 import type { WorkspaceWidgetGroup } from './workspaceManagerModel';
 import type { MarketGraph } from './workspaceMarketData';
 import type { MarketLiveState } from './workspaceMarketLiveData';
@@ -16,15 +18,18 @@ import {
   AudioWidget,
   AgentConsoleWidget,
   AgentControlWidget,
+  AppPortalWidget,
   BrowserWidget,
   CommandInboxWidget,
   DiagramWidget,
   DocsWidget,
   FileExplorerWidget,
   GraphWidget,
+  GoalsWidget,
   HomeSystemsWidget,
   ImageWidget,
   IntegrationRegistryWidget,
+  JsonSurfaceWidget,
   LauncherWidget,
   ListWidget,
   LiveTvWidget,
@@ -69,7 +74,10 @@ export type WorkspaceWidgetContentProps = {
   onCloseWidget: (id: string) => void;
   missionControl: MissionControlRuntime;
   agentControl: AgentControlState;
+  agentBridgeSettings: AgentBridgeSettings;
+  onUpdateAgentBridgeSettings: (settings: Pick<AgentBridgeSettings, 'localBridgeUrl' | 'remoteApiUrl'>) => void;
   agentTaskGateway: AgentTaskGateway;
+  operationalOs: OperationalOsRuntime;
   activeRole: ShellRole;
   widgetPermissions: WorkspaceWidgetPermissionMatrix;
 };
@@ -118,7 +126,10 @@ function renderWorkspaceWidgetContent({
   onCloseWidget,
   missionControl,
   agentControl,
+  agentBridgeSettings,
+  onUpdateAgentBridgeSettings,
   agentTaskGateway,
+  operationalOs,
   activeRole,
   widgetPermissions,
 }: WorkspaceWidgetContentRendererProps) {
@@ -184,19 +195,49 @@ function renderWorkspaceWidgetContent({
         />
       );
     case 'command-inbox':
-      return <CommandInboxWidget missionControl={missionControl} />;
+      return <CommandInboxWidget missionControl={missionControl} operationalOs={operationalOs} />;
     case 'notifications':
       return <NotificationsWidget missionControl={missionControl} />;
     case 'integration-registry':
       return <IntegrationRegistryWidget missionControl={missionControl} />;
     case 'agent-control':
-      return <AgentControlWidget state={agentControl} role={activeRole} missionControl={missionControl} />;
+      return (
+        <AgentControlWidget
+          state={agentControl}
+          role={activeRole}
+          missionControl={missionControl}
+          bridgeSettings={agentBridgeSettings}
+          onUpdateBridgeSettings={onUpdateAgentBridgeSettings}
+        />
+      );
     case 'agent-console':
-      return <AgentConsoleWidget role={activeRole} missionControl={missionControl} agentControl={agentControl} taskGateway={agentTaskGateway} />;
+      return (
+        <AgentConsoleWidget
+          role={activeRole}
+          missionControl={missionControl}
+          agentControl={agentControl}
+          taskGateway={agentTaskGateway}
+          operationalOs={operationalOs}
+        />
+      );
     case 'home-systems':
       return <HomeSystemsWidget role={activeRole} missionControl={missionControl} />;
     case 'flow':
       return <WorkflowWidget role={activeRole} missionControl={missionControl} agentControl={agentControl} />;
+    case 'goals':
+      return (
+        <GoalsWidget
+          role={activeRole}
+          missionControl={missionControl}
+          agentControl={agentControl}
+          operationalOs={operationalOs}
+          onLaunchWorkspaceWidget={onLaunchWorkspaceWidget}
+        />
+      );
+    case 'app-portal':
+      return <AppPortalWidget role={activeRole} operationalOs={operationalOs} />;
+    case 'json-surface':
+      return <JsonSurfaceWidget role={activeRole} operationalOs={operationalOs} missionControl={missionControl} />;
     case '3d': {
       const previewFile = widget.previewFileId ? localFiles.find((record) => record.id === widget.previewFileId) ?? null : null;
       return <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} />;

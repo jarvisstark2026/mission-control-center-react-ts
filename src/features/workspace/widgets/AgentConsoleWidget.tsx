@@ -10,6 +10,7 @@ import {
 } from '../../agent-tasking';
 import { getAgentDescriptorById, getVisibleAgentDescriptors, type AgentControlState } from '../../agent-control';
 import type { CommandRisk, MissionControlRuntime } from '../../mission-control';
+import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
 import { AgentAttribution, AttentionCard, EvidenceBlock, StatusSummary } from '../operationalBlocks';
 import {
@@ -62,11 +63,13 @@ export function AgentConsoleWidget({
   missionControl,
   agentControl,
   taskGateway,
+  operationalOs,
 }: {
   role: ShellRole;
   missionControl: MissionControlRuntime;
   agentControl: AgentControlState;
   taskGateway?: AgentTaskGateway;
+  operationalOs: OperationalOsRuntime;
 }) {
   const tasking = useAgentTasking(role, missionControl.ingestEvents, taskGateway);
   const availableScopes = useMemo(() => getAgentTaskScopesForRole(role), [role]);
@@ -76,7 +79,9 @@ export function AgentConsoleWidget({
   const [scope, setScope] = useState<AgentTaskScope>(() => getDefaultScope(role));
   const [risk, setRisk] = useState<CommandRisk>(() => getDefaultRisk(role));
   const [targetAgentId, setTargetAgentId] = useState(defaultAgent.id);
+  const [goalId, setGoalId] = useState('');
   const targetAgent = getAgentDescriptorById(agentControl, targetAgentId);
+  const selectedGoal = operationalOs.state.goals.find((goal) => goal.id === goalId) ?? null;
   const canView = canViewAgentConsole(role);
   const canSubmit = canSubmitAgentTask(role, { scope, risk });
 
@@ -97,7 +102,10 @@ export function AgentConsoleWidget({
   }
 
   const submitTask = () => {
-    void tasking.submitTask(objective, scope, risk, targetAgent.id);
+    void tasking.submitTask(objective, scope, risk, targetAgent.id, {
+      goalId: selectedGoal?.id,
+      evidenceIds: selectedGoal?.evidenceIds,
+    });
   };
 
   return (
@@ -139,6 +147,22 @@ export function AgentConsoleWidget({
             </button>
           ))}
         </div>
+        <label className="agent-console-field">
+          <span>related goal</span>
+          <select value={goalId} onChange={(event) => setGoalId(event.currentTarget.value)} aria-label="Related goal">
+            <option value="">No goal link</option>
+            {operationalOs.state.goals.map((goal) => (
+              <option key={goal.id} value={goal.id}>
+                {goal.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        {selectedGoal ? (
+          <EvidenceBlock label="goal context" title={selectedGoal.title}>
+            {selectedGoal.objective}
+          </EvidenceBlock>
+        ) : null}
         <label className="agent-console-field">
           <span>objective</span>
           <textarea

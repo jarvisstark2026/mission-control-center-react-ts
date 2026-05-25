@@ -65,6 +65,9 @@ export function loadStoredWidgetState({
       'agent-control',
       'agent-console',
       'home-systems',
+      'goals',
+      'app-portal',
+      'json-surface',
     ]);
     const byId = new Map(parsed.filter(isStoredWidgetRecord).map((item) => [item.id, item]));
     const normalizedPresets = presets.map((preset) => {

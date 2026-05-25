@@ -29,3 +29,6 @@ export { IntegrationRegistryWidget } from './IntegrationRegistryWidget';
 export { AgentControlWidget } from './AgentControlWidget';
 export { AgentConsoleWidget } from './AgentConsoleWidget';
 export { HomeSystemsWidget } from './HomeSystemsWidget';
+export { GoalsWidget } from './GoalsWidget';
+export { AppPortalWidget } from './AppPortalWidget';
+export { JsonSurfaceWidget } from './JsonSurfaceWidget';

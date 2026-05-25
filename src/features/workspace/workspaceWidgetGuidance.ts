@@ -194,6 +194,24 @@ export const widgetWorkflowGuidance: Record<WidgetKind, WidgetWorkflowGuidance> 
     next: 'Keep monitoring here and stage real control changes through Command Inbox.',
     evidence: 'home telemetry',
   },
+  goals: {
+    intent: 'Define operating objectives',
+    value: 'Use this as the top of the Agent OS loop: goals connect evidence, agents, workflow steps, command decisions, and audit history.',
+    next: 'Create a goal, stage an agent plan, then approve or stop the generated command in Command Inbox.',
+    evidence: 'goal audit',
+  },
+  'app-portal': {
+    intent: 'Keep tools inside Mission Control',
+    value: 'Use this to embed web tools when possible and launch external desktop or protocol targets without losing operating context.',
+    next: 'Open Codex, Hermes bridge status, or another profile next to the goal and command surfaces.',
+    evidence: 'app profile',
+  },
+  'json-surface': {
+    intent: 'Render agent JSON',
+    value: 'Use this to inspect structured output from Hermes, OpenClaw, files, or bridge payloads without writing a custom widget first.',
+    next: 'Render the JSON, then stage command-like payloads through Command Inbox when needed.',
+    evidence: 'json document',
+  },
 };
 
 export function getWidgetWorkflowGuidance(kind: WidgetKind) {

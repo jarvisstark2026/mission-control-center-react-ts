@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ShellRole } from '../../shell/roles';
 import {
   canEditAgentSettings,
@@ -14,6 +14,7 @@ import {
   getVisibleAgentJobs,
   getVisibleAgentPermissions,
   type AgentActivity,
+  type AgentBridgeSettings,
   type AgentConnectorRecord,
   type AgentControlState,
   type AgentPermission,
@@ -129,12 +130,24 @@ export function AgentControlWidget({
   state,
   role,
   missionControl,
+  bridgeSettings,
+  onUpdateBridgeSettings,
 }: {
   state: AgentControlState;
   role: ShellRole;
   missionControl: MissionControlRuntime;
+  bridgeSettings: AgentBridgeSettings;
+  onUpdateBridgeSettings: (settings: Pick<AgentBridgeSettings, 'localBridgeUrl' | 'remoteApiUrl'>) => void;
 }) {
   const [profileEditorOpen, setProfileEditorOpen] = useState(false);
+  const [localBridgeUrl, setLocalBridgeUrl] = useState(bridgeSettings.localBridgeUrl);
+  const [remoteApiUrl, setRemoteApiUrl] = useState(bridgeSettings.remoteApiUrl);
+  const [bridgeSetupStatus, setBridgeSetupStatus] = useState('Configure a local or LAN bridge, then test it.');
+
+  useEffect(() => {
+    setLocalBridgeUrl(bridgeSettings.localBridgeUrl);
+    setRemoteApiUrl(bridgeSettings.remoteApiUrl);
+  }, [bridgeSettings.localBridgeUrl, bridgeSettings.remoteApiUrl]);
 
   if (!canViewAgentControl(role)) {
     return (
@@ -165,6 +178,24 @@ export function AgentControlWidget({
   const connectors = getAgentConnectors(state);
   const activeConnector = getActiveAgentConnector(state);
   const connectorSummary = getAgentConnectorSummary(state);
+  const saveBridgeSettings = () => {
+    onUpdateBridgeSettings({ localBridgeUrl, remoteApiUrl });
+    setBridgeSetupStatus('Bridge URLs saved. Runtime will probe the configured connectors.');
+  };
+  const testBridgeUrl = async (url: string, label: string) => {
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl) {
+      setBridgeSetupStatus(`${label} bridge is not configured.`);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${trimmedUrl.replace(/\/+$/u, '')}/status`, { headers: { accept: 'application/json' } });
+      setBridgeSetupStatus(response.ok ? `${label} bridge responded with ${response.status}.` : `${label} bridge returned ${response.status}.`);
+    } catch (error) {
+      setBridgeSetupStatus(error instanceof Error ? `${label} bridge failed: ${error.message}` : `${label} bridge failed.`);
+    }
+  };
 
   return (
     <WorkspaceContentShell className="mission-control-surface agent-control-surface">
@@ -210,6 +241,47 @@ export function AgentControlWidget({
             <AgentConnectorCard key={connector.id} connector={connector} active={connector.id === activeConnector.id} />
           ))}
         </div>
+      </WorkspaceSectionFrame>
+
+      <WorkspaceSectionFrame
+        className="mission-control-list-frame agent-control-bridge-setup"
+        eyebrow="bridge setup"
+        title="local / remote agent endpoint"
+        meta={editable ? 'admin editable' : 'view only'}
+      >
+        <p className="agent-control-connector-note">
+          Use a LAN URL for Hermes or OpenClaw on another PC, for example http://192.168.x.x:8787.
+        </p>
+        <label className="agent-control-bridge-field">
+          <span>local bridge</span>
+          <input
+            value={localBridgeUrl}
+            disabled={!editable}
+            onChange={(event) => setLocalBridgeUrl(event.currentTarget.value)}
+            placeholder="http://127.0.0.1:8787"
+          />
+        </label>
+        <label className="agent-control-bridge-field">
+          <span>remote bridge</span>
+          <input
+            value={remoteApiUrl}
+            disabled={!editable}
+            onChange={(event) => setRemoteApiUrl(event.currentTarget.value)}
+            placeholder="https://agent.example.com"
+          />
+        </label>
+        <div className="mission-control-actions">
+          <WorkspaceButton variant="secondary" disabled={!editable} onClick={saveBridgeSettings}>
+            Save endpoints
+          </WorkspaceButton>
+          <WorkspaceButton variant="secondary" onClick={() => testBridgeUrl(localBridgeUrl, 'Local')}>
+            Test local
+          </WorkspaceButton>
+          <WorkspaceButton variant="secondary" disabled={!remoteApiUrl.trim()} onClick={() => testBridgeUrl(remoteApiUrl, 'Remote')}>
+            Test remote
+          </WorkspaceButton>
+        </div>
+        <p className="mission-control-muted">{bridgeSetupStatus}</p>
       </WorkspaceSectionFrame>
 
       <WorkspaceSectionFrame

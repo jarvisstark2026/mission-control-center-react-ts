@@ -268,6 +268,34 @@ const widgetIconDefinitions: Record<WidgetKind, WidgetIconDefinition> = {
       'M4 15h2',
     ],
   },
+  goals: {
+    paths: [
+      'M12 4a8 8 0 1 0 8 8',
+      'M12 8a4 4 0 1 0 4 4',
+      'M12 12h9',
+      'M18 9l3 3-3 3',
+      'M7 18l2-3 2 2 3-5',
+    ],
+  },
+  'app-portal': {
+    paths: [
+      'M4 6h16v12H4z',
+      'M8 10h4v4H8z',
+      'M14 10h4',
+      'M14 14h3',
+      'M8 21h8',
+      'M12 18v3',
+    ],
+  },
+  'json-surface': {
+    paths: [
+      'M8 7l-4 5 4 5',
+      'M16 7l4 5-4 5',
+      'M11 19l2-14',
+      'M7 12h.1',
+      'M17 12h.1',
+    ],
+  },
 };
 
 export function WorkspaceWidgetIcon({ kind }: { kind: WidgetKind }) {

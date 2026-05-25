@@ -84,6 +84,8 @@ export type CommandRequest = {
   title: string;
   summary: string;
   source: string;
+  goalId?: string;
+  evidenceIds?: string[];
   agent: CommandAgentProvenance;
   reasoning: string;
   expectedResult: string;

@@ -107,6 +107,20 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
     case 'window-manager':
       return getWorkspaceGroupSignature(left.workspaceWidgetGroups) === getWorkspaceGroupSignature(right.workspaceWidgetGroups);
     case 'command-inbox':
+      return (
+        left.missionControl.role === right.missionControl.role &&
+        left.missionControl.state.version === right.missionControl.state.version &&
+        left.operationalOs.state.version === right.operationalOs.state.version
+      );
+    case 'goals':
+    case 'app-portal':
+    case 'json-surface':
+      return (
+        left.activeRole === right.activeRole &&
+        left.operationalOs.state.version === right.operationalOs.state.version &&
+        left.missionControl.state.version === right.missionControl.state.version &&
+        left.agentControl.version === right.agentControl.version
+      );
     case 'notifications':
     case 'integration-registry':
     case 'home-systems':
@@ -118,14 +132,17 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
       return (
         left.activeRole === right.activeRole &&
         left.agentControl.version === right.agentControl.version &&
-        left.missionControl.state.version === right.missionControl.state.version
+        left.missionControl.state.version === right.missionControl.state.version &&
+        left.agentBridgeSettings.localBridgeUrl === right.agentBridgeSettings.localBridgeUrl &&
+        left.agentBridgeSettings.remoteApiUrl === right.agentBridgeSettings.remoteApiUrl
       );
     case 'agent-console':
       return (
         left.activeRole === right.activeRole &&
         left.agentControl.version === right.agentControl.version &&
         left.agentTaskGateway.mode === right.agentTaskGateway.mode &&
-        left.missionControl.state.version === right.missionControl.state.version
+        left.missionControl.state.version === right.missionControl.state.version &&
+        left.operationalOs.state.version === right.operationalOs.state.version
       );
     case '3d':
       return left.widget.previewFileId === right.widget.previewFileId && left.localFiles === right.localFiles;

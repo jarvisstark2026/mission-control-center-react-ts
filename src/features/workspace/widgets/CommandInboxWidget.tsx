@@ -1,5 +1,6 @@
 import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame } from '../workspaceBlocks';
 import { getAllowedCommandActions, type CommandAction, type CommandRequest, type MissionControlRuntime } from '../../mission-control';
+import type { OperationalOsRuntime } from '../../operational-os';
 import { AgentAttribution, AttentionCard, AuditList, EvidenceBlock, StatusSummary } from '../operationalBlocks';
 
 const commandActionLabels: Record<CommandAction, string> = {
@@ -57,13 +58,17 @@ function CommandActionButton({
   );
 }
 
-export function CommandInboxWidget({ missionControl }: { missionControl: MissionControlRuntime }) {
+export function CommandInboxWidget({ missionControl, operationalOs }: { missionControl: MissionControlRuntime; operationalOs: OperationalOsRuntime }) {
   const { commands } = missionControl.state;
   const pendingCommands = commands.filter((command) => command.status === 'pending');
   const completedCommands = commands.filter((command) => command.status !== 'pending');
   const nextCommand = pendingCommands[0];
   const gatewayLabel = missionControl.commandGatewayMode === 'backend' ? 'backend gateway' : 'local gateway';
   const nextAllowedActions = nextCommand ? getAllowedCommandActions(nextCommand, missionControl.role) : [];
+  const nextGoal = nextCommand?.goalId ? operationalOs.state.goals.find((goal) => goal.id === nextCommand.goalId) ?? null : null;
+  const nextEvidence = nextCommand?.evidenceIds?.length
+    ? operationalOs.state.evidence.filter((evidence) => nextCommand.evidenceIds?.includes(evidence.id))
+    : [];
 
   return (
     <WorkspaceContentShell className="mission-control-surface command-inbox-surface">
@@ -104,6 +109,16 @@ export function CommandInboxWidget({ missionControl }: { missionControl: Mission
           <EvidenceBlock label="Origin" title={getCommandOriginLabel(nextCommand)}>
             Requested {formatDateTime(nextCommand.requestedAt)}. Source remains evidence-only until this inbox approves the command.
           </EvidenceBlock>
+          {nextGoal ? (
+            <EvidenceBlock label="Goal" title={nextGoal.title}>
+              {nextGoal.objective}
+            </EvidenceBlock>
+          ) : null}
+          {nextEvidence.length ? (
+            <EvidenceBlock label="Evidence" title={`${nextEvidence.length} linked records`}>
+              {nextEvidence.slice(0, 3).map((evidence) => evidence.title).join(' / ')}
+            </EvidenceBlock>
+          ) : null}
           <EvidenceBlock label="Why">{nextCommand.reasoning}</EvidenceBlock>
           <EvidenceBlock label="Expected result">{nextCommand.expectedResult}</EvidenceBlock>
           <EvidenceBlock label="Role gate" title={nextAllowedActions.length ? nextAllowedActions.join(' / ') : 'read only'}>

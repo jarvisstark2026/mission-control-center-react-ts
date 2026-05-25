@@ -112,6 +112,8 @@ export function WorkspaceSummaryPanel({
 
 type WorkspaceButtonVariant = 'primary' | 'secondary' | 'destructive' | 'compact' | 'icon';
 
+export type TopBarGroupId = 'viewport' | 'layout' | 'visuals' | 'operator' | 'launch';
+
 export function WorkspaceButton({
   variant = 'primary',
   className,
@@ -316,5 +318,50 @@ export function WorkspaceActionRowList({
         </div>
       ))}
     </div>
+  );
+}
+
+export function WorkspaceTopBarGroup({
+  id,
+  label,
+  children,
+  className,
+}: {
+  id: TopBarGroupId;
+  label: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={classNames('workspace-topbar-group', `workspace-topbar-group-${id}`, className)} role="group" aria-label={label}>
+      {children}
+    </div>
+  );
+}
+
+export function WorkspaceTopBarButton({
+  active = false,
+  className,
+  icon,
+  label,
+  title = label,
+  children,
+  ...buttonProps
+}: ButtonHTMLAttributes<HTMLButtonElement> & {
+  active?: boolean;
+  icon?: ReactNode;
+  label: string;
+}) {
+  return (
+    <WorkspaceButton
+      {...buttonProps}
+      variant="compact"
+      aria-label={label}
+      title={title}
+      className={classNames('workspace-launch-button', 'workspace-topbar-button', active && 'is-active', className)}
+    >
+      {icon ? <span className="workspace-topbar-button-icon" aria-hidden="true">{icon}</span> : null}
+      {children ? <span className="workspace-topbar-button-label">{children}</span> : null}
+    </WorkspaceButton>
   );
 }

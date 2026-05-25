@@ -3,6 +3,9 @@ import type { ShellRole } from '../../shell/roles';
 import {
   canEditAgentSettings,
   canViewAgentControl,
+  getActiveAgentConnector,
+  getAgentConnectorSummary,
+  getAgentConnectors,
   getAgentJobSummary,
   getAgentUsageApprovalRate,
   getCommandAuditAgentActivity,
@@ -11,6 +14,7 @@ import {
   getVisibleAgentJobs,
   getVisibleAgentPermissions,
   type AgentActivity,
+  type AgentConnectorRecord,
   type AgentControlState,
   type AgentPermission,
   type AgentScheduledJob,
@@ -41,6 +45,42 @@ function formatDateTime(value: string | null) {
 
 function formatCompactNumber(value: number) {
   return new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+}
+
+function formatConnectorProvider(connector: AgentConnectorRecord) {
+  const providerLabel: Record<AgentConnectorRecord['provider'], string> = {
+    hermes: 'Hermes',
+    openclaw: 'OpenClaw',
+    openai: 'OpenAI',
+    custom: 'Custom',
+  };
+
+  return providerLabel[connector.provider];
+}
+
+function AgentConnectorCard({
+  connector,
+  active,
+}: {
+  connector: AgentConnectorRecord;
+  active: boolean;
+}) {
+  return (
+    <article className="agent-control-connector-card" data-state={connector.status} data-active={active ? 'true' : 'false'}>
+      <div className="agent-control-connector-head">
+        <span>{connector.kind}</span>
+        <strong>{formatConnectorProvider(connector)}</strong>
+        <small>{connector.status}</small>
+      </div>
+      <p>{connector.url ?? 'No endpoint configured'}</p>
+      <div className="agent-control-connector-capabilities">
+        {connector.capabilities.slice(0, 3).map((capability) => (
+          <span key={capability}>{capability}</span>
+        ))}
+      </div>
+      {connector.error ? <small className="agent-control-connector-error">{connector.error}</small> : null}
+    </article>
+  );
 }
 
 function AgentJobCard({ job }: { job: AgentScheduledJob }) {
@@ -119,6 +159,9 @@ export function AgentControlWidget({
   const summary = getAgentJobSummary(jobs);
   const editable = canEditAgentSettings(role);
   const approvalRate = getAgentUsageApprovalRate(state);
+  const connectors = getAgentConnectors(state);
+  const activeConnector = getActiveAgentConnector(state);
+  const connectorSummary = getAgentConnectorSummary(state);
 
   return (
     <WorkspaceContentShell className="mission-control-surface agent-control-surface">
@@ -126,7 +169,7 @@ export function AgentControlWidget({
         eyebrow="Agent control"
         title="identity / jobs / permissions"
         metaEyebrow="connection"
-        meta={state.identity.connection}
+        meta={`${activeConnector.kind} / ${activeConnector.status}`}
       />
 
       <StatusSummary
@@ -141,6 +184,7 @@ export function AgentControlWidget({
         className="mission-control-metrics agent-control-metrics"
         metrics={[
           { label: 'status', value: state.identity.status },
+          { label: 'bridge', value: activeConnector.status },
           { label: 'model', value: state.identity.model },
           { label: 'profile', value: state.identity.activeProfileLabel, wide: true },
           { label: 'jobs', value: `${summary.active}/${summary.total}` },
@@ -148,6 +192,22 @@ export function AgentControlWidget({
           { label: 'next run', value: formatDateTime(summary.nextRunAt), wide: true },
         ]}
       />
+
+      <WorkspaceSectionFrame
+        className="mission-control-list-frame agent-control-connectors-frame"
+        eyebrow="agent bridge"
+        title="Hermes / OpenClaw connectors"
+        meta={`${connectorSummary.configured}/${connectorSummary.total} configured`}
+      >
+        <p className="agent-control-connector-note">
+          Agent Control prefers a local Hermes or OpenClaw bridge, then a remote bridge, and falls back to mock state until a real connector is online.
+        </p>
+        <div className="agent-control-connector-grid" role="list" aria-label="Agent connectors">
+          {connectors.map((connector) => (
+            <AgentConnectorCard key={connector.id} connector={connector} active={connector.id === activeConnector.id} />
+          ))}
+        </div>
+      </WorkspaceSectionFrame>
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame"

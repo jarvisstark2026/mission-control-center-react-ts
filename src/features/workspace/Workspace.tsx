@@ -18,9 +18,9 @@ import {
   writeWorkspaceHudSettings,
   type WorkspaceHudSettings,
 } from '../workspace-hud';
-import { WorkspaceButton } from './workspaceBlocks';
+import { WorkspaceButton, WorkspaceTopBarButton, WorkspaceTopBarGroup } from './workspaceBlocks';
 import { WorkspaceAtmosphere, WorkspaceCanvas } from './WorkspaceCanvas';
-import { WorkspaceCloseScreenButton, WorkspaceNewScreenButton } from './WorkspaceScreenButton';
+import { WorkspaceCloseScreenButton } from './WorkspaceScreenButton';
 import { WorkspaceWindowTracker } from './WorkspaceWindowTracker';
 import {
   getCurrentFullscreenState,
@@ -63,7 +63,7 @@ import {
   type WorkspaceCustomPreset,
 } from './workspaceCustomPresets';
 import { WorkspaceWidgetCard, type WorkspaceWidgetRuntimeProps } from './workspaceWidgets';
-import { closeWorkspaceExtensionWindow, closeWorkspacePanelWindow, openWorkspaceExtensionWindow, returnToWorkspaceHub } from './workspacePanelWindows';
+import { closeWorkspaceExtensionWindow, closeWorkspacePanelWindow, returnToWorkspaceHub } from './workspacePanelWindows';
 import { getCurrentShellRole, isWorkspaceExtensionUrl } from './workspacePanelRouting';
 import {
   getOpenAdjacentWorkspaceInstance,
@@ -223,6 +223,8 @@ type InteractionState = {
 type WorkspaceProps = {
   panelKind?: WorkspaceWidget['kind'] | null;
   topBarSlot?: ReactNode;
+  topBarVisualSlot?: ReactNode;
+  topBarOperatorSlot?: ReactNode;
   footerSlot?: ReactNode;
   role?: ShellRole;
 };
@@ -245,6 +247,10 @@ type DirectoryPickerWindow = Window & {
 function getDirectoryPicker() {
   if (typeof window === 'undefined') return null;
   return (window as DirectoryPickerWindow).showDirectoryPicker ?? null;
+}
+
+function WorkspaceTopBarGlyph({ name }: { name: string }) {
+  return <span className={`workspace-topbar-glyph workspace-topbar-glyph-${name}`} aria-hidden="true" />;
 }
 
 function getWindowViewportSize() {
@@ -399,12 +405,26 @@ function getWorkspaceTransferDirection({
   return candidates.filter((candidate) => candidate.active).sort((left, right) => right.distance - left.distance)[0]?.direction ?? null;
 }
 
-export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = null, role }: WorkspaceProps) {
+export function Workspace({
+  panelKind = null,
+  topBarSlot = null,
+  topBarVisualSlot = null,
+  topBarOperatorSlot = null,
+  footerSlot = null,
+  role,
+}: WorkspaceProps) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const planeRef = useRef<HTMLDivElement | null>(null);
   const activeRole = role ?? getCurrentShellRole();
   const missionControl = useMissionControl(activeRole);
-  const agentControl = useMemo(() => createInitialAgentControlState(), []);
+  const agentControl = useMemo(
+    () =>
+      createInitialAgentControlState({
+        localBridgeUrl: import.meta.env.VITE_AGENT_LOCAL_BRIDGE_URL,
+        remoteApiUrl: import.meta.env.VITE_AGENT_REMOTE_API_URL,
+      }),
+    [],
+  );
   const marketLiveData = useMarketLiveData();
   const isWorkspaceExtension = isWorkspaceExtensionUrl();
   const workspaceInstanceId = getWorkspaceInstanceId();
@@ -976,13 +996,6 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     void saveStoredWidgetState(resetWidgets, currentWorkspaceId);
     setWidgets(resetWidgets);
     showLayoutStatus(`${currentWorkspaceLabel} reset to ${getModeLabel(activeWorkspaceModeId)}`);
-  };
-
-  const openBlankWorkspaceExtension = () => {
-    const opened = openWorkspaceExtensionWindow();
-    if (!opened) {
-      showLayoutStatus('Workspace window could not open');
-    }
   };
 
   const closeBlankWorkspaceExtension = () => {
@@ -1947,7 +1960,17 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
       ) : null}
 
       <div className="workspace-head">
-        {!isWorkspaceExtension ? <div className="workspace-brand">Mission Control Center</div> : null}
+        {!isWorkspaceExtension ? (
+          <div className="workspace-brand workspace-forge-brand" aria-label="Mission Control">
+            <span className="workspace-forge-mark" aria-hidden="true">
+              <span />
+            </span>
+            <span className="workspace-forge-copy">
+              <strong>Mission Control</strong>
+              <small>command rail</small>
+            </span>
+          </div>
+        ) : null}
         {!isWorkspaceExtension ? <StatusChip tone="cool">tailnet live · drag · resize · stack</StatusChip> : null}
         {isWorkspaceExtension ? (
           <div className="workspace-extension-identity" aria-label={`${extensionWorkspaceLabel} top bar marker`}>
@@ -1956,37 +1979,39 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
           </div>
         ) : null}
         <div className="workspace-launcher">
-          <WorkspaceButton variant="secondary" className="workspace-launch-button workspace-head-action" onClick={saveWorkspaceLayout}>
-            Save layout
-          </WorkspaceButton>
-          <WorkspaceButton variant="secondary" className="workspace-launch-button workspace-head-action is-muted" onClick={resetWorkspaceLayout}>
-            Reset layout
-          </WorkspaceButton>
-          <WorkspaceButton
-            variant="secondary"
-            className="workspace-launch-button workspace-head-action"
-            onClick={() => void toggleCurrentWorkspaceFullscreen()}
-          >
-            {workspaceFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-          </WorkspaceButton>
-          <WorkspaceButton
-            variant="compact"
-            className="workspace-launch-button workspace-head-action is-muted"
-            disabled={!desktopFullscreenAvailable}
-            title={desktopFullscreenAvailable ? 'Toggle fullscreen for all ON workspaces' : 'Desktop app only'}
-            onClick={() => void toggleAllOpenWorkspacesFullscreen()}
-          >
-            {workspaceFullscreen ? 'Exit all' : 'All screens'}
-          </WorkspaceButton>
-          {isWorkspaceExtension ? (
-            <WorkspaceCloseScreenButton onClick={closeBlankWorkspaceExtension} />
-          ) : (
-            <WorkspaceNewScreenButton onClick={openBlankWorkspaceExtension} />
-          )}
+          <WorkspaceTopBarGroup id="viewport" label="Viewport controls">
+            <WorkspaceTopBarButton
+              active={workspaceFullscreen}
+              label={workspaceFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              icon={<WorkspaceTopBarGlyph name={workspaceFullscreen ? 'fullscreen-exit' : 'fullscreen'} />}
+              onClick={() => void toggleCurrentWorkspaceFullscreen()}
+            />
+            <WorkspaceTopBarButton
+              label="All screens"
+              disabled={!desktopFullscreenAvailable}
+              title={desktopFullscreenAvailable ? 'Toggle fullscreen for all ON workspaces' : 'Desktop app only'}
+              icon={<WorkspaceTopBarGlyph name="all-screens" />}
+              onClick={() => void toggleAllOpenWorkspacesFullscreen()}
+            />
+          </WorkspaceTopBarGroup>
+          <WorkspaceTopBarGroup id="layout" label="Layout controls">
+            <WorkspaceTopBarButton
+              label="Save layout"
+              icon={<WorkspaceTopBarGlyph name="save" />}
+              onClick={saveWorkspaceLayout}
+            />
+            <WorkspaceTopBarButton
+              label="Reset layout"
+              icon={<WorkspaceTopBarGlyph name="reset" />}
+              onClick={resetWorkspaceLayout}
+            />
+          </WorkspaceTopBarGroup>
+          <WorkspaceTopBarGroup id="launch" label="Widget launch controls">
           <div className="workspace-widget-menu" ref={widgetMenuRef}>
-            <WorkspaceButton
-              variant="compact"
-              className="workspace-launch-button workspace-widget-menu-trigger"
+            <WorkspaceTopBarButton
+              label="Open widget"
+              className="workspace-widget-menu-trigger"
+              icon={<WorkspaceTopBarGlyph name="widgets" />}
               aria-expanded={widgetMenuOpen}
               aria-haspopup="menu"
               onClick={() => {
@@ -1996,9 +2021,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                 setAgentMenuOpen(false);
                 setWidgetMenuOpen((open) => !open);
               }}
-            >
-              Open widget
-            </WorkspaceButton>
+            />
             {widgetMenuOpen ? (
               <div className="workspace-widget-menu-panel" role="menu" aria-label="Open widget menu">
                 {workspaceShortcutKindsForRole.map((kind) => (
@@ -2015,10 +2038,13 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
               </div>
             ) : null}
           </div>
+          </WorkspaceTopBarGroup>
+          <WorkspaceTopBarGroup id="layout" label="Mode controls">
           <div className="workspace-widget-menu workspace-preset-menu" ref={presetMenuRef}>
-            <WorkspaceButton
-              variant="compact"
-              className="workspace-launch-button workspace-widget-menu-trigger"
+            <WorkspaceTopBarButton
+              label="Mode preset"
+              className="workspace-widget-menu-trigger"
+              icon={<WorkspaceTopBarGlyph name="mode" />}
               aria-expanded={presetMenuOpen}
               aria-haspopup="menu"
               onClick={() => {
@@ -2030,7 +2056,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
               }}
             >
               Mode preset
-            </WorkspaceButton>
+            </WorkspaceTopBarButton>
             {presetMenuOpen ? (
               <div className="workspace-widget-menu-panel workspace-preset-menu-panel" role="menu" aria-label="Workspace mode presets">
                 <div className="workspace-menu-section-label">Built-in modes</div>
@@ -2129,11 +2155,14 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
               </div>
             ) : null}
           </div>
+          </WorkspaceTopBarGroup>
           {activeRole === 'admin' && !isWorkspaceExtension ? (
+            <WorkspaceTopBarGroup id="operator" label="Widget permission controls">
             <div className="workspace-widget-menu workspace-permission-menu" ref={permissionMenuRef}>
-              <WorkspaceButton
-                variant="compact"
-                className="workspace-launch-button workspace-widget-menu-trigger"
+              <WorkspaceTopBarButton
+                label="Permissions"
+                className="workspace-widget-menu-trigger"
+                icon={<WorkspaceTopBarGlyph name="permissions" />}
                 aria-expanded={permissionMenuOpen}
                 aria-haspopup="menu"
                 onClick={() => {
@@ -2143,9 +2172,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                   setAgentMenuOpen(false);
                   setPermissionMenuOpen((open) => !open);
                 }}
-              >
-                Permissions
-              </WorkspaceButton>
+              />
               {permissionMenuOpen ? (
                 <div className="workspace-widget-menu-panel workspace-permission-menu-panel" role="menu" aria-label="Widget permissions">
                   <div className="workspace-permission-head">
@@ -2203,12 +2230,15 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                 </div>
               ) : null}
             </div>
+            </WorkspaceTopBarGroup>
           ) : null}
           {!isWorkspaceExtension ? (
+            <WorkspaceTopBarGroup id="visuals" label="Visual controls">
             <div className="workspace-widget-menu workspace-hud-menu" ref={hudMenuRef}>
-              <WorkspaceButton
-                variant="compact"
-                className="workspace-launch-button workspace-widget-menu-trigger"
+              <WorkspaceTopBarButton
+                label="HUD"
+                className="workspace-widget-menu-trigger"
+                icon={<WorkspaceTopBarGlyph name="hud" />}
                 aria-expanded={hudMenuOpen}
                 aria-haspopup="menu"
                 onClick={() => {
@@ -2218,9 +2248,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                   setAgentMenuOpen(false);
                   setHudMenuOpen((open) => !open);
                 }}
-              >
-                HUD
-              </WorkspaceButton>
+              />
               {hudMenuOpen ? (
                 <div className="workspace-widget-menu-panel workspace-hud-menu-panel" role="menu" aria-label="HUD menu">
                   <div className="workspace-permission-head">
@@ -2258,12 +2286,16 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                 </div>
               ) : null}
             </div>
+            {topBarVisualSlot}
+            </WorkspaceTopBarGroup>
           ) : null}
           {!isWorkspaceExtension ? (
+            <WorkspaceTopBarGroup id="operator" label="Agent controls">
             <div className="workspace-widget-menu workspace-agent-menu" ref={agentMenuRef}>
-              <WorkspaceButton
-                variant="compact"
-                className="workspace-launch-button workspace-widget-menu-trigger"
+              <WorkspaceTopBarButton
+                label="Agent"
+                className="workspace-widget-menu-trigger"
+                icon={<WorkspaceTopBarGlyph name="agent" />}
                 aria-expanded={agentMenuOpen}
                 aria-haspopup="menu"
                 onClick={() => {
@@ -2273,9 +2305,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                   setHudMenuOpen(false);
                   setAgentMenuOpen((open) => !open);
                 }}
-              >
-                Agent
-              </WorkspaceButton>
+              />
               {agentMenuOpen ? (
                 <div className="workspace-widget-menu-panel workspace-agent-menu-panel" role="menu" aria-label="Agent menu">
                   <div className="workspace-permission-head">
@@ -2319,13 +2349,18 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                 </div>
               ) : null}
             </div>
-          ) : null}
+            {topBarOperatorSlot ?? topBarSlot}
+            </WorkspaceTopBarGroup>
+          ) : (
+            <WorkspaceTopBarGroup id="operator" label="Workspace window controls">
+              <WorkspaceCloseScreenButton onClick={closeBlankWorkspaceExtension} />
+            </WorkspaceTopBarGroup>
+          )}
           {layoutSaveStatus ? (
             <span className="workspace-layout-status" role="status" aria-live="polite">
               {layoutSaveStatus}
             </span>
           ) : null}
-          {topBarSlot}
         </div>
       </div>
 

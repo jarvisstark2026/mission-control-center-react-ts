@@ -50,6 +50,7 @@ test('operational core widgets launch and use mock live data', async ({ page }) 
 
   await openWidget(page, 'Agent control');
   await expect(page.getByText('identity / jobs / permissions').first()).toBeVisible();
+  await expect(page.getByText('Hermes / OpenClaw connectors').first()).toBeVisible();
   await expect(page.getByText('Jarvis Prime').last()).toBeVisible();
   await expect(page.getByText('Jarvis Workflow').last()).toBeVisible();
 
@@ -192,7 +193,10 @@ test('browser workspace extension opens as a loaded workspace window', async ({ 
 
   const [extensionPage] = await Promise.all([
     page.waitForEvent('popup'),
-    page.getByLabel('Create blank workspace').click(),
+    (async () => {
+      await page.getByLabel('Open workspace setup').click();
+      await page.getByLabel('Create workspace instance').click();
+    })(),
   ]);
 
   await extensionPage.waitForLoadState('domcontentloaded');

@@ -89,6 +89,18 @@
   --workspace-head-background:
     linear-gradient(180deg, rgba(86, 221, 255, 0.045), rgba(255, 255, 255, 0.006)),
     rgba(3, 10, 18, 0.62);
+  --workspace-topbar-group-bg:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.012)),
+    rgba(8, 19, 30, 0.68);
+  --workspace-topbar-group-border: rgba(156, 211, 255, 0.2);
+  --workspace-topbar-control-bg: rgba(255, 255, 255, 0.035);
+  --workspace-topbar-control-hover-bg: rgba(86, 221, 255, 0.105);
+  --workspace-topbar-control-active-bg: rgba(86, 221, 255, 0.16);
+  --workspace-topbar-control-border: rgba(220, 236, 250, 0.17);
+  --workspace-topbar-control-glow: rgba(86, 221, 255, 0.2);
+  --workspace-topbar-logo-bg: rgba(86, 221, 255, 0.11);
+  --workspace-topbar-logo-line: rgba(86, 221, 255, 0.44);
+  --workspace-menu-max-height: calc(100dvh - 180px);
   --workspace-footer-background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.01)),
     radial-gradient(circle at 22% 0%, var(--jarvis-cyan-soft), transparent 38%),

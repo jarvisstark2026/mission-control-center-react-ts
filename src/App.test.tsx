@@ -190,7 +190,7 @@ describe('App', () => {
     fireEvent.click(screen.getAllByLabelText('Open workspace setup')[0]);
     const rail = screen.getByLabelText('Workspace navigation');
 
-    fireEvent.click(screen.getByLabelText('Create blank workspace'));
+    fireEvent.click(within(rail).getByLabelText('Create workspace instance'));
 
     expect(within(rail).getByRole('button', { name: /close workspace 1/i })).toBeInTheDocument();
 

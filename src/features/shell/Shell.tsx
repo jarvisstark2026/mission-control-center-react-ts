@@ -266,14 +266,8 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
       <div className="shell-workspace">
         <Workspace
           role={activeRole}
-          topBarSlot={
-            !isWorkspaceExtension ? (
-              <>
-                <ShellThemeMenu activeTheme={activeTheme} onSelectTheme={selectTheme} />
-                <ShellRoleMenu activeRole={activeRole} activeRoleLabel={activeRoleLabel} onNavigateRole={navigateToRole} />
-              </>
-            ) : null
-          }
+          topBarVisualSlot={!isWorkspaceExtension ? <ShellThemeMenu activeTheme={activeTheme} onSelectTheme={selectTheme} /> : null}
+          topBarOperatorSlot={!isWorkspaceExtension ? <ShellRoleMenu activeRole={activeRole} activeRoleLabel={activeRoleLabel} onNavigateRole={navigateToRole} /> : null}
           footerSlot={footerNavigationControl}
         />
       </div>

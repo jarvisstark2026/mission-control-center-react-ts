@@ -4,6 +4,9 @@ import {
   canEditAgentSettings,
   canViewAgentControl,
   createInitialAgentControlState,
+  getActiveAgentConnector,
+  getAgentConnectorSummary,
+  getAgentConnectors,
   getAgentJobSummary,
   getCommandAuditAgentActivity,
   getVisibleAgentDescriptors,
@@ -27,6 +30,21 @@ describe('agentControlModel', () => {
     expect(getVisibleAgentDescriptors(state, 'home').map((agent) => agent.id)).toContain('jarvis-home');
     expect(getVisibleAgentDescriptors(state, 'home').map((agent) => agent.id)).not.toContain('jarvis-security');
     expect(getVisibleAgentDescriptors(state, 'guest')).toHaveLength(0);
+  });
+
+  it('normalizes local, remote, and mock agent connectors', () => {
+    const state = createInitialAgentControlState({
+      localBridgeUrl: 'http://127.0.0.1:8787',
+      remoteApiUrl: 'https://agents.example.test',
+    });
+    const connectors = getAgentConnectors(state);
+    const summary = getAgentConnectorSummary(state);
+
+    expect(connectors.map((connector) => connector.provider)).toEqual(['hermes', 'openclaw', 'custom', 'openai']);
+    expect(connectors.find((connector) => connector.provider === 'hermes')?.status).toBe('available');
+    expect(connectors.find((connector) => connector.kind === 'remote')?.status).toBe('available');
+    expect(getActiveAgentConnector(state).provider).toBe('hermes');
+    expect(summary.configured).toBe(4);
   });
 
   it('allows only admins to edit agent settings', () => {

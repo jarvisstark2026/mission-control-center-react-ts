@@ -446,6 +446,40 @@
   width: 100%;
 }
 
+.workspace-topbar-group .shell-role-menu-trigger,
+.workspace-topbar-group .shell-theme-menu-trigger {
+  min-height: 32px;
+  border-color: var(--workspace-topbar-control-border);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.01)),
+    var(--workspace-topbar-control-bg);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.22);
+}
+
+.workspace-topbar-group .shell-role-menu-trigger {
+  min-width: 118px;
+  padding: 5px 12px;
+}
+
+.workspace-topbar-group .shell-theme-menu-trigger {
+  min-width: 136px;
+  padding-block: 5px;
+}
+
+.workspace-topbar-group .shell-role-menu-trigger:hover,
+.workspace-topbar-group .shell-role-menu-trigger:focus-visible,
+.workspace-topbar-group .shell-theme-menu-trigger:hover,
+.workspace-topbar-group .shell-theme-menu-trigger:focus-visible,
+.workspace-topbar-group .shell-theme-menu-trigger[aria-expanded='true'],
+.workspace-topbar-group .shell-role-menu-trigger[aria-expanded='true'] {
+  border-color: var(--jarvis-cyan-line);
+  background:
+    radial-gradient(circle at 50% 0%, var(--jarvis-cyan-soft), transparent 64%),
+    var(--workspace-topbar-control-hover-bg);
+}
+
 .shell-role-menu-trigger {
   display: grid;
   gap: 2px;
@@ -530,7 +564,9 @@
   display: grid;
   gap: 6px;
   width: min(310px, calc(100vw - 28px));
+  max-height: min(680px, var(--workspace-menu-max-height, calc(100dvh - 92px)));
   padding: 8px;
+  overflow: auto;
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   background: var(--color-surface-overlay-strong);
@@ -547,7 +583,9 @@
   display: grid;
   gap: 6px;
   width: min(360px, calc(100vw - 28px));
+  max-height: min(680px, var(--workspace-menu-max-height, calc(100dvh - 92px)));
   padding: 8px;
+  overflow: auto;
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-sm);
   background: var(--color-surface-overlay-strong);

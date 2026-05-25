@@ -9,6 +9,9 @@ export type AgentPermissionCategory = 'files' | 'workspace' | 'integrations' | '
 export type AgentActivityKind = 'proposal' | 'approval' | 'execution' | 'failure' | 'connection';
 export type AgentProfile = 'home-operator' | 'support-diagnostics' | 'security-watch' | 'guest-readonly';
 export type AgentSpecialty = 'coordinator' | 'support' | 'security' | 'home' | 'workflow';
+export type AgentConnectorKind = 'local' | 'remote' | 'mock';
+export type AgentConnectorStatus = 'connected' | 'available' | 'offline' | 'error' | 'not-configured';
+export type AgentRuntimeProvider = 'hermes' | 'openclaw' | 'openai' | 'custom';
 
 export type AgentVisibleRole = Exclude<ShellRole, 'guest'>;
 
@@ -36,6 +39,17 @@ export type AgentIdentity = {
   activeProfileLabel: string;
   lastConnectedAt: string;
   currentTask: string;
+};
+
+export type AgentConnectorRecord = {
+  id: string;
+  provider: AgentRuntimeProvider;
+  kind: AgentConnectorKind;
+  url: string | null;
+  status: AgentConnectorStatus;
+  lastSeenAt: string | null;
+  capabilities: string[];
+  error: string | null;
 };
 
 export type AgentUsageSummary = {
@@ -87,6 +101,8 @@ export type AgentControlState = {
   identity: AgentIdentity;
   agents: AgentDescriptor[];
   activeAgentId: string;
+  connectors: AgentConnectorRecord[];
+  activeConnectorId: string;
   usage: AgentUsageSummary;
   jobs: AgentScheduledJob[];
   permissions: AgentPermission[];

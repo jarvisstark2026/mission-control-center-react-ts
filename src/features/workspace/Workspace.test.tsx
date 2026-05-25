@@ -95,38 +95,14 @@ describe('Workspace header controls', () => {
     return getWidget(container, kind);
   };
 
-  it('opens a blank workspace extension without clearing the current workspace', () => {
-    const focus = vi.fn();
-    const assign = vi.fn();
-    const open = vi.spyOn(window, 'open').mockReturnValue({ focus, location: { assign } } as unknown as Window);
-    const { container } = render(<Workspace />);
-
-    const initialWidgetCount = container.querySelectorAll('.workspace-widget').length;
-    expect(initialWidgetCount).toBeGreaterThan(0);
-
-    fireEvent.click(screen.getByLabelText('Create blank workspace'));
-
-    expect(container.querySelectorAll('.workspace-widget')).toHaveLength(initialWidgetCount);
-    expect(open).toHaveBeenCalledOnce();
-    expect(open.mock.calls[0]?.[0]).toBe('');
-    expect(assign).toHaveBeenCalledOnce();
-    expect(assign.mock.calls[0]?.[0]).toContain('workspace=extension');
-    expect(assign.mock.calls[0]?.[0]).not.toContain('panel=');
-    expect(focus).toHaveBeenCalledOnce();
-  });
-
-  it('does not replace the current workspace when an extension window cannot open', () => {
-    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+  it('keeps the main top bar focused on workspace controls instead of workspace creation', () => {
     const { container } = render(<Workspace />);
     const currentRender = within(container);
 
     const initialWidgetCount = container.querySelectorAll('.workspace-widget').length;
 
-    fireEvent.click(currentRender.getByLabelText('Create blank workspace'));
-
-    expect(open).toHaveBeenCalledOnce();
-    expect(window.location.search).toBe('?role=support');
-    expect(currentRender.getByText('Workspace window could not open')).toBeInTheDocument();
+    expect(currentRender.queryByLabelText('Create blank workspace')).not.toBeInTheDocument();
+    expect(currentRender.getByRole('button', { name: 'Open widget' })).toBeInTheDocument();
     expect(container.querySelectorAll('.workspace-widget')).toHaveLength(initialWidgetCount);
     expect(container.querySelector('.workspace-extension-identity')).not.toBeInTheDocument();
   });
@@ -917,7 +893,7 @@ describe('Workspace header controls', () => {
   it('keeps the top-bar brand and status only on the main workspace', () => {
     const mainWorkspace = render(<Workspace />);
 
-    expect(mainWorkspace.container.querySelector('.workspace-brand')).toHaveTextContent('Mission Control Center');
+    expect(mainWorkspace.container.querySelector('.workspace-brand')).toHaveTextContent('Mission Control');
     expect(mainWorkspace.container.querySelector('.workspace-head .status-chip--cool')).toHaveTextContent('tailnet live');
 
     mainWorkspace.unmount();

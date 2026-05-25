@@ -133,6 +133,7 @@ describe('Workspace header controls', () => {
     const { container } = render(<Workspace />);
     const currentRender = within(container);
 
+    expect(currentRender.queryByLabelText('Main workspace HUD')).not.toBeInTheDocument();
     expect(container.querySelectorAll('.workspace-widget')).toHaveLength(0);
     expect(currentRender.queryByLabelText('Create blank workspace')).not.toBeInTheDocument();
     expect(currentRender.getByRole('button', { name: 'Fullscreen' })).toBeInTheDocument();
@@ -140,6 +141,35 @@ describe('Workspace header controls', () => {
     expect(currentRender.getByRole('button', { name: 'Save layout' })).toBeInTheDocument();
     expect(currentRender.getByRole('button', { name: 'Mode preset' })).toBeInTheDocument();
     expect(currentRender.getByLabelText('Close workspace extension')).toBeInTheDocument();
+  });
+
+  it('renders the main workspace HUD and switches designs from the top bar', () => {
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+
+    const hud = currentRender.getByLabelText('Main workspace HUD');
+    expect(hud).toHaveClass('design-signal-halo');
+    expect(hud.querySelector('canvas.workspace-hud-canvas')).toBeInTheDocument();
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'HUD' }));
+    fireEvent.click(currentRender.getByRole('menuitemradio', { name: /Orbital Core/i }));
+
+    expect(currentRender.getByLabelText('Main workspace HUD')).toHaveClass('design-orbital-core');
+    expect(window.localStorage.getItem('mission-control.workspace-hud-settings')).toContain('orbital-core');
+  });
+
+  it('toggles HUD voice reaction from the agent menu', () => {
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Agent' }));
+    const checkbox = currentRender.getByRole('checkbox', { name: /Voice reaction/i });
+
+    expect(checkbox).toBeChecked();
+    fireEvent.click(checkbox);
+
+    expect(checkbox).not.toBeChecked();
+    expect(window.localStorage.getItem('mission-control.workspace-hud-settings')).toContain('"voiceReactionEnabled":false');
   });
 
   it('toggles browser fullscreen from the workspace top bar', async () => {
@@ -918,17 +948,17 @@ describe('Workspace header controls', () => {
     expect(extensionMarker?.querySelector('.workspace-extension-number')).toHaveTextContent('2');
   });
 
-  it('keeps the central background orb only on the main workspace', () => {
+  it('keeps the central HUD only on the main workspace', () => {
     const mainWorkspace = render(<Workspace />);
 
-    expect(mainWorkspace.container.querySelector('.visual-lab')).toBeInTheDocument();
+    expect(within(mainWorkspace.container).getByLabelText('Main workspace HUD')).toBeInTheDocument();
 
     mainWorkspace.unmount();
     window.history.replaceState({}, '', '/?role=admin&workspace=extension');
 
     const extensionWorkspace = render(<Workspace />);
 
-    expect(extensionWorkspace.container.querySelector('.visual-lab')).not.toBeInTheDocument();
+    expect(within(extensionWorkspace.container).queryByLabelText('Main workspace HUD')).not.toBeInTheDocument();
   });
 
   it('prevents open widgets from being dragged above the canvas top edge', () => {

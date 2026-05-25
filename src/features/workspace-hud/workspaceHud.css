@@ -1,0 +1,82 @@
+.workspace-hud {
+  --hud-primary: var(--theme-hud-primary, var(--jarvis-cyan));
+  --hud-secondary: var(--theme-hud-secondary, rgba(220, 96, 255, 0.9));
+  --hud-accent: var(--theme-hud-accent, var(--jarvis-amber));
+  --hud-muted: rgba(226, 238, 248, 0.5);
+  --hud-surface: rgba(4, 13, 22, 0.42);
+  position: absolute;
+  inset: 58px 0 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0.9;
+  contain: layout paint style;
+  overflow: hidden;
+}
+
+.workspace-hud.color-cyan-magenta {
+  --hud-primary: rgba(78, 231, 255, 0.95);
+  --hud-secondary: rgba(240, 82, 255, 0.92);
+  --hud-accent: rgba(150, 190, 255, 0.84);
+}
+
+.workspace-hud.color-cyan-amber {
+  --hud-primary: rgba(86, 221, 255, 0.94);
+  --hud-secondary: rgba(255, 188, 92, 0.88);
+  --hud-accent: rgba(255, 218, 151, 0.82);
+}
+
+.workspace-hud.color-mono {
+  --hud-primary: rgba(210, 236, 255, 0.8);
+  --hud-secondary: rgba(210, 236, 255, 0.48);
+  --hud-accent: rgba(210, 236, 255, 0.66);
+}
+
+.workspace-hud.design-signal-halo {
+  opacity: 0.94;
+}
+
+.workspace-hud.design-network-aperture {
+  --hud-surface: rgba(3, 15, 23, 0.38);
+}
+
+.workspace-hud.design-diagnostic-compass {
+  --hud-muted: rgba(226, 238, 248, 0.42);
+}
+
+.workspace-hud-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  filter:
+    drop-shadow(0 0 10px rgba(78, 231, 255, 0.13))
+    drop-shadow(0 0 18px rgba(240, 82, 255, 0.06));
+}
+
+.workspace-hud.is-interacting {
+  opacity: 0.42;
+}
+
+.workspace-hud.is-interacting .workspace-hud-canvas {
+  filter: none;
+}
+
+@media (max-width: 760px) {
+  .workspace-hud {
+    inset: 132px 0 70px;
+    opacity: 0.46;
+  }
+
+  .workspace-hud-canvas {
+    filter: drop-shadow(0 0 10px rgba(78, 231, 255, 0.04));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-hud,
+  .workspace-hud-canvas {
+    transition: none !important;
+  }
+}

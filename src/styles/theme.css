@@ -41,6 +41,9 @@
   --jarvis-neutral-line: rgba(219, 231, 255, 0.86);
   --jarvis-surface: rgba(7, 14, 22, 0.92);
   --jarvis-surface-raised: rgba(12, 22, 32, 0.9);
+  --theme-hud-primary: var(--jarvis-cyan);
+  --theme-hud-secondary: rgba(220, 96, 255, 0.9);
+  --theme-hud-accent: var(--jarvis-amber);
 
   --glass-panel-bg: var(--color-surface-glass);
   --glass-panel-bg-soft: var(--color-surface-glass-soft);
@@ -109,6 +112,9 @@
   --jarvis-amber: rgba(118, 188, 255, 0.9);
   --jarvis-amber-soft: rgba(118, 188, 255, 0.15);
   --jarvis-amber-line: rgba(118, 188, 255, 0.3);
+  --theme-hud-primary: rgba(104, 232, 255, 0.94);
+  --theme-hud-secondary: rgba(108, 146, 255, 0.86);
+  --theme-hud-accent: rgba(118, 188, 255, 0.88);
   --app-background:
     radial-gradient(circle at top, rgba(104, 232, 255, 0.14), transparent 30%),
     linear-gradient(180deg, var(--color-bg-shell) 0%, #061326 52%, #020814 100%);
@@ -143,6 +149,9 @@
   --jarvis-amber: rgba(255, 130, 76, 0.92);
   --jarvis-amber-soft: rgba(255, 130, 76, 0.14);
   --jarvis-amber-line: rgba(255, 130, 76, 0.32);
+  --theme-hud-primary: rgba(255, 183, 92, 0.9);
+  --theme-hud-secondary: rgba(255, 106, 116, 0.82);
+  --theme-hud-accent: rgba(255, 130, 76, 0.92);
   --glass-muted: rgba(255, 230, 207, 0.64);
   --app-background:
     radial-gradient(circle at top, rgba(255, 183, 92, 0.12), transparent 30%),
@@ -179,6 +188,9 @@
   --jarvis-amber: rgba(157, 186, 204, 0.88);
   --jarvis-amber-soft: rgba(157, 186, 204, 0.11);
   --jarvis-amber-line: rgba(157, 186, 204, 0.24);
+  --theme-hud-primary: rgba(184, 218, 240, 0.82);
+  --theme-hud-secondary: rgba(224, 232, 240, 0.52);
+  --theme-hud-accent: rgba(157, 186, 204, 0.78);
   --glass-muted: rgba(224, 232, 240, 0.62);
   --glass-blur: blur(8px) saturate(0.96);
   --glass-blur-strong: blur(10px) saturate(0.98);

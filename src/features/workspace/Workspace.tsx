@@ -7,6 +7,17 @@ import { useDismissibleMenu } from '../../lib/useDismissibleMenu';
 import { shellScopes, type ShellRole } from '../shell/roles';
 import { createInitialAgentControlState } from '../agent-control';
 import { useMissionControl } from '../mission-control';
+import {
+  WorkspaceHud,
+  createWorkspaceHudSignals,
+  getWorkspaceHudMessage,
+  readWorkspaceHudSettings,
+  useAgentVoiceRuntime,
+  workspaceHudColorOptions,
+  workspaceHudDesignOptions,
+  writeWorkspaceHudSettings,
+  type WorkspaceHudSettings,
+} from '../workspace-hud';
 import { WorkspaceButton } from './workspaceBlocks';
 import { WorkspaceAtmosphere, WorkspaceCanvas } from './WorkspaceCanvas';
 import { WorkspaceCloseScreenButton, WorkspaceNewScreenButton } from './WorkspaceScreenButton';
@@ -75,7 +86,6 @@ import {
   resetWorkspaceWidgetPermissionRole,
   updateWorkspaceWidgetPermission,
 } from './workspaceWidgetPermissions';
-import { VisualLab } from '../visual-lab/VisualLab';
 import './workspace.css';
 
 const workspaceTransferOutDurationMs = 180;
@@ -429,10 +439,16 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
   const [widgetMenuOpen, setWidgetMenuOpen] = useState(false);
   const [presetMenuOpen, setPresetMenuOpen] = useState(false);
   const [permissionMenuOpen, setPermissionMenuOpen] = useState(false);
+  const [hudMenuOpen, setHudMenuOpen] = useState(false);
+  const [agentMenuOpen, setAgentMenuOpen] = useState(false);
+  const [hudSettings, setHudSettings] = useState(readWorkspaceHudSettings);
   const widgetMenuRef = useRef<HTMLDivElement | null>(null);
   const presetMenuRef = useRef<HTMLDivElement | null>(null);
   const permissionMenuRef = useRef<HTMLDivElement | null>(null);
-  const topMenuRefs = useMemo(() => [widgetMenuRef, presetMenuRef, permissionMenuRef] as const, []);
+  const hudMenuRef = useRef<HTMLDivElement | null>(null);
+  const agentMenuRef = useRef<HTMLDivElement | null>(null);
+  const topMenuRefs = useMemo(() => [widgetMenuRef, presetMenuRef, permissionMenuRef, hudMenuRef, agentMenuRef] as const, []);
+  const { voiceState } = useAgentVoiceRuntime(hudSettings.voiceReactionEnabled, hudSettings.audioMeterEnabled);
   const [permissionRole, setPermissionRole] = useState<ShellRole>('home');
   const [layoutSaveStatus, setLayoutSaveStatus] = useState('');
   const layoutSaveStatusTimeoutRef = useRef<number | null>(null);
@@ -475,9 +491,22 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     setWidgetMenuOpen(false);
     setPresetMenuOpen(false);
     setPermissionMenuOpen(false);
+    setHudMenuOpen(false);
+    setAgentMenuOpen(false);
   }, []);
 
-  useDismissibleMenu(widgetMenuOpen || presetMenuOpen || permissionMenuOpen, topMenuRefs, closeTopMenus);
+  useDismissibleMenu(widgetMenuOpen || presetMenuOpen || permissionMenuOpen || hudMenuOpen || agentMenuOpen, topMenuRefs, closeTopMenus);
+
+  const updateHudSettings = (patch: Partial<WorkspaceHudSettings>) => {
+    setHudSettings((current) => {
+      const next = {
+        ...current,
+        ...patch,
+      };
+      writeWorkspaceHudSettings(next);
+      return next;
+    });
+  };
 
   const clearPendingWidgetSave = () => {
     if (pendingWidgetSaveRef.current === null) return;
@@ -805,7 +834,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     return `${getPresetSourceLabel(preset)} · ${createdLabel} · ${openCount} open`;
   };
 
-  const getModeLabel = (modeId: string) => {
+  const getModeLabel = useCallback((modeId: string) => {
     if (modeId === workspaceDefaultModeId) return 'Manual layout';
 
     return (
@@ -813,7 +842,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
       customPresets.find((preset) => preset.id === modeId)?.label ??
       'Mode layout'
     );
-  };
+  }, [customPresets]);
 
   const createDefaultLayoutForMode = (modeId: string) => {
     const builtInPreset = workspaceModePresets.find((preset) => preset.id === modeId);
@@ -931,9 +960,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
   }, [toggleCurrentWorkspaceFullscreen]);
 
   const saveWorkspaceLayout = () => {
-    setWidgetMenuOpen(false);
-    setPresetMenuOpen(false);
-    setPermissionMenuOpen(false);
+    closeTopMenus();
     clearPendingWidgetSave();
 
     const savedWorkingLayout = saveStoredWidgetState(widgetsRef.current, currentWorkspaceId);
@@ -943,9 +970,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
 
   const resetWorkspaceLayout = () => {
     interactionRef.current = null;
-    setWidgetMenuOpen(false);
-    setPresetMenuOpen(false);
-    setPermissionMenuOpen(false);
+    closeTopMenus();
     const resetWidgets = loadModeLayoutForWorkspace(activeWorkspaceModeId);
     widgetsRef.current = resetWidgets;
     void saveStoredWidgetState(resetWidgets, currentWorkspaceId);
@@ -966,9 +991,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
 
   const applyWorkspaceModePreset = (presetId: WorkspaceModePresetId) => {
     interactionRef.current = null;
-    setWidgetMenuOpen(false);
-    setPresetMenuOpen(false);
-    setPermissionMenuOpen(false);
+    closeTopMenus();
     const preset = workspaceModePresets.find((item) => item.id === presetId);
     const nextModeId = commitActiveWorkspaceMode(presetId);
     const nextWidgets = loadModeLayoutForWorkspace(nextModeId);
@@ -980,9 +1003,7 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
 
   const applyWorkspaceCustomPreset = (preset: WorkspaceCustomPreset) => {
     interactionRef.current = null;
-    setWidgetMenuOpen(false);
-    setPresetMenuOpen(false);
-    setPermissionMenuOpen(false);
+    closeTopMenus();
     const nextModeId = commitActiveWorkspaceMode(preset.id);
     const nextWidgets = loadModeLayoutForWorkspace(nextModeId);
     widgetsRef.current = nextWidgets;
@@ -1827,6 +1848,19 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
       }),
     [currentWorkspaceId, externalWorkspaceWidgetGroups, widgets, workspaceInstances],
   );
+  const hudLocale = useMemo(() => (typeof navigator === 'undefined' ? 'en' : navigator.language), []);
+  const workspaceHudSignals = useMemo(
+    () =>
+      createWorkspaceHudSignals({
+        missionState: missionControl.state,
+        agentState: agentControl,
+        workspaceGroups: workspaceWidgetGroups,
+        activeModeLabel: getModeLabel(activeWorkspaceModeId),
+        activeRole,
+        locale: hudLocale,
+      }),
+    [activeRole, activeWorkspaceModeId, agentControl, getModeLabel, hudLocale, missionControl.state, workspaceWidgetGroups],
+  );
   const widgetRuntimeProps: WorkspaceWidgetRuntimeProps = {
     onStartDrag,
     onStartResize,
@@ -1902,7 +1936,15 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
     <section className={`workspace-shell${workspaceInteractionActive ? ' is-interacting' : ''}`}>
       <WorkspaceAtmosphere />
 
-      {!isWorkspaceExtension ? <VisualLab /> : null}
+      {!isWorkspaceExtension ? (
+        <WorkspaceHud
+          settings={hudSettings}
+          signals={workspaceHudSignals}
+          voiceState={voiceState}
+          interacting={workspaceInteractionActive}
+          locale={hudLocale}
+        />
+      ) : null}
 
       <div className="workspace-head">
         {!isWorkspaceExtension ? <div className="workspace-brand">Mission Control Center</div> : null}
@@ -1950,6 +1992,8 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
               onClick={() => {
                 setPresetMenuOpen(false);
                 setPermissionMenuOpen(false);
+                setHudMenuOpen(false);
+                setAgentMenuOpen(false);
                 setWidgetMenuOpen((open) => !open);
               }}
             >
@@ -1980,6 +2024,8 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
               onClick={() => {
                 setWidgetMenuOpen(false);
                 setPermissionMenuOpen(false);
+                setHudMenuOpen(false);
+                setAgentMenuOpen(false);
                 setPresetMenuOpen((open) => !open);
               }}
             >
@@ -2093,6 +2139,8 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                 onClick={() => {
                   setWidgetMenuOpen(false);
                   setPresetMenuOpen(false);
+                  setHudMenuOpen(false);
+                  setAgentMenuOpen(false);
                   setPermissionMenuOpen((open) => !open);
                 }}
               >
@@ -2151,6 +2199,122 @@ export function Workspace({ panelKind = null, topBarSlot = null, footerSlot = nu
                         </label>
                       );
                     })}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {!isWorkspaceExtension ? (
+            <div className="workspace-widget-menu workspace-hud-menu" ref={hudMenuRef}>
+              <WorkspaceButton
+                variant="compact"
+                className="workspace-launch-button workspace-widget-menu-trigger"
+                aria-expanded={hudMenuOpen}
+                aria-haspopup="menu"
+                onClick={() => {
+                  setWidgetMenuOpen(false);
+                  setPresetMenuOpen(false);
+                  setPermissionMenuOpen(false);
+                  setAgentMenuOpen(false);
+                  setHudMenuOpen((open) => !open);
+                }}
+              >
+                HUD
+              </WorkspaceButton>
+              {hudMenuOpen ? (
+                <div className="workspace-widget-menu-panel workspace-hud-menu-panel" role="menu" aria-label="HUD menu">
+                  <div className="workspace-permission-head">
+                    <strong>{getWorkspaceHudMessage('hud.design', hudLocale)}</strong>
+                    <small>{workspaceHudSignals.sourceLabel} / {workspaceHudSignals.connection}</small>
+                  </div>
+                  <div className="workspace-menu-section-label">{getWorkspaceHudMessage('hud.design', hudLocale)}</div>
+                  {workspaceHudDesignOptions.map((design) => (
+                    <button
+                      key={design.id}
+                      type="button"
+                      className={`workspace-widget-menu-item workspace-hud-menu-item${hudSettings.designId === design.id ? ' is-active' : ''}`}
+                      role="menuitemradio"
+                      aria-checked={hudSettings.designId === design.id}
+                      onClick={() => updateHudSettings({ designId: design.id })}
+                    >
+                      <strong>{design.label}</strong>
+                      <small>{design.description}</small>
+                    </button>
+                  ))}
+                  <div className="workspace-menu-section-label">{getWorkspaceHudMessage('hud.color', hudLocale)}</div>
+                  {workspaceHudColorOptions.map((colorMode) => (
+                    <button
+                      key={colorMode.id}
+                      type="button"
+                      className={`workspace-widget-menu-item workspace-hud-menu-item${hudSettings.colorMode === colorMode.id ? ' is-active' : ''}`}
+                      role="menuitemradio"
+                      aria-checked={hudSettings.colorMode === colorMode.id}
+                      onClick={() => updateHudSettings({ colorMode: colorMode.id })}
+                    >
+                      <strong>{colorMode.label}</strong>
+                      <small>{colorMode.description}</small>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+          {!isWorkspaceExtension ? (
+            <div className="workspace-widget-menu workspace-agent-menu" ref={agentMenuRef}>
+              <WorkspaceButton
+                variant="compact"
+                className="workspace-launch-button workspace-widget-menu-trigger"
+                aria-expanded={agentMenuOpen}
+                aria-haspopup="menu"
+                onClick={() => {
+                  setWidgetMenuOpen(false);
+                  setPresetMenuOpen(false);
+                  setPermissionMenuOpen(false);
+                  setHudMenuOpen(false);
+                  setAgentMenuOpen((open) => !open);
+                }}
+              >
+                Agent
+              </WorkspaceButton>
+              {agentMenuOpen ? (
+                <div className="workspace-widget-menu-panel workspace-agent-menu-panel" role="menu" aria-label="Agent menu">
+                  <div className="workspace-permission-head">
+                    <strong>{workspaceHudSignals.agent.name}</strong>
+                    <small>{workspaceHudSignals.agent.model} / {workspaceHudSignals.agent.connection}</small>
+                  </div>
+                  <label className="workspace-hud-toggle-row">
+                    <span>
+                      <strong>{getWorkspaceHudMessage('hud.voiceReaction', hudLocale)}</strong>
+                      <small>{voiceState.source} / {voiceState.status}</small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={hudSettings.voiceReactionEnabled}
+                      onChange={(event) => updateHudSettings({ voiceReactionEnabled: event.target.checked })}
+                    />
+                  </label>
+                  <label className="workspace-hud-toggle-row">
+                    <span>
+                      <strong>{getWorkspaceHudMessage('hud.audioMeter', hudLocale)}</strong>
+                      <small>{voiceState.source === 'microphone' ? `${voiceState.status}` : 'requires microphone permission'}</small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={hudSettings.audioMeterEnabled}
+                      onChange={(event) => updateHudSettings({ audioMeterEnabled: event.target.checked })}
+                    />
+                  </label>
+                  <div className="workspace-hud-menu-actions">
+                    <WorkspaceButton
+                      variant="compact"
+                      className="workspace-launch-button workspace-head-action"
+                      onClick={() => {
+                        setAgentMenuOpen(false);
+                        openWorkspaceWidget('agent-control');
+                      }}
+                    >
+                      {getWorkspaceHudMessage('hud.agentControl', hudLocale)}
+                    </WorkspaceButton>
                   </div>
                 </div>
               ) : null}

@@ -14,7 +14,7 @@
   inset: 0;
   background: var(--workspace-grid-background);
   background-size: 72px 72px;
-  opacity: 0.24;
+  opacity: 1;
   mask-image: radial-gradient(circle at center, black 0%, black 54%, transparent 100%);
   pointer-events: none;
 }
@@ -2084,6 +2084,87 @@
 .workspace-permission-menu-panel {
   grid-template-columns: minmax(0, 1fr);
   width: min(440px, calc(100vw - 32px));
+}
+
+.workspace-hud-menu-panel,
+.workspace-agent-menu-panel {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(360px, calc(100vw - 32px));
+}
+
+.workspace-hud-menu-item {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  min-height: 48px;
+  text-align: left;
+}
+
+.workspace-hud-menu-item strong,
+.workspace-hud-menu-item small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-hud-menu-item small {
+  color: var(--glass-muted);
+  font-size: 0.55rem;
+  line-height: 1.35;
+  text-transform: none;
+}
+
+.workspace-hud-menu-item.is-active {
+  border-color: rgba(86, 221, 255, 0.34);
+  background:
+    linear-gradient(180deg, rgba(86, 221, 255, 0.12), rgba(255, 255, 255, 0.024)),
+    rgba(86, 221, 255, 0.04);
+}
+
+.workspace-hud-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.026);
+}
+
+.workspace-hud-toggle-row span {
+  display: grid;
+  gap: 3px;
+}
+
+.workspace-hud-toggle-row strong {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.62rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.workspace-hud-toggle-row small {
+  color: rgba(210, 224, 238, 0.66);
+  font-size: 0.6rem;
+}
+
+.workspace-hud-toggle-row input {
+  width: 18px;
+  height: 18px;
+  accent-color: rgba(86, 221, 255, 0.86);
+}
+
+.workspace-hud-menu-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+.workspace-hud-menu-actions .workspace-launch-button {
+  min-width: 0;
 }
 
 .workspace-permission-head {

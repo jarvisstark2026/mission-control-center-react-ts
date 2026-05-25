@@ -31,8 +31,13 @@ function createTaskId() {
   return `agent-task-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function useAgentTasking(role: ShellRole, ingestEvents: (events: MissionControlEvent[]) => void): AgentTaskingRuntime {
-  const gateway = useMemo(() => createAgentTaskGateway(getAgentTaskApiUrl()), []);
+export function useAgentTasking(
+  role: ShellRole,
+  ingestEvents: (events: MissionControlEvent[]) => void,
+  taskGateway?: AgentTaskGateway,
+): AgentTaskingRuntime {
+  const fallbackGateway = useMemo(() => createAgentTaskGateway(getAgentTaskApiUrl()), []);
+  const gateway = taskGateway ?? fallbackGateway;
   const [state, dispatch] = useReducer(agentTaskingReducer, undefined, () =>
     loadPersistedAgentTaskingState(createInitialAgentTaskingState()),
   );

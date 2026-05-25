@@ -14,6 +14,22 @@ export {
   getVisibleAgentJobs,
   getVisibleAgentPermissions,
 } from './agentControlModel';
+export {
+  applyAgentBridgeEvent,
+  applyAgentBridgeStatus,
+  createAgentBridgeTransport,
+  isAgentBridgeStatusResponse,
+  markAgentBridgeConnectorFailure,
+  normalizeAgentBridgeEvent,
+  selectAgentBridgeConnector,
+} from './agentBridgeRuntime';
+export { useAgentBridgeRuntime, type AgentBridgeRuntime } from './useAgentBridgeRuntime';
+export type {
+  AgentBridgeEvent,
+  AgentBridgeRuntimeState,
+  AgentBridgeStatusResponse,
+  AgentBridgeTransport,
+} from './agentBridgeRuntime';
 export type {
   AgentActivity,
   AgentActivityKind,

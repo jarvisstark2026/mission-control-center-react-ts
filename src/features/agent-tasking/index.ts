@@ -9,7 +9,9 @@ export {
 export {
   createAgentTaskGateway,
   createBackendAgentTaskGateway,
+  createBridgeAgentTaskGateway,
   createMockAgentTaskGateway,
+  type AgentTaskGateway,
 } from './agentTaskGateway';
 export {
   clearPersistedAgentTaskingState,

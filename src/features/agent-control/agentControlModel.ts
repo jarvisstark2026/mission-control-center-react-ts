@@ -30,7 +30,7 @@ export type AgentConnectorRuntimeOptions = {
   now?: string;
 };
 
-const defaultAgentLocalBridgeUrl = 'http://127.0.0.1:8787';
+export const defaultAgentLocalBridgeUrl = 'http://127.0.0.1:8787';
 
 function isVisibleRole(role: ShellRole): role is AgentVisibleRole {
   return role !== 'guest';
@@ -67,6 +67,20 @@ function createAgentConnectors(options: AgentConnectorRuntimeOptions = {}): Agen
         ...connector,
         url: localBridgeUrl,
         status: normalizeConnectorStatus(localBridgeUrl, connector.status),
+        healthCheckedAt: null,
+        activeEngine: null,
+        sourcePriority: 1,
+        capabilities: [...connector.capabilities],
+      };
+    }
+
+    if (connector.id === 'openclaw-local-bridge') {
+      return {
+        ...connector,
+        status: connector.status,
+        healthCheckedAt: null,
+        activeEngine: null,
+        sourcePriority: 2,
         capabilities: [...connector.capabilities],
       };
     }
@@ -76,6 +90,9 @@ function createAgentConnectors(options: AgentConnectorRuntimeOptions = {}): Agen
         ...connector,
         url: remoteApiUrl,
         status: normalizeConnectorStatus(remoteApiUrl, connector.status),
+        healthCheckedAt: null,
+        activeEngine: null,
+        sourcePriority: 3,
         capabilities: [...connector.capabilities],
         error: remoteApiUrl ? null : connector.error,
       };
@@ -83,7 +100,9 @@ function createAgentConnectors(options: AgentConnectorRuntimeOptions = {}): Agen
 
     return {
       ...connector,
-      status: connector.kind === 'local' ? normalizeConnectorStatus(connector.url, connector.status) : connector.status,
+      healthCheckedAt: connector.healthCheckedAt ?? null,
+      activeEngine: connector.activeEngine ?? null,
+      sourcePriority: connector.sourcePriority ?? 99,
       capabilities: [...connector.capabilities],
     };
   });
@@ -91,11 +110,13 @@ function createAgentConnectors(options: AgentConnectorRuntimeOptions = {}): Agen
 
 function getActiveConnectorId(connectors: AgentConnectorRecord[]) {
   const connectedConnector = connectors.find((connector) => connector.kind === 'local' && connector.status === 'connected');
-  const remoteConnector = connectors.find((connector) => connector.kind === 'remote' && connector.status === 'connected');
-  const availableConnector = connectors.find((connector) => connector.kind !== 'mock' && connector.status === 'available');
+  const availableLocalConnector = connectors.find((connector) => connector.kind === 'local' && connector.status === 'available');
+  const remoteConnector = connectors.find(
+    (connector) => connector.kind === 'remote' && (connector.status === 'connected' || connector.status === 'available'),
+  );
   const mockConnector = connectors.find((connector) => connector.kind === 'mock');
 
-  return connectedConnector?.id ?? remoteConnector?.id ?? availableConnector?.id ?? mockConnector?.id ?? connectors[0]?.id ?? '';
+  return connectedConnector?.id ?? availableLocalConnector?.id ?? remoteConnector?.id ?? mockConnector?.id ?? connectors[0]?.id ?? '';
 }
 
 export function createInitialAgentControlState(options: AgentConnectorRuntimeOptions = {}): AgentControlState {

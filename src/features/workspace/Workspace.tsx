@@ -5,7 +5,7 @@ import { StatusChip } from '../../components/ui/StatusChip';
 import { createId } from '../../lib/createId';
 import { useDismissibleMenu } from '../../lib/useDismissibleMenu';
 import { shellScopes, type ShellRole } from '../shell/roles';
-import { createInitialAgentControlState } from '../agent-control';
+import { useAgentBridgeRuntime } from '../agent-control';
 import { useMissionControl } from '../mission-control';
 import {
   WorkspaceHud,
@@ -417,14 +417,12 @@ export function Workspace({
   const planeRef = useRef<HTMLDivElement | null>(null);
   const activeRole = role ?? getCurrentShellRole();
   const missionControl = useMissionControl(activeRole);
-  const agentControl = useMemo(
-    () =>
-      createInitialAgentControlState({
-        localBridgeUrl: import.meta.env.VITE_AGENT_LOCAL_BRIDGE_URL,
-        remoteApiUrl: import.meta.env.VITE_AGENT_REMOTE_API_URL,
-      }),
-    [],
-  );
+  const agentBridge = useAgentBridgeRuntime({
+    localBridgeUrl: import.meta.env.VITE_AGENT_LOCAL_BRIDGE_URL,
+    remoteApiUrl: import.meta.env.VITE_AGENT_REMOTE_API_URL,
+    onMissionEvents: missionControl.ingestEvents,
+  });
+  const agentControl = agentBridge.state;
   const marketLiveData = useMarketLiveData();
   const isWorkspaceExtension = isWorkspaceExtensionUrl();
   const workspaceInstanceId = getWorkspaceInstanceId();
@@ -1904,6 +1902,7 @@ export function Workspace({
     onCloseWidget,
     missionControl,
     agentControl,
+    agentTaskGateway: agentBridge.taskGateway,
     activeRole,
     widgetPermissions,
   };

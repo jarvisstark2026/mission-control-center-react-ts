@@ -42,6 +42,7 @@ describe('agentControlModel', () => {
 
     expect(connectors.map((connector) => connector.provider)).toEqual(['hermes', 'openclaw', 'custom', 'openai']);
     expect(connectors.find((connector) => connector.provider === 'hermes')?.status).toBe('available');
+    expect(connectors.find((connector) => connector.provider === 'openclaw')?.status).toBe('offline');
     expect(connectors.find((connector) => connector.kind === 'remote')?.status).toBe('available');
     expect(getActiveAgentConnector(state).provider).toBe('hermes');
     expect(summary.configured).toBe(4);

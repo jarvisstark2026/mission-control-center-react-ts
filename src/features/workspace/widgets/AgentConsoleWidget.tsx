@@ -5,6 +5,7 @@ import {
   canViewAgentConsole,
   getAgentTaskScopesForRole,
   useAgentTasking,
+  type AgentTaskGateway,
   type AgentTaskScope,
 } from '../../agent-tasking';
 import { getAgentDescriptorById, getVisibleAgentDescriptors, type AgentControlState } from '../../agent-control';
@@ -60,12 +61,14 @@ export function AgentConsoleWidget({
   role,
   missionControl,
   agentControl,
+  taskGateway,
 }: {
   role: ShellRole;
   missionControl: MissionControlRuntime;
   agentControl: AgentControlState;
+  taskGateway?: AgentTaskGateway;
 }) {
-  const tasking = useAgentTasking(role, missionControl.ingestEvents);
+  const tasking = useAgentTasking(role, missionControl.ingestEvents, taskGateway);
   const availableScopes = useMemo(() => getAgentTaskScopesForRole(role), [role]);
   const visibleAgents = useMemo(() => getVisibleAgentDescriptors(agentControl, role), [agentControl, role]);
   const defaultAgent = visibleAgents.find((agent) => agent.specialty === 'coordinator') ?? visibleAgents[0] ?? getAgentDescriptorById(agentControl, agentControl.activeAgentId);

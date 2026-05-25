@@ -1,5 +1,5 @@
 import type { CommandRisk, MissionControlEvent } from '../mission-control';
-import { createInitialAgentControlState, getAgentDescriptorById } from '../agent-control';
+import { createInitialAgentControlState, getAgentDescriptorById } from '../agent-control/agentControlModel';
 import type {
   AgentTaskGatewayMode,
   AgentTaskGatewayResult,
@@ -15,6 +15,10 @@ export type AgentTaskGateway = {
 
 type AgentTaskGatewayOptions = {
   delayMs?: number;
+};
+
+type AgentTaskFetchGatewayOptions = {
+  fetchImpl?: typeof fetch;
 };
 
 function wait(delayMs: number) {
@@ -133,6 +137,10 @@ function isAgentTaskGatewayResult(value: unknown): value is AgentTaskGatewayResu
   );
 }
 
+function getBridgeTaskUrl(baseUrl: string) {
+  return `${baseUrl.replace(/\/+$/u, '')}/tasks`;
+}
+
 export function createMockAgentTaskGateway(options: AgentTaskGatewayOptions = {}): AgentTaskGateway {
   const delayMs = options.delayMs ?? 260;
 
@@ -164,6 +172,38 @@ export function createBackendAgentTaskGateway(url: string): AgentTaskGateway {
       const body: unknown = await response.json();
       if (!isAgentTaskGatewayResult(body)) {
         throw new Error('Agent task backend returned an invalid proposal payload.');
+      }
+
+      return body;
+    },
+  };
+}
+
+export function createBridgeAgentTaskGateway(
+  baseUrl: string,
+  options: AgentTaskFetchGatewayOptions = {},
+): AgentTaskGateway {
+  const fetchImpl = options.fetchImpl ?? fetch;
+
+  return {
+    mode: 'bridge',
+    async submitTask(request) {
+      const response = await fetchImpl(getBridgeTaskUrl(baseUrl), {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'application/json',
+        },
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Agent bridge task endpoint returned ${response.status}.`);
+      }
+
+      const body: unknown = await response.json();
+      if (!isAgentTaskGatewayResult(body)) {
+        throw new Error('Agent bridge task endpoint returned an invalid proposal payload.');
       }
 
       return body;

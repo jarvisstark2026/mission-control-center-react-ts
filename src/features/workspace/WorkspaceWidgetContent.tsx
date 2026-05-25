@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import type { LocalFileRecord, LocalFolderEntry } from './workspaceLocalFiles';
 import type { ShellRole } from '../shell/roles';
 import type { AgentControlState } from '../agent-control';
+import type { AgentTaskGateway } from '../agent-tasking';
 import type { MissionControlRuntime } from '../mission-control';
 import type { WorkspaceWidgetGroup } from './workspaceManagerModel';
 import type { MarketGraph } from './workspaceMarketData';
@@ -68,6 +69,7 @@ export type WorkspaceWidgetContentProps = {
   onCloseWidget: (id: string) => void;
   missionControl: MissionControlRuntime;
   agentControl: AgentControlState;
+  agentTaskGateway: AgentTaskGateway;
   activeRole: ShellRole;
   widgetPermissions: WorkspaceWidgetPermissionMatrix;
 };
@@ -116,6 +118,7 @@ function renderWorkspaceWidgetContent({
   onCloseWidget,
   missionControl,
   agentControl,
+  agentTaskGateway,
   activeRole,
   widgetPermissions,
 }: WorkspaceWidgetContentRendererProps) {
@@ -189,7 +192,7 @@ function renderWorkspaceWidgetContent({
     case 'agent-control':
       return <AgentControlWidget state={agentControl} role={activeRole} missionControl={missionControl} />;
     case 'agent-console':
-      return <AgentConsoleWidget role={activeRole} missionControl={missionControl} agentControl={agentControl} />;
+      return <AgentConsoleWidget role={activeRole} missionControl={missionControl} agentControl={agentControl} taskGateway={agentTaskGateway} />;
     case 'home-systems':
       return <HomeSystemsWidget role={activeRole} missionControl={missionControl} />;
     case 'flow':

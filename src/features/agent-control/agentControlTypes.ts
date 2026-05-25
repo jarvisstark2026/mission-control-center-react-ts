@@ -48,6 +48,9 @@ export type AgentConnectorRecord = {
   url: string | null;
   status: AgentConnectorStatus;
   lastSeenAt: string | null;
+  healthCheckedAt?: string | null;
+  activeEngine?: string | null;
+  sourcePriority?: number;
   capabilities: string[];
   error: string | null;
 };

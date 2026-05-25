@@ -3,7 +3,7 @@ import type { CommandRisk, CommandScope, MissionControlEvent } from '../mission-
 
 export type AgentTaskScope = CommandScope;
 export type AgentTaskStatus = 'idle' | 'drafting' | 'proposed' | 'blocked' | 'failed';
-export type AgentTaskGatewayMode = 'mock' | 'backend';
+export type AgentTaskGatewayMode = 'mock' | 'backend' | 'bridge';
 export type AgentTaskMessageAuthor = 'user' | 'agent' | 'system';
 
 export type AgentTaskMessage = {

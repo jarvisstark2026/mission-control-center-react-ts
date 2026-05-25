@@ -65,6 +65,8 @@ function AgentConnectorCard({
   connector: AgentConnectorRecord;
   active: boolean;
 }) {
+  const checkedAt = connector.healthCheckedAt ?? connector.lastSeenAt;
+
   return (
     <article className="agent-control-connector-card" data-state={connector.status} data-active={active ? 'true' : 'false'}>
       <div className="agent-control-connector-head">
@@ -73,6 +75,7 @@ function AgentConnectorCard({
         <small>{connector.status}</small>
       </div>
       <p>{connector.url ?? 'No endpoint configured'}</p>
+      <small>{connector.activeEngine ? `engine ${connector.activeEngine}` : `checked ${formatDateTime(checkedAt)}`}</small>
       <div className="agent-control-connector-capabilities">
         {connector.capabilities.slice(0, 3).map((capability) => (
           <span key={capability}>{capability}</span>
@@ -169,7 +172,7 @@ export function AgentControlWidget({
         eyebrow="Agent control"
         title="identity / jobs / permissions"
         metaEyebrow="connection"
-        meta={`${activeConnector.kind} / ${activeConnector.status}`}
+        meta={`${activeConnector.kind} / ${activeConnector.status} / ${activeConnector.activeEngine ?? state.identity.model}`}
       />
 
       <StatusSummary

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { createMockAgentTaskGateway } from './agentTaskGateway';
+import { createBridgeAgentTaskGateway, createMockAgentTaskGateway } from './agentTaskGateway';
 import {
   agentTaskingBufferLimits,
   agentTaskingReducer,
@@ -78,5 +78,22 @@ describe('agentTaskingModel', () => {
         source: 'agent-console',
       },
     });
+  });
+
+  it('bridge gateway submits tasks to the active bridge task endpoint', async () => {
+    const mockResult = await createMockAgentTaskGateway({ delayMs: 0 }).submitTask(createRequest());
+    const fetchImpl = vi.fn(async () =>
+      new Response(JSON.stringify(mockResult), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    const gateway = createBridgeAgentTaskGateway('http://127.0.0.1:8787', { fetchImpl });
+    const result = await gateway.submitTask(createRequest({ id: 'task-bridge' }));
+
+    expect(gateway.mode).toBe('bridge');
+    expect(fetchImpl).toHaveBeenCalledWith('http://127.0.0.1:8787/tasks', expect.objectContaining({ method: 'POST' }));
+    expect(result.message.body).toContain('Command Inbox');
+    expect(result.missionControlEvents.some((event) => event.type === 'command')).toBe(true);
   });
 });

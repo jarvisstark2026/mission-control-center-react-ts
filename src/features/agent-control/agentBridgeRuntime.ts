@@ -45,6 +45,7 @@ export type AgentBridgeRuntimeState = {
 export type AgentBridgeProbeResult = {
   url: string;
   ok: boolean;
+  status?: AgentConnectorStatus;
   provider?: AgentRuntimeProvider;
   activeEngine?: string;
   error?: string;
@@ -459,7 +460,17 @@ export function selectAgentBridgeConnector(state: AgentControlState): AgentConne
     .filter((connector) => connector.kind !== 'mock' && bridgeActiveStatuses.includes(connector.status))
     .sort((left, right) => connectorPriority(left) - connectorPriority(right) || statusPriority(left) - statusPriority(right));
 
-  return activeConnectors[0] ?? state.connectors.find((connector) => connector.kind === 'mock') ?? state.connectors[0];
+  const reachableInactiveConnectors = state.connectors
+    .filter(
+      (connector) =>
+        connector.kind !== 'mock' &&
+        Boolean(connector.url) &&
+        Boolean(connector.healthCheckedAt || connector.lastSeenAt) &&
+        !connector.error,
+    )
+    .sort((left, right) => connectorPriority(left) - connectorPriority(right) || statusPriority(left) - statusPriority(right));
+
+  return activeConnectors[0] ?? reachableInactiveConnectors[0] ?? state.connectors.find((connector) => connector.kind === 'mock') ?? state.connectors[0];
 }
 
 function replaceConnector(

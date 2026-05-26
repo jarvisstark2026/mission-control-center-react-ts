@@ -82,6 +82,22 @@ describe('agentBridgeRuntime', () => {
     expect(selectAgentBridgeConnector(openClawFailed).id).toBe('mock-agent-runtime');
   });
 
+  it('keeps a reachable offline local bridge visible instead of promoting mock fallback', () => {
+    const initial = createInitialAgentControlState();
+    const applied = applyAgentBridgeStatus(initial, 'hermes-local-bridge', {
+      status: 'offline',
+      provider: 'hermes',
+      activeEngine: 'Hermes Agent API hermes-agent',
+      currentTask: 'Waiting for Hermes API.',
+    });
+
+    const activeConnector = selectAgentBridgeConnector(applied.state);
+
+    expect(activeConnector.id).toBe('hermes-local-bridge');
+    expect(activeConnector.status).toBe('offline');
+    expect(activeConnector.error).toBeNull();
+  });
+
   it('normalizes valid bridge events and rejects malformed status payloads', () => {
     const event = createNotificationEvent();
 

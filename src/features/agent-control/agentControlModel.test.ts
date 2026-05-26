@@ -77,13 +77,25 @@ describe('agentControlModel', () => {
       ...offline,
       connectors: offline.connectors.map((connector) =>
         connector.id === 'hermes-local-bridge'
-          ? { ...connector, status: 'connected' as const, url: 'http://192.0.2.64:8787' }
+          ? { ...connector, status: 'connected' as const, url: 'http://192.0.2.64:8787', healthCheckedAt: '2026-05-25T12:00:00.000Z', error: null }
           : connector,
       ),
     };
 
     expect(getAgentBridgeReachableUrl(connected)).toBe('http://192.0.2.64:8787');
     expect(getAgentBridgeTutorialSteps(connected, { localBridgeUrl: 'http://192.0.2.64:8787' })[0]?.status).toBe('pass');
+
+    const upstreamOffline = {
+      ...offline,
+      connectors: offline.connectors.map((connector) =>
+        connector.id === 'hermes-local-bridge'
+          ? { ...connector, status: 'offline' as const, url: 'http://192.0.2.64:8787', healthCheckedAt: '2026-05-25T12:00:00.000Z', error: null }
+          : connector,
+      ),
+    };
+
+    expect(getAgentBridgeReachableUrl(upstreamOffline)).toBe('http://192.0.2.64:8787');
+    expect(getAgentBridgeTutorialSteps(upstreamOffline, { localBridgeUrl: 'http://192.0.2.64:8787' })[0]?.status).toBe('pass');
   });
 
   it('creates gated Agent Control profile and permission proposals', () => {

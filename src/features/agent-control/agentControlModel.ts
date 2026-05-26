@@ -199,8 +199,14 @@ function getStepStatus(pass: boolean, failed: boolean): AgentBridgeTutorialStepS
 }
 
 export function getAgentBridgeReachableUrl(state: AgentControlState) {
-  const connectedConnector = state.connectors.find((connector) => connector.kind !== 'mock' && connector.status === 'connected' && connector.url);
-  return connectedConnector?.url ?? null;
+  const checkedConnector = state.connectors.find(
+    (connector) =>
+      connector.kind !== 'mock' &&
+      connector.url &&
+      Boolean(connector.healthCheckedAt || connector.lastSeenAt) &&
+      !connector.error,
+  );
+  return checkedConnector?.url ?? null;
 }
 
 export function getAgentBridgeTutorialSteps(

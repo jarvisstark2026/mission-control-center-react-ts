@@ -274,7 +274,7 @@ fn http_request(method: &str, url: &str, body: Option<&str>, content_type: Optio
         .map_err(|error| error.to_string())?
         .next()
         .ok_or_else(|| "Hermes API host did not resolve.".to_string())?;
-    let mut stream = TcpStream::connect_timeout(&addr, Duration::from_secs(8)).map_err(|error| error.to_string())?;
+    let mut stream = TcpStream::connect_timeout(&addr, Duration::from_secs(3)).map_err(|error| error.to_string())?;
     stream.set_read_timeout(Some(Duration::from_secs(120))).map_err(|error| error.to_string())?;
     stream.set_write_timeout(Some(Duration::from_secs(10))).map_err(|error| error.to_string())?;
 

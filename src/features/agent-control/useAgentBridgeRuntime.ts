@@ -142,6 +142,7 @@ export function useAgentBridgeRuntime(options: AgentBridgeRuntimeOptions): Agent
       return {
         url: trimmedUrl,
         ok: true,
+        status: normalizeStatusForConnector(response.status) ?? 'connected',
         provider: response.provider,
         activeEngine: response.activeEngine ?? undefined,
       };
@@ -167,6 +168,7 @@ export function useAgentBridgeRuntime(options: AgentBridgeRuntimeOptions): Agent
         const result: AgentBridgeProbeResult = {
           url: connector.url,
           ok: true,
+          status: normalizeStatusForConnector(response.status) ?? 'connected',
           provider: response.provider,
           activeEngine: response.activeEngine ?? undefined,
         };

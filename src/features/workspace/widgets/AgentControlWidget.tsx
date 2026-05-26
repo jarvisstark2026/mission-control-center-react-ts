@@ -210,10 +210,19 @@ function getStatusUrl(url: string | null | undefined) {
 function getProbeSummary(result: AgentBridgeProbeResult) {
   if (result.ok) {
     const provider = result.provider ? `${result.provider} ` : '';
+    if (result.status === 'connected') {
+      return `${provider}${result.activeEngine ?? 'bridge'} ready at ${result.url}.`;
+    }
+    if (result.status === 'offline') {
+      return `Mission Control bridge is reachable at ${result.url}, but Hermes is offline or unreachable.`;
+    }
+    if (result.status === 'error') {
+      return `Mission Control bridge is reachable at ${result.url}, but it reported an error.`;
+    }
     return `${provider}${result.activeEngine ?? 'bridge'} reachable at ${result.url}.`;
   }
 
-  return `${result.url || 'Bridge'} failed: ${result.error ?? 'unreachable'}`;
+  return `${result.url || 'Bridge'} unreachable: ${result.error ?? 'fetch failed'}`;
 }
 
 function getTestTaskScope(role: ShellRole): AgentTaskScope {
@@ -332,10 +341,39 @@ export function AgentControlWidget({
   const visibleConnectors = connectors.filter((connector) => connector.id !== 'agent-remote-bridge');
   const visibleConnectorCount = visibleConnectors.filter((connector) => connector.status !== 'not-configured').length;
   const activeConnector = getActiveAgentConnector(state);
+  const localHermesConnector = connectors.find((connector) => connector.id === 'hermes-local-bridge');
   const bridgeTutorialSteps = getAgentBridgeTutorialSteps(state, bridgeSettings);
   const reachableUrl = getAgentBridgeReachableUrl(state);
   const selectedAgent = agents.find((agent) => agent.id === bridgeSettings.preferredAgentId) ?? agents.find((agent) => agent.id === state.activeAgentId) ?? agents[0] ?? getAgentDescriptorById(state, state.activeAgentId);
   const preferredStatusUrl = getStatusUrl(reachableUrl ?? bridgeSettings.lastSuccessfulUrl ?? localBridgeUrl);
+  const localBridgeChecked = Boolean(localHermesConnector?.healthCheckedAt || localHermesConnector?.lastSeenAt);
+  const localBridgeReachable = Boolean(localHermesConnector?.url && localBridgeChecked && !localHermesConnector.error);
+  const missionControlBridgeLabel = localBridgeProcess?.running
+    ? 'running'
+    : localBridgeReachable
+      ? 'reachable'
+      : localBridgeProcess?.available === false
+        ? 'desktop controls unavailable'
+        : localHermesConnector?.error
+          ? 'unreachable'
+          : 'stopped / not probed';
+  const hermesApiLabel = localHermesConnector?.status === 'connected'
+    ? 'connected'
+    : localHermesConnector?.status === 'offline'
+      ? 'offline'
+      : localHermesConnector?.status === 'error'
+        ? 'error'
+        : 'waiting';
+  const taskGatewayLabel = activeConnector.kind !== 'mock' && activeConnector.status === 'connected'
+    ? `bridge / ${activeConnector.provider}`
+    : 'mock fallback active';
+  const bridgeProcessLabel = localBridgeProcess?.available === false
+    ? localBridgeReachable
+      ? 'browser preview / bridge reachable'
+      : 'desktop app required'
+    : localBridgeProcess?.running
+      ? `running${localBridgeProcess.pid ? ` / pid ${localBridgeProcess.pid}` : ''}`
+      : 'stopped';
   const groupedPermissions = (['read', 'suggest', 'execute', 'blocked'] as AgentPermissionLevel[])
     .map((level) => ({
       level,
@@ -513,6 +551,9 @@ export function AgentControlWidget({
             { label: 'status', value: activeConnector.status },
             { label: 'events', value: state.eventStreamStatus },
             { label: 'engine', value: activeConnector.activeEngine ?? state.identity.model, wide: true },
+            { label: 'Mission Control bridge', value: missionControlBridgeLabel, wide: true },
+            { label: 'Hermes API', value: `${hermesApiLabel} / ${hermesApiBaseUrl}`, wide: true },
+            { label: 'Task gateway', value: taskGatewayLabel, wide: true },
             { label: 'reachable', value: reachableUrl ?? 'waiting for /status', wide: true },
             { label: 'last success', value: bridgeSettings.lastSuccessfulUrl ?? 'not recorded', wide: true },
             { label: 'last event', value: formatDateTime(state.lastBridgeEventAt), wide: true },
@@ -607,13 +648,7 @@ export function AgentControlWidget({
           </div>
           <div>
             <span>process</span>
-            <strong>
-              {localBridgeProcess?.available === false
-                ? 'desktop app required'
-                : localBridgeProcess?.running
-                  ? `running${localBridgeProcess.pid ? ` / pid ${localBridgeProcess.pid}` : ''}`
-                  : 'stopped'}
-            </strong>
+            <strong>{bridgeProcessLabel}</strong>
           </div>
           <div>
             <span>Hermes API</span>

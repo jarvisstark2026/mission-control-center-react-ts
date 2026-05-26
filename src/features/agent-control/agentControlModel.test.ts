@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest';
 import {
   canEditAgentSettings,
   canViewAgentControl,
+  createAgentPermissionChangeProposal,
+  createAgentProfileChangeProposal,
   createInitialAgentControlState,
+  getAgentBridgeReachableUrl,
+  getAgentBridgeTutorialSteps,
   getActiveAgentConnector,
   getAgentConnectorSummary,
   getAgentConnectors,
@@ -53,6 +57,62 @@ describe('agentControlModel', () => {
     expect(canEditAgentSettings('support')).toBe(false);
     expect(canEditAgentSettings('home')).toBe(false);
     expect(canEditAgentSettings('guest')).toBe(false);
+  });
+
+  it('builds a short bridge tutorial checklist from connector state', () => {
+    const offline = createInitialAgentControlState({ localBridgeUrl: 'http://192.0.2.64:8787' });
+    const offlineSteps = getAgentBridgeTutorialSteps(offline, { localBridgeUrl: 'http://192.0.2.64:8787' });
+
+    expect(offlineSteps.map((step) => step.title)).toEqual([
+      'Local bridge running',
+      'Local /status reachable',
+      'Connection mode saved',
+      'Task proposal tested',
+    ]);
+    expect(offlineSteps.find((step) => step.id === 'endpoint-saved')?.status).toBe('pass');
+    expect(offlineSteps.find((step) => step.id === 'bridge-running')?.status).toBe('waiting');
+    expect(offlineSteps.some((step) => step.command?.includes('Start bridge'))).toBe(true);
+
+    const connected = {
+      ...offline,
+      connectors: offline.connectors.map((connector) =>
+        connector.id === 'hermes-local-bridge'
+          ? { ...connector, status: 'connected' as const, url: 'http://192.0.2.64:8787' }
+          : connector,
+      ),
+    };
+
+    expect(getAgentBridgeReachableUrl(connected)).toBe('http://192.0.2.64:8787');
+    expect(getAgentBridgeTutorialSteps(connected, { localBridgeUrl: 'http://192.0.2.64:8787' })[0]?.status).toBe('pass');
+  });
+
+  it('creates gated Agent Control profile and permission proposals', () => {
+    const state = createInitialAgentControlState();
+    const agent = state.agents[0];
+    const permission = state.permissions[0];
+
+    const permissionEvents = createAgentPermissionChangeProposal(agent, permission);
+    const profileEvents = createAgentProfileChangeProposal(agent);
+
+    expect(permissionEvents[0]).toMatchObject({
+      type: 'command',
+      command: {
+        source: 'agent-control',
+        status: 'pending',
+        risk: 'elevated',
+        agent: {
+          agentId: agent.id,
+          agentName: agent.name,
+        },
+      },
+    });
+    expect(profileEvents[0]).toMatchObject({
+      type: 'command',
+      command: {
+        title: `Review ${agent.name} profile`,
+        status: 'pending',
+      },
+    });
   });
 
   it('filters jobs and permissions for household users', () => {

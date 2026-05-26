@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 import type { LocalFileRecord, LocalFolderEntry } from './workspaceLocalFiles';
 import type { ShellRole } from '../shell/roles';
-import type { AgentControlState } from '../agent-control';
+import type { AgentBridgeProbeResult, AgentControlState } from '../agent-control';
 import type { AgentBridgeSettings } from '../agent-control';
 import type { AgentTaskGateway } from '../agent-tasking';
 import type { MissionControlRuntime } from '../mission-control';
@@ -75,7 +75,9 @@ export type WorkspaceWidgetContentProps = {
   missionControl: MissionControlRuntime;
   agentControl: AgentControlState;
   agentBridgeSettings: AgentBridgeSettings;
-  onUpdateAgentBridgeSettings: (settings: Pick<AgentBridgeSettings, 'localBridgeUrl' | 'remoteApiUrl'>) => void;
+  onUpdateAgentBridgeSettings: (settings: Partial<AgentBridgeSettings>) => void;
+  onProbeAgentBridge: () => Promise<AgentBridgeProbeResult[]>;
+  onTestAgentBridgeUrl: (url: string) => Promise<AgentBridgeProbeResult>;
   agentTaskGateway: AgentTaskGateway;
   operationalOs: OperationalOsRuntime;
   activeRole: ShellRole;
@@ -128,6 +130,8 @@ function renderWorkspaceWidgetContent({
   agentControl,
   agentBridgeSettings,
   onUpdateAgentBridgeSettings,
+  onProbeAgentBridge,
+  onTestAgentBridgeUrl,
   agentTaskGateway,
   operationalOs,
   activeRole,
@@ -208,6 +212,9 @@ function renderWorkspaceWidgetContent({
           missionControl={missionControl}
           bridgeSettings={agentBridgeSettings}
           onUpdateBridgeSettings={onUpdateAgentBridgeSettings}
+          onProbeBridge={onProbeAgentBridge}
+          onTestBridgeUrl={onTestAgentBridgeUrl}
+          taskGateway={agentTaskGateway}
         />
       );
     case 'agent-console':
@@ -218,12 +225,21 @@ function renderWorkspaceWidgetContent({
           agentControl={agentControl}
           taskGateway={agentTaskGateway}
           operationalOs={operationalOs}
+          bridgeSettings={agentBridgeSettings}
         />
       );
     case 'home-systems':
       return <HomeSystemsWidget role={activeRole} missionControl={missionControl} />;
     case 'flow':
-      return <WorkflowWidget role={activeRole} missionControl={missionControl} agentControl={agentControl} />;
+      return (
+        <WorkflowWidget
+          role={activeRole}
+          missionControl={missionControl}
+          agentControl={agentControl}
+          operationalOs={operationalOs}
+          taskGateway={agentTaskGateway}
+        />
+      );
     case 'goals':
       return (
         <GoalsWidget

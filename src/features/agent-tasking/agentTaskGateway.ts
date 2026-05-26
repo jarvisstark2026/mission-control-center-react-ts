@@ -19,6 +19,7 @@ type AgentTaskGatewayOptions = {
 
 type AgentTaskFetchGatewayOptions = {
   fetchImpl?: typeof fetch;
+  onDiagnostic?: (message: string, payload?: unknown) => void;
 };
 
 function wait(delayMs: number) {
@@ -48,6 +49,8 @@ function createMockTaskResult(request: AgentTaskRequest): AgentTaskGatewayResult
   const risk = getCommandRisk(request);
   const title = request.objective.length > 52 ? `${request.objective.slice(0, 49).trim()}...` : request.objective;
   const agent = getAgentDescriptorById(createInitialAgentControlState(), request.targetAgentId);
+  const taskSource = request.source ?? 'agent-console';
+  const commandSource = taskSource === 'workflow' ? 'workflow-runbook' : taskSource;
   const reasoning = `${agent.name} mapped the objective to a ${request.scope} proposal and staged it for human approval.`;
   const expectedResult = `Command Inbox receives a pending ${request.scope} action. No execution happens until an allowed role approves it.`;
 
@@ -67,6 +70,10 @@ function createMockTaskResult(request: AgentTaskRequest): AgentTaskGatewayResult
     author: 'agent',
     body: `${agent.name} prepared a gated command proposal for "${title}". Review it in Command Inbox before anything can run.`,
     timestamp,
+    goalId: request.goalId,
+    commandId,
+    workflowRunId: request.workflowRunId,
+    status: 'proposal-created',
   };
   const commandEvent: MissionControlEvent = {
     type: 'command',
@@ -74,7 +81,7 @@ function createMockTaskResult(request: AgentTaskRequest): AgentTaskGatewayResult
       id: commandId,
       title,
       summary: request.objective,
-      source: 'agent-console',
+      source: commandSource,
       goalId: request.goalId,
       evidenceIds: request.evidenceIds,
       agent: {
@@ -93,13 +100,20 @@ function createMockTaskResult(request: AgentTaskRequest): AgentTaskGatewayResult
         result: 'Waiting in Command Inbox for human approval.',
         rollbackAvailable: risk === 'safe',
       },
+      workflow: request.workflowRunId && request.workflowStepId
+        ? {
+            runId: request.workflowRunId,
+            stepId: request.workflowStepId,
+            workflowName: 'Workflow run',
+          }
+        : undefined,
       auditTrail: [
         {
           id: `audit-${commandId}-proposed`,
           type: 'proposed',
-          actor: 'agent-console',
+          actor: commandSource,
           timestamp,
-          detail: `${agent.name} proposed "${title}" from Agent Console.`,
+          detail: `${agent.name} proposed "${title}" from ${taskSource === 'workflow' ? 'Workflow' : taskSource === 'agent-control' ? 'Agent Control' : 'Agent Console'}.`,
         },
         ...(request.goalId
           ? [
@@ -122,7 +136,7 @@ function createMockTaskResult(request: AgentTaskRequest): AgentTaskGatewayResult
       level: risk === 'critical' ? 'critical' : risk === 'elevated' ? 'warning' : 'notice',
       title: 'Agent proposal ready',
       body: `Command Inbox is holding "${title}" for approval.`,
-      source: 'agent-console',
+      source: commandSource,
       timestamp,
       acknowledged: false,
       relatedCommandId: commandId,
@@ -145,7 +159,23 @@ function isAgentTaskGatewayResult(value: unknown): value is AgentTaskGatewayResu
     isRecord(value) &&
     isRecord(value.message) &&
     typeof value.message.id === 'string' &&
+    (value.message.author === 'user' || value.message.author === 'agent' || value.message.author === 'system') &&
+    typeof value.message.body === 'string' &&
+    typeof value.message.timestamp === 'string' &&
     Array.isArray(value.proposals) &&
+    value.proposals.every(
+      (proposal) =>
+        isRecord(proposal) &&
+        typeof proposal.id === 'string' &&
+        typeof proposal.commandId === 'string' &&
+        typeof proposal.title === 'string' &&
+        typeof proposal.reasoning === 'string' &&
+        ['safe', 'elevated', 'critical'].includes(proposal.risk as string) &&
+        ['household', 'system', 'support', 'security'].includes(proposal.scope as string) &&
+        typeof proposal.agentId === 'string' &&
+        typeof proposal.agentName === 'string' &&
+        typeof proposal.timestamp === 'string',
+    ) &&
     Array.isArray(value.missionControlEvents)
   );
 }
@@ -154,10 +184,14 @@ function normalizeAgentTaskGatewayResult(value: unknown): AgentTaskGatewayResult
   if (!isAgentTaskGatewayResult(value)) {
     throw new Error('Agent bridge task endpoint returned an invalid proposal payload.');
   }
+  const missionControlEvents = normalizeMissionControlEventList(value.missionControlEvents);
+  if (missionControlEvents.length !== value.missionControlEvents.length) {
+    throw new Error('Agent bridge task endpoint returned invalid mission events.');
+  }
 
   return {
     ...value,
-    missionControlEvents: normalizeMissionControlEventList(value.missionControlEvents),
+    missionControlEvents,
   };
 }
 
@@ -208,21 +242,27 @@ export function createBridgeAgentTaskGateway(
   return {
     mode: 'bridge',
     async submitTask(request) {
-      const response = await fetchImpl(getBridgeTaskUrl(baseUrl), {
-        method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          accept: 'application/json',
-        },
-        body: JSON.stringify(request),
-      });
+      try {
+        const response = await fetchImpl(getBridgeTaskUrl(baseUrl), {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            accept: 'application/json',
+          },
+          body: JSON.stringify(request),
+        });
 
-      if (!response.ok) {
-        throw new Error(`Agent bridge task endpoint returned ${response.status}.`);
+        if (!response.ok) {
+          throw new Error(`Agent bridge task endpoint returned ${response.status}.`);
+        }
+
+        const body: unknown = await response.json();
+        return normalizeAgentTaskGatewayResult(body);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Agent bridge task endpoint failed.';
+        options.onDiagnostic?.(message, { requestId: request.id, objective: request.objective });
+        throw error;
       }
-
-      const body: unknown = await response.json();
-      return normalizeAgentTaskGatewayResult(body);
     },
   };
 }

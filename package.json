@@ -8,6 +8,11 @@
   },
   "scripts": {
     "dev": "vite",
+    "agent:bridge": "node tools/agent-bridge-harness.mjs",
+    "agent:bridge:lan": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/start-agent-bridge.ps1 -BindHost 0.0.0.0 -Port 8787 -Provider hermes",
+    "agent:bridge:hermes": "node tools/hermes-mission-control-bridge.mjs",
+    "agent:bridge:hermes:lan": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/start-hermes-mission-control-bridge.ps1 -BindHost 0.0.0.0 -BridgePort 8787 -HermesApiBaseUrl http://127.0.0.1:8642/v1 -HermesModel hermes-agent",
+    "agent:bridge:verify": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/verify-agent-bridge.ps1",
     "desktop:build": "tauri build",
     "desktop:build:debug": "tauri build --debug",
     "desktop:dev": "tauri dev",

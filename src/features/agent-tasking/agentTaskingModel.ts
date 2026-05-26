@@ -68,7 +68,7 @@ export function createInitialAgentTaskingState(): AgentTaskingState {
       {
         id: 'agent-console-welcome',
         author: 'system',
-        body: 'Agent Console is ready. Describe an objective and Jarvis will prepare a proposal for Command Inbox.',
+        body: 'Agent Console is ready. Describe an objective and the active agent will prepare a proposal for Command Inbox.',
         timestamp,
       },
     ],
@@ -91,6 +91,9 @@ export function agentTaskingReducer(state: AgentTaskingState, action: AgentTaski
             author: 'user',
             body: action.request.objective,
             timestamp: action.request.requestedAt,
+            goalId: action.request.goalId,
+            workflowRunId: action.request.workflowRunId,
+            status: 'sent',
           },
           ...state.messages,
         ],

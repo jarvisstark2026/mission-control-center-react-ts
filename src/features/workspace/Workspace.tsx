@@ -165,9 +165,11 @@ function parseManagedWidgetId(scopedWidgetId: string, fallbackWorkspaceId: strin
 
 function createCompactLayout(boundsWidth: number, boundsHeight: number): WorkspaceWidget[] {
   const isNarrow = boundsWidth < 760;
+  const horizontalInset = isNarrow ? 8 : 8;
+  const maxStackWidth = Math.max(260, boundsWidth - horizontalInset * 2);
   const stackWidth = isNarrow
-    ? Math.max(260, Math.min(boundsWidth - 16, 360))
-    : Math.max(260, Math.min(boundsWidth - 16, 420));
+    ? Math.max(260, Math.min(maxStackWidth, 360))
+    : Math.max(260, Math.min(maxStackWidth, 420));
   const totalWidgets = widgetPresets.length;
   const openCount = isNarrow ? 1 : boundsHeight < 760 ? 2 : 3;
   const topInset = isNarrow ? 52 : 58;
@@ -191,11 +193,12 @@ function createCompactLayout(boundsWidth: number, boundsHeight: number): Workspa
   return widgetPresets.map((widget, index) => {
     const isOpen = index < openCount;
     const height = isOpen ? openHeights[index] ?? openHeight : closedHeight;
+    const width = Math.min(Math.max(widget.minWidth, stackWidth), maxStackWidth);
     const nextWidget = {
       ...widget,
-      x: 8,
+      x: horizontalInset,
       y: nextY,
-      width: Math.max(widget.minWidth, stackWidth),
+      width,
       height,
       zIndex: totalWidgets - index,
       open: isOpen,
@@ -251,7 +254,115 @@ function getDirectoryPicker() {
 }
 
 function WorkspaceTopBarGlyph({ name }: { name: string }) {
-  return <span className={`workspace-topbar-glyph workspace-topbar-glyph-${name}`} aria-hidden="true" />;
+  const commonProps = {
+    className: `workspace-topbar-svg workspace-topbar-svg-${name}`,
+    viewBox: '0 0 24 24',
+    role: 'img',
+    'aria-hidden': true,
+    focusable: false,
+  } as const;
+
+  switch (name) {
+    case 'fullscreen':
+      return (
+        <svg {...commonProps}>
+          <path d="M4 9V4h5" />
+          <path d="M15 4h5v5" />
+          <path d="M20 15v5h-5" />
+          <path d="M9 20H4v-5" />
+          <path d="M8 8h8v8H8z" className="is-soft" />
+        </svg>
+      );
+    case 'fullscreen-exit':
+      return (
+        <svg {...commonProps}>
+          <path d="M9 4v5H4" />
+          <path d="M15 4v5h5" />
+          <path d="M20 15h-5v5" />
+          <path d="M4 15h5v5" />
+          <path d="M8 8h8v8H8z" className="is-soft" />
+        </svg>
+      );
+    case 'all-screens':
+      return (
+        <svg {...commonProps}>
+          <path d="M3.5 6.5h10v7h-10z" />
+          <path d="M10.5 10.5h10v7h-10z" />
+          <path d="M7 16.5h3" />
+          <path d="M14 20.5h3" />
+        </svg>
+      );
+    case 'save':
+      return (
+        <svg {...commonProps}>
+          <path d="M5 4h11l3 3v13H5z" />
+          <path d="M8 4v6h8V5" />
+          <path d="M8 16h8v4H8z" className="is-soft" />
+        </svg>
+      );
+    case 'reset':
+      return (
+        <svg {...commonProps}>
+          <path d="M6.5 8.5A7 7 0 1 1 5 14" />
+          <path d="M6.5 4.5v4h4" />
+          <path d="M9 12h6" className="is-soft" />
+        </svg>
+      );
+    case 'widgets':
+      return (
+        <svg {...commonProps}>
+          <path d="M4 4h7v7H4z" />
+          <path d="M13 4h7v7h-7z" />
+          <path d="M4 13h7v7H4z" />
+          <path d="M13 13h7v7h-7z" />
+        </svg>
+      );
+    case 'mode':
+      return (
+        <svg {...commonProps}>
+          <path d="M4 5h16v14H4z" />
+          <path d="M8 9h8" />
+          <path d="M8 13h5" />
+          <path d="M17 3v4" />
+          <path d="M15 5h4" />
+        </svg>
+      );
+    case 'hud':
+      return (
+        <svg {...commonProps}>
+          <path d="M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z" />
+          <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z" className="is-soft" />
+          <path d="M12 2v4" />
+          <path d="M12 18v4" />
+          <path d="M2 12h4" />
+          <path d="M18 12h4" />
+        </svg>
+      );
+    case 'agent':
+      return (
+        <svg {...commonProps}>
+          <path d="M8 5h8l3 4v6l-3 4H8l-3-4V9z" />
+          <path d="M9 11h2" />
+          <path d="M13 11h2" />
+          <path d="M9 15h6" className="is-soft" />
+          <path d="M12 2v3" />
+        </svg>
+      );
+    case 'permissions':
+      return (
+        <svg {...commonProps}>
+          <path d="M7 11V8a5 5 0 0 1 10 0v3" />
+          <path d="M6 11h12v9H6z" />
+          <path d="M12 14v3" className="is-soft" />
+        </svg>
+      );
+    default:
+      return (
+        <svg {...commonProps}>
+          <path d="M5 5h14v14H5z" />
+        </svg>
+      );
+  }
 }
 
 function getWindowViewportSize() {
@@ -420,8 +531,8 @@ export function Workspace({
   const missionControl = useMissionControl(activeRole);
   const [agentBridgeSettings, setAgentBridgeSettings] = useState<AgentBridgeSettings>(readAgentBridgeSettings);
   const agentBridge = useAgentBridgeRuntime({
-    localBridgeUrl: agentBridgeSettings.localBridgeUrl || import.meta.env.VITE_AGENT_LOCAL_BRIDGE_URL,
-    remoteApiUrl: agentBridgeSettings.remoteApiUrl || import.meta.env.VITE_AGENT_REMOTE_API_URL,
+    localBridgeUrl: agentBridgeSettings.localBridgeUrl,
+    remoteApiUrl: agentBridgeSettings.remoteApiUrl,
     onMissionEvents: missionControl.ingestEvents,
   });
   const agentControl = agentBridge.state;
@@ -1820,7 +1931,7 @@ export function Workspace({
   const onFocusWidget = useEventCallback(focusManagedWidget);
   const onTogglePinWidget = useEventCallback(toggleManagedWidgetPin);
   const onCloseWidget = useEventCallback(closeManagedWidget);
-  const onUpdateAgentBridgeSettings = useEventCallback((settings: Pick<AgentBridgeSettings, 'localBridgeUrl' | 'remoteApiUrl'>) => {
+  const onUpdateAgentBridgeSettings = useEventCallback((settings: Partial<AgentBridgeSettings>) => {
     setAgentBridgeSettings(writeAgentBridgeSettings(settings));
   });
 
@@ -1910,6 +2021,8 @@ export function Workspace({
     agentControl,
     agentBridgeSettings,
     onUpdateAgentBridgeSettings,
+    onProbeAgentBridge: agentBridge.probeNow,
+    onTestAgentBridgeUrl: agentBridge.testUrl,
     agentTaskGateway: agentBridge.taskGateway,
     operationalOs,
     activeRole,
@@ -2062,9 +2175,7 @@ export function Workspace({
                 setAgentMenuOpen(false);
                 setPresetMenuOpen((open) => !open);
               }}
-            >
-              Mode preset
-            </WorkspaceTopBarButton>
+            />
             {presetMenuOpen ? (
               <div className="workspace-widget-menu-panel workspace-preset-menu-panel" role="menu" aria-label="Workspace mode presets">
                 <div className="workspace-menu-section-label">Built-in modes</div>

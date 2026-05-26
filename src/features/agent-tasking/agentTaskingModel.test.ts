@@ -80,6 +80,36 @@ describe('agentTaskingModel', () => {
     });
   });
 
+  it('mock gateway preserves goal, workflow, evidence, and source provenance', async () => {
+    const gateway = createMockAgentTaskGateway({ delayMs: 0 });
+    const result = await gateway.submitTask(createRequest({
+      source: 'workflow',
+      goalId: 'goal-1',
+      evidenceIds: ['evidence-1'],
+      workflowRunId: 'run-1',
+      workflowStepId: 'step-1',
+    }));
+    const commandEvent = result.missionControlEvents.find((event) => event.type === 'command');
+
+    expect(result.message).toMatchObject({
+      goalId: 'goal-1',
+      workflowRunId: 'run-1',
+      status: 'proposal-created',
+    });
+    expect(commandEvent).toMatchObject({
+      type: 'command',
+      command: {
+        source: 'workflow-runbook',
+        goalId: 'goal-1',
+        evidenceIds: ['evidence-1'],
+        workflow: {
+          runId: 'run-1',
+          stepId: 'step-1',
+        },
+      },
+    });
+  });
+
   it('bridge gateway submits tasks to the active bridge task endpoint', async () => {
     const mockResult = await createMockAgentTaskGateway({ delayMs: 0 }).submitTask(createRequest());
     const fetchImpl = vi.fn(async () =>
@@ -95,5 +125,22 @@ describe('agentTaskingModel', () => {
     expect(fetchImpl).toHaveBeenCalledWith('http://127.0.0.1:8787/tasks', expect.objectContaining({ method: 'POST' }));
     expect(result.message.body).toContain('Command Inbox');
     expect(result.missionControlEvents.some((event) => event.type === 'command')).toBe(true);
+  });
+
+  it('bridge gateway rejects invalid proposal payloads and reports diagnostics', async () => {
+    const onDiagnostic = vi.fn();
+    const fetchImpl = vi.fn(async () =>
+      new Response(JSON.stringify({ message: { id: 'bad' }, proposals: [], missionControlEvents: [] }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    const gateway = createBridgeAgentTaskGateway('http://127.0.0.1:8787', { fetchImpl, onDiagnostic });
+
+    await expect(gateway.submitTask(createRequest({ id: 'task-invalid' }))).rejects.toThrow(/invalid proposal payload/i);
+    expect(onDiagnostic).toHaveBeenCalledWith(expect.stringMatching(/invalid proposal payload/i), {
+      requestId: 'task-invalid',
+      objective: 'Check media status and propose a fix.',
+    });
   });
 });

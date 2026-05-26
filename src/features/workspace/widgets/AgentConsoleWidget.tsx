@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   canSubmitAgentTask,
@@ -8,7 +8,7 @@ import {
   type AgentTaskGateway,
   type AgentTaskScope,
 } from '../../agent-tasking';
-import { getAgentDescriptorById, getVisibleAgentDescriptors, type AgentControlState } from '../../agent-control';
+import { getActiveAgentConnector, getAgentDescriptorById, getVisibleAgentDescriptors, type AgentBridgeSettings, type AgentControlState } from '../../agent-control';
 import type { CommandRisk, MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
@@ -64,17 +64,20 @@ export function AgentConsoleWidget({
   agentControl,
   taskGateway,
   operationalOs,
+  bridgeSettings,
 }: {
   role: ShellRole;
   missionControl: MissionControlRuntime;
   agentControl: AgentControlState;
   taskGateway?: AgentTaskGateway;
   operationalOs: OperationalOsRuntime;
+  bridgeSettings: AgentBridgeSettings;
 }) {
   const tasking = useAgentTasking(role, missionControl.ingestEvents, taskGateway);
   const availableScopes = useMemo(() => getAgentTaskScopesForRole(role), [role]);
   const visibleAgents = useMemo(() => getVisibleAgentDescriptors(agentControl, role), [agentControl, role]);
-  const defaultAgent = visibleAgents.find((agent) => agent.specialty === 'coordinator') ?? visibleAgents[0] ?? getAgentDescriptorById(agentControl, agentControl.activeAgentId);
+  const preferredAgent = visibleAgents.find((agent) => agent.id === bridgeSettings.preferredAgentId);
+  const defaultAgent = preferredAgent ?? visibleAgents.find((agent) => agent.specialty === 'coordinator') ?? visibleAgents[0] ?? getAgentDescriptorById(agentControl, agentControl.activeAgentId);
   const [objective, setObjective] = useState(() => getDefaultObjective(role));
   const [scope, setScope] = useState<AgentTaskScope>(() => getDefaultScope(role));
   const [risk, setRisk] = useState<CommandRisk>(() => getDefaultRisk(role));
@@ -82,8 +85,15 @@ export function AgentConsoleWidget({
   const [goalId, setGoalId] = useState('');
   const targetAgent = getAgentDescriptorById(agentControl, targetAgentId);
   const selectedGoal = operationalOs.state.goals.find((goal) => goal.id === goalId) ?? null;
+  const activeConnector = getActiveAgentConnector(agentControl);
   const canView = canViewAgentConsole(role);
   const canSubmit = canSubmitAgentTask(role, { scope, risk });
+
+  useEffect(() => {
+    if (preferredAgent) {
+      setTargetAgentId(preferredAgent.id);
+    }
+  }, [preferredAgent]);
 
   if (!canView) {
     return (
@@ -105,6 +115,7 @@ export function AgentConsoleWidget({
     void tasking.submitTask(objective, scope, risk, targetAgent.id, {
       goalId: selectedGoal?.id,
       evidenceIds: selectedGoal?.evidenceIds,
+      source: 'agent-console',
     });
   };
 
@@ -112,22 +123,22 @@ export function AgentConsoleWidget({
     <WorkspaceContentShell className="mission-control-surface agent-console-surface">
       <WorkspaceContentHeader
         eyebrow="Agent console"
-        title="tasking / proposals"
+        title="chat / proposals"
         metaEyebrow="gateway"
-        meta={tasking.gatewayMode}
+        meta={`${tasking.gatewayMode} / ${activeConnector.provider}`}
       />
 
       <StatusSummary
-        label="Tasking status"
-        title="Proposal only"
-        detail="Agent Console creates proposals only. Command Inbox remains the approval and execution gate."
-        meta={tasking.state.status}
+        label="Gateway status"
+        title={`${activeConnector.provider} / ${activeConnector.status}`}
+        detail={`Agent Console asks the active provider for help, then stages any executable result as a Command Inbox proposal. Current mode is ${tasking.gatewayMode}; mock mode is explicit when no bridge is online.`}
+        meta={`${tasking.state.status} / ${activeConnector.status}`}
       />
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame agent-console-compose"
-        eyebrow="current request"
-        title="objective"
+        eyebrow="conversation"
+        title="ask agent"
         meta={tasking.state.status}
       >
         <AttentionCard label="Selected agent" title={targetAgent.name} risk={risk}>
@@ -160,16 +171,16 @@ export function AgentConsoleWidget({
         </label>
         {selectedGoal ? (
           <EvidenceBlock label="goal context" title={selectedGoal.title}>
-            {selectedGoal.objective}
+            {selectedGoal.objective} Evidence linked: {selectedGoal.evidenceIds.length}.
           </EvidenceBlock>
         ) : null}
         <label className="agent-console-field">
-          <span>objective</span>
+          <span>message / task</span>
           <textarea
             value={objective}
             rows={4}
             onChange={(event) => setObjective(event.currentTarget.value)}
-            aria-label="Agent task objective"
+            aria-label="Agent message or task"
           />
         </label>
         <div className="agent-console-selector-row" role="group" aria-label="Agent task scope">
@@ -198,15 +209,26 @@ export function AgentConsoleWidget({
             </button>
           ))}
         </div>
-        <WorkspaceButton
-          variant="primary"
-          className="agent-console-submit"
-          disabled={!canSubmit || tasking.state.status === 'drafting'}
-          onClick={submitTask}
-        >
-          Send to Jarvis
-        </WorkspaceButton>
+        <div className="mission-control-actions">
+          <WorkspaceButton
+            variant="primary"
+            className="agent-console-submit"
+            disabled={!canSubmit || tasking.state.status === 'drafting'}
+            onClick={submitTask}
+          >
+            Ask agent
+          </WorkspaceButton>
+          <WorkspaceButton
+            variant="secondary"
+            className="agent-console-submit"
+            disabled={!canSubmit || tasking.state.status === 'drafting'}
+            onClick={submitTask}
+          >
+            Stage proposal
+          </WorkspaceButton>
+        </div>
         {!canSubmit ? <p className="mission-control-muted">This role cannot submit that scope/risk combination.</p> : null}
+        {tasking.state.error ? <p className="mission-control-muted">Last error: {tasking.state.error}</p> : null}
       </WorkspaceSectionFrame>
 
       <WorkspaceSectionFrame
@@ -220,7 +242,7 @@ export function AgentConsoleWidget({
             {tasking.state.proposals.slice(0, 5).map((proposal) => (
               <div className="mission-control-row" key={proposal.id} role="listitem" data-state={proposal.risk}>
                 <span>{proposal.title}</span>
-                <strong>{proposal.agentName ?? 'Jarvis Prime'}</strong>
+                <strong>{proposal.agentName ?? 'Coordinator'}</strong>
                 <small>{proposal.scope} / {proposal.risk} / {formatTime(proposal.timestamp)}</small>
                 <p>{proposal.reasoning}</p>
               </div>
@@ -241,8 +263,15 @@ export function AgentConsoleWidget({
           {tasking.state.messages.slice(0, 7).map((message) => (
             <div className="mission-control-row" key={message.id} role="listitem" data-state={message.author}>
               <span>{message.author}</span>
-              <strong>{formatTime(message.timestamp)}</strong>
+              <strong>{message.status ?? formatTime(message.timestamp)}</strong>
               <EvidenceBlock label="message">{message.body}</EvidenceBlock>
+              {message.goalId || message.workflowRunId || message.commandId ? (
+                <small>
+                  {message.goalId ? `Goal ${message.goalId}` : ''}
+                  {message.workflowRunId ? ` / Run ${message.workflowRunId}` : ''}
+                  {message.commandId ? ` / Command ${message.commandId}` : ''}
+                </small>
+              ) : null}
             </div>
           ))}
         </div>

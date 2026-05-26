@@ -5,12 +5,17 @@ export type AgentTaskScope = CommandScope;
 export type AgentTaskStatus = 'idle' | 'drafting' | 'proposed' | 'blocked' | 'failed';
 export type AgentTaskGatewayMode = 'mock' | 'backend' | 'bridge';
 export type AgentTaskMessageAuthor = 'user' | 'agent' | 'system';
+export type AgentTaskSource = 'agent-console' | 'agent-control' | 'workflow';
 
 export type AgentTaskMessage = {
   id: string;
   author: AgentTaskMessageAuthor;
   body: string;
   timestamp: string;
+  goalId?: string;
+  commandId?: string;
+  workflowRunId?: string;
+  status?: 'sent' | 'failed' | 'proposal-created';
 };
 
 export type AgentTaskProposal = {
@@ -34,6 +39,9 @@ export type AgentTaskRequest = {
   targetAgentId: string;
   goalId?: string;
   evidenceIds?: string[];
+  workflowRunId?: string;
+  workflowStepId?: string;
+  source?: AgentTaskSource;
   requestedAt: string;
 };
 

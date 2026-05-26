@@ -203,7 +203,7 @@ export const widgetWorkflowGuidance: Record<WidgetKind, WidgetWorkflowGuidance> 
   'app-portal': {
     intent: 'Keep tools inside Mission Control',
     value: 'Use this to embed web tools when possible and launch external desktop or protocol targets without losing operating context.',
-    next: 'Open Codex, Hermes bridge status, or another profile next to the goal and command surfaces.',
+    next: 'Open Hermes bridge status, a local web tool, or another profile next to the goal and command surfaces.',
     evidence: 'app profile',
   },
   'json-surface': {

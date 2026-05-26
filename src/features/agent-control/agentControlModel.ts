@@ -1,11 +1,14 @@
 import type { ShellRole } from '../shell/roles';
 import type { CommandAuditEntry, CommandRequest } from '../mission-control';
+import type { MissionControlEvent } from '../mission-control';
 import { mockAgentControlState } from './agentControlMock';
 import type {
   AgentActivity,
   AgentConnectorRecord,
   AgentControlState,
   AgentDescriptor,
+  AgentBridgeTutorialStep,
+  AgentBridgeTutorialStepStatus,
   AgentJobStatus,
   AgentPermission,
   AgentScheduledJob,
@@ -28,6 +31,22 @@ export type AgentConnectorRuntimeOptions = {
   localBridgeUrl?: string | null;
   remoteApiUrl?: string | null;
   now?: string;
+};
+
+export type AgentBridgeTutorialSettings = {
+  localBridgeUrl?: string | null;
+  remoteApiUrl?: string | null;
+};
+
+export type AgentControlProposalInput = {
+  agentId: string;
+  agentName: string;
+  profile: string;
+  title: string;
+  summary: string;
+  reasoning: string;
+  expectedResult: string;
+  actor: string;
 };
 
 export const defaultAgentLocalBridgeUrl = 'http://127.0.0.1:8787';
@@ -128,6 +147,9 @@ export function createInitialAgentControlState(options: AgentConnectorRuntimeOpt
     agents: mockAgentControlState.agents.map((agent) => ({ ...agent, visibleTo: [...agent.visibleTo] })),
     connectors,
     activeConnectorId: getActiveConnectorId(connectors),
+    diagnostics: mockAgentControlState.diagnostics.map((diagnostic) => ({ ...diagnostic })),
+    eventStreamStatus: mockAgentControlState.eventStreamStatus,
+    lastBridgeEventAt: mockAgentControlState.lastBridgeEventAt,
     usage: { ...mockAgentControlState.usage },
     jobs: mockAgentControlState.jobs.map((job) => ({ ...job, visibleTo: [...job.visibleTo] })),
     permissions: mockAgentControlState.permissions.map((permission) => ({
@@ -161,12 +183,153 @@ export function getAgentConnectorSummary(state: AgentControlState) {
   };
 }
 
+function hasBridgeFailure(state: AgentControlState, sources: Array<'status' | 'runtime' | 'tasks'>) {
+  const activeConnector = getActiveAgentConnector(state);
+
+  return (
+    (activeConnector.kind !== 'mock' && (activeConnector.status === 'offline' || activeConnector.status === 'error')) ||
+    state.diagnostics.some((diagnostic) => sources.includes(diagnostic.source as 'status' | 'runtime' | 'tasks') && diagnostic.level !== 'info')
+  );
+}
+
+function getStepStatus(pass: boolean, failed: boolean): AgentBridgeTutorialStepStatus {
+  if (pass) return 'pass';
+  if (failed) return 'failed';
+  return 'waiting';
+}
+
+export function getAgentBridgeReachableUrl(state: AgentControlState) {
+  const connectedConnector = state.connectors.find((connector) => connector.kind !== 'mock' && connector.status === 'connected' && connector.url);
+  return connectedConnector?.url ?? null;
+}
+
+export function getAgentBridgeTutorialSteps(
+  state: AgentControlState,
+  settings: AgentBridgeTutorialSettings = {},
+): AgentBridgeTutorialStep[] {
+  const reachableUrl = getAgentBridgeReachableUrl(state);
+  const configuredEndpoint = Boolean(settings.localBridgeUrl?.trim());
+  const taskFailure = state.diagnostics.some((diagnostic) => diagnostic.source === 'tasks' && diagnostic.level !== 'info');
+  const taskEvidence = state.usage.requestCount > 0 || state.activity.some((activity) => activity.kind === 'proposal') || Boolean(state.lastBridgeEventAt);
+  const bridgeFailed = hasBridgeFailure(state, ['status', 'runtime']);
+
+  return [
+    {
+      id: 'bridge-running',
+      title: 'Local bridge running',
+      body: 'In the Windows desktop app, choose Same PC, LAN PC, or Tailscale, then start the local Mission Control bridge.',
+      status: getStepStatus(Boolean(reachableUrl), bridgeFailed),
+      command: 'Agent Control -> Bridge setup -> Start bridge',
+    },
+    {
+      id: 'port-reachable',
+      title: 'Local /status reachable',
+      body: 'Mission Control must be able to read http://127.0.0.1:8787/status before tasks can be sent.',
+      status: getStepStatus(Boolean(reachableUrl), bridgeFailed),
+      command: 'Open http://127.0.0.1:8787/status',
+    },
+    {
+      id: 'endpoint-saved',
+      title: 'Connection mode saved',
+      body: 'Save the selected mode and Hermes host so the desktop bridge knows where to forward tasks.',
+      status: getStepStatus(configuredEndpoint, false),
+    },
+    {
+      id: 'task-proposal-tested',
+      title: 'Task proposal tested',
+      body: 'Send one task from Agent Console and confirm the proposal appears in Command Inbox.',
+      status: getStepStatus(taskEvidence, taskFailure),
+    },
+  ];
+}
+
 export function canViewAgentControl(role: ShellRole) {
   return role !== 'guest';
 }
 
 export function canEditAgentSettings(role: ShellRole) {
   return editableAgentRoles.includes(role);
+}
+
+function createAgentControlCommandProposal(input: AgentControlProposalInput): MissionControlEvent[] {
+  const timestamp = new Date().toISOString();
+  const commandId = `agent-control-${input.agentId}-${Date.now().toString(36)}`;
+
+  return [
+    {
+      type: 'command',
+      command: {
+        id: commandId,
+        title: input.title,
+        summary: input.summary,
+        source: 'agent-control',
+        agent: {
+          agentId: input.agentId,
+          agentName: input.agentName,
+          profile: input.profile,
+        },
+        reasoning: input.reasoning,
+        expectedResult: input.expectedResult,
+        scope: 'system',
+        risk: 'elevated',
+        status: 'pending',
+        requestedAt: timestamp,
+        execution: {
+          status: 'not-started',
+          result: 'Waiting in Command Inbox for human approval.',
+          rollbackAvailable: true,
+        },
+        auditTrail: [
+          {
+            id: `audit-${commandId}-proposed`,
+            type: 'proposed',
+            actor: input.actor,
+            timestamp,
+            detail: `${input.actor} requested "${input.title}" from Agent Control.`,
+          },
+        ],
+      },
+    },
+    {
+      type: 'notification',
+      notification: {
+        id: `notification-${commandId}`,
+        level: 'warning',
+        title: 'Agent Control proposal ready',
+        body: `Command Inbox is holding "${input.title}" for approval.`,
+        source: 'agent-control',
+        timestamp,
+        acknowledged: false,
+        relatedCommandId: commandId,
+      },
+    },
+  ];
+}
+
+export function createAgentPermissionChangeProposal(agent: AgentDescriptor, permission: AgentPermission): MissionControlEvent[] {
+  return createAgentControlCommandProposal({
+    agentId: agent.id,
+    agentName: agent.name,
+    profile: agent.profile,
+    title: `Review ${permission.label} permission`,
+    summary: `Review requested changes for ${permission.category} permission "${permission.label}" on ${agent.name}.`,
+    reasoning: `Agent Control treats permission changes as gated proposals because runtime enforcement belongs behind Command Inbox approval.`,
+    expectedResult: `No backend permission changes occur until an allowed role approves the proposal.`,
+    actor: 'agent-control',
+  });
+}
+
+export function createAgentProfileChangeProposal(agent: AgentDescriptor): MissionControlEvent[] {
+  return createAgentControlCommandProposal({
+    agentId: agent.id,
+    agentName: agent.name,
+    profile: agent.profile,
+    title: `Review ${agent.name} profile`,
+    summary: `Review the active profile and default routing for ${agent.name}.`,
+    reasoning: `Agent Control keeps profile edits local/proposed until a backend enforcement layer is connected.`,
+    expectedResult: `Command Inbox records the requested profile review and keeps execution gated.`,
+    actor: 'agent-control',
+  });
 }
 
 export function getVisibleAgentJobs(state: AgentControlState, role: ShellRole): AgentScheduledJob[] {

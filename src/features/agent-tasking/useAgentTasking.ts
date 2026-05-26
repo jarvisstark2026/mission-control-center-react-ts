@@ -21,7 +21,7 @@ export type AgentTaskingRuntime = {
     scope: AgentTaskScope,
     risk: CommandRisk,
     targetAgentId: string,
-    context?: Pick<AgentTaskRequest, 'goalId' | 'evidenceIds'>,
+    context?: Pick<AgentTaskRequest, 'goalId' | 'evidenceIds' | 'workflowRunId' | 'workflowStepId' | 'source'>,
   ) => Promise<void>;
 };
 
@@ -63,7 +63,7 @@ export function useAgentTasking(
       scope: AgentTaskScope,
       risk: CommandRisk,
       targetAgentId: string,
-      context: Pick<AgentTaskRequest, 'goalId' | 'evidenceIds'> = {},
+      context: Pick<AgentTaskRequest, 'goalId' | 'evidenceIds' | 'workflowRunId' | 'workflowStepId' | 'source'> = {},
     ) => {
       const trimmedObjective = objective.trim();
       if (!trimmedObjective) return;
@@ -78,6 +78,9 @@ export function useAgentTasking(
         targetAgentId,
         goalId: context.goalId,
         evidenceIds: context.evidenceIds,
+        workflowRunId: context.workflowRunId,
+        workflowStepId: context.workflowStepId,
+        source: context.source ?? 'agent-console',
         requestedAt,
       };
 
@@ -89,6 +92,9 @@ export function useAgentTasking(
             author: 'system',
             body: 'This access scope cannot submit that kind of agent task. Use Command Inbox for existing proposals or switch role.',
             timestamp: requestedAt,
+            goalId: request.goalId,
+            workflowRunId: request.workflowRunId,
+            status: 'failed',
           },
           timestamp: requestedAt,
         } satisfies AgentTaskingAction);
@@ -115,6 +121,9 @@ export function useAgentTasking(
             author: 'system',
             body: error instanceof Error ? error.message : 'Agent task gateway failed.',
             timestamp,
+            goalId: request.goalId,
+            workflowRunId: request.workflowRunId,
+            status: 'failed',
           },
           error: error instanceof Error ? error.message : 'Agent task gateway failed.',
           timestamp,

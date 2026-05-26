@@ -1,6 +1,9 @@
 import { normalizeMissionControlEventList, type MissionControlEvent } from '../mission-control';
 import type {
   AgentActivity,
+  AgentBridgeDiagnostic,
+  AgentBridgeDiagnosticLevel,
+  AgentBridgeDiagnosticSource,
   AgentConnectorKind,
   AgentConnectorRecord,
   AgentConnectorStatus,
@@ -13,7 +16,7 @@ import type {
 } from './agentControlTypes';
 
 export type AgentBridgeStatusResponse = {
-  status?: AgentConnectorStatus;
+  status?: AgentConnectorStatus | 'ok';
   provider?: AgentRuntimeProvider;
   activeEngine?: string | null;
   activeAgentId?: string | null;
@@ -39,6 +42,14 @@ export type AgentBridgeRuntimeState = {
   source: AgentConnectorKind;
 };
 
+export type AgentBridgeProbeResult = {
+  url: string;
+  ok: boolean;
+  provider?: AgentRuntimeProvider;
+  activeEngine?: string;
+  error?: string;
+};
+
 export type AgentBridgeTransport = {
   connector: AgentConnectorRecord;
   checkStatus: () => Promise<AgentBridgeStatusResponse>;
@@ -54,8 +65,27 @@ export type AgentBridgeTransportOptions = {
 };
 
 const validConnectorStatuses: AgentConnectorStatus[] = ['connected', 'available', 'offline', 'error', 'not-configured'];
+const validBridgeStatusAliases = ['ok'];
 const validProviders: AgentRuntimeProvider[] = ['hermes', 'openclaw', 'openai', 'custom'];
 const bridgeActiveStatuses: AgentConnectorStatus[] = ['connected', 'available'];
+const validConnectionStates = ['online', 'degraded', 'offline', 'reconnecting'];
+const validAgentStatuses = ['available', 'working', 'waiting', 'limited'];
+const validAgentProfiles = ['home-operator', 'support-diagnostics', 'security-watch', 'guest-readonly'];
+const validAgentSpecialties = ['coordinator', 'support', 'security', 'home', 'workflow'];
+const bridgeVisibleRoleAliases: Record<string, 'admin' | 'support' | 'home' | null> = {
+  admin: 'admin',
+  support: 'support',
+  home: 'home',
+  member: 'home',
+  guest: null,
+};
+const validJobStatuses = ['active', 'paused', 'failed', 'completed'];
+const validJobKinds = ['cron', 'monitor', 'automation'];
+const validPermissionLevels = ['read', 'suggest', 'execute', 'blocked'];
+const validPermissionRisks = ['low', 'medium', 'high'];
+const validPermissionCategories = ['files', 'workspace', 'integrations', 'commands', 'network', 'automation'];
+const validActivityKinds = ['proposal', 'approval', 'execution', 'failure', 'connection'];
+const diagnosticLimit = 40;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
@@ -69,7 +99,61 @@ function getString(value: unknown) {
   return typeof value === 'string' ? value : null;
 }
 
+function getNumber(value: unknown) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+function summarizePayload(value: unknown) {
+  try {
+    const text = JSON.stringify(value);
+    if (!text) return undefined;
+    return text.length > 220 ? `${text.slice(0, 217)}...` : text;
+  } catch {
+    return String(value).slice(0, 220);
+  }
+}
+
+export function createAgentBridgeDiagnostic({
+  connectorId,
+  level,
+  message,
+  source,
+  timestamp = new Date().toISOString(),
+  payload,
+}: {
+  connectorId: string;
+  level: AgentBridgeDiagnosticLevel;
+  message: string;
+  source: AgentBridgeDiagnosticSource;
+  timestamp?: string;
+  payload?: unknown;
+}): AgentBridgeDiagnostic {
+  return {
+    id: `bridge-diagnostic-${connectorId}-${source}-${Date.parse(timestamp) || Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    connectorId,
+    level,
+    message,
+    source,
+    timestamp,
+    payloadSummary: payload === undefined ? undefined : summarizePayload(payload),
+  };
+}
+
+export function appendAgentBridgeDiagnostic(state: AgentControlState, diagnostic: AgentBridgeDiagnostic): AgentControlState {
+  return {
+    ...state,
+    diagnostics: [diagnostic, ...(state.diagnostics ?? [])].slice(0, diagnosticLimit),
+    version: state.version + 1,
+    updatedAt: diagnostic.timestamp,
+  };
+}
+
 function normalizeConnectorStatus(value: unknown, fallback: AgentConnectorStatus): AgentConnectorStatus {
+  if (value === 'ok') return 'connected';
   return validConnectorStatuses.includes(value as AgentConnectorStatus) ? (value as AgentConnectorStatus) : fallback;
 }
 
@@ -85,35 +169,244 @@ function normalizeBridgeMissionEvents(value: unknown): MissionControlEvent[] {
   return normalizeMissionControlEventList(value);
 }
 
+function normalizeVisibleRoles(value: unknown) {
+  if (!Array.isArray(value)) return null;
+  const roles = value
+    .map((item) => (typeof item === 'string' ? bridgeVisibleRoleAliases[item] : null))
+    .filter((item): item is 'admin' | 'support' | 'home' => item !== null);
+
+  return [...new Set(roles)];
+}
+
+function hasBridgeVisibleRoles(value: unknown) {
+  const roles = normalizeVisibleRoles(value);
+  return Boolean(roles?.length);
+}
+
+function normalizeAgentActivityList(value: unknown): AgentActivity[] | null {
+  if (!Array.isArray(value)) return null;
+  const normalized = value.map((item) => {
+    if (
+      !isRecord(item) ||
+      typeof item.id !== 'string' ||
+      !validActivityKinds.includes(item.kind as string) ||
+      typeof item.title !== 'string' ||
+      typeof item.detail !== 'string' ||
+      typeof item.timestamp !== 'string' ||
+      typeof item.source !== 'string'
+    ) {
+      return null;
+    }
+
+    const visibleTo = normalizeVisibleRoles(item.visibleTo);
+    if (!visibleTo?.length) return null;
+
+    return {
+      ...item,
+      visibleTo,
+    } as AgentActivity;
+  });
+
+  return normalized.every(Boolean) ? (normalized as AgentActivity[]) : null;
+}
+
+function normalizeAgentDescriptorList(value: unknown): AgentDescriptor[] | null {
+  if (!Array.isArray(value)) return null;
+  const normalized = value.map((item) => {
+    if (
+      !isRecord(item) ||
+      typeof item.id !== 'string' ||
+      typeof item.name !== 'string' ||
+      !validAgentSpecialties.includes(item.specialty as string) ||
+      typeof item.provider !== 'string' ||
+      typeof item.model !== 'string' ||
+      !validAgentProfiles.includes(item.profile as string) ||
+      !validAgentStatuses.includes(item.status as string) ||
+      !validConnectionStates.includes(item.connection as string) ||
+      typeof item.summary !== 'string'
+    ) {
+      return null;
+    }
+
+    const visibleTo = normalizeVisibleRoles(item.visibleTo);
+    if (!visibleTo?.length) return null;
+
+    return {
+      ...item,
+      visibleTo,
+    } as AgentDescriptor;
+  });
+
+  return normalized.every(Boolean) ? (normalized as AgentDescriptor[]) : null;
+}
+
+function normalizeAgentJobList(value: unknown): AgentScheduledJob[] | null {
+  if (!Array.isArray(value)) return null;
+  const normalized = value.map((item) => {
+    if (
+      !isRecord(item) ||
+      typeof item.id !== 'string' ||
+      typeof item.name !== 'string' ||
+      !validJobKinds.includes(item.kind as string) ||
+      !validJobStatuses.includes(item.status as string) ||
+      typeof item.cadence !== 'string' ||
+      typeof item.lastRunAt !== 'string' ||
+      typeof item.nextRunAt !== 'string' ||
+      typeof item.owner !== 'string' ||
+      typeof item.safeForHome !== 'boolean' ||
+      typeof item.description !== 'string'
+    ) {
+      return null;
+    }
+
+    const visibleTo = normalizeVisibleRoles(item.visibleTo);
+    if (!visibleTo?.length) return null;
+
+    return {
+      ...item,
+      visibleTo,
+    } as AgentScheduledJob;
+  });
+
+  return normalized.every(Boolean) ? (normalized as AgentScheduledJob[]) : null;
+}
+
+function normalizeAgentPermissionList(value: unknown): AgentPermission[] | null {
+  if (!Array.isArray(value)) return null;
+  const normalized = value.map((item) => {
+    if (
+      !isRecord(item) ||
+      typeof item.id !== 'string' ||
+      typeof item.label !== 'string' ||
+      !validPermissionCategories.includes(item.category as string) ||
+      !validPermissionLevels.includes(item.level as string) ||
+      !validPermissionRisks.includes(item.risk as string) ||
+      typeof item.description !== 'string'
+    ) {
+      return null;
+    }
+
+    const visibleTo = normalizeVisibleRoles(item.visibleTo);
+    if (!visibleTo?.length) return null;
+
+    return {
+      ...item,
+      visibleTo,
+    } as AgentPermission;
+  });
+
+  return normalized.every(Boolean) ? (normalized as AgentPermission[]) : null;
+}
+
 function isAgentActivityList(value: unknown): value is AgentActivity[] {
-  return Array.isArray(value);
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        isRecord(item) &&
+        typeof item.id === 'string' &&
+        validActivityKinds.includes(item.kind as string) &&
+        typeof item.title === 'string' &&
+        typeof item.detail === 'string' &&
+        typeof item.timestamp === 'string' &&
+        typeof item.source === 'string' &&
+        hasBridgeVisibleRoles(item.visibleTo),
+    )
+  );
 }
 
 function isAgentDescriptorList(value: unknown): value is AgentDescriptor[] {
-  return Array.isArray(value);
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        isRecord(item) &&
+        typeof item.id === 'string' &&
+        typeof item.name === 'string' &&
+        validAgentSpecialties.includes(item.specialty as string) &&
+        typeof item.provider === 'string' &&
+        typeof item.model === 'string' &&
+        validAgentProfiles.includes(item.profile as string) &&
+        validAgentStatuses.includes(item.status as string) &&
+        validConnectionStates.includes(item.connection as string) &&
+        typeof item.summary === 'string' &&
+        hasBridgeVisibleRoles(item.visibleTo),
+    )
+  );
 }
 
 function isAgentJobList(value: unknown): value is AgentScheduledJob[] {
-  return Array.isArray(value);
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        isRecord(item) &&
+        typeof item.id === 'string' &&
+        typeof item.name === 'string' &&
+        validJobKinds.includes(item.kind as string) &&
+        validJobStatuses.includes(item.status as string) &&
+        typeof item.cadence === 'string' &&
+        typeof item.lastRunAt === 'string' &&
+        typeof item.nextRunAt === 'string' &&
+        typeof item.owner === 'string' &&
+        typeof item.safeForHome === 'boolean' &&
+        typeof item.description === 'string' &&
+        hasBridgeVisibleRoles(item.visibleTo),
+    )
+  );
 }
 
 function isAgentPermissionList(value: unknown): value is AgentPermission[] {
-  return Array.isArray(value);
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        isRecord(item) &&
+        typeof item.id === 'string' &&
+        typeof item.label === 'string' &&
+        validPermissionCategories.includes(item.category as string) &&
+        validPermissionLevels.includes(item.level as string) &&
+        validPermissionRisks.includes(item.risk as string) &&
+        typeof item.description === 'string' &&
+        hasBridgeVisibleRoles(item.visibleTo),
+    )
+  );
 }
 
 function isAgentUsageSummary(value: unknown): value is AgentUsageSummary {
-  return isRecord(value) && typeof value.requestCount === 'number';
+  return (
+    isRecord(value) &&
+    getNumber(value.requestCount) !== null &&
+    getNumber(value.approvedActionCount) !== null &&
+    getNumber(value.rejectedActionCount) !== null &&
+    getNumber(value.blockedActionCount) !== null &&
+    getNumber(value.estimatedTokens) !== null &&
+    getNumber(value.estimatedCostUsd) !== null &&
+    typeof value.windowStartedAt === 'string'
+  );
 }
 
 export function isAgentBridgeStatusResponse(value: unknown): value is AgentBridgeStatusResponse {
   if (!isRecord(value)) return false;
-  if (value.status !== undefined && !validConnectorStatuses.includes(value.status as AgentConnectorStatus)) return false;
+  if (
+    value.status !== undefined &&
+    !validConnectorStatuses.includes(value.status as AgentConnectorStatus) &&
+    !validBridgeStatusAliases.includes(value.status as string)
+  ) {
+    return false;
+  }
   if (value.provider !== undefined && !validProviders.includes(value.provider as AgentRuntimeProvider)) return false;
-  if (value.agents !== undefined && !Array.isArray(value.agents)) return false;
-  if (value.jobs !== undefined && !Array.isArray(value.jobs)) return false;
-  if (value.permissions !== undefined && !Array.isArray(value.permissions)) return false;
-  if (value.activity !== undefined && !Array.isArray(value.activity)) return false;
-  if (value.missionControlEvents !== undefined && !Array.isArray(value.missionControlEvents)) return false;
+  if (value.activeEngine !== undefined && value.activeEngine !== null && typeof value.activeEngine !== 'string') return false;
+  if (value.activeAgentId !== undefined && value.activeAgentId !== null && typeof value.activeAgentId !== 'string') return false;
+  if (value.currentTask !== undefined && value.currentTask !== null && typeof value.currentTask !== 'string') return false;
+  if (value.capabilities !== undefined && !isStringArray(value.capabilities)) return false;
+  if (value.lastSeenAt !== undefined && value.lastSeenAt !== null && typeof value.lastSeenAt !== 'string') return false;
+  if (value.agents !== undefined && !isAgentDescriptorList(value.agents)) return false;
+  if (value.jobs !== undefined && !isAgentJobList(value.jobs)) return false;
+  if (value.permissions !== undefined && !isAgentPermissionList(value.permissions)) return false;
+  if (value.activity !== undefined && !isAgentActivityList(value.activity)) return false;
+  if (value.usage !== undefined && !isAgentUsageSummary(value.usage)) return false;
+  if (value.missionControlEvents !== undefined && !isMissionControlEventList(value.missionControlEvents)) return false;
   return true;
 }
 
@@ -136,8 +429,9 @@ export function normalizeAgentBridgeEvent(payload: unknown): AgentBridgeEvent | 
     return { type: 'status', status: payload.status };
   }
 
-  if (payload.type === 'activity' && isAgentActivityList(payload.activity)) {
-    return { type: 'activity', activity: payload.activity };
+  const activity = normalizeAgentActivityList(payload.activity);
+  if (payload.type === 'activity' && activity) {
+    return { type: 'activity', activity };
   }
 
   if (isAgentBridgeStatusResponse(payload) && (payload.status || payload.provider || payload.activeEngine || payload.currentTask)) {
@@ -163,7 +457,7 @@ function statusPriority(connector: AgentConnectorRecord) {
 export function selectAgentBridgeConnector(state: AgentControlState): AgentConnectorRecord {
   const activeConnectors = state.connectors
     .filter((connector) => connector.kind !== 'mock' && bridgeActiveStatuses.includes(connector.status))
-    .sort((left, right) => statusPriority(left) - statusPriority(right) || connectorPriority(left) - connectorPriority(right));
+    .sort((left, right) => connectorPriority(left) - connectorPriority(right) || statusPriority(left) - statusPriority(right));
 
   return activeConnectors[0] ?? state.connectors.find((connector) => connector.kind === 'mock') ?? state.connectors[0];
 }
@@ -226,6 +520,7 @@ export function applyAgentBridgeStatus(
   });
 
   const statePatch: Partial<AgentControlState> = {
+    eventStreamStatus: 'connected',
     identity: {
       ...state.identity,
       provider,
@@ -241,24 +536,28 @@ export function applyAgentBridgeStatus(
     statePatch.activeAgentId = activeAgentId;
   }
 
-  if (isAgentDescriptorList(response.agents)) {
-    statePatch.agents = response.agents;
+  const agents = normalizeAgentDescriptorList(response.agents);
+  if (agents) {
+    statePatch.agents = agents;
   }
 
-  if (isAgentJobList(response.jobs)) {
-    statePatch.jobs = response.jobs;
+  const jobs = normalizeAgentJobList(response.jobs);
+  if (jobs) {
+    statePatch.jobs = jobs;
   }
 
-  if (isAgentPermissionList(response.permissions)) {
-    statePatch.permissions = response.permissions;
+  const permissions = normalizeAgentPermissionList(response.permissions);
+  if (permissions) {
+    statePatch.permissions = permissions;
   }
 
   if (isAgentUsageSummary(response.usage)) {
     statePatch.usage = response.usage;
   }
 
-  if (isAgentActivityList(response.activity)) {
-    statePatch.activity = response.activity;
+  const activity = normalizeAgentActivityList(response.activity);
+  if (activity) {
+    statePatch.activity = activity;
   }
 
   return {
@@ -272,14 +571,30 @@ export function markAgentBridgeConnectorFailure(
   connectorId: string,
   error: string,
   status: AgentConnectorStatus = 'offline',
+  source: AgentBridgeDiagnosticSource = 'runtime',
+  payload?: unknown,
 ): AgentControlState {
+  const timestamp = new Date().toISOString();
   const connectors = replaceConnector(state, connectorId, {
     status,
-    healthCheckedAt: new Date().toISOString(),
+    healthCheckedAt: timestamp,
     error,
   });
 
-  return getUpdatedState(state, connectors);
+  return getUpdatedState(state, connectors, {
+    eventStreamStatus: status === 'error' ? 'error' : state.eventStreamStatus,
+    diagnostics: [
+      createAgentBridgeDiagnostic({
+        connectorId,
+        level: status === 'error' ? 'error' : 'warning',
+        message: error,
+        source,
+        timestamp,
+        payload,
+      }),
+      ...(state.diagnostics ?? []),
+    ].slice(0, diagnosticLimit),
+  });
 }
 
 export function applyAgentBridgeEvent(
@@ -289,17 +604,36 @@ export function applyAgentBridgeEvent(
   receivedAt = new Date().toISOString(),
 ): { state: AgentControlState; missionControlEvents: MissionControlEvent[] } {
   if (event.type === 'mission-events') {
-    return { state, missionControlEvents: event.events };
+    return {
+      state: {
+        ...state,
+        eventStreamStatus: 'connected',
+        lastBridgeEventAt: receivedAt,
+        version: state.version + 1,
+        updatedAt: receivedAt,
+      },
+      missionControlEvents: event.events,
+    };
   }
 
   if (event.type === 'status') {
-    return applyAgentBridgeStatus(state, connectorId, event.status, receivedAt);
+    const applied = applyAgentBridgeStatus(state, connectorId, event.status, receivedAt);
+    return {
+      ...applied,
+      state: {
+        ...applied.state,
+        eventStreamStatus: 'connected',
+        lastBridgeEventAt: receivedAt,
+      },
+    };
   }
 
   return {
     state: {
       ...state,
       activity: [...event.activity, ...state.activity].slice(0, 40),
+      eventStreamStatus: 'connected',
+      lastBridgeEventAt: receivedAt,
       version: state.version + 1,
       updatedAt: receivedAt,
     },
@@ -350,7 +684,11 @@ export function createAgentBridgeTransport(
         try {
           const parsed: unknown = JSON.parse(event.data);
           const bridgeEvent = normalizeAgentBridgeEvent(parsed);
-          if (bridgeEvent) onEvent(bridgeEvent);
+          if (!bridgeEvent) {
+            onError?.(new Error('Agent bridge SSE event returned an invalid payload.'));
+            return;
+          }
+          onEvent(bridgeEvent);
         } catch (error) {
           onError?.(error instanceof Error ? error : new Error('Invalid agent bridge SSE event.'));
         }

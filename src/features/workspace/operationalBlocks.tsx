@@ -144,6 +144,7 @@ export function WorkflowStepCard({
   approval,
   actionLabel,
   onAction,
+  actions,
   disabled,
 }: {
   index: number;
@@ -153,8 +154,11 @@ export function WorkflowStepCard({
   approval?: ReactNode;
   actionLabel?: ReactNode;
   onAction?: () => void;
+  actions?: Array<{ id: string; label: ReactNode; onClick: () => void; disabled?: boolean; variant?: 'primary' | 'secondary' | 'compact' | 'destructive' }>;
   disabled?: boolean;
 }) {
+  const stepActions = actions ?? (actionLabel && onAction ? [{ id: 'primary', label: actionLabel, onClick: onAction, disabled, variant: 'secondary' as const }] : []);
+
   return (
     <article className="operational-workflow-step" data-state={status}>
       <div className="operational-step-index">{index}</div>
@@ -165,11 +169,17 @@ export function WorkflowStepCard({
       </div>
       <div className="operational-step-status">
         <RiskBadge risk={status} />
-        {actionLabel && onAction ? (
-          <WorkspaceButton variant="secondary" className="operational-step-action" disabled={disabled} onClick={onAction}>
-            {actionLabel}
+        {stepActions.map((action) => (
+          <WorkspaceButton
+            key={action.id}
+            variant={action.variant ?? 'secondary'}
+            className="operational-step-action"
+            disabled={action.disabled}
+            onClick={action.onClick}
+          >
+            {action.label}
           </WorkspaceButton>
-        ) : null}
+        ))}
       </div>
     </article>
   );

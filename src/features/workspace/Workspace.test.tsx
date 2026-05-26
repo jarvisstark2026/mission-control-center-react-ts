@@ -407,7 +407,7 @@ describe('Workspace header controls', () => {
     expect(currentRender.getAllByText('tasking / proposals').length).toBeGreaterThan(0);
 
     await act(async () => {
-      fireEvent.click(currentRender.getByRole('button', { name: 'Send to Jarvis' }));
+      fireEvent.click(currentRender.getByRole('button', { name: 'Ask agent' }));
       await new Promise((resolve) => setTimeout(resolve, 340));
     });
     expect(await currentRender.findByText(/prepared a gated command proposal/i)).toBeInTheDocument();
@@ -468,7 +468,7 @@ describe('Workspace header controls', () => {
     expect(currentRender.getAllByText('Jarvis Workflow').length).toBeGreaterThan(0);
   }, 60000);
 
-  it('opens Agent Control from the launcher while guest launch surfaces keep agent tools hidden', () => {
+  it('opens Agent Control from the launcher while guest launch surfaces keep agent tools hidden', async () => {
     const adminWorkspace = render(<Workspace role="admin" />);
     const adminRender = within(adminWorkspace.container);
     const launcherWidget = adminWorkspace.container.querySelector<HTMLElement>('.workspace-widget.kind-launcher');
@@ -479,6 +479,20 @@ describe('Workspace header controls', () => {
     fireEvent.doubleClick(agentLauncherCard);
 
     expect(adminRender.getAllByText('identity / jobs / permissions').length).toBeGreaterThan(0);
+    fireEvent.click(adminRender.getByRole('button', { name: 'Bridge help' }));
+    expect(adminRender.getByText('connect an AI agent')).toBeInTheDocument();
+    expect(adminRender.getAllByText('Agent Control -> Bridge setup -> Start bridge').length).toBeGreaterThan(0);
+    expect(adminRender.getByRole('radio', { name: /Same PC/i })).toBeInTheDocument();
+    expect(adminRender.getByRole('radio', { name: /LAN PC/i })).toBeInTheDocument();
+    expect(adminRender.getByRole('radio', { name: /Tailscale/i })).toBeInTheDocument();
+    expect(adminRender.getByText('live bridge state')).toBeInTheDocument();
+    expect(adminRender.getByRole('button', { name: 'Probe now' })).toBeInTheDocument();
+
+    await act(async () => {
+      fireEvent.click(adminRender.getByRole('button', { name: 'Send test proposal' }));
+      await new Promise((resolve) => setTimeout(resolve, 340));
+    });
+    expect(adminRender.getByText(/test proposal sent to Command Inbox/i)).toBeInTheDocument();
 
     adminWorkspace.unmount();
     window.localStorage.clear();

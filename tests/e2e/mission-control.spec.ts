@@ -22,13 +22,18 @@ async function ensureWidgetOpen(locator: import('@playwright/test').Locator) {
 
 test('operational core widgets launch and use mock live data', async ({ page }) => {
   await page.goto('/?role=admin');
+  await page.evaluate(() => {
+    window.localStorage.removeItem('agent-tasking-state:v1');
+    window.localStorage.removeItem('mission-control.agent-bridge-settings.v1');
+  });
+  await page.reload();
 
   await openWidget(page, 'Command inbox');
   await expect(page.getByText('primary approval queue').first()).toBeVisible();
 
   await openWidget(page, 'Agent console');
-  await expect(page.getByText('tasking / proposals').first()).toBeVisible();
-  await page.getByRole('button', { name: 'Send to Jarvis' }).click();
+  await expect(page.getByText('chat / proposals').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Ask agent' }).click();
   await expect(page.getByText(/prepared a gated command proposal/i)).toBeVisible();
   await expect(page.getByText(/Review current mission state and propose/i).first()).toBeVisible();
 

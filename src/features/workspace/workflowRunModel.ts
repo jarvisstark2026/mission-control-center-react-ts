@@ -19,6 +19,7 @@ export type WorkflowRunStep = {
   evidenceRequirement?: string;
   agentId?: string;
   commandId?: string;
+  note?: string;
 };
 
 export type WorkflowRun = {
@@ -26,10 +27,21 @@ export type WorkflowRun = {
   workflowId: string;
   workflowName: string;
   templateId: string;
+  goalId?: string;
+  evidenceIds: string[];
   status: 'active' | 'waiting-approval' | 'completed' | 'blocked' | 'failed';
   startedAt: string;
   updatedAt: string;
   steps: WorkflowRunStep[];
+  auditTrail: WorkflowRunAuditEntry[];
+};
+
+export type WorkflowRunAuditEntry = {
+  id: string;
+  type: 'started' | 'step-completed' | 'step-blocked' | 'step-note' | 'approval-staged' | 'agent-requested' | 'command-synced';
+  actor: string;
+  timestamp: string;
+  detail: string;
 };
 
 type WorkflowCommandProfile = {
@@ -116,6 +128,105 @@ const workflowStepPolicies: Record<string, WorkflowStepPolicy[]> = {
   ],
 };
 
+const workflowRunStorageKey = 'mission-control.workflowRuns.v1';
+const maxPersistedWorkflowRuns = 12;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function createWorkflowRunAudit(
+  type: WorkflowRunAuditEntry['type'],
+  actor: string,
+  detail: string,
+  timestamp = new Date().toISOString(),
+): WorkflowRunAuditEntry {
+  return {
+    id: createId(`workflow-audit-${type}`),
+    type,
+    actor,
+    timestamp,
+    detail,
+  };
+}
+
+function capAuditTrail(entries: WorkflowRunAuditEntry[]) {
+  return entries.slice(-18);
+}
+
+function getRunStatusFromSteps(steps: WorkflowRunStep[]): WorkflowRun['status'] {
+  if (steps.some((step) => step.status === 'failed')) return 'failed';
+  if (steps.some((step) => step.status === 'blocked')) return 'blocked';
+  if (steps.every((step) => step.status === 'completed')) return 'completed';
+  if (steps.some((step) => step.status === 'waiting-approval')) return 'waiting-approval';
+  return 'active';
+}
+
+function isWorkflowRunStep(value: unknown): value is WorkflowRunStep {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.title === 'string' &&
+    typeof value.assignee === 'string' &&
+    typeof value.status === 'string' &&
+    typeof value.approvalRequirement === 'string'
+  );
+}
+
+function isWorkflowRun(value: unknown): value is WorkflowRun {
+  return (
+    isRecord(value) &&
+    typeof value.id === 'string' &&
+    typeof value.workflowId === 'string' &&
+    typeof value.workflowName === 'string' &&
+    typeof value.templateId === 'string' &&
+    typeof value.status === 'string' &&
+    typeof value.startedAt === 'string' &&
+    typeof value.updatedAt === 'string' &&
+    Array.isArray(value.steps) &&
+    value.steps.every(isWorkflowRunStep)
+  );
+}
+
+export function loadWorkflowRuns(): WorkflowRun[] {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    const raw = window.localStorage.getItem(workflowRunStorageKey);
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter(isWorkflowRun)
+      .map((run) => ({
+        ...run,
+        evidenceIds: Array.isArray(run.evidenceIds) ? run.evidenceIds.filter((item) => typeof item === 'string') : [],
+        auditTrail: Array.isArray(run.auditTrail) ? run.auditTrail.filter(isRecord).map((entry) => ({
+          id: typeof entry.id === 'string' ? entry.id : createId('workflow-audit'),
+          type: typeof entry.type === 'string' ? entry.type as WorkflowRunAuditEntry['type'] : 'started',
+          actor: typeof entry.actor === 'string' ? entry.actor : 'workflow',
+          timestamp: typeof entry.timestamp === 'string' ? entry.timestamp : new Date().toISOString(),
+          detail: typeof entry.detail === 'string' ? entry.detail : 'Workflow run restored.',
+        })) : [],
+      }))
+      .slice(0, maxPersistedWorkflowRuns);
+  } catch {
+    return [];
+  }
+}
+
+export function saveWorkflowRuns(runs: WorkflowRun[]) {
+  if (typeof window === 'undefined') return true;
+
+  try {
+    window.localStorage.setItem(workflowRunStorageKey, JSON.stringify(runs.slice(0, maxPersistedWorkflowRuns)));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function getStepPolicy(templateId: string, index: number): WorkflowStepPolicy {
   return workflowStepPolicies[templateId]?.[index] ?? {
     ...defaultStepPolicy,
@@ -135,19 +246,35 @@ function getWorkflowCommandProfile(run: WorkflowRun, agent: AgentDescriptor): Wo
   };
 }
 
-export function startWorkflowRun(workflow: WorkflowDraft, agent: AgentDescriptor, now = new Date().toISOString()): WorkflowRun {
+export function startWorkflowRun(
+  workflow: WorkflowDraft,
+  agent: AgentDescriptor,
+  now = new Date().toISOString(),
+  context: { goalId?: string; evidenceIds?: string[] } = {},
+): WorkflowRun {
   const workflowId = workflow.id ?? createId('workflow');
   const template = getWorkflowTemplate(workflow.templateId);
   const steps = getWorkflowSteps(workflow);
+  const workflowName = workflow.name.trim() || `${template.title} workflow`;
 
   return {
     id: createId('workflow-run'),
     workflowId,
-    workflowName: workflow.name.trim() || `${template.title} workflow`,
+    workflowName,
     templateId: template.id,
+    goalId: context.goalId,
+    evidenceIds: context.evidenceIds ?? [],
     status: 'active',
     startedAt: now,
     updatedAt: now,
+    auditTrail: [
+      createWorkflowRunAudit(
+        'started',
+        'workflow',
+        `Runbook "${workflowName}" started with ${agent.name}.`,
+        now,
+      ),
+    ],
     steps: steps.map((step, index) => {
       const policy = getStepPolicy(template.id, index);
       return {
@@ -182,6 +309,8 @@ export function createWorkflowStepCommandEvent(run: WorkflowRun, stepId: string,
       title: step.title,
       summary: `Runbook step from ${run.workflowName}: ${step.title}`,
       source: 'workflow-runbook',
+      goalId: run.goalId,
+      evidenceIds: run.evidenceIds,
       agent: {
         agentId: agent.id,
         agentName: agent.name,
@@ -216,6 +345,84 @@ export function createWorkflowStepCommandEvent(run: WorkflowRun, stepId: string,
   };
 }
 
+export function markWorkflowRunStepCompleted(run: WorkflowRun, stepId: string, actor = 'user'): WorkflowRun {
+  const timestamp = new Date().toISOString();
+  const step = run.steps.find((item) => item.id === stepId);
+  if (!step) return run;
+
+  const steps = run.steps.map((item) => (item.id === stepId ? { ...item, status: 'completed' as const } : item));
+  return {
+    ...run,
+    steps,
+    status: getRunStatusFromSteps(steps),
+    updatedAt: timestamp,
+    auditTrail: capAuditTrail([...run.auditTrail, createWorkflowRunAudit('step-completed', actor, `Step completed: ${step.title}`, timestamp)]),
+  };
+}
+
+export function blockWorkflowRunStep(run: WorkflowRun, stepId: string, actor = 'user'): WorkflowRun {
+  const timestamp = new Date().toISOString();
+  const step = run.steps.find((item) => item.id === stepId);
+  if (!step) return run;
+
+  const steps = run.steps.map((item) => (item.id === stepId ? { ...item, status: 'blocked' as const } : item));
+  return {
+    ...run,
+    steps,
+    status: 'blocked',
+    updatedAt: timestamp,
+    auditTrail: capAuditTrail([...run.auditTrail, createWorkflowRunAudit('step-blocked', actor, `Step blocked: ${step.title}`, timestamp)]),
+  };
+}
+
+export function addWorkflowRunStepNote(run: WorkflowRun, stepId: string, note: string, actor = 'user'): WorkflowRun {
+  const trimmed = note.trim();
+  if (!trimmed) return run;
+
+  const timestamp = new Date().toISOString();
+  const step = run.steps.find((item) => item.id === stepId);
+  if (!step) return run;
+
+  return {
+    ...run,
+    steps: run.steps.map((item) => (item.id === stepId ? { ...item, note: trimmed } : item)),
+    updatedAt: timestamp,
+    auditTrail: capAuditTrail([...run.auditTrail, createWorkflowRunAudit('step-note', actor, `Note on "${step.title}": ${trimmed}`, timestamp)]),
+  };
+}
+
+export function markWorkflowRunApprovalStaged(run: WorkflowRun, stepId: string, commandId: string): WorkflowRun {
+  const timestamp = new Date().toISOString();
+  const step = run.steps.find((item) => item.id === stepId);
+  if (!step) return run;
+
+  const steps = run.steps.map((item) =>
+    item.id === stepId ? { ...item, status: 'waiting-approval' as const, commandId } : item,
+  );
+  return {
+    ...run,
+    steps,
+    status: 'waiting-approval',
+    updatedAt: timestamp,
+    auditTrail: capAuditTrail([...run.auditTrail, createWorkflowRunAudit('approval-staged', 'workflow-runbook', `Approval staged for "${step.title}".`, timestamp)]),
+  };
+}
+
+export function markWorkflowRunAgentRequested(run: WorkflowRun, stepId: string, actor = 'workflow'): WorkflowRun {
+  const timestamp = new Date().toISOString();
+  const step = run.steps.find((item) => item.id === stepId);
+  if (!step) return run;
+
+  const steps = run.steps.map((item) => (item.id === stepId ? { ...item, status: 'running' as const } : item));
+  return {
+    ...run,
+    steps,
+    status: getRunStatusFromSteps(steps),
+    updatedAt: timestamp,
+    auditTrail: capAuditTrail([...run.auditTrail, createWorkflowRunAudit('agent-requested', actor, `Agent asked to work on "${step.title}".`, timestamp)]),
+  };
+}
+
 function getStepStatusForCommand(command: CommandRequest): WorkflowStepStatus {
   if (command.status === 'pending') return 'waiting-approval';
   if (command.status === 'queued' || command.status === 'running' || command.status === 'approved' || command.status === 'overridden') {
@@ -233,7 +440,7 @@ export function syncWorkflowRunWithCommands(run: WorkflowRun, commands: CommandR
       .map((command) => [command.workflow?.stepId, command] as const),
   );
 
-  const steps = run.steps.map((step, index) => {
+  const steps = run.steps.map((step) => {
     const command = commandsByStep.get(step.id);
     if (command) {
       return {
@@ -243,27 +450,19 @@ export function syncWorkflowRunWithCommands(run: WorkflowRun, commands: CommandR
       };
     }
 
-    if (index === 0 && step.status === 'active') {
-      return { ...step, status: 'completed' as const };
-    }
-
     return step;
   });
 
-  const status = steps.some((step) => step.status === 'failed')
-    ? 'failed'
-    : steps.some((step) => step.status === 'blocked')
-      ? 'blocked'
-      : steps.every((step) => step.status === 'completed')
-        ? 'completed'
-        : steps.some((step) => step.status === 'waiting-approval')
-          ? 'waiting-approval'
-          : 'active';
+  const status = getRunStatusFromSteps(steps);
+  const changed = steps.some((step, index) => step.status !== run.steps[index]?.status || step.commandId !== run.steps[index]?.commandId);
 
   return {
     ...run,
     steps,
     status,
     updatedAt: new Date().toISOString(),
+    auditTrail: changed
+      ? capAuditTrail([...run.auditTrail, createWorkflowRunAudit('command-synced', 'command-inbox', 'Workflow run synced from Command Inbox command status.')])
+      : run.auditTrail,
   };
 }

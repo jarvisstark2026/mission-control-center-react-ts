@@ -134,13 +134,20 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.agentControl.version === right.agentControl.version &&
         left.missionControl.state.version === right.missionControl.state.version &&
         left.agentBridgeSettings.localBridgeUrl === right.agentBridgeSettings.localBridgeUrl &&
-        left.agentBridgeSettings.remoteApiUrl === right.agentBridgeSettings.remoteApiUrl
+        left.agentBridgeSettings.remoteApiUrl === right.agentBridgeSettings.remoteApiUrl &&
+        left.agentBridgeSettings.bridgeMode === right.agentBridgeSettings.bridgeMode &&
+        left.agentBridgeSettings.hermesHost === right.agentBridgeSettings.hermesHost &&
+        left.agentBridgeSettings.hermesApiBaseUrl === right.agentBridgeSettings.hermesApiBaseUrl &&
+        left.agentBridgeSettings.hermesModel === right.agentBridgeSettings.hermesModel &&
+        left.agentBridgeSettings.preferredAgentId === right.agentBridgeSettings.preferredAgentId &&
+        left.agentBridgeSettings.lastSuccessfulUrl === right.agentBridgeSettings.lastSuccessfulUrl
       );
     case 'agent-console':
       return (
         left.activeRole === right.activeRole &&
         left.agentControl.version === right.agentControl.version &&
         left.agentTaskGateway.mode === right.agentTaskGateway.mode &&
+        left.agentBridgeSettings.preferredAgentId === right.agentBridgeSettings.preferredAgentId &&
         left.missionControl.state.version === right.missionControl.state.version &&
         left.operationalOs.state.version === right.operationalOs.state.version
       );

@@ -1,31 +1,62 @@
 ﻿import { useEffect, useState } from 'react';
 import { createId } from '../../../lib/createId';
+import type { AgentTaskGateway, AgentTaskRequest, AgentTaskScope } from '../../agent-tasking';
 import { getAgentDescriptorById, getVisibleAgentDescriptors, type AgentControlState } from '../../agent-control';
 import type { MissionControlRuntime } from '../../mission-control';
+import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
 import { StatusSummary, WorkflowStepCard } from '../operationalBlocks';
 import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from '../workflowStudioModel';
-import { createWorkflowStepCommandEvent, startWorkflowRun, syncWorkflowRunWithCommands, type WorkflowRun } from '../workflowRunModel';
+import {
+  addWorkflowRunStepNote,
+  blockWorkflowRunStep,
+  createWorkflowStepCommandEvent,
+  loadWorkflowRuns,
+  markWorkflowRunAgentRequested,
+  markWorkflowRunApprovalStaged,
+  markWorkflowRunStepCompleted,
+  saveWorkflowRuns,
+  startWorkflowRun,
+  syncWorkflowRunWithCommands,
+  type WorkflowRun,
+  type WorkflowRunStep,
+} from '../workflowRunModel';
+
+function getWorkflowTaskScope(run: WorkflowRun, agentSpecialty: string): AgentTaskScope {
+  if (run.templateId.includes('security') || run.templateId.includes('safety') || agentSpecialty === 'security') return 'security';
+  if (run.templateId.includes('energy') || run.templateId.includes('home') || agentSpecialty === 'home') return 'household';
+  if (run.templateId.includes('support') || agentSpecialty === 'support') return 'support';
+  return 'system';
+}
 
 export function WorkflowWidget({
   missionControl,
   agentControl,
+  operationalOs,
+  taskGateway,
   role,
 }: {
   missionControl: MissionControlRuntime;
   agentControl: AgentControlState;
+  operationalOs: OperationalOsRuntime;
+  taskGateway: AgentTaskGateway;
   role: ShellRole;
 }) {
   const [savedWorkflows, setSavedWorkflows] = useState<SavedWorkflow[]>(() => loadSavedWorkflows());
   const [draft, setDraft] = useState<WorkflowDraft>(() => createWorkflowDraft('workflow-studio'));
   const [newStep, setNewStep] = useState('');
   const [status, setStatus] = useState('Ready to build a workflow.');
-  const [activeRun, setActiveRun] = useState<WorkflowRun | null>(null);
+  const [workflowRuns, setWorkflowRuns] = useState<WorkflowRun[]>(() => loadWorkflowRuns());
+  const [activeRunId, setActiveRunId] = useState(() => loadWorkflowRuns()[0]?.id ?? '');
+  const [goalId, setGoalId] = useState('');
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const visibleAgents = getVisibleAgentDescriptors(agentControl, role);
   const defaultAgent = visibleAgents.find((agent) => agent.specialty === 'workflow') ?? visibleAgents[0] ?? getAgentDescriptorById(agentControl, agentControl.activeAgentId);
   const [selectedAgentId, setSelectedAgentId] = useState(defaultAgent.id);
   const selectedAgent = getAgentDescriptorById(agentControl, selectedAgentId);
+  const activeRun = workflowRuns.find((run) => run.id === activeRunId) ?? null;
+  const selectedGoal = operationalOs.state.goals.find((goal) => goal.id === goalId) ?? null;
 
   useEffect(() => {
     if (!saveSavedWorkflows(savedWorkflows)) {
@@ -34,12 +65,18 @@ export function WorkflowWidget({
   }, [savedWorkflows]);
 
   useEffect(() => {
+    if (!saveWorkflowRuns(workflowRuns)) {
+      setStatus('Workflow runs could not be saved locally.');
+    }
+  }, [workflowRuns]);
+
+  useEffect(() => {
     if (!activeRun) return;
     const nextRun = syncWorkflowRunWithCommands(activeRun, missionControl.state.commands);
     const currentSignature = activeRun.steps.map((step) => `${step.id}:${step.status}:${step.commandId ?? ''}`).join('|');
     const nextSignature = nextRun.steps.map((step) => `${step.id}:${step.status}:${step.commandId ?? ''}`).join('|');
     if (currentSignature !== nextSignature || activeRun.status !== nextRun.status) {
-      setActiveRun(nextRun);
+      setWorkflowRuns((current) => current.map((run) => (run.id === nextRun.id ? nextRun : run)));
     }
   }, [activeRun, missionControl.state.commands]);
 
@@ -103,9 +140,18 @@ export function WorkflowWidget({
   };
 
   const startRun = () => {
-    const nextRun = startWorkflowRun(draft, selectedAgent);
-    setActiveRun(nextRun);
+    const nextRun = startWorkflowRun(draft, selectedAgent, undefined, {
+      goalId: selectedGoal?.id,
+      evidenceIds: selectedGoal?.evidenceIds ?? [],
+    });
+    setWorkflowRuns((current) => [nextRun, ...current.filter((run) => run.id !== nextRun.id)].slice(0, 12));
+    setActiveRunId(nextRun.id);
     setStatus(`Started runbook for ${nextRun.workflowName}.`);
+  };
+
+  const updateActiveRun = (updater: (run: WorkflowRun) => WorkflowRun) => {
+    if (!activeRun) return;
+    setWorkflowRuns((current) => current.map((run) => (run.id === activeRun.id ? updater(run) : run)));
   };
 
   const stageWorkflowStep = (stepId: string) => {
@@ -114,21 +160,55 @@ export function WorkflowWidget({
     if (!event) return;
 
     missionControl.ingestEvents([event]);
-    setActiveRun((current) =>
-      current
-        ? {
-            ...current,
-            status: 'waiting-approval',
-            updatedAt: new Date().toISOString(),
-            steps: current.steps.map((step) =>
-              step.id === stepId && event.type === 'command'
-                ? { ...step, status: 'waiting-approval', commandId: event.command.id }
-                : step,
-            ),
-          }
-        : current,
-    );
+    if (event.type === 'command') {
+      updateActiveRun((run) => markWorkflowRunApprovalStaged(run, stepId, event.command.id));
+    }
     setStatus('Workflow step sent to Command Inbox for approval.');
+  };
+
+  const completeWorkflowStep = (stepId: string) => {
+    updateActiveRun((run) => markWorkflowRunStepCompleted(run, stepId, role));
+    setStatus('Workflow step marked done.');
+  };
+
+  const blockWorkflowStep = (stepId: string) => {
+    updateActiveRun((run) => blockWorkflowRunStep(run, stepId, role));
+    setStatus('Workflow step blocked.');
+  };
+
+  const addStepNote = (stepId: string) => {
+    const note = noteDrafts[stepId] ?? '';
+    updateActiveRun((run) => addWorkflowRunStepNote(run, stepId, note, role));
+    setNoteDrafts((current) => ({ ...current, [stepId]: '' }));
+    setStatus('Workflow note added.');
+  };
+
+  const askAgentForStep = async (step: WorkflowRunStep) => {
+    if (!activeRun) return;
+    const requestedAt = new Date().toISOString();
+    const request: AgentTaskRequest = {
+      id: createId('agent-task'),
+      objective: `Continue workflow "${activeRun.workflowName}" step: ${step.title}. Expected output: ${step.expectedOutput ?? 'return a useful proposal or finding'}.`,
+      scope: getWorkflowTaskScope(activeRun, selectedAgent.specialty),
+      risk: step.risk ?? 'safe',
+      role,
+      targetAgentId: step.agentId ?? selectedAgent.id,
+      goalId: activeRun.goalId,
+      evidenceIds: activeRun.evidenceIds,
+      workflowRunId: activeRun.id,
+      workflowStepId: step.id,
+      source: 'workflow',
+      requestedAt,
+    };
+
+    try {
+      const result = await taskGateway.submitTask(request);
+      missionControl.ingestEvents(result.missionControlEvents);
+      updateActiveRun((run) => markWorkflowRunAgentRequested(run, step.id, 'workflow'));
+      setStatus(`Asked ${selectedAgent.name} to work on "${step.title}".`);
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : 'Agent request failed.');
+    }
   };
 
   const saveWorkflow = () => {
@@ -252,27 +332,92 @@ export function WorkflowWidget({
             </button>
           ))}
         </div>
+        <label className="workflow-field">
+          <span>Related goal</span>
+          <select value={goalId} onChange={(event) => setGoalId(event.currentTarget.value)} aria-label="Workflow related goal">
+            <option value="">No goal link</option>
+            {operationalOs.state.goals.map((goal) => (
+              <option key={goal.id} value={goal.id}>
+                {goal.title}
+              </option>
+            ))}
+          </select>
+        </label>
+        {selectedGoal ? (
+          <StatusSummary
+            label="Goal context"
+            title={selectedGoal.title}
+            detail={selectedGoal.objective}
+            meta={`${selectedGoal.status} / ${selectedGoal.evidenceIds.length} evidence`}
+          />
+        ) : null}
+        {workflowRuns.length ? (
+          <label className="workflow-field">
+            <span>Active run</span>
+            <select value={activeRunId} onChange={(event) => setActiveRunId(event.currentTarget.value)} aria-label="Active workflow run">
+              {workflowRuns.map((run) => (
+                <option key={run.id} value={run.id}>
+                  {run.workflowName} / {run.status}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
         <WorkspaceButton className="workflow-action" onClick={startRun}>
           Start runbook
         </WorkspaceButton>
         {activeRun ? (
           <div className="workflow-run-step-list" role="list" aria-label="Active workflow run steps">
-            {activeRun.steps.map((step, index) => (
-              <WorkflowStepCard
-                key={step.id}
-                index={index + 1}
-                title={step.title}
-                assignee={step.assignee === 'user' ? 'User' : step.assignee === 'agent-team' ? 'Agent team' : selectedAgent.name}
-                status={step.status}
-                approval={
-                  step.approvalRequirement === 'command'
-                    ? `Command Inbox approval / ${step.requiredCapability ?? 'capability'}`
-                    : `${step.requiredCapability ?? 'operator'} / ${step.evidenceRequirement ?? 'evidence optional'}`
-                }
-                actionLabel={step.approvalRequirement === 'command' && !step.commandId ? 'Stage approval' : undefined}
-                onAction={step.approvalRequirement === 'command' && !step.commandId ? () => stageWorkflowStep(step.id) : undefined}
-              />
-            ))}
+            {activeRun.steps.map((step, index) => {
+              const stepActions = [
+                ...(step.assignee === 'user' && step.status !== 'completed' && step.status !== 'blocked'
+                  ? [{ id: 'done', label: 'Mark done', onClick: () => completeWorkflowStep(step.id), variant: 'primary' as const }]
+                  : []),
+                ...(step.assignee !== 'user' && step.approvalRequirement !== 'command' && step.status !== 'completed' && step.status !== 'blocked'
+                  ? [{ id: 'ask-agent', label: 'Ask agent', onClick: () => void askAgentForStep(step), variant: 'secondary' as const }]
+                  : []),
+                ...(step.approvalRequirement === 'command' && !step.commandId
+                  ? [{ id: 'stage', label: 'Stage approval', onClick: () => stageWorkflowStep(step.id), variant: 'secondary' as const }]
+                  : []),
+                ...(step.status !== 'completed' && step.status !== 'blocked'
+                  ? [{ id: 'block', label: 'Block', onClick: () => blockWorkflowStep(step.id), variant: 'destructive' as const }]
+                  : []),
+              ];
+
+              return (
+                <div className="workflow-run-step-item" key={step.id} role="listitem">
+                  <WorkflowStepCard
+                    index={index + 1}
+                    title={step.title}
+                    assignee={step.assignee === 'user' ? 'User' : step.assignee === 'agent-team' ? 'Agent team' : selectedAgent.name}
+                    status={step.status}
+                    approval={
+                      step.approvalRequirement === 'command'
+                        ? `Command Inbox approval / ${step.requiredCapability ?? 'capability'}`
+                        : `${step.requiredCapability ?? 'operator'} / ${step.evidenceRequirement ?? 'evidence optional'}`
+                    }
+                    actions={stepActions}
+                  />
+                  <div className="workflow-step-note-row">
+                    <input
+                      type="text"
+                      value={noteDrafts[step.id] ?? ''}
+                      onChange={(event) => setNoteDrafts((current) => ({ ...current, [step.id]: event.currentTarget.value }))}
+                      placeholder={step.note ? `Note: ${step.note}` : 'Add note for this step'}
+                      aria-label={`Note for ${step.title}`}
+                    />
+                    <WorkspaceButton
+                      variant="compact"
+                      className="workflow-inline-add"
+                      onClick={() => addStepNote(step.id)}
+                      disabled={!(noteDrafts[step.id] ?? '').trim()}
+                    >
+                      Add note
+                    </WorkspaceButton>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ) : null}
       </WorkspaceSectionFrame>

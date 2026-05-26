@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame } from '../workspaceBlocks';
 import { getAllowedCommandActions, type CommandAction, type CommandRequest, type MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
@@ -8,6 +10,17 @@ const commandActionLabels: Record<CommandAction, string> = {
   reject: 'Reject',
   block: 'Block',
   override: 'Override',
+};
+
+type CommandInboxFilter = 'pending' | 'agent' | 'workflow' | 'home' | 'high-risk' | 'history';
+
+const commandFilterLabels: Record<CommandInboxFilter, string> = {
+  pending: 'Pending',
+  agent: 'Agent',
+  workflow: 'Workflow',
+  home: 'Home',
+  'high-risk': 'High risk',
+  history: 'History',
 };
 
 function getCommandOriginLabel(command: CommandRequest) {
@@ -59,9 +72,11 @@ function CommandActionButton({
 }
 
 export function CommandInboxWidget({ missionControl, operationalOs }: { missionControl: MissionControlRuntime; operationalOs: OperationalOsRuntime }) {
+  const [activeFilter, setActiveFilter] = useState<CommandInboxFilter>('pending');
   const { commands } = missionControl.state;
   const pendingCommands = commands.filter((command) => command.status === 'pending');
   const completedCommands = commands.filter((command) => command.status !== 'pending');
+  const executionCommands = commands.filter((command) => command.execution.status !== 'not-started' || command.status !== 'pending');
   const nextCommand = pendingCommands[0];
   const gatewayLabel = missionControl.commandGatewayMode === 'backend' ? 'backend gateway' : 'local gateway';
   const nextAllowedActions = nextCommand ? getAllowedCommandActions(nextCommand, missionControl.role) : [];
@@ -69,6 +84,23 @@ export function CommandInboxWidget({ missionControl, operationalOs }: { missionC
   const nextEvidence = nextCommand?.evidenceIds?.length
     ? operationalOs.state.evidence.filter((evidence) => nextCommand.evidenceIds?.includes(evidence.id))
     : [];
+  const filteredCommands = commands.filter((command) => {
+    if (activeFilter === 'pending') return command.status === 'pending';
+    if (activeFilter === 'agent') return command.source.includes('agent') || command.source === 'agent-console' || command.source === 'agent-control';
+    if (activeFilter === 'workflow') return command.source === 'workflow-runbook' || Boolean(command.workflow);
+    if (activeFilter === 'home') return command.source.startsWith('home') || command.scope === 'household';
+    if (activeFilter === 'high-risk') return command.risk === 'critical' || command.risk === 'elevated';
+    return command.status !== 'pending';
+  });
+  const filteredPendingCommands = filteredCommands.filter((command) => command.status === 'pending');
+  const filterCounts: Record<CommandInboxFilter, number> = {
+    pending: pendingCommands.length,
+    agent: commands.filter((command) => command.source.includes('agent')).length,
+    workflow: commands.filter((command) => command.source === 'workflow-runbook' || command.workflow).length,
+    home: commands.filter((command) => command.source.startsWith('home') || command.scope === 'household').length,
+    'high-risk': commands.filter((command) => command.risk === 'critical' || command.risk === 'elevated').length,
+    history: completedCommands.length,
+  };
 
   return (
     <WorkspaceContentShell className="mission-control-surface command-inbox-surface">
@@ -84,6 +116,28 @@ export function CommandInboxWidget({ missionControl, operationalOs }: { missionC
         detail="Agents can propose and explain actions. Operators approve, reject, block, or override by role."
         meta={missionControl.role}
       />
+
+      <WorkspaceSectionFrame
+        className="mission-control-list-frame command-inbox-filter-frame"
+        eyebrow="decision filters"
+        title="triage"
+        meta={`${filteredCommands.length} shown`}
+      >
+        <div className="agent-console-selector-row" role="tablist" aria-label="Command Inbox filters">
+          {(Object.keys(commandFilterLabels) as CommandInboxFilter[]).map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              className="agent-console-chip"
+              aria-selected={activeFilter === filter}
+              aria-pressed={activeFilter === filter}
+              onClick={() => setActiveFilter(filter)}
+            >
+              {commandFilterLabels[filter]} {filterCounts[filter]}
+            </button>
+          ))}
+        </div>
+      </WorkspaceSectionFrame>
 
       {nextCommand ? (
         <AttentionCard
@@ -159,12 +213,12 @@ export function CommandInboxWidget({ missionControl, operationalOs }: { missionC
       <WorkspaceSectionFrame
         className="mission-control-list-frame"
         eyebrow="pending"
-        title="requests waiting for approval"
-        meta={`${pendingCommands.length} active`}
+        title={activeFilter === 'history' ? 'history filter selected' : 'requests waiting for approval'}
+        meta={`${filteredPendingCommands.length} active`}
       >
-        {pendingCommands.length ? (
+        {filteredPendingCommands.length ? (
           <div className="mission-control-card-list" role="list" aria-label="Pending command requests">
-            {pendingCommands.map((command) => {
+            {filteredPendingCommands.map((command) => {
               const allowedActions = getAllowedCommandActions(command, missionControl.role);
 
               return (
@@ -217,13 +271,31 @@ export function CommandInboxWidget({ missionControl, operationalOs }: { missionC
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame"
-        eyebrow="history"
+        eyebrow="execution / results"
+        title="mock execution history"
+        meta={`${executionCommands.length} tracked`}
+      >
+        <AuditList
+          empty="No command has entered execution yet."
+          items={executionCommands.slice(0, 8).map((command) => ({
+            id: `${command.id}-execution`,
+            title: command.title,
+            detail: `${command.execution.status}: ${command.execution.result}`,
+            meta: `${getCommandOriginLabel(command)} / ${command.status}`,
+            state: command.execution.status,
+          }))}
+        />
+      </WorkspaceSectionFrame>
+
+      <WorkspaceSectionFrame
+        className="mission-control-list-frame"
+        eyebrow="audit"
         title="recent decisions"
         meta={`${completedCommands.length} resolved`}
       >
         <AuditList
           empty="No command decisions yet."
-          items={completedCommands.slice(0, 6).map((command) => ({
+          items={(activeFilter === 'history' ? filteredCommands : completedCommands).slice(0, 6).map((command) => ({
             id: command.id,
             title: command.title,
             detail: command.execution.result,

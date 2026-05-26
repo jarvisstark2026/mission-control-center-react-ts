@@ -41,14 +41,6 @@ function createAudit(type: string, actor: string, detail: string, timestamp = no
 
 export const defaultAppPortalProfiles: AppPortalProfile[] = [
   {
-    id: 'codex-desktop',
-    name: 'Codex desktop',
-    type: 'protocol',
-    launchTarget: 'codex://',
-    embedMode: 'external-window',
-    allowedRoles: ['admin', 'support', 'home'],
-  },
-  {
     id: 'hermes-bridge',
     name: 'Hermes bridge status',
     type: 'web',

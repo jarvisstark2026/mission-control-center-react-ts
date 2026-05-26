@@ -15,6 +15,18 @@ export const mockAgentControlState: AgentControlState = {
   },
   activeAgentId: 'jarvis-primary',
   activeConnectorId: 'mock-agent-runtime',
+  eventStreamStatus: 'idle',
+  lastBridgeEventAt: null,
+  diagnostics: [
+    {
+      id: 'diagnostic-mock-fallback',
+      connectorId: 'mock-agent-runtime',
+      level: 'info',
+      message: 'Mock fallback is active until a Hermes or OpenClaw bridge responds.',
+      source: 'runtime',
+      timestamp: '2026-05-22T17:58:00.000Z',
+    },
+  ],
   connectors: [
     {
       id: 'hermes-local-bridge',
@@ -44,7 +56,7 @@ export const mockAgentControlState: AgentControlState = {
       status: 'not-configured',
       lastSeenAt: null,
       capabilities: ['hosted-agent', 'sync'],
-      error: 'Set VITE_AGENT_REMOTE_API_URL to enable a hosted bridge.',
+      error: 'Advanced custom bridge is not configured.',
     },
     {
       id: 'mock-agent-runtime',

@@ -1,9 +1,13 @@
 export {
   canEditAgentSettings,
   canViewAgentControl,
+  createAgentPermissionChangeProposal,
+  createAgentProfileChangeProposal,
   createInitialAgentControlState,
   getActiveAgentConnector,
   getAgentConnectors,
+  getAgentBridgeReachableUrl,
+  getAgentBridgeTutorialSteps,
   getAgentConnectorSummary,
   getAgentJobSummary,
   getAgentUsageApprovalRate,
@@ -17,6 +21,8 @@ export {
 export {
   applyAgentBridgeEvent,
   applyAgentBridgeStatus,
+  appendAgentBridgeDiagnostic,
+  createAgentBridgeDiagnostic,
   createAgentBridgeTransport,
   isAgentBridgeStatusResponse,
   markAgentBridgeConnectorFailure,
@@ -24,16 +30,36 @@ export {
   selectAgentBridgeConnector,
 } from './agentBridgeRuntime';
 export { useAgentBridgeRuntime, type AgentBridgeRuntime } from './useAgentBridgeRuntime';
-export { readAgentBridgeSettings, writeAgentBridgeSettings, type AgentBridgeSettings } from './agentBridgeSettings';
+export {
+  getHermesApiBaseUrlForMode,
+  readAgentBridgeSettings,
+  writeAgentBridgeSettings,
+  type AgentBridgeMode,
+  type AgentBridgeSettings,
+} from './agentBridgeSettings';
+export {
+  getLocalAgentBridgeStatus,
+  restartLocalAgentBridge,
+  startLocalAgentBridge,
+  stopLocalAgentBridge,
+  type LocalAgentBridgeProcessState,
+} from './localAgentBridgeProcess';
 export type {
   AgentBridgeEvent,
   AgentBridgeRuntimeState,
   AgentBridgeStatusResponse,
   AgentBridgeTransport,
+  AgentBridgeProbeResult,
 } from './agentBridgeRuntime';
 export type {
   AgentActivity,
   AgentActivityKind,
+  AgentBridgeDiagnostic,
+  AgentBridgeDiagnosticLevel,
+  AgentBridgeDiagnosticSource,
+  AgentBridgeEventStreamStatus,
+  AgentBridgeTutorialStep,
+  AgentBridgeTutorialStepStatus,
   AgentConnectorKind,
   AgentConnectorRecord,
   AgentConnectorStatus,

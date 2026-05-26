@@ -58,6 +58,22 @@ describe('agentBridgeRuntime', () => {
     expect(selectAgentBridgeConnector(applied.state).id).toBe('agent-remote-bridge');
   });
 
+  it('keeps a local available bridge ahead of a connected remote bridge', () => {
+    const initial = createInitialAgentControlState({ remoteApiUrl: 'https://agents.example.test' });
+    const remoteConnected = applyAgentBridgeStatus(initial, 'agent-remote-bridge', {
+      status: 'connected',
+      provider: 'custom',
+      activeEngine: 'Hosted agent bridge',
+    });
+    const localAvailable = applyAgentBridgeStatus(remoteConnected.state, 'hermes-local-bridge', {
+      status: 'available',
+      provider: 'hermes',
+      activeEngine: 'Hermes local bridge',
+    });
+
+    expect(selectAgentBridgeConnector(localAvailable.state).id).toBe('hermes-local-bridge');
+  });
+
   it('falls back to mock when no bridge is connected or available', () => {
     const initial = createInitialAgentControlState();
     const localFailed = markAgentBridgeConnectorFailure(initial, 'hermes-local-bridge', 'connection refused');
@@ -70,12 +86,46 @@ describe('agentBridgeRuntime', () => {
     const event = createNotificationEvent();
 
     expect(isAgentBridgeStatusResponse({ status: 'connected', provider: 'hermes' })).toBe(true);
+    expect(isAgentBridgeStatusResponse({ status: 'ok', provider: 'hermes' })).toBe(true);
     expect(isAgentBridgeStatusResponse({ status: 'online', provider: 'hermes' })).toBe(false);
+    expect(isAgentBridgeStatusResponse({ status: 'connected', agents: [{ id: 'missing-required-fields' }] })).toBe(false);
+    expect(isAgentBridgeStatusResponse({ status: 'connected', usage: { requestCount: 1 } })).toBe(false);
     expect(normalizeAgentBridgeEvent({ missionControlEvents: [event] })).toEqual({
       type: 'mission-events',
       events: [event],
     });
     expect(normalizeAgentBridgeEvent({ missionControlEvents: [{ type: 'command', command: { id: '' } }] })).toBeNull();
+  });
+
+  it('normalizes Hermes bridge aliases from LAN harness payloads', () => {
+    const initial = createInitialAgentControlState();
+    const applied = applyAgentBridgeStatus(initial, 'hermes-local-bridge', {
+      status: 'ok',
+      provider: 'hermes',
+      activeEngine: 'Hermes bridge harness',
+      activeAgentId: 'hermes-bridge',
+      agents: [
+        {
+          id: 'hermes-bridge',
+          name: 'Hermes Bridge',
+          specialty: 'coordinator',
+          provider: 'hermes',
+          model: 'bridge-harness',
+          profile: 'home-operator',
+          status: 'available',
+          connection: 'online',
+          summary: 'Local bridge harness for Mission Control connectivity checks.',
+          visibleTo: ['admin', 'member', 'guest'] as never,
+        },
+      ],
+      jobs: [],
+      permissions: [],
+      activity: [],
+    });
+
+    const connector = applied.state.connectors.find((item) => item.id === 'hermes-local-bridge');
+    expect(connector?.status).toBe('connected');
+    expect(applied.state.agents.find((agent) => agent.id === 'hermes-bridge')?.visibleTo).toEqual(['admin', 'home']);
   });
 
   it('routes SSE mission events through the shared event path', () => {
@@ -86,8 +136,25 @@ describe('agentBridgeRuntime', () => {
       events: [event],
     });
 
-    expect(applied.state).toBe(initial);
+    expect(applied.state).not.toBe(initial);
+    expect(applied.state.lastBridgeEventAt).toBeTruthy();
     expect(applied.missionControlEvents).toEqual([event]);
+  });
+
+  it('records diagnostics for bridge failures without selecting a failed connector', () => {
+    const initial = createInitialAgentControlState();
+    const failed = markAgentBridgeConnectorFailure(initial, 'hermes-local-bridge', 'invalid SSE payload', 'error', 'events', {
+      type: 'invalid',
+    });
+
+    expect(failed.diagnostics[0]).toMatchObject({
+      connectorId: 'hermes-local-bridge',
+      level: 'error',
+      source: 'events',
+      message: 'invalid SSE payload',
+    });
+    expect(failed.diagnostics[0]?.payloadSummary).toContain('invalid');
+    expect(selectAgentBridgeConnector(failed).id).toBe('mock-agent-runtime');
   });
 
   it('fetches /status through the bridge transport', async () => {

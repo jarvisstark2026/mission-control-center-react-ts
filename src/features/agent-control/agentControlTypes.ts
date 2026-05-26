@@ -12,6 +12,10 @@ export type AgentSpecialty = 'coordinator' | 'support' | 'security' | 'home' | '
 export type AgentConnectorKind = 'local' | 'remote' | 'mock';
 export type AgentConnectorStatus = 'connected' | 'available' | 'offline' | 'error' | 'not-configured';
 export type AgentRuntimeProvider = 'hermes' | 'openclaw' | 'openai' | 'custom';
+export type AgentBridgeDiagnosticLevel = 'info' | 'warning' | 'error';
+export type AgentBridgeDiagnosticSource = 'status' | 'events' | 'tasks' | 'runtime' | 'settings';
+export type AgentBridgeEventStreamStatus = 'idle' | 'connecting' | 'connected' | 'error';
+export type AgentBridgeTutorialStepStatus = 'waiting' | 'pass' | 'failed';
 
 export type AgentVisibleRole = Exclude<ShellRole, 'guest'>;
 
@@ -100,12 +104,33 @@ export type AgentActivity = {
   visibleTo: AgentVisibleRole[];
 };
 
+export type AgentBridgeDiagnostic = {
+  id: string;
+  connectorId: string;
+  level: AgentBridgeDiagnosticLevel;
+  message: string;
+  source: AgentBridgeDiagnosticSource;
+  timestamp: string;
+  payloadSummary?: string;
+};
+
+export type AgentBridgeTutorialStep = {
+  id: string;
+  title: string;
+  body: string;
+  status: AgentBridgeTutorialStepStatus;
+  command?: string;
+};
+
 export type AgentControlState = {
   identity: AgentIdentity;
   agents: AgentDescriptor[];
   activeAgentId: string;
   connectors: AgentConnectorRecord[];
   activeConnectorId: string;
+  eventStreamStatus: AgentBridgeEventStreamStatus;
+  lastBridgeEventAt: string | null;
+  diagnostics: AgentBridgeDiagnostic[];
   usage: AgentUsageSummary;
   jobs: AgentScheduledJob[];
   permissions: AgentPermission[];

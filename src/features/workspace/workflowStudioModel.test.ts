@@ -9,7 +9,16 @@ import {
   workflowSkills,
 } from './workflowStudioModel';
 import { createInitialAgentControlState, getAgentDescriptorById } from '../agent-control';
-import { createWorkflowStepCommandEvent, startWorkflowRun, syncWorkflowRunWithCommands } from './workflowRunModel';
+import {
+  addWorkflowRunStepNote,
+  blockWorkflowRunStep,
+  createWorkflowStepCommandEvent,
+  loadWorkflowRuns,
+  markWorkflowRunStepCompleted,
+  saveWorkflowRuns,
+  startWorkflowRun,
+  syncWorkflowRunWithCommands,
+} from './workflowRunModel';
 
 describe('workflow studio model', () => {
   it('creates saved workflows with generated ids when drafts are new', () => {
@@ -94,6 +103,49 @@ describe('workflow studio model', () => {
     ]);
 
     expect(synced.steps.find((step) => step.id === approvalStep.id)?.status).toBe('completed');
+  });
+
+  it('persists workflow runs and lets user steps advance locally', () => {
+    window.localStorage.clear();
+    const agentControl = createInitialAgentControlState();
+    const agent = getAgentDescriptorById(agentControl, 'jarvis-workflow');
+    const run = startWorkflowRun(createWorkflowDraft('agent-brief'), agent, '2026-05-22T20:00:00.000Z', {
+      goalId: 'goal-1',
+      evidenceIds: ['evidence-1'],
+    });
+    const firstStep = run.steps[0];
+    if (!firstStep) throw new Error('Expected first workflow step');
+
+    const completed = markWorkflowRunStepCompleted(run, firstStep.id, 'admin');
+    const noted = addWorkflowRunStepNote(completed, firstStep.id, 'Operator reviewed the goal.', 'admin');
+    const saved = saveWorkflowRuns([noted]);
+
+    expect(saved).toBe(true);
+    const loadedRun = loadWorkflowRuns()[0];
+
+    expect(loadedRun).toMatchObject({
+      id: run.id,
+      goalId: 'goal-1',
+      evidenceIds: ['evidence-1'],
+    });
+    expect(loadedRun?.steps[0]).toMatchObject({
+      status: 'completed',
+      note: 'Operator reviewed the goal.',
+    });
+  });
+
+  it('blocks workflow steps with audit instead of silently advancing', () => {
+    const agentControl = createInitialAgentControlState();
+    const agent = getAgentDescriptorById(agentControl, 'jarvis-workflow');
+    const run = startWorkflowRun(createWorkflowDraft('agent-brief'), agent);
+    const firstStep = run.steps[0];
+    if (!firstStep) throw new Error('Expected first workflow step');
+
+    const blocked = blockWorkflowRunStep(run, firstStep.id, 'admin');
+
+    expect(blocked.status).toBe('blocked');
+    expect(blocked.steps[0]?.status).toBe('blocked');
+    expect(blocked.auditTrail.at(-1)?.type).toBe('step-blocked');
   });
 
   it('uses home runbook command profiles for household workflow proposals', () => {

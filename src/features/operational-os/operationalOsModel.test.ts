@@ -54,7 +54,8 @@ describe('operational OS model', () => {
 
     expect(state.goals[0]?.title).toContain('Mission Control');
     expect(state.evidence[0]?.linkedGoalIds).toContain(state.goals[0]?.id);
-    expect(state.appProfiles.some((profile) => profile.id === 'codex-desktop')).toBe(true);
+    expect(state.appProfiles.some((profile) => profile.id === 'hermes-bridge')).toBe(true);
+    expect(state.appProfiles.some((profile) => profile.id === 'local-tools')).toBe(true);
     expect(state.jsonDocuments[0]?.schemaHint).toBe('metrics');
   });
 

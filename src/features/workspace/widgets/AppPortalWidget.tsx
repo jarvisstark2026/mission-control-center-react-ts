@@ -103,7 +103,7 @@ export function AppPortalWidget({ role, operationalOs }: { role: ShellRole; oper
         <WorkspaceSectionFrame className="mission-control-list-frame app-portal-create" eyebrow="add profile" title="local tool shortcut" meta="local only">
           <label className="goals-field">
             <span>name</span>
-            <input value={name} onChange={(event) => setName(event.currentTarget.value)} placeholder="Codex, Hermes dashboard, Obsidian..." />
+            <input value={name} onChange={(event) => setName(event.currentTarget.value)} placeholder="Hermes dashboard, Obsidian, local tool..." />
           </label>
           <label className="goals-field">
             <span>target</span>

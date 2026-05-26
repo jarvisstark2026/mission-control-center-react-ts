@@ -76,7 +76,7 @@ describe('missionControlReducer', () => {
     const state = createInitialMissionControlState();
     const command = state.commands.find((item) => item.id === 'command-evening-routine');
 
-    expect(command?.agent.agentName).toBe('Jarvis Prime');
+    expect(command?.agent.agentName).toBe('Mission Control Coordinator');
     expect(command?.reasoning).toContain('Evening occupancy');
     expect(command?.execution.status).toBe('not-started');
     expect(command?.auditTrail[0]?.type).toBe('proposed');
@@ -110,7 +110,7 @@ describe('missionControlReducer', () => {
       title: 'Use solar surplus',
       status: 'pending',
       agent: {
-        agentName: 'Jarvis Home',
+        agentName: 'Home Agent',
       },
       auditTrail: [
         {

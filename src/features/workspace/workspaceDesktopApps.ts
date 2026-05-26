@@ -4,7 +4,7 @@ export type DesktopAppRecord = {
 };
 
 export const defaultDesktopApps: DesktopAppRecord[] = [
-  { name: 'Mission Control Center', note: 'primary desktop hub' },
+  { name: 'Mission Control', note: 'primary desktop hub' },
   { name: 'DailyForge', note: 'separate planning surface' },
   { name: 'Browser', note: 'external web window' },
   { name: 'Files', note: 'native file manager' },

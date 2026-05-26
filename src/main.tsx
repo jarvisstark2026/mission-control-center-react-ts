@@ -7,7 +7,7 @@ import './styles/global.css';
 const rootElement = document.getElementById('root');
 
 if (!rootElement) {
-  throw new Error('Mission Control Center root element was not found.');
+  throw new Error('Mission Control root element was not found.');
 }
 
 await initializeDesktopPersistence();

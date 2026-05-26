@@ -137,10 +137,10 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
 
   useEffect(() => {
     document.title = isDetachedWindow
-      ? `Mission Control Center — ${activePanelLabel} · ${activeRoleLabel}`
+      ? `Mission Control - ${activePanelLabel} - ${activeRoleLabel}`
       : activePanelKind
-        ? `Mission Control Center — ${activeRoleLabel} · ${activePanelLabel}`
-        : `Mission Control Center — ${activeRoleLabel}`;
+        ? `Mission Control - ${activeRoleLabel} - ${activePanelLabel}`
+        : `Mission Control - ${activeRoleLabel}`;
   }, [activePanelLabel, activePanelKind, activeRoleLabel, isDetachedWindow]);
 
   useEffect(() => {
@@ -227,7 +227,7 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
   }
 
   return (
-    <section className={classNames('shell-frame', isWorkspaceExtension && 'shell-frame-extension')} aria-label="Mission Control Center shell">
+    <section className={classNames('shell-frame', isWorkspaceExtension && 'shell-frame-extension')} aria-label="Mission Control shell">
       {!isWorkspaceExtension ? (
         <>
           <ActionButton

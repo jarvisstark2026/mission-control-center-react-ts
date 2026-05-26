@@ -2046,7 +2046,7 @@ export function Workspace({
         <WorkspaceAtmosphere />
 
         <div className="workspace-head workspace-head-panel">
-          <div className="workspace-brand">Mission Control Center</div>
+          <div className="workspace-brand">Mission Control</div>
           <StatusChip tone="ice">connected screen · drag the OS window to another display</StatusChip>
           <div className="workspace-launcher">
             <button type="button" className="workspace-launch-button" onClick={returnToHub}>

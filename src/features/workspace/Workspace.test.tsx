@@ -430,8 +430,8 @@ describe('Workspace header controls', () => {
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Agent control' }));
     expect(currentRender.getAllByText('identity / jobs / permissions').length).toBeGreaterThan(0);
     fireEvent.click(currentRender.getByRole('button', { name: 'Agents' }));
-    expect(currentRender.getAllByText('Jarvis Prime').length).toBeGreaterThan(0);
-    expect(currentRender.getAllByText('Jarvis Workflow').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText('Mission Control Coordinator').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText('Workflow Agent').length).toBeGreaterThan(0);
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Home systems' }));
@@ -461,7 +461,7 @@ describe('Workspace header controls', () => {
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Command inbox' }));
 
     expect(currentRender.getAllByText(/Workflow \//).length).toBeGreaterThan(0);
-    expect(currentRender.getAllByText('Jarvis Workflow').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText('Workflow Agent').length).toBeGreaterThan(0);
   }, 60000);
 
   it('opens Agent Control from the launcher while guest launch surfaces keep agent tools hidden', async () => {
@@ -480,16 +480,19 @@ describe('Workspace header controls', () => {
     expect(adminRender.getByRole('radio', { name: /Tailscale/i })).toBeInTheDocument();
     expect(adminRender.getByLabelText('Hermes API port')).toHaveValue('8642');
     expect(adminRender.getByLabelText('Hermes API key')).toHaveAttribute('type', 'password');
-    expect(adminRender.getByRole('button', { name: 'Restart bridge and probe' })).toBeInTheDocument();
-    fireEvent.click(adminRender.getByRole('button', { name: 'Bridge help' }));
-    expect(adminRender.getByText('connect an AI agent')).toBeInTheDocument();
-    expect(adminRender.getAllByText('Agent Control -> Bridge setup -> Start bridge').length).toBeGreaterThan(0);
-    expect(adminRender.getByText('live bridge state')).toBeInTheDocument();
+    expect(adminRender.queryByText(['connection', 'cockpit'].join(' '))).not.toBeInTheDocument();
+    expect(adminRender.queryByText(['live', 'bridge state'].join(' '))).not.toBeInTheDocument();
+    expect(adminRender.getByLabelText('Agent bridge health')).toBeInTheDocument();
     expect(adminRender.getAllByText('Mission Control bridge').length).toBeGreaterThan(0);
     expect(adminRender.getAllByText('Hermes API').length).toBeGreaterThan(0);
     expect(adminRender.getAllByText('Task gateway').length).toBeGreaterThan(0);
     expect(adminRender.getAllByText('Local proposal fallback').length).toBeGreaterThan(0);
     expect(adminRender.getByRole('button', { name: 'Probe now' })).toBeInTheDocument();
+    expect(adminRender.getByRole('button', { name: 'Restart bridge and probe' })).toBeInTheDocument();
+    fireEvent.click(adminRender.getByRole('button', { name: 'Bridge help' }));
+    expect(adminRender.getByText('connect an AI agent')).toBeInTheDocument();
+    expect(adminRender.getAllByText('Agent Control -> Bridge setup -> Start bridge').length).toBeGreaterThan(0);
+    fireEvent.click(adminRender.getByRole('button', { name: 'Connection' }));
 
     await act(async () => {
       fireEvent.click(adminRender.getByRole('button', { name: 'Send test proposal' }));

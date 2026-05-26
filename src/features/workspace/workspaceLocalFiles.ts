@@ -1,4 +1,4 @@
-export type LocalPreviewKind = 'image' | 'audio' | 'video' | 'pdf' | 'text' | 'unsupported';
+export type LocalPreviewKind = 'image' | 'audio' | 'video' | 'pdf' | 'text' | 'model' | 'unsupported';
 
 export type LocalImageDimensions = {
   width: number;
@@ -156,6 +156,9 @@ function classifyLocalFile(file: File): LocalPreviewKind {
   if (type.startsWith('video/') || ['mp4', 'webm', 'mov', 'm4v', 'mkv', 'ogv'].includes(extension)) {
     return 'video';
   }
+  if (['glb', 'gltf'].includes(extension)) {
+    return 'model';
+  }
   if (type === 'application/pdf' || extension === 'pdf') {
     return 'pdf';
   }
@@ -229,7 +232,7 @@ export async function readLocalFileTextPreview(
   return compactWhitespace ? trimmedContent.replace(/\s+/g, ' ').trim() : trimmedContent;
 }
 
-const objectUrlPreviewKinds = new Set<LocalPreviewKind>(['image', 'audio', 'video', 'pdf', 'unsupported']);
+const objectUrlPreviewKinds = new Set<LocalPreviewKind>(['image', 'audio', 'video', 'pdf', 'model', 'unsupported']);
 
 export function createLocalFileObjectUrl(file: Pick<LocalFileRecord, 'file' | 'previewKind'>): string | null {
   if (!objectUrlPreviewKinds.has(file.previewKind) || typeof URL === 'undefined') return null;

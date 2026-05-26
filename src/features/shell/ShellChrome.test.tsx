@@ -27,7 +27,7 @@ describe('Shell top-bar menus', () => {
 
     render(<ShellThemeMenu activeTheme="jarvis" onSelectTheme={onSelectTheme} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Theme Jarvis Prime' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Theme Forge Prime' }));
     expect(screen.getByRole('menu', { name: 'Theme menu' })).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: 'Escape' });

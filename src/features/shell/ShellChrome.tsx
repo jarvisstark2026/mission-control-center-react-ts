@@ -35,7 +35,7 @@ function ShellBranding({
 }: ShellBrandingProps) {
   return (
     <div className={classNames('shell-branding', detached && 'shell-branding-window')}>
-      <p className="shell-eyebrow">Mission Control Center</p>
+      <p className="shell-eyebrow">Mission Control</p>
       <h1>{detached && activePanelKind ? getPanelLabel(activePanelKind) : 'Spatial command surface'}</h1>
       <div className="shell-meta" aria-label={detached ? 'Window context' : 'Current context'} role="status" aria-live="polite" aria-atomic="true">
         <StatusChip tone="cool">{activeRoleLabel}</StatusChip>
@@ -61,7 +61,7 @@ export function DetachedShellWindow({
   onOpenHub: () => void;
 }) {
   return (
-    <section className="shell-frame shell-frame-window" aria-label="Mission Control Center window">
+    <section className="shell-frame shell-frame-window" aria-label="Mission Control window">
       <div className="shell-window">
         <div className="shell-window-head">
           <ShellBranding
@@ -191,7 +191,7 @@ export function ShellRail({
       <div className="shell-instance-group">
         <div className="shell-instance-head">
           <div>
-            <p className="shell-eyebrow">Mission Control Center</p>
+            <p className="shell-eyebrow">Mission Control</p>
             <h2>Workspaces</h2>
           </div>
           <WorkspaceNewScreenButton

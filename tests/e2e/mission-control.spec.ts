@@ -57,8 +57,8 @@ test('operational core widgets launch and use local live data', async ({ page })
   await expect(page.getByText('identity / jobs / permissions').first()).toBeVisible();
   await expect(page.getByText('Hermes / OpenClaw connectors').first()).toBeVisible();
   await page.getByRole('button', { name: 'Agents' }).click();
-  await expect(page.getByText('Jarvis Prime').last()).toBeVisible();
-  await expect(page.getByText('Jarvis Workflow').last()).toBeVisible();
+  await expect(page.getByText('Mission Control Coordinator').last()).toBeVisible();
+  await expect(page.getByText('Workflow Agent').last()).toBeVisible();
 
   await openWidget(page, 'Home systems');
   await expect(page.getByText('energy, safety, automation, and rooms').first()).toBeVisible();
@@ -86,7 +86,7 @@ test('workflow runbook can stage agent approval through Command Inbox', async ({
 
   await openWidget(page, 'Command inbox');
   await expect(page.getByText(/Workflow \//).first()).toBeVisible();
-  await expect(page.getByText('Jarvis Workflow').first()).toBeVisible();
+  await expect(page.getByText('Workflow Agent').first()).toBeVisible();
   await page.getByRole('button', { name: 'Approve' }).first().click();
   await expect(page.getByText(/Local dry-run gateway completed/).first()).toBeVisible();
 });
@@ -143,6 +143,51 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await liveTvWidget.getByRole('button', { name: 'Save favorite' }).click({ force: true });
   await expect(liveTvWidget.getByText('E2E MP4').first()).toBeVisible();
 
+  const mapWidget = page.locator('.workspace-widget.kind-map');
+  await ensureWidgetOpen(mapWidget);
+  await mapWidget.getByPlaceholder('Workshop, site, address').fill('E2E site');
+  await mapWidget.getByPlaceholder('Why this place matters').fill('local map note');
+  await mapWidget.getByRole('button', { name: 'Save place' }).click({ force: true });
+  await expect(mapWidget.getByText('E2E site').first()).toBeVisible();
+
+  await openWidget(page, 'Diagram preview');
+  const diagramWidget = page.locator('.workspace-widget.kind-diagram');
+  await ensureWidgetOpen(diagramWidget);
+  await diagramWidget.getByPlaceholder('System, room, workflow').fill('E2E topology');
+  await clickControl(diagramWidget.getByRole('button', { name: 'Create diagram' }));
+  await expect(diagramWidget.getByText('E2E topology').first()).toBeVisible();
+  await expect(diagramWidget.getByPlaceholder('API, sensor, app, step')).toBeEnabled();
+  await diagramWidget.getByPlaceholder('API, sensor, app, step').fill('Bridge');
+  await clickControl(diagramWidget.getByRole('button', { name: 'Add node' }));
+  await expect(diagramWidget.getByText('E2E topology').first()).toBeVisible();
+
+  const audioWidget = page.locator('.workspace-widget.kind-audio');
+  await ensureWidgetOpen(audioWidget);
+  await audioWidget.getByPlaceholder('Mic mix, sample, feed').fill('E2E audio');
+  await audioWidget.getByPlaceholder('https://...mp3 or WAV').fill('https://example.com/sample.mp3');
+  await clickControl(audioWidget.getByRole('button', { name: 'Save source' }));
+  await expect(audioWidget.getByText('E2E audio').first()).toBeVisible();
+
+  await openWidget(page, 'Media frame');
+  const videoWidget = page.locator('.workspace-widget.kind-video');
+  await ensureWidgetOpen(videoWidget);
+  await videoWidget.getByPlaceholder('Camera, render, stream').fill('E2E video');
+  await videoWidget.getByPlaceholder('https://...mp4 or WebM').fill('https://example.com/video.mp4');
+  await clickControl(videoWidget.getByRole('button', { name: 'Save source' }));
+  await expect(videoWidget.getByText('E2E video').first()).toBeVisible();
+
+  const nativeAppWidget = page.locator('.workspace-widget.kind-native-app');
+  await ensureWidgetOpen(nativeAppWidget);
+  await nativeAppWidget.getByPlaceholder('Codex, Hermes, Notes').fill('E2E portal');
+  await nativeAppWidget.getByPlaceholder('https://..., codex://, or manual path').fill('codex://');
+  await clickControl(nativeAppWidget.getByRole('button', { name: 'Save profile' }));
+  await expect(nativeAppWidget.getByText('E2E portal').first()).toBeVisible();
+
+  await openWidget(page, '3D studio');
+  const modelWidget = page.locator('.workspace-widget.kind-3d-studio');
+  await ensureWidgetOpen(modelWidget);
+  await expect(modelWidget.getByText('No GLB or GLTF files loaded.')).toBeVisible();
+
   await page.reload();
   await ensureWidgetOpen(page.locator('.workspace-widget.kind-schedule'));
   await expect(page.locator('.workspace-widget.kind-schedule').getByText('E2E local block')).toBeVisible();
@@ -153,7 +198,17 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await expect(page.locator('.workspace-widget.kind-browser').getByText('openai.com').first()).toBeVisible();
   await ensureWidgetOpen(page.locator('.workspace-widget.kind-watch-video'));
   await expect(page.locator('.workspace-widget.kind-watch-video').getByText('E2E MP4').first()).toBeVisible();
-});
+  await ensureWidgetOpen(page.locator('.workspace-widget.kind-map'));
+  await expect(page.locator('.workspace-widget.kind-map').getByText('E2E site').first()).toBeVisible();
+  await ensureWidgetOpen(page.locator('.workspace-widget.kind-diagram'));
+  await expect(page.locator('.workspace-widget.kind-diagram').getByText('E2E topology').first()).toBeVisible();
+  await ensureWidgetOpen(page.locator('.workspace-widget.kind-audio'));
+  await expect(page.locator('.workspace-widget.kind-audio').getByText('E2E audio').first()).toBeVisible();
+  await ensureWidgetOpen(page.locator('.workspace-widget.kind-video'));
+  await expect(page.locator('.workspace-widget.kind-video').getByText('E2E video').first()).toBeVisible();
+  await ensureWidgetOpen(page.locator('.workspace-widget.kind-native-app'));
+  await expect(page.locator('.workspace-widget.kind-native-app').getByText('E2E portal').first()).toBeVisible();
+}, 90000);
 
 test('layout admin saves modes per workspace and filters guest widgets', async ({ page }) => {
   await page.goto('/?role=admin');

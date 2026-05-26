@@ -86,7 +86,7 @@ describe('agentTaskingModel', () => {
       scope: 'support',
       risk: 'safe',
       agentId: 'jarvis-support',
-      agentName: 'Jarvis Support',
+      agentName: 'Support Agent',
     });
     expect(commandEvent).toMatchObject({
       type: 'command',

@@ -23,7 +23,7 @@ describe('homeSystemsActions', () => {
         risk: 'safe',
         status: 'pending',
         agent: {
-          agentName: 'Jarvis Home',
+          agentName: 'Home Agent',
         },
       },
     });

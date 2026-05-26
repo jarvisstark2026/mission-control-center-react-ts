@@ -17,7 +17,7 @@ export const localSheetStorageKey = 'mission-control-center.local-sheet.v1';
 
 export function createDefaultDocumentState(now = new Date().toISOString()): LocalDocumentState {
   return {
-    title: 'Mission Control Center Brief',
+    title: 'Mission Control Brief',
     body: 'Use this local note as decision evidence. Nothing leaves the browser.',
     updatedAt: now,
   };

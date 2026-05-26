@@ -3,7 +3,7 @@ import type { AgentControlState } from './agentControlTypes';
 export const mockAgentControlState: AgentControlState = {
   identity: {
     id: 'jarvis-primary',
-    name: 'Jarvis Prime',
+    name: 'Mission Control Coordinator',
     status: 'working',
     provider: 'OpenAI',
     model: 'GPT-5.2',
@@ -22,7 +22,7 @@ export const mockAgentControlState: AgentControlState = {
       id: 'diagnostic-mock-fallback',
       connectorId: 'mock-agent-runtime',
       level: 'info',
-      message: 'Mock fallback is active until a Hermes or OpenClaw bridge responds.',
+      message: 'Local proposal fallback is active until a Hermes or OpenClaw bridge responds.',
       source: 'runtime',
       timestamp: '2026-05-22T17:58:00.000Z',
     },
@@ -65,14 +65,14 @@ export const mockAgentControlState: AgentControlState = {
       url: null,
       status: 'connected',
       lastSeenAt: '2026-05-22T17:58:00.000Z',
-      capabilities: ['mock-proposals', 'local-audit', 'role-gates'],
+      capabilities: ['local-proposals', 'local-audit', 'role-gates'],
       error: null,
     },
   ],
   agents: [
     {
       id: 'jarvis-primary',
-      name: 'Jarvis Prime',
+      name: 'Mission Control Coordinator',
       specialty: 'coordinator',
       provider: 'OpenAI',
       model: 'GPT-5.2',
@@ -84,7 +84,7 @@ export const mockAgentControlState: AgentControlState = {
     },
     {
       id: 'jarvis-support',
-      name: 'Jarvis Support',
+      name: 'Support Agent',
       specialty: 'support',
       provider: 'OpenAI',
       model: 'GPT-5.2',
@@ -96,7 +96,7 @@ export const mockAgentControlState: AgentControlState = {
     },
     {
       id: 'jarvis-security',
-      name: 'Jarvis Security',
+      name: 'Security Agent',
       specialty: 'security',
       provider: 'OpenAI',
       model: 'GPT-5.2',
@@ -108,7 +108,7 @@ export const mockAgentControlState: AgentControlState = {
     },
     {
       id: 'jarvis-home',
-      name: 'Jarvis Home',
+      name: 'Home Agent',
       specialty: 'home',
       provider: 'OpenAI',
       model: 'GPT-5.2 mini',
@@ -120,7 +120,7 @@ export const mockAgentControlState: AgentControlState = {
     },
     {
       id: 'jarvis-workflow',
-      name: 'Jarvis Workflow',
+      name: 'Workflow Agent',
       specialty: 'workflow',
       provider: 'OpenAI',
       model: 'GPT-5.2',
@@ -149,7 +149,7 @@ export const mockAgentControlState: AgentControlState = {
       cadence: 'Daily at 02:15',
       lastRunAt: '2026-05-22T02:15:00.000Z',
       nextRunAt: '2026-05-23T02:15:00.000Z',
-      owner: 'Jarvis Prime',
+      owner: 'Mission Control Coordinator',
       safeForHome: true,
       description: 'Checks integrations, stale widgets, and command queue drift.',
       visibleTo: ['admin', 'support', 'home'],
@@ -276,7 +276,7 @@ export const mockAgentControlState: AgentControlState = {
       id: 'activity-reconnect',
       kind: 'connection',
       title: 'Agent heartbeat restored',
-      detail: 'Agent control mock channel reported an online heartbeat.',
+      detail: 'Local test channel reported an online heartbeat.',
       timestamp: '2026-05-22T16:30:00.000Z',
       source: 'Agent transport',
       status: 'active',

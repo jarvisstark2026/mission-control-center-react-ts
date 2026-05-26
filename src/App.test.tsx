@@ -19,12 +19,29 @@ describe('App', () => {
     vi.restoreAllMocks();
   });
 
-  it('renders the mission control workspace shell', () => {
+  it('renders the Mission Control workspace shell', () => {
     render(<App />);
 
-    expect(screen.getAllByText('Mission Control Center').length).toBeGreaterThan(0);
-    expect(screen.getByLabelText('Mission Control Center shell')).toBeInTheDocument();
+    expect(screen.getAllByText('Mission Control').length).toBeGreaterThan(0);
+    expect(screen.getByLabelText('Mission Control shell')).toBeInTheDocument();
     expect(screen.getAllByText('Command core').length).toBeGreaterThan(0);
+  }, 15000);
+
+  it('does not surface legacy widget artifact copy', () => {
+    render(<App />);
+
+    const bodyText = document.body.textContent ?? '';
+    const legacyPhrases = [
+      ['connection', 'cockpit'].join(' '),
+      ['Mission', 'Control Center'].join(' '),
+      ['Ask', 'Jar' + 'vis'].join(' '),
+      ['mock', 'channel'].join(' '),
+      ['mocked', 'systems'].join(' '),
+    ];
+
+    legacyPhrases.forEach((phrase) => {
+      expect(bodyText).not.toContain(phrase);
+    });
   }, 15000);
 
   it('keeps access scopes in a top workspace menu', () => {
@@ -58,7 +75,7 @@ describe('App', () => {
   it('switches the workspace theme from the top bar', () => {
     render(<App />);
 
-    fireEvent.click(screen.getByRole('button', { name: /theme jarvis prime/i }));
+    fireEvent.click(screen.getByRole('button', { name: /theme forge prime/i }));
     const menu = screen.getByRole('menu', { name: /theme menu/i });
     fireEvent.click(within(menu).getByRole('menuitemradio', { name: /mark iv ember/i }));
 

@@ -47,7 +47,7 @@ export const initialNotifications: MissionNotification[] = [
     id: 'notification-live-core',
     level: 'notice',
     title: 'Live core online',
-    body: 'Mock mission stream is feeding telemetry, commands, and integration heartbeats.',
+    body: 'Local mission stream is feeding telemetry, commands, and integration heartbeats.',
     source: 'mission-control',
     timestamp: initialTimestamp,
     acknowledged: false,
@@ -71,7 +71,7 @@ export const initialCommands: CommandRequest[] = [
     source: 'home-agent',
     agent: {
       agentId: 'jarvis-primary',
-      agentName: 'Jarvis Prime',
+      agentName: 'Mission Control Coordinator',
       profile: 'home-operator',
     },
     reasoning: 'Evening occupancy is stable and the schedule widget shows the home is inside the normal night-prep window.',
@@ -89,7 +89,7 @@ export const initialCommands: CommandRequest[] = [
       {
         id: 'audit-command-evening-routine-proposed',
         type: 'proposed',
-        actor: 'Jarvis Prime',
+        actor: 'Mission Control Coordinator',
         timestamp: initialTimestamp,
         detail: 'Proposed as a safe household command.',
       },
@@ -102,11 +102,11 @@ export const initialCommands: CommandRequest[] = [
     source: 'support-agent',
     agent: {
       agentId: 'jarvis-support',
-      agentName: 'Jarvis Support',
+      agentName: 'Support Agent',
       profile: 'support-diagnostics',
     },
     reasoning: 'Media hub telemetry is healthy, but stream recovery needs a network-level reset that should stay behind support gates.',
-    expectedResult: 'Media devices reconnect after a mocked network cycle; no command runs until backend execution is connected.',
+    expectedResult: 'Media devices reconnect after a local dry-run network cycle; no command runs until backend execution is connected.',
     scope: 'support',
     risk: 'elevated',
     status: 'pending',
@@ -120,7 +120,7 @@ export const initialCommands: CommandRequest[] = [
       {
         id: 'audit-command-router-restart-proposed',
         type: 'proposed',
-        actor: 'Jarvis Support',
+        actor: 'Support Agent',
         timestamp: initialTimestamp,
         detail: 'Proposed as an elevated support command.',
       },
@@ -133,7 +133,7 @@ export const initialCommands: CommandRequest[] = [
     source: 'security-agent',
     agent: {
       agentId: 'jarvis-security',
-      agentName: 'Jarvis Security',
+      agentName: 'Security Agent',
       profile: 'security-watch',
     },
     reasoning: 'Security profile requested a dry-run only. Critical scope still requires admin override visibility.',
@@ -151,7 +151,7 @@ export const initialCommands: CommandRequest[] = [
       {
         id: 'audit-command-lockdown-test-proposed',
         type: 'proposed',
-        actor: 'Jarvis Security',
+        actor: 'Security Agent',
         timestamp: initialTimestamp,
         detail: 'Proposed as a critical simulation command.',
       },

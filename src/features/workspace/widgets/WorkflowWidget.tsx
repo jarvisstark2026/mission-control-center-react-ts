@@ -6,7 +6,7 @@ import type { MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
 import { WorkflowStepCard } from '../operationalBlocks';
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from '../workflowStudioModel';
 import {
   addWorkflowRunStepNote,
@@ -457,9 +457,13 @@ export function WorkflowWidget({
           <strong>{template.title}</strong>
           <small>{status}</small>
         </summary>
-        <WorkspaceSummaryPanel className="workflow-summary" title={template.title}>
-          {status}
-        </WorkspaceSummaryPanel>
+        <WorkspaceStatusStrip
+          className="workflow-summary"
+          source="local"
+          status={template.title}
+          count={`${steps.length} steps / ${selectedSkills.length} skills`}
+          updatedAt={status}
+        />
 
         <WorkspaceSectionFrame className="workflow-actions" eyebrow="workflow controls" meta="save / export / reset">
           <WorkspaceButton className="workflow-action" onClick={saveWorkflow}>

@@ -29,7 +29,8 @@
     "@tauri-apps/api": "^2.11.0",
     "hls.js": "^1.6.16",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "three": "^0.184.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
@@ -39,6 +40,7 @@
     "@types/node": "^25.9.1",
     "@types/react": "^19.2.15",
     "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.184.1",
     "@vitejs/plugin-react": "^6.0.2",
     "eslint": "^10.4.0",
     "eslint-plugin-react-hooks": "^7.1.1",

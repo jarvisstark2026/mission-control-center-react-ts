@@ -5,31 +5,6 @@ import type { AgentDescriptor } from '../agent-control';
 import type { CommandRisk } from '../mission-control';
 import { WorkspaceButton } from './workspaceBlocks';
 
-export function StatusSummary({
-  label,
-  title,
-  detail,
-  meta,
-  className,
-}: {
-  label: ReactNode;
-  title: ReactNode;
-  detail?: ReactNode;
-  meta?: ReactNode;
-  className?: string;
-}) {
-  return (
-    <section className={classNames('operational-status-summary', className)}>
-      <div>
-        <span>{label}</span>
-        <strong>{title}</strong>
-        {detail ? <p>{detail}</p> : null}
-      </div>
-      {meta ? <small>{meta}</small> : null}
-    </section>
-  );
-}
-
 export function AttentionCard({
   label,
   title,

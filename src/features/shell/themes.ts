@@ -3,7 +3,7 @@ import { readStorageText, writeStorageText } from '../workspace/browserStorage';
 export const shellThemeOptions = [
   {
     id: 'jarvis',
-    label: 'Jarvis Prime',
+    label: 'Forge Prime',
     description: 'Cyan glass, amber telemetry, and the current command center tone.',
   },
   {

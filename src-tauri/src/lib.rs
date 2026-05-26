@@ -1055,7 +1055,7 @@ pub fn run() {
         .manage(LocalBridgeManager::new())
         .setup(|app| {
             let main_window = WebviewWindowBuilder::new(app, "main", WebviewUrl::App("index.html".into()))
-                .title("Mission Control Center")
+                .title("Mission Control")
                 .inner_size(1440.0, 960.0)
                 .min_inner_size(1100.0, 720.0)
                 .resizable(true)
@@ -1092,5 +1092,5 @@ pub fn run() {
             get_agent_bridge_status
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Mission Control Center");
+        .expect("error while running Mission Control");
 }

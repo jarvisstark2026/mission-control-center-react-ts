@@ -97,14 +97,39 @@ const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], (props: Wor
   sheet: () => <SpreadsheetWidget />,
   docs: () => <DocsWidget />,
   slides: () => <SlidesWidget />,
-  audio: ({ agentControl }) => <AudioWidget agentControl={agentControl} />,
+  audio: ({ agentControl, localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview }) => (
+    <AudioWidget
+      agentControl={agentControl}
+      files={localFiles}
+      activeFileId={activeLocalFileId}
+      selectedFileId={selectedLocalFileId}
+      onBrowseFiles={onBrowseFiles}
+      onOpenPreview={onOpenPreview}
+    />
+  ),
   map: () => <MapWidget />,
   diagram: () => <DiagramWidget />,
   browser: () => <BrowserWidget />,
   'watch-video': () => <LiveTvWidget />,
   'native-app': () => <NativeAppWidget />,
-  video: () => <VideoWidget />,
-  '3d-studio': () => <ModelStudioWidget />,
+  video: ({ localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview }) => (
+    <VideoWidget
+      files={localFiles}
+      activeFileId={activeLocalFileId}
+      selectedFileId={selectedLocalFileId}
+      onBrowseFiles={onBrowseFiles}
+      onOpenPreview={onOpenPreview}
+    />
+  ),
+  '3d-studio': ({ localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview }) => (
+    <ModelStudioWidget
+      files={localFiles}
+      activeFileId={activeLocalFileId}
+      selectedFileId={selectedLocalFileId}
+      onBrowseFiles={onBrowseFiles}
+      onOpenPreview={onOpenPreview}
+    />
+  ),
 };
 
 function renderWorkspaceWidgetContent({

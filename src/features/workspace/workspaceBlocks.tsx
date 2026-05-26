@@ -112,23 +112,6 @@ export function WorkspaceSectionFrame({
   );
 }
 
-export function WorkspaceSummaryPanel({
-  title,
-  children,
-  className,
-}: {
-  title: ReactNode;
-  children?: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={classNames('workspace-summary-panel', className)}>
-      <strong>{title}</strong>
-      {children ? <p>{children}</p> : null}
-    </div>
-  );
-}
-
 type WorkspaceButtonVariant = 'primary' | 'secondary' | 'destructive' | 'compact' | 'icon';
 
 export type TopBarGroupId = 'viewport' | 'layout' | 'visuals' | 'operator' | 'launch';

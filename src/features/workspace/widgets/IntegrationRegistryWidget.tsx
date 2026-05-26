@@ -9,7 +9,7 @@ import {
 
 const permissionOptions: IntegrationPermission[] = ['read', 'control', 'blocked'];
 
-function getIntegrationStatusSummary(integrations: IntegrationRecord[]) {
+function getIntegrationStatusCounts(integrations: IntegrationRecord[]) {
   return {
     online: integrations.filter((integration) => integration.status === 'online').length,
     degraded: integrations.filter((integration) => integration.status === 'degraded').length,
@@ -19,7 +19,7 @@ function getIntegrationStatusSummary(integrations: IntegrationRecord[]) {
 
 export function IntegrationRegistryWidget({ missionControl }: { missionControl: MissionControlRuntime }) {
   const { devices, integrations } = missionControl.state;
-  const summary = getIntegrationStatusSummary(integrations);
+  const summary = getIntegrationStatusCounts(integrations);
   const canEditPermissions = canEditIntegrationPermission(missionControl.role);
   const integrationGroups = Array.from(new Set(integrations.map((integration) => integration.category))).map((category) => ({
     category,

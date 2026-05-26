@@ -43,7 +43,7 @@ function openTauriWorkspaceExtensionWindow(instanceId: string, url: URL) {
 
       const workspaceWindow = new WebviewWindow(label, {
         url: getTauriWindowUrl(url),
-        title: 'Mission Control Center Workspace',
+        title: 'Mission Control Workspace',
         width: 1440,
         height: 960,
         minWidth: 900,

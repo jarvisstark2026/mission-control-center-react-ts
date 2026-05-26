@@ -76,7 +76,7 @@ export const shellNavItems: ShellNavItem[] = [
   {
     id: 'agent-console',
     label: 'Agent console',
-    hint: 'task Jarvis and stage proposals',
+    hint: 'ask agents and stage proposals',
     allowedRoles: ['admin', 'home', 'support'],
   },
   {

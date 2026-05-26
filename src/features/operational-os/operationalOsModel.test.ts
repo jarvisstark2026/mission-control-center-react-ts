@@ -22,7 +22,7 @@ function createCommand(goalId: string, status: CommandRequest['status']): Comman
     evidenceIds: ['evidence-command'],
     agent: {
       agentId: 'jarvis-prime',
-      agentName: 'Jarvis Prime',
+      agentName: 'Mission Control Coordinator',
       profile: 'support-diagnostics',
     },
     reasoning: 'Testing goal linkage.',

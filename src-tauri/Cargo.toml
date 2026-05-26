@@ -1,8 +1,8 @@
 [package]
 name = "mission-control-center"
 version = "0.1.0"
-description = "Mission Control Center desktop shell"
-authors = ["Mission Control Center"]
+description = "Mission Control desktop shell"
+authors = ["Mission Control"]
 edition = "2021"
 
 [lib]

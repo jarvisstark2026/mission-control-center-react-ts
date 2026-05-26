@@ -42,9 +42,7 @@ import {
   WorkspaceContentHeader,
   WorkspaceContentShell,
   WorkspaceEmptyState,
-  WorkspaceMetricGrid,
   WorkspaceSectionFrame,
-  WorkspaceStatusStrip,
 } from '../workspaceBlocks';
 import { getAgentGatewayDisplay } from './agentWorkflowDisplay';
 
@@ -665,59 +663,28 @@ export function AgentControlWidget({
         meta={`${activeConnector.kind} / ${activeConnector.status} / ${activeConnector.activeEngine ?? state.identity.model}`}
       />
 
-      <WorkspaceStatusStrip
-        source={taskGateway.mode === 'bridge' ? 'bridge' : 'local'}
-        status={`${missionControlBridgeLabel} / ${hermesApiLabel}`}
-        count={taskGatewayLabel}
-        updatedAt={formatDateTime(state.lastBridgeEventAt)}
-        action={{ label: 'Probe', onClick: probeBridgeNow, disabled: !editable }}
-      />
-
-      <WorkspaceSectionFrame
-        className="mission-control-list-frame agent-control-cockpit"
-        eyebrow="connection cockpit"
-        title="live bridge state"
-        meta={reachableUrl ? 'reachable' : activeConnector.status}
-      >
-        <WorkspaceMetricGrid
-          className="mission-control-metrics agent-control-cockpit-metrics"
-          metrics={[
-            { label: 'provider', value: activeConnector.provider },
-            { label: 'connector', value: activeConnector.kind },
-            { label: 'status', value: activeConnector.status },
-            { label: 'events', value: state.eventStreamStatus },
-            { label: 'engine', value: activeConnector.activeEngine ?? state.identity.model, wide: true },
-            { label: 'Mission Control bridge', value: missionControlBridgeLabel, wide: true },
-            { label: 'Hermes API', value: `${hermesApiLabel} / ${hermesApiBaseUrl}`, wide: true },
-            { label: 'Task loop', value: taskLoopStatus, wide: true },
-            { label: 'Task gateway', value: taskGatewayLabel, wide: true },
-            { label: 'mode', value: bridgeModeOptions.find((option) => option.id === bridgeMode)?.label ?? bridgeMode },
-            { label: 'host / port', value: `${bridgeMode === 'same-pc' ? '127.0.0.1' : hermesHost || 'not set'}:${hermesApiPort || '8642'}`, wide: true },
-            { label: 'API key', value: hermesApiKey ? 'configured' : 'not set' },
-            { label: 'reachable', value: reachableUrl ?? 'waiting for /status', wide: true },
-            { label: 'last success', value: bridgeSettings.lastSuccessfulUrl ?? 'not recorded', wide: true },
-            { label: 'last event', value: formatDateTime(state.lastBridgeEventAt), wide: true },
-          ]}
-        />
-        <div className="mission-control-actions agent-control-cockpit-actions">
-          <WorkspaceButton variant="secondary" disabled={!editable} onClick={probeBridgeNow}>
-            Probe now
-          </WorkspaceButton>
-          <WorkspaceButton variant="secondary" disabled={!preferredStatusUrl} onClick={() => preferredStatusUrl && window.open(preferredStatusUrl, '_blank', 'noopener,noreferrer')}>
-            Open /status
-          </WorkspaceButton>
-          <WorkspaceButton variant="secondary" disabled={!reachableUrl && !bridgeSettings.lastSuccessfulUrl} onClick={() => copyText('Bridge URL', reachableUrl ?? bridgeSettings.lastSuccessfulUrl ?? '')}>
-            Copy URL
-          </WorkspaceButton>
-          <WorkspaceButton variant="primary" disabled={!editable} onClick={sendTestProposal}>
-            Send test proposal
-          </WorkspaceButton>
-          <WorkspaceButton variant="secondary" disabled={!editable} onClick={startBridgeAndTestTaskLoop}>
-            Start bridge and test task loop
-          </WorkspaceButton>
+      <section className="agent-control-health-strip" aria-label="Agent bridge health">
+        <div data-state={localBridgeReachable || localBridgeProcess?.running ? 'ready' : 'offline'}>
+          <span>Mission Control bridge</span>
+          <strong>{missionControlBridgeLabel}</strong>
+          <small>{reachableUrl ?? '127.0.0.1:8787'}</small>
         </div>
-        <p className="mission-control-muted">{testProposalStatus}</p>
-      </WorkspaceSectionFrame>
+        <div data-state={hermesApiLabel === 'connected' ? 'ready' : hermesApiLabel === 'auth failed' || hermesApiLabel === 'error' ? 'failed' : 'pending'}>
+          <span>Hermes API</span>
+          <strong>{hermesApiLabel}</strong>
+          <small>{hermesApiBaseUrl || 'not configured'}</small>
+        </div>
+        <div data-state={taskGateway.mode === 'bridge' ? 'ready' : 'pending'}>
+          <span>Task gateway</span>
+          <strong>{taskGatewayLabel}</strong>
+          <small>{taskLoopStatus}</small>
+        </div>
+        <div data-state={state.lastBridgeEventAt ? 'ready' : 'pending'}>
+          <span>Last event</span>
+          <strong>{formatDateTime(state.lastBridgeEventAt)}</strong>
+          <small>{state.eventStreamStatus}</small>
+        </div>
+      </section>
 
       <div className="agent-control-section-tabs" role="tablist" aria-label="Agent Control sections">
         {agentControlPanels.map((panel) => (
@@ -849,6 +816,21 @@ export function AgentControlWidget({
         {bridgeInputWarning ? <p className="mission-control-muted">{bridgeInputWarning}</p> : null}
         {localBridgeProcess?.lastError ? <p className="mission-control-muted">{localBridgeProcess.lastError}</p> : null}
         <div className="mission-control-actions agent-control-bridge-actions">
+          <WorkspaceButton variant="secondary" disabled={!editable} onClick={probeBridgeNow}>
+            Probe now
+          </WorkspaceButton>
+          <WorkspaceButton variant="secondary" disabled={!preferredStatusUrl} onClick={() => preferredStatusUrl && window.open(preferredStatusUrl, '_blank', 'noopener,noreferrer')}>
+            Open /status
+          </WorkspaceButton>
+          <WorkspaceButton variant="secondary" disabled={!reachableUrl && !bridgeSettings.lastSuccessfulUrl} onClick={() => copyText('Bridge URL', reachableUrl ?? bridgeSettings.lastSuccessfulUrl ?? '')}>
+            Copy URL
+          </WorkspaceButton>
+          <WorkspaceButton variant="primary" disabled={!editable} onClick={sendTestProposal}>
+            Send test proposal
+          </WorkspaceButton>
+          <WorkspaceButton variant="secondary" disabled={!editable} onClick={startBridgeAndTestTaskLoop}>
+            Start bridge and test task loop
+          </WorkspaceButton>
           <WorkspaceButton
             variant="secondary"
             aria-expanded={false}
@@ -878,6 +860,7 @@ export function AgentControlWidget({
             Refresh state
           </WorkspaceButton>
         </div>
+        <p className="mission-control-muted">{testProposalStatus}</p>
         <p className="mission-control-muted">{bridgeSetupStatus}</p>
       </WorkspaceSectionFrame>
         </>

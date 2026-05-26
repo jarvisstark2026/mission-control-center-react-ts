@@ -57,7 +57,7 @@ describe('workspace HUD model', () => {
     expect(signals.integrationHealth.online).toBe(
       missionState.integrations.filter((integration) => integration.status === 'online').length,
     );
-    expect(signals.agent.name).toBe('Jarvis Prime');
+    expect(signals.agent.name).toBe('Mission Control Coordinator');
     expect(signals.telemetry).toHaveLength(Math.min(4, missionState.telemetry.length));
   });
 

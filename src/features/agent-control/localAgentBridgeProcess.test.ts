@@ -47,15 +47,15 @@ describe('localAgentBridgeProcess', () => {
       hermesApiBaseUrl: 'http://127.0.0.1:8642/v1',
     });
 
-    await startLocalAgentBridge({ hermesApiBaseUrl: 'http://127.0.0.1:8642/v1', hermesModel: 'hermes-agent' });
-    await restartLocalAgentBridge({ hermesApiBaseUrl: 'http://127.0.0.1:8642/v1', hermesModel: 'hermes-agent' });
+    await startLocalAgentBridge({ hermesApiBaseUrl: 'http://127.0.0.1:8642/v1', hermesModel: 'hermes-agent', hermesApiKey: 'test-key' });
+    await restartLocalAgentBridge({ hermesApiBaseUrl: 'http://127.0.0.1:8642/v1', hermesModel: 'hermes-agent', hermesApiKey: 'test-key' });
     await stopLocalAgentBridge('http://127.0.0.1:8642/v1');
 
     expect(invokeMock).toHaveBeenNthCalledWith(1, 'start_agent_bridge', {
-      request: { hermesApiBaseUrl: 'http://127.0.0.1:8642/v1', hermesModel: 'hermes-agent' },
+      request: { hermesApiBaseUrl: 'http://127.0.0.1:8642/v1', hermesModel: 'hermes-agent', hermesApiKey: 'test-key' },
     });
     expect(invokeMock).toHaveBeenNthCalledWith(2, 'restart_agent_bridge', {
-      request: { hermesApiBaseUrl: 'http://127.0.0.1:8642/v1', hermesModel: 'hermes-agent' },
+      request: { hermesApiBaseUrl: 'http://127.0.0.1:8642/v1', hermesModel: 'hermes-agent', hermesApiKey: 'test-key' },
     });
     expect(invokeMock).toHaveBeenNthCalledWith(3, 'stop_agent_bridge');
   });

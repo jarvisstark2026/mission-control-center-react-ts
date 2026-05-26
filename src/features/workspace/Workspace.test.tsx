@@ -485,6 +485,8 @@ describe('Workspace header controls', () => {
     expect(adminRender.getByRole('radio', { name: /Same PC/i })).toBeInTheDocument();
     expect(adminRender.getByRole('radio', { name: /LAN PC/i })).toBeInTheDocument();
     expect(adminRender.getByRole('radio', { name: /Tailscale/i })).toBeInTheDocument();
+    expect(adminRender.getByLabelText('Hermes API port')).toHaveValue('8642');
+    expect(adminRender.getByLabelText('Hermes API key')).toHaveAttribute('type', 'password');
     expect(adminRender.getByText('live bridge state')).toBeInTheDocument();
     expect(adminRender.getAllByText('Mission Control bridge').length).toBeGreaterThan(0);
     expect(adminRender.getAllByText('Hermes API').length).toBeGreaterThan(0);

@@ -4,7 +4,7 @@ import { URL } from 'node:url';
 const host = process.env.AGENT_BRIDGE_HOST || '127.0.0.1';
 const port = Number.parseInt(process.env.AGENT_BRIDGE_PORT || '8787', 10);
 const hermesApiBase = (process.env.HERMES_API_BASE_URL || 'http://127.0.0.1:8642/v1').replace(/\/+$/u, '');
-const hermesApiKey = process.env.HERMES_API_KEY || 'change-me-local-dev';
+const hermesApiKey = process.env.HERMES_API_KEY || '';
 const hermesModel = process.env.HERMES_MODEL || 'hermes-agent';
 const hermesTimeoutMs = Number.parseInt(process.env.HERMES_TIMEOUT_MS || '120000', 10);
 const clients = new Set();
@@ -103,7 +103,9 @@ async function checkHermes() {
       lastHermesStatus = {
         ok: false,
         checkedAt,
-        detail: `${url} returned ${response.status}`,
+        detail: response.status === 401 || response.status === 403
+          ? `Hermes API auth failed at ${url}: ${response.status}`
+          : `${url} returned ${response.status}`,
       };
     } catch (error) {
       lastHermesStatus = {
@@ -119,6 +121,7 @@ async function checkHermes() {
 function createBridgeStatus() {
   const timestamp = nowIso();
   const connected = lastHermesStatus.ok;
+  const authFailed = lastHermesStatus.detail.includes('auth failed');
 
   return {
     status: connected ? 'connected' : 'offline',
@@ -192,7 +195,7 @@ function createBridgeStatus() {
       {
         id: 'hermes-bridge-status',
         kind: 'connection',
-        title: connected ? 'Hermes API connected' : 'Hermes API offline',
+        title: connected ? 'Hermes API connected' : authFailed ? 'Hermes API auth failed' : 'Hermes API offline',
         detail: connected ? `Forwarding Mission Control tasks to ${hermesApiBase}.` : lastHermesStatus.detail,
         timestamp,
         source: 'hermes-mission-control-bridge',
@@ -254,6 +257,9 @@ async function askHermes(request) {
 
   if (!response.ok) {
     const body = await response.text().catch(() => '');
+    if (response.status === 401 || response.status === 403) {
+      throw new Error(`Hermes API auth failed: ${response.status}`);
+    }
     throw new Error(`Hermes API returned ${response.status}: ${truncate(body, 260)}`);
   }
 

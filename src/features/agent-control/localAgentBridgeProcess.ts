@@ -19,6 +19,7 @@ export type LocalAgentBridgeProcessState = {
 export type StartLocalAgentBridgeInput = {
   hermesApiBaseUrl: string;
   hermesModel: string;
+  hermesApiKey?: string;
 };
 
 function isTauriRuntime() {

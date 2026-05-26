@@ -80,6 +80,8 @@ LAN PC:    http://192.0.2.64:8642/v1
 Tailscale: http://198.51.100.119:8642/v1
 ```
 
+Use the Agent Control port and API key fields if Hermes is listening on a different HTTP port or requires `API_SERVER_KEY`.
+
 ## Endpoints
 
 - `GET /status`: connector status, provider, agents, jobs, permissions, usage, activity, capabilities.

@@ -14,9 +14,9 @@ The local bridge then connects to Hermes through one of three modes:
 
 | Mode | Hermes API base URL |
 | --- | --- |
-| Same PC | `http://127.0.0.1:8642/v1` |
-| LAN PC | `http://<lan-host-or-ip>:8642/v1` |
-| Tailscale | `http://<tailscale-host-or-ip>:8642/v1` |
+| Same PC | `http://127.0.0.1:<port>/v1` |
+| LAN PC | `http://<lan-host-or-ip>:<port>/v1` |
+| Tailscale | `http://<tailscale-host-or-ip>:<port>/v1` |
 
 Browser preview can edit settings and test the loop, but it cannot start or stop the bundled local bridge. Use the Windows desktop app for the normal user setup.
 
@@ -29,17 +29,41 @@ GET  /v1/models
 POST /v1/chat/completions
 ```
 
+For LAN or Tailscale access, configure Hermes with a bearer key:
+
+```text
+API_SERVER_ENABLED=true
+API_SERVER_HOST=0.0.0.0
+API_SERVER_PORT=8642
+API_SERVER_KEY=<user-secret>
+API_SERVER_MODEL_NAME=hermes-agent
+```
+
+Start Hermes with:
+
+```powershell
+hermes gateway
+```
+
 Typical Hermes URL on the Hermes machine:
 
 ```text
 http://127.0.0.1:8642/v1
 ```
 
+The default port is `8642`. Change the port in Agent Control if Hermes is listening on another HTTP port such as `80`, `8445`, or `8446`.
+
 For another PC, verify from the Mission Control PC:
 
 ```powershell
 Invoke-RestMethod http://192.0.2.64:8642/v1/models
 Invoke-RestMethod http://198.51.100.119:8642/v1/models
+```
+
+If `API_SERVER_KEY` is set, include the bearer token:
+
+```powershell
+Invoke-RestMethod http://192.0.2.64:8642/v1/models -Headers @{ Authorization = "Bearer <user-secret>" }
 ```
 
 Use the LAN address if it works. Use Tailscale if LAN routing or firewall rules are harder.
@@ -50,11 +74,15 @@ Use the LAN address if it works. Use Tailscale if LAN routing or firewall rules 
 2. Open `Bridge setup`.
 3. Choose `Same PC`, `LAN PC`, or `Tailscale`.
 4. For LAN/Tailscale, enter only the host or IP, for example `192.0.2.64` or `198.51.100.119`.
-5. Click `Save settings`.
-6. Click `Start bridge`.
-7. Click `Test Hermes API`.
-8. Click `Send test proposal`.
-9. Review the pending proposal in `Command Inbox`.
+5. Set `Hermes API port`; keep `8642` unless Hermes is listening elsewhere.
+6. Paste the `Hermes API key` if Hermes requires bearer auth.
+7. Click `Save settings`.
+8. Click `Start bridge`.
+9. Click `Test Hermes API`.
+10. Click `Send test proposal`.
+11. Review the pending proposal in `Command Inbox`.
+
+The bundled Mission Control bridge currently supports HTTP Hermes API endpoints. HTTPS support is a separate bridge enhancement.
 
 ## Safety Rule
 

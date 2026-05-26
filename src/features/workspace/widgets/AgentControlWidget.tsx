@@ -169,15 +169,15 @@ const bridgeCommandSnippets = [
   },
   {
     label: 'Same PC Hermes API',
-    command: 'http://127.0.0.1:8642/v1',
+    command: 'http://127.0.0.1:<port>/v1',
   },
   {
     label: 'LAN Hermes API',
-    command: 'http://<lan-ip>:8642/v1',
+    command: 'http://<lan-ip>:<port>/v1',
   },
   {
     label: 'Tailscale Hermes API',
-    command: 'http://<tailscale-ip>:8642/v1',
+    command: 'http://<tailscale-ip>:<port>/v1',
   },
 ];
 
@@ -205,6 +205,23 @@ const bridgeModeOptions: Array<{ id: AgentBridgeMode; label: string; detail: str
 function getStatusUrl(url: string | null | undefined) {
   const trimmedUrl = url?.trim().replace(/\/+$/u, '');
   return trimmedUrl ? `${trimmedUrl}/status` : null;
+}
+
+function getPortFromEndpointInput(value: string) {
+  const hostPort = value
+    .trim()
+    .replace(/^https?:\/\//u, '')
+    .replace(/\/.*$/u, '');
+  const portMatch = hostPort.match(/:(\d{1,5})$/u);
+  return portMatch?.[1];
+}
+
+function getHostFromEndpointInput(value: string) {
+  return value
+    .trim()
+    .replace(/^https?:\/\//u, '')
+    .replace(/\/.*$/u, '')
+    .replace(/:\d{1,5}$/u, '');
 }
 
 function getProbeSummary(result: AgentBridgeProbeResult) {
@@ -285,21 +302,26 @@ export function AgentControlWidget({
   const initialBridgeMode = bridgeSettings.bridgeMode ?? 'same-pc';
   const [bridgeMode, setBridgeMode] = useState<AgentBridgeMode>(initialBridgeMode);
   const [hermesHost, setHermesHost] = useState(bridgeSettings.hermesHost ?? '');
+  const [hermesApiPort, setHermesApiPort] = useState(bridgeSettings.hermesApiPort ?? '8642');
+  const [hermesApiKey, setHermesApiKey] = useState(bridgeSettings.hermesApiKey ?? '');
   const [hermesModel, setHermesModel] = useState(bridgeSettings.hermesModel ?? 'hermes-agent');
   const [localBridgeUrl, setLocalBridgeUrl] = useState(bridgeSettings.localBridgeUrl);
   const [localBridgeProcess, setLocalBridgeProcess] = useState<LocalAgentBridgeProcessState | null>(null);
   const [bridgeSetupStatus, setBridgeSetupStatus] = useState('Choose where Hermes runs, then start the desktop local bridge.');
+  const [bridgeInputWarning, setBridgeInputWarning] = useState('');
   const [bridgeHelpOpen, setBridgeHelpOpen] = useState(false);
   const [testProposalStatus, setTestProposalStatus] = useState('Send a safe test proposal when the bridge is connected.');
 
   useEffect(() => {
     setBridgeMode(bridgeSettings.bridgeMode ?? 'same-pc');
     setHermesHost(bridgeSettings.hermesHost ?? '');
+    setHermesApiPort(bridgeSettings.hermesApiPort ?? '8642');
+    setHermesApiKey(bridgeSettings.hermesApiKey ?? '');
     setHermesModel(bridgeSettings.hermesModel ?? 'hermes-agent');
     setLocalBridgeUrl(bridgeSettings.localBridgeUrl);
-  }, [bridgeSettings.bridgeMode, bridgeSettings.hermesHost, bridgeSettings.hermesModel, bridgeSettings.localBridgeUrl]);
+  }, [bridgeSettings.bridgeMode, bridgeSettings.hermesHost, bridgeSettings.hermesApiPort, bridgeSettings.hermesApiKey, bridgeSettings.hermesModel, bridgeSettings.localBridgeUrl]);
 
-  const hermesApiBaseUrl = getHermesApiBaseUrlForMode(bridgeMode, hermesHost);
+  const hermesApiBaseUrl = getHermesApiBaseUrlForMode(bridgeMode, hermesHost, hermesApiPort);
 
   useEffect(() => {
     let cancelled = false;
@@ -385,6 +407,8 @@ export function AgentControlWidget({
     onUpdateBridgeSettings({
       bridgeMode,
       hermesHost: savedHermesHost,
+      hermesApiPort,
+      hermesApiKey,
       hermesApiBaseUrl,
       hermesModel,
       localBridgeUrl: 'http://127.0.0.1:8787',
@@ -414,7 +438,7 @@ export function AgentControlWidget({
     saveBridgeSettings();
     setBridgeSetupStatus('Starting local Mission Control bridge...');
     try {
-      const processState = await startLocalAgentBridge({ hermesApiBaseUrl, hermesModel });
+      const processState = await startLocalAgentBridge({ hermesApiBaseUrl, hermesModel, hermesApiKey });
       setLocalBridgeProcess(processState);
       onUpdateBridgeSettings({ localBridgeUrl: processState.bridgeUrl, lastSuccessfulUrl: processState.running ? processState.bridgeUrl : bridgeSettings.lastSuccessfulUrl });
       setBridgeSetupStatus(processState.running ? `Local bridge running at ${processState.bridgeUrl}.` : processState.lastError ?? 'Local bridge did not start.');
@@ -432,7 +456,7 @@ export function AgentControlWidget({
     saveBridgeSettings();
     setBridgeSetupStatus('Restarting local Mission Control bridge...');
     try {
-      const processState = await restartLocalAgentBridge({ hermesApiBaseUrl, hermesModel });
+      const processState = await restartLocalAgentBridge({ hermesApiBaseUrl, hermesModel, hermesApiKey });
       setLocalBridgeProcess(processState);
       onUpdateBridgeSettings({ localBridgeUrl: processState.bridgeUrl, lastSuccessfulUrl: processState.running ? processState.bridgeUrl : bridgeSettings.lastSuccessfulUrl });
       setBridgeSetupStatus(processState.running ? `Local bridge restarted at ${processState.bridgeUrl}.` : processState.lastError ?? 'Local bridge did not restart.');
@@ -444,8 +468,8 @@ export function AgentControlWidget({
     setBridgeSetupStatus(`Testing Hermes API through ${hermesApiBaseUrl}...`);
     try {
       const processState = localBridgeProcess?.running
-        ? localBridgeProcess
-        : await startLocalAgentBridge({ hermesApiBaseUrl, hermesModel });
+        ? await restartLocalAgentBridge({ hermesApiBaseUrl, hermesModel, hermesApiKey })
+        : await startLocalAgentBridge({ hermesApiBaseUrl, hermesModel, hermesApiKey });
       setLocalBridgeProcess(processState);
       if (!processState.available) {
         setBridgeSetupStatus(processState.lastError ?? 'Desktop app required to test Hermes through the bundled bridge.');
@@ -627,11 +651,27 @@ export function AgentControlWidget({
             <input
               value={hermesHost}
               disabled={!editable}
-              onChange={(event) => setHermesHost(event.currentTarget.value)}
+              onChange={(event) => {
+                const nextHost = event.currentTarget.value;
+                const pastedPort = getPortFromEndpointInput(nextHost);
+                setBridgeInputWarning(/^https:\/\//iu.test(nextHost.trim()) ? 'The bundled Mission Control bridge supports HTTP Hermes API endpoints only. Use an HTTP port, not HTTPS.' : '');
+                setHermesHost(pastedPort ? getHostFromEndpointInput(nextHost) : nextHost);
+                if (pastedPort) setHermesApiPort(pastedPort);
+              }}
               placeholder={bridgeModeOptions.find((option) => option.id === bridgeMode)?.placeholder}
             />
           </label>
         ) : null}
+        <label className="agent-control-bridge-field">
+          <span>Hermes API port</span>
+          <input
+            value={hermesApiPort}
+            disabled={!editable}
+            inputMode="numeric"
+            onChange={(event) => setHermesApiPort(event.currentTarget.value)}
+            placeholder="8642"
+          />
+        </label>
         <label className="agent-control-bridge-field">
           <span>Hermes model</span>
           <input
@@ -639,6 +679,17 @@ export function AgentControlWidget({
             disabled={!editable}
             onChange={(event) => setHermesModel(event.currentTarget.value)}
             placeholder="hermes-agent"
+          />
+        </label>
+        <label className="agent-control-bridge-field">
+          <span>Hermes API key</span>
+          <input
+            value={hermesApiKey}
+            disabled={!editable}
+            type="password"
+            autoComplete="off"
+            onChange={(event) => setHermesApiKey(event.currentTarget.value)}
+            placeholder="optional bearer token"
           />
         </label>
         <div className="agent-control-bridge-status-grid">
@@ -659,6 +710,7 @@ export function AgentControlWidget({
             <strong>{bridgeSettings.localBridgeUrl || 'not saved'}</strong>
           </div>
         </div>
+        {bridgeInputWarning ? <p className="mission-control-muted">{bridgeInputWarning}</p> : null}
         {localBridgeProcess?.lastError ? <p className="mission-control-muted">{localBridgeProcess.lastError}</p> : null}
         <div className="mission-control-actions agent-control-bridge-actions">
           <WorkspaceButton

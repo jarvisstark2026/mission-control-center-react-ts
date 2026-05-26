@@ -137,6 +137,8 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.agentBridgeSettings.remoteApiUrl === right.agentBridgeSettings.remoteApiUrl &&
         left.agentBridgeSettings.bridgeMode === right.agentBridgeSettings.bridgeMode &&
         left.agentBridgeSettings.hermesHost === right.agentBridgeSettings.hermesHost &&
+        left.agentBridgeSettings.hermesApiPort === right.agentBridgeSettings.hermesApiPort &&
+        left.agentBridgeSettings.hermesApiKey === right.agentBridgeSettings.hermesApiKey &&
         left.agentBridgeSettings.hermesApiBaseUrl === right.agentBridgeSettings.hermesApiBaseUrl &&
         left.agentBridgeSettings.hermesModel === right.agentBridgeSettings.hermesModel &&
         left.agentBridgeSettings.preferredAgentId === right.agentBridgeSettings.preferredAgentId &&

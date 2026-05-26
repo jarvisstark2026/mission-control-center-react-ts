@@ -38,6 +38,7 @@ struct LocalAgentBridgeProcessState {
 struct StartAgentBridgeRequest {
     hermes_api_base_url: String,
     hermes_model: String,
+    hermes_api_key: Option<String>,
 }
 
 struct LocalBridgeRuntime {
@@ -45,6 +46,7 @@ struct LocalBridgeRuntime {
     stop_flag: Option<Arc<AtomicBool>>,
     hermes_api_base_url: String,
     hermes_model: String,
+    hermes_api_key: String,
     last_started_at: Option<String>,
     last_error: Option<String>,
 }
@@ -61,6 +63,7 @@ impl LocalBridgeManager {
                 stop_flag: None,
                 hermes_api_base_url: "http://127.0.0.1:8642/v1".to_string(),
                 hermes_model: "hermes-agent".to_string(),
+                hermes_api_key: String::new(),
                 last_started_at: None,
                 last_error: None,
             }),
@@ -142,6 +145,10 @@ fn normalize_hermes_model(value: &str) -> String {
     } else {
         trimmed.to_string()
     }
+}
+
+fn normalize_hermes_api_key(value: Option<&String>) -> String {
+    value.map(|item| item.trim().to_string()).unwrap_or_default()
 }
 
 fn http_response(status: &str, content_type: &str, body: &str) -> Vec<u8> {
@@ -267,7 +274,7 @@ fn parse_http_url(url: &str) -> Result<(String, u16, String), String> {
     Ok((host, port, path))
 }
 
-fn http_request(method: &str, url: &str, body: Option<&str>, content_type: Option<&str>) -> Result<SimpleHttpResponse, String> {
+fn http_request(method: &str, url: &str, body: Option<&str>, content_type: Option<&str>, bearer_token: &str) -> Result<SimpleHttpResponse, String> {
     let (host, port, path) = parse_http_url(url)?;
     let addr = (host.as_str(), port)
         .to_socket_addrs()
@@ -279,8 +286,14 @@ fn http_request(method: &str, url: &str, body: Option<&str>, content_type: Optio
     stream.set_write_timeout(Some(Duration::from_secs(10))).map_err(|error| error.to_string())?;
 
     let payload = body.unwrap_or("");
+    let authorization = if bearer_token.trim().is_empty() {
+        String::new()
+    } else {
+        format!("Authorization: Bearer {}\r\n", bearer_token.trim())
+    };
     let request = format!(
-        "{method} {path} HTTP/1.1\r\nHost: {host}:{port}\r\nAccept: application/json\r\n{}Content-Length: {}\r\nConnection: close\r\n\r\n{}",
+        "{method} {path} HTTP/1.1\r\nHost: {host}:{port}\r\nAccept: application/json\r\n{}{}Content-Length: {}\r\nConnection: close\r\n\r\n{}",
+        authorization,
         content_type
             .map(|value| format!("Content-Type: {value}\r\n"))
             .unwrap_or_default(),
@@ -318,18 +331,20 @@ fn http_request(method: &str, url: &str, body: Option<&str>, content_type: Optio
     })
 }
 
-fn check_hermes_api(hermes_api_base_url: &str) -> (bool, String) {
+fn check_hermes_api(hermes_api_base_url: &str, hermes_api_key: &str) -> (bool, String) {
     let base = hermes_api_base_url.trim_end_matches('/');
     let models_url = format!("{base}/models");
-    match http_request("GET", &models_url, None, None) {
+    match http_request("GET", &models_url, None, None, hermes_api_key) {
         Ok(response) if (200..300).contains(&response.status_code) => (true, format!("{} OK", response.status_code)),
+        Ok(response) if response.status_code == 401 || response.status_code == 403 => (false, format!("Hermes API auth failed at {models_url}: {}", response.status_code)),
         Ok(response) => (false, format!("{models_url} returned {}", response.status_code)),
         Err(error) => (false, format!("{models_url} failed: {error}")),
     }
 }
 
-fn create_bridge_status(hermes_api_base_url: &str, hermes_model: &str, request_count: u64, last_started_at: &str) -> serde_json::Value {
-    let (connected, detail) = check_hermes_api(hermes_api_base_url);
+fn create_bridge_status(hermes_api_base_url: &str, hermes_model: &str, hermes_api_key: &str, request_count: u64, last_started_at: &str) -> serde_json::Value {
+    let (connected, detail) = check_hermes_api(hermes_api_base_url, hermes_api_key);
+    let auth_failed = detail.contains("auth failed");
     let timestamp = now_iso();
     serde_json::json!({
         "status": if connected { "connected" } else { "offline" },
@@ -400,7 +415,7 @@ fn create_bridge_status(hermes_api_base_url: &str, hermes_model: &str, request_c
         "activity": [{
             "id": "hermes-bridge-status",
             "kind": "connection",
-            "title": if connected { "Hermes API connected" } else { "Hermes API offline" },
+            "title": if connected { "Hermes API connected" } else if auth_failed { "Hermes API auth failed" } else { "Hermes API offline" },
             "detail": if connected { format!("Forwarding Mission Control tasks to {hermes_api_base_url}.") } else { detail },
             "timestamp": timestamp,
             "source": "mission-control-local-agent-bridge",
@@ -471,7 +486,7 @@ fn truncate(value: &str, max_len: usize) -> String {
     format!("{}...", value.chars().take(max_len.saturating_sub(3)).collect::<String>().trim())
 }
 
-fn create_task_result(request: serde_json::Value, hermes_api_base_url: &str, hermes_model: &str) -> Result<serde_json::Value, String> {
+fn create_task_result(request: serde_json::Value, hermes_api_base_url: &str, hermes_model: &str, hermes_api_key: &str) -> Result<serde_json::Value, String> {
     let timestamp = now_iso();
     let objective = string_field(&request, "objective", "Review Mission Control task");
     let title = truncate(&objective, 58);
@@ -511,8 +526,12 @@ fn create_task_result(request: serde_json::Value, hermes_api_base_url: &str, her
         &chat_url,
         Some(&serde_json::to_string(&hermes_body).map_err(|error| error.to_string())?),
         Some("application/json"),
+        hermes_api_key,
     )?;
     if !(200..300).contains(&response.status_code) {
+        if response.status_code == 401 || response.status_code == 403 {
+            return Err(format!("Hermes API auth failed: {}", response.status_code));
+        }
         return Err(format!("Hermes API returned {}: {}", response.status_code, truncate(&response.body, 260)));
     }
     let payload: serde_json::Value = serde_json::from_str(&response.body).map_err(|error| error.to_string())?;
@@ -597,6 +616,7 @@ fn handle_bridge_connection(
     mut stream: TcpStream,
     hermes_api_base_url: String,
     hermes_model: String,
+    hermes_api_key: String,
     request_count: Arc<AtomicU64>,
     running: Arc<AtomicBool>,
     last_started_at: String,
@@ -615,6 +635,7 @@ fn handle_bridge_connection(
         let payload = create_bridge_status(
             &hermes_api_base_url,
             &hermes_model,
+            &hermes_api_key,
             request_count.load(Ordering::SeqCst),
             &last_started_at,
         );
@@ -649,7 +670,7 @@ fn handle_bridge_connection(
         while running.load(Ordering::SeqCst) {
             let payload = serde_json::json!({
                 "type": "status",
-                "status": create_bridge_status(&hermes_api_base_url, &hermes_model, request_count.load(Ordering::SeqCst), &last_started_at)
+                "status": create_bridge_status(&hermes_api_base_url, &hermes_model, &hermes_api_key, request_count.load(Ordering::SeqCst), &last_started_at)
             });
             let line = format!("data: {}\n\n", serde_json::to_string(&payload).unwrap_or_else(|_| "{}".to_string()));
             if stream.write_all(line.as_bytes()).is_err() {
@@ -664,7 +685,7 @@ fn handle_bridge_connection(
         request_count.fetch_add(1, Ordering::SeqCst);
         match serde_json::from_str::<serde_json::Value>(&body)
             .map_err(|error| error.to_string())
-            .and_then(|request| create_task_result(request, &hermes_api_base_url, &hermes_model))
+            .and_then(|request| create_task_result(request, &hermes_api_base_url, &hermes_model, &hermes_api_key))
         {
             Ok(result) => send_json(&mut stream, "200 OK", result),
             Err(error) => send_json(
@@ -690,7 +711,7 @@ fn handle_bridge_connection(
     );
 }
 
-fn start_local_bridge_thread(hermes_api_base_url: String, hermes_model: String, running: Arc<AtomicBool>, last_started_at: String) -> Result<(), String> {
+fn start_local_bridge_thread(hermes_api_base_url: String, hermes_model: String, hermes_api_key: String, running: Arc<AtomicBool>, last_started_at: String) -> Result<(), String> {
     let bind_addr: SocketAddr = LOCAL_AGENT_BRIDGE_BIND.parse::<SocketAddr>().map_err(|error| error.to_string())?;
     let listener = TcpListener::bind(bind_addr).map_err(|error| error.to_string())?;
     listener.set_nonblocking(true).map_err(|error| error.to_string())?;
@@ -702,11 +723,12 @@ fn start_local_bridge_thread(hermes_api_base_url: String, hermes_model: String, 
                 Ok((stream, _)) => {
                     let base_url = hermes_api_base_url.clone();
                     let model = hermes_model.clone();
+                    let api_key = hermes_api_key.clone();
                     let counter = Arc::clone(&request_count);
                     let running_for_client = Arc::clone(&running);
                     let started_at = last_started_at.clone();
                     thread::spawn(move || {
-                        handle_bridge_connection(stream, base_url, model, counter, running_for_client, started_at);
+                        handle_bridge_connection(stream, base_url, model, api_key, counter, running_for_client, started_at);
                     });
                 }
                 Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
@@ -737,17 +759,20 @@ fn start_agent_bridge(
     if runtime.running {
         runtime.hermes_api_base_url = normalize_hermes_api_base_url(&request.hermes_api_base_url);
         runtime.hermes_model = normalize_hermes_model(&request.hermes_model);
+        runtime.hermes_api_key = normalize_hermes_api_key(request.hermes_api_key.as_ref());
         return Ok(process_state(&runtime));
     }
 
     let hermes_api_base_url = normalize_hermes_api_base_url(&request.hermes_api_base_url);
     let hermes_model = normalize_hermes_model(&request.hermes_model);
+    let hermes_api_key = normalize_hermes_api_key(request.hermes_api_key.as_ref());
     let running = Arc::new(AtomicBool::new(true));
     let started_at = now_iso();
 
     match start_local_bridge_thread(
         hermes_api_base_url.clone(),
         hermes_model.clone(),
+        hermes_api_key.clone(),
         Arc::clone(&running),
         started_at.clone(),
     ) {
@@ -756,6 +781,7 @@ fn start_agent_bridge(
             runtime.stop_flag = Some(running);
             runtime.hermes_api_base_url = hermes_api_base_url;
             runtime.hermes_model = hermes_model;
+            runtime.hermes_api_key = hermes_api_key;
             runtime.last_started_at = Some(started_at);
             runtime.last_error = None;
         }

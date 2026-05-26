@@ -130,7 +130,7 @@ export const widgetWorkflowGuidance: Record<WidgetKind, WidgetWorkflowGuidance> 
   },
   video: {
     intent: 'Preview media',
-    value: 'Keep local or standby video context visible without switching surfaces.',
+    value: 'Preview saved URL or file-backed video sources without switching surfaces.',
     next: 'Use Live TV for active streams and this frame for static preview state.',
     evidence: 'media frame',
   },
@@ -141,10 +141,10 @@ export const widgetWorkflowGuidance: Record<WidgetKind, WidgetWorkflowGuidance> 
     evidence: 'file preview',
   },
   '3d-studio': {
-    intent: 'Explore spatial concepts',
-    value: 'Inspect the current simulated 3D authoring lane and engineering pass summaries.',
-    next: 'Keep it visual only until a real Three.js/R3F preview lane is added.',
-    evidence: 'simulation checks',
+    intent: 'Inspect 3D models',
+    value: 'Load GLB or GLTF files and inspect model metadata plus the local render state.',
+    next: 'Import model files through File Explorer, then open them here for focused review.',
+    evidence: 'model preview',
   },
   flow: {
     intent: 'Run repeatable workflows',

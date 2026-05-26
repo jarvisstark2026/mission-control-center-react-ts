@@ -108,12 +108,13 @@ export function HomeSystemsWidget({
     setStagedActionId(actionId);
   };
   const hasBackendData = sourceStatus === 'backend-ready';
+  const sourceLabel = sourceStatus === 'local-baseline' ? 'local baseline' : sourceStatus;
 
   if (!hasBackendData) {
     const setupRows = [
       {
         id: 'backend',
-        meta: sourceStatus,
+        meta: sourceLabel,
         title: homeSystems.error ?? 'Home systems backend is not connected',
         detail: 'VITE_HOME_SYSTEMS_API_URL',
         state: sourceStatus === 'offline' ? 'failed' : 'pending',
@@ -139,14 +140,14 @@ export function HomeSystemsWidget({
         <WorkspaceContentHeader
           eyebrow="Home systems"
           title="energy, safety, automation, and rooms"
-          metaEyebrow={sourceStatus}
+          metaEyebrow={sourceLabel}
           meta={role}
         />
         <WorkspaceStatusStrip
           source={sourceStatus === 'offline' ? 'unavailable' : 'local'}
           status={homeSystems.error ?? 'home backend not connected'}
           count={`${actionPlans.length} gated actions`}
-          updatedAt="setup"
+          updatedAt="local baseline"
         />
         <WorkspaceSectionFrame
           className="mission-control-list-frame home-action-frame"
@@ -197,16 +198,16 @@ export function HomeSystemsWidget({
   return (
     <WorkspaceContentShell className="mission-control-surface home-systems-surface">
       <WorkspaceContentHeader
-        eyebrow="Home systems"
-        title="energy, safety, automation, and rooms"
-        metaEyebrow={sourceStatus}
-        meta={role}
+          eyebrow="Home systems"
+          title="energy, safety, automation, and rooms"
+          metaEyebrow={sourceLabel}
+          meta={role}
       />
 
       <WorkspaceStatusStrip
         source={sourceStatus === 'backend-ready' ? 'live' : sourceStatus === 'offline' ? 'unavailable' : 'local'}
         status={`${formatKw(snapshot.generationKw)} generating / ${formatKw(snapshot.consumptionKw)} consuming`}
-        count={sourceStatus}
+        count={sourceLabel}
         updatedAt={homeSystems.error ?? `${summary.total} tracked`}
       />
 
@@ -325,7 +326,7 @@ export function HomeSystemsWidget({
               Current generation is {formatKw(snapshot.generationKw)} against {formatKw(snapshot.consumptionKw)} home load.
             </EvidenceBlock>
             <EvidenceBlock label="Daily priority" title={`${dailySummary.largestLoad.shortLabel} is the largest tracked load`}>
-              Flexible loads account for {formatKwh(dailySummary.flexibleLoadKwh)} today. Use proposals below to move them into solar surplus.
+              Flexible loads account for {formatKwh(dailySummary.flexibleLoadKwh)} today. Stage proposals below to move them into solar surplus.
             </EvidenceBlock>
             <EvidenceBlock label="Evidence for decisions" title="source / trend / impact">
               These readings are monitoring evidence only. Control proposals still require Command Inbox approval.

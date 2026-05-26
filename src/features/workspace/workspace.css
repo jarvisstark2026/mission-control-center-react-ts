@@ -7232,7 +7232,7 @@
   border-color: rgba(102, 232, 255, 0.28);
 }
 
-.market-graph-item[data-state='static'] {
+.market-graph-item[data-state='local-baseline'] {
   border-color: rgba(255, 255, 255, 0.08);
 }
 
@@ -7387,7 +7387,7 @@
   stroke-width: 2.6;
 }
 
-.trading-graph-stage[data-status='static'] .trading-graph-sparkline-line {
+.trading-graph-stage[data-status='local-baseline'] .trading-graph-sparkline-line {
   stroke-dasharray: 4 5;
   stroke: rgba(255, 255, 255, 0.66);
 }

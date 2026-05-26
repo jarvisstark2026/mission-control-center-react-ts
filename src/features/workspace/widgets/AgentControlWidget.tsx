@@ -390,10 +390,13 @@ export function AgentControlWidget({
   const summary = getAgentJobSummary(jobs);
   const editable = canEditAgentSettings(role);
   const connectors = getAgentConnectors(state);
-  const visibleConnectors = connectors.filter((connector) => connector.id !== 'agent-remote-bridge');
+  const visibleConnectors = connectors.filter((connector) => connector.id !== 'agent-remote-bridge' && connector.kind !== 'mock');
   const visibleConnectorCount = visibleConnectors.filter((connector) => connector.status !== 'not-configured').length;
   const activeConnector = getActiveAgentConnector(state);
   const gatewayDisplay = getAgentGatewayDisplay(taskGateway.mode, activeConnector);
+  const activeConnectorMeta = activeConnector.kind === 'mock'
+    ? `${gatewayDisplay.label} / ${state.identity.model}`
+    : `${activeConnector.kind} / ${activeConnector.status} / ${activeConnector.activeEngine ?? state.identity.model}`;
   const localHermesConnector = connectors.find((connector) => connector.id === 'hermes-local-bridge');
   const bridgeTutorialSteps = getAgentBridgeTutorialSteps(state, bridgeSettings);
   const reachableUrl = getAgentBridgeReachableUrl(state);
@@ -660,7 +663,7 @@ export function AgentControlWidget({
         eyebrow="Agent control"
         title="identity / jobs / permissions"
         metaEyebrow="connection"
-        meta={`${activeConnector.kind} / ${activeConnector.status} / ${activeConnector.activeEngine ?? state.identity.model}`}
+        meta={activeConnectorMeta}
       />
 
       <section className="agent-control-health-strip" aria-label="Agent bridge health">

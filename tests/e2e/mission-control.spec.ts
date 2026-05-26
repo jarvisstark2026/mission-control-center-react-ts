@@ -47,7 +47,7 @@ test('operational core widgets launch and use local live data', async ({ page })
 
   await openWidget(page, 'Notifications');
   await expect(page.getByText('live telemetry and alerts')).toBeVisible();
-  await expect(page.getByText('Local fallback').first()).toBeVisible();
+  await expect(page.getByText('local seed events').first()).toBeVisible();
 
   await openWidget(page, 'Integration registry');
   await expect(page.getByText('devices, heartbeats, and permissions')).toBeVisible();
@@ -56,6 +56,11 @@ test('operational core widgets launch and use local live data', async ({ page })
   await openWidget(page, 'Agent control');
   await expect(page.getByText('identity / jobs / permissions').first()).toBeVisible();
   await expect(page.getByText('Hermes / OpenClaw connectors').first()).toBeVisible();
+  await expect(page.getByText(/connection cockpit/i)).toHaveCount(0);
+  await expect(page.getByText(/Mission Control Center/i)).toHaveCount(0);
+  await expect(page.getByText(/Ask Jarvis/i)).toHaveCount(0);
+  await expect(page.getByText(/mock channel/i)).toHaveCount(0);
+  await expect(page.getByText(/mocked systems/i)).toHaveCount(0);
   await page.getByRole('button', { name: 'Agents' }).click();
   await expect(page.getByText('Mission Control Coordinator').last()).toBeVisible();
   await expect(page.getByText('Workflow Agent').last()).toBeVisible();

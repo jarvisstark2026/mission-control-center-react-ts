@@ -13,13 +13,13 @@ function jsonResponse(payload: unknown) {
 }
 
 describe('workspace market live data', () => {
-  it('creates a static fallback quote for every tracked market graph', () => {
+  it('creates a local baseline quote for every tracked market graph', () => {
     const state = createFallbackMarketLiveState(new Date('2026-05-23T12:00:00.000Z'));
 
     expect(Object.keys(state.quotes)).toHaveLength(marketGraphs.length);
-    expect(state.status).toBe('static');
-    expect(state.quotes.btc?.status).toBe('static');
-    expect(state.quotes.eurusd?.sourceLabel).toBe('Static fallback');
+    expect(state.status).toBe('local-baseline');
+    expect(state.quotes.btc?.status).toBe('local-baseline');
+    expect(state.quotes.eurusd?.sourceLabel).toBe('Local baseline');
   });
 
   it('parses live crypto and FX quotes from public API responses', async () => {
@@ -59,7 +59,7 @@ describe('workspace market live data', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(4);
   });
 
-  it('keeps usable static fallback data when one public feed fails', async () => {
+  it('keeps usable local baseline data when one public feed fails', async () => {
     const fetchImpl = vi.fn((input: RequestInfo | URL) => {
       const url = String(input);
 
@@ -78,7 +78,7 @@ describe('workspace market live data', () => {
     const state = await fetchMarketLiveState(fetchImpl, new Date('2026-05-23T12:00:00.000Z'));
 
     expect(state.status).toBe('partial');
-    expect(state.quotes.btc?.status).toBe('static');
+    expect(state.quotes.btc?.status).toBe('local-baseline');
     expect(state.quotes.eurusd?.status).toBe('live');
     expect(state.errors[0]).toContain('Kraken crypto feed unavailable');
   });

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { createMockHomeSystemsPayload, fetchHomeSystemsPayload } from './homeSystemsAdapter';
+import { createLocalHomeSystemsPayload, fetchHomeSystemsPayload } from './homeSystemsAdapter';
 
 function jsonResponse(payload: unknown) {
   return Promise.resolve({
@@ -12,10 +12,10 @@ function jsonResponse(payload: unknown) {
 }
 
 describe('homeSystemsAdapter', () => {
-  it('creates a mock fallback payload when no local backend is configured', () => {
-    const payload = createMockHomeSystemsPayload(new Date('2026-05-23T10:00:00.000Z'));
+  it('creates a local baseline payload when no local backend is configured', () => {
+    const payload = createLocalHomeSystemsPayload(new Date('2026-05-23T10:00:00.000Z'));
 
-    expect(payload.sourceStatus).toBe('mock');
+    expect(payload.sourceStatus).toBe('local-baseline');
     expect(payload.snapshot.solarPvKw).toBeGreaterThan(0);
     expect(payload.dailyProfile.length).toBeGreaterThan(6);
     expect(payload.records.length).toBeGreaterThan(6);

@@ -36,7 +36,7 @@ export function PdfWidget({ file }: { file?: LocalFileRecord | null }) {
         {pdfFile && objectUrl ? (
           <iframe className="pdf-preview-frame" src={objectUrl} title={pdfFile.path} />
         ) : (
-          <WorkspaceEmptyState source="file" title="No PDF loaded" detail="Use File Explorer or Preview to load a local PDF." />
+          <WorkspaceEmptyState source="file" title="No PDF loaded" detail="Load a local PDF from File Explorer or Preview." />
         )}
       </WorkspaceSectionFrame>
     </WorkspaceContentShell>

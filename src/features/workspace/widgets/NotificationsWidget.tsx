@@ -33,7 +33,7 @@ export function NotificationsWidget({ missionControl }: { missionControl: Missio
         source={connection === 'connected' ? 'bridge' : 'local'}
         status={latestTelemetry ? `${latestTelemetry.label} ${latestTelemetry.value}${latestTelemetry.unit}` : 'Telemetry ready'}
         count={`${unreadNotifications.length} unread`}
-        updatedAt={connection === 'connected' ? 'SSE stream' : 'local fallback events'}
+        updatedAt={connection === 'connected' ? 'SSE stream' : 'local seed events'}
       />
 
       <WorkspaceSectionFrame

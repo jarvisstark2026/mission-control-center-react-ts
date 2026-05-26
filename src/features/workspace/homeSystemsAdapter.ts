@@ -9,7 +9,7 @@ import {
   type HomeSystemRecord,
 } from './homeSystemsModel';
 
-export type HomeSystemsDataSourceStatus = 'mock' | 'backend-ready' | 'offline';
+export type HomeSystemsDataSourceStatus = 'local-baseline' | 'backend-ready' | 'offline';
 
 export type HomeSystemsPayload = {
   sourceStatus: HomeSystemsDataSourceStatus;
@@ -30,9 +30,9 @@ function getHomeSystemsApiUrl() {
   return (import.meta.env as HomeSystemsImportMetaEnv).VITE_HOME_SYSTEMS_API_URL;
 }
 
-export function createMockHomeSystemsPayload(now = new Date()): HomeSystemsPayload {
+export function createLocalHomeSystemsPayload(now = new Date()): HomeSystemsPayload {
   return {
-    sourceStatus: 'mock',
+    sourceStatus: 'local-baseline',
     snapshot: homeEnergySnapshot,
     dailyProfile: homeEnergyDailyProfile,
     records: homeSystemRecords,
@@ -45,7 +45,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function normalizePayload(payload: unknown, now = new Date()): HomeSystemsPayload {
-  const fallback = createMockHomeSystemsPayload(now);
+  const fallback = createLocalHomeSystemsPayload(now);
   if (!isRecord(payload)) return { ...fallback, sourceStatus: 'backend-ready' };
 
   return {
@@ -69,7 +69,7 @@ export async function fetchHomeSystemsPayload(apiUrl: string, fetchImpl: JsonFet
 }
 
 export function useHomeSystemsData(refreshMs = 120_000): HomeSystemsPayload {
-  const fallbackPayload = useMemo(() => createMockHomeSystemsPayload(), []);
+  const fallbackPayload = useMemo(() => createLocalHomeSystemsPayload(), []);
   const [payload, setPayload] = useState<HomeSystemsPayload>(fallbackPayload);
 
   useEffect(() => {
@@ -89,7 +89,7 @@ export function useHomeSystemsData(refreshMs = 120_000): HomeSystemsPayload {
       } catch (error) {
         if (!cancelled) {
           setPayload({
-            ...createMockHomeSystemsPayload(),
+            ...createLocalHomeSystemsPayload(),
             sourceStatus: 'offline',
             error: `Home systems backend unavailable: ${error instanceof Error ? error.message : 'request failed'}`,
           });

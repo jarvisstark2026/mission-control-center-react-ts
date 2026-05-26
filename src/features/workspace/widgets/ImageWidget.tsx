@@ -37,7 +37,7 @@ export function ImageWidget({ file }: { file?: LocalFileRecord | null }) {
           {imageFile && objectUrl ? (
             <img className="image-preview-media" src={objectUrl} alt={imageFile.path} />
           ) : (
-            <WorkspaceEmptyState source="file" title="No image loaded" detail="Use File Explorer or Preview to load a local image, then inspect it here." />
+            <WorkspaceEmptyState source="file" title="No image loaded" detail="Load a local image from File Explorer or Preview." />
           )}
         </div>
       </WorkspaceSectionFrame>

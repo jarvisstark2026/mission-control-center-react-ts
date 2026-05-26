@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 
 import { marketGraphs, type MarketGraph } from './workspaceMarketData';
 
-export type MarketQuoteStatus = 'live' | 'static' | 'error';
+export type MarketQuoteStatus = 'live' | 'local-baseline' | 'error';
 
-export type MarketLiveStateStatus = 'static' | 'loading' | 'ready' | 'partial' | 'error';
+export type MarketLiveStateStatus = 'local-baseline' | 'loading' | 'ready' | 'partial' | 'error';
 
 export type MarketLiveQuote = {
   graphId: string;
@@ -13,7 +13,7 @@ export type MarketLiveQuote = {
   changePercent: number | null;
   changeLabel: string;
   status: MarketQuoteStatus;
-  source: 'kraken' | 'frankfurter' | 'static';
+  source: 'kraken' | 'frankfurter' | 'local-baseline';
   sourceLabel: string;
   detail: string;
   updatedAt: string;
@@ -75,7 +75,7 @@ function formatPercent(value: number | null) {
 }
 
 function formatUsdPrice(value: number | null) {
-  if (value === null || !Number.isFinite(value)) return 'static fallback';
+  if (value === null || !Number.isFinite(value)) return 'local baseline';
 
   const maximumFractionDigits = value >= 100 ? 0 : value >= 1 ? 2 : 4;
   return new Intl.NumberFormat('en-US', {
@@ -86,7 +86,7 @@ function formatUsdPrice(value: number | null) {
 }
 
 function formatFxRate(graphId: string, value: number | null) {
-  if (value === null || !Number.isFinite(value)) return 'static fallback';
+  if (value === null || !Number.isFinite(value)) return 'local baseline';
 
   const maximumFractionDigits = graphId === 'usdjpy' ? 3 : 5;
   return value.toFixed(maximumFractionDigits);
@@ -120,10 +120,10 @@ function createStaticQuote(graph: MarketGraph, updatedAt: string): MarketLiveQuo
     priceLabel: formatStaticPrice(graph),
     changePercent: null,
     changeLabel: graph.change,
-    status: 'static',
-    source: 'static',
-    sourceLabel: 'Static fallback',
-    detail: `${graph.note}. Live source is not wired for this instrument yet.`,
+    status: 'local-baseline',
+    source: 'local-baseline',
+    sourceLabel: 'Local baseline',
+    detail: `${graph.note}. Live source is unavailable for this instrument.`,
     updatedAt,
     sparkline: createSparkline(graph.id, null),
   };
@@ -133,9 +133,9 @@ export function createFallbackMarketLiveState(now = new Date()): MarketLiveState
   const updatedAt = now.toISOString();
 
   return {
-    status: 'static',
+    status: 'local-baseline',
     updatedAt,
-    sourceLabel: 'Static fallback',
+    sourceLabel: 'Local baseline',
     quotes: Object.fromEntries(marketGraphs.map((graph) => [graph.id, createStaticQuote(graph, updatedAt)])),
     errors: [],
   };
@@ -289,10 +289,10 @@ export async function fetchMarketLiveState(fetchImpl: JsonFetch, now = new Date(
 
   return {
     ...state,
-    status: liveQuoteCount === 0 ? (hasErrors ? 'error' : 'static') : hasErrors ? 'partial' : 'ready',
+    status: liveQuoteCount === 0 ? (hasErrors ? 'error' : 'local-baseline') : hasErrors ? 'partial' : 'ready',
     sourceLabel:
       liveQuoteCount === 0
-        ? 'Static fallback'
+        ? 'Local baseline'
         : hasErrors
           ? 'Live partial'
           : 'Kraken + Frankfurter',
@@ -317,13 +317,13 @@ export function useMarketLiveData(refreshMs = 120_000): MarketLiveState {
     const loadMarketData = async () => {
       setState((current) => ({
         ...current,
-        status: current.status === 'static' ? 'loading' : current.status,
+        status: current.status === 'local-baseline' ? 'loading' : current.status,
       }));
 
       const nextState = await fetchMarketLiveState(fetchImpl).catch((error) => ({
         ...createFallbackMarketLiveState(),
         status: 'error' as const,
-        sourceLabel: 'Static fallback',
+        sourceLabel: 'Local baseline',
         errors: [`Market data refresh failed: ${error instanceof Error ? error.message : 'request failed'}`],
       }));
 

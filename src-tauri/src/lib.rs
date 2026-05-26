@@ -227,6 +227,113 @@ struct SimpleHttpResponse {
     body: String,
 }
 
+#[derive(Clone)]
+struct BridgeTaskDiagnostic {
+    error_code: String,
+    message: String,
+    status_code: Option<u16>,
+    payload_summary: Option<String>,
+    timestamp: String,
+}
+
+struct BridgeTaskError {
+    error_code: &'static str,
+    message: String,
+    status_code: Option<u16>,
+    payload_summary: Option<String>,
+    http_status: &'static str,
+}
+
+impl BridgeTaskError {
+    fn bad_request(error_code: &'static str, message: String, payload_summary: Option<String>) -> Self {
+        Self {
+            error_code,
+            message,
+            status_code: None,
+            payload_summary,
+            http_status: "400 Bad Request",
+        }
+    }
+
+    fn bad_gateway(error_code: &'static str, message: String, status_code: Option<u16>, payload_summary: Option<String>) -> Self {
+        Self {
+            error_code,
+            message,
+            status_code,
+            payload_summary,
+            http_status: "502 Bad Gateway",
+        }
+    }
+
+    fn to_diagnostic(&self) -> BridgeTaskDiagnostic {
+        BridgeTaskDiagnostic {
+            error_code: self.error_code.to_string(),
+            message: self.message.clone(),
+            status_code: self.status_code,
+            payload_summary: self.payload_summary.clone(),
+            timestamp: now_iso(),
+        }
+    }
+
+    fn to_payload(&self, hermes_api_base_url: &str) -> serde_json::Value {
+        serde_json::json!({
+            "error": self.message,
+            "errorCode": self.error_code,
+            "provider": "hermes",
+            "hermesApiBaseUrl": hermes_api_base_url,
+            "hermesStatusCode": self.status_code,
+            "payloadSummary": self.payload_summary
+        })
+    }
+}
+
+fn safe_payload_preview(value: &str) -> Option<String> {
+    let text = value.trim();
+    if text.is_empty() {
+        None
+    } else {
+        Some(truncate(text, 360))
+    }
+}
+
+fn schema_summary(value: &serde_json::Value) -> String {
+    let mut parts = Vec::new();
+    if let Some(object) = value.as_object() {
+        let keys = object.keys().take(12).cloned().collect::<Vec<_>>().join(", ");
+        parts.push(format!("top-level keys: {}", if keys.is_empty() { "none".to_string() } else { keys }));
+    } else {
+        parts.push(format!(
+            "top-level type: {}",
+            if value.is_array() {
+                "array"
+            } else if value.is_string() {
+                "string"
+            } else if value.is_number() {
+                "number"
+            } else if value.is_boolean() {
+                "boolean"
+            } else if value.is_null() {
+                "null"
+            } else {
+                "unknown"
+            }
+        ));
+    }
+
+    if let Some(choice) = value.get("choices").and_then(|choices| choices.as_array()).and_then(|choices| choices.first()) {
+        if let Some(choice_object) = choice.as_object() {
+            let keys = choice_object.keys().take(12).cloned().collect::<Vec<_>>().join(", ");
+            parts.push(format!("choices[0] keys: {}", if keys.is_empty() { "none".to_string() } else { keys }));
+        }
+        if let Some(message_object) = choice.get("message").and_then(|message| message.as_object()) {
+            let keys = message_object.keys().take(12).cloned().collect::<Vec<_>>().join(", ");
+            parts.push(format!("message keys: {}", if keys.is_empty() { "none".to_string() } else { keys }));
+        }
+    }
+
+    parts.join("; ")
+}
+
 fn decode_chunked_body(raw: &[u8]) -> Vec<u8> {
     let mut index = 0_usize;
     let mut decoded = Vec::new();
@@ -342,10 +449,46 @@ fn check_hermes_api(hermes_api_base_url: &str, hermes_api_key: &str) -> (bool, S
     }
 }
 
-fn create_bridge_status(hermes_api_base_url: &str, hermes_model: &str, hermes_api_key: &str, request_count: u64, last_started_at: &str) -> serde_json::Value {
+fn create_bridge_status(
+    hermes_api_base_url: &str,
+    hermes_model: &str,
+    hermes_api_key: &str,
+    request_count: u64,
+    last_started_at: &str,
+    last_task_failure: Option<BridgeTaskDiagnostic>,
+) -> serde_json::Value {
     let (connected, detail) = check_hermes_api(hermes_api_base_url, hermes_api_key);
     let auth_failed = detail.contains("auth failed");
     let timestamp = now_iso();
+    let mut activity = vec![serde_json::json!({
+        "id": "hermes-bridge-status",
+        "kind": "connection",
+        "title": if connected { "Hermes API connected" } else if auth_failed { "Hermes API auth failed" } else { "Hermes API offline" },
+        "detail": if connected { format!("Forwarding Mission Control tasks to {hermes_api_base_url}.") } else { detail.clone() },
+        "timestamp": timestamp.clone(),
+        "source": "mission-control-local-agent-bridge",
+        "status": if connected { "succeeded" } else { "failed" },
+        "visibleTo": ["admin", "support", "home"]
+    })];
+
+    if let Some(failure) = last_task_failure {
+        activity.push(serde_json::json!({
+            "id": "hermes-task-loop-diagnostic",
+            "kind": "failure",
+            "title": "Task proposal loop failed",
+            "detail": format!(
+                "{}{}{}",
+                failure.error_code,
+                failure.status_code.map(|status| format!(" / {status}")).unwrap_or_default(),
+                failure.payload_summary.as_ref().map(|summary| format!(" / {summary}")).unwrap_or_else(|| format!(" / {}", failure.message))
+            ),
+            "timestamp": failure.timestamp.clone(),
+            "source": "mission-control-local-agent-bridge",
+            "status": "failed",
+            "visibleTo": ["admin", "support", "home"]
+        }));
+    }
+
     serde_json::json!({
         "status": if connected { "connected" } else { "offline" },
         "provider": "hermes",
@@ -357,7 +500,7 @@ fn create_bridge_status(hermes_api_base_url: &str, hermes_model: &str, hermes_ap
             format!("Waiting for Hermes API at {hermes_api_base_url}. {detail}")
         },
         "capabilities": ["status", "events", "tasks", "mission-control-events", "json-surface", "hermes-chat-completions"],
-        "lastSeenAt": timestamp,
+        "lastSeenAt": timestamp.clone(),
         "agents": [{
             "id": "hermes-coordinator",
             "name": "Hermes Coordinator",
@@ -376,8 +519,8 @@ fn create_bridge_status(hermes_api_base_url: &str, hermes_model: &str, hermes_ap
             "kind": "monitor",
             "status": "active",
             "cadence": "every request / heartbeat",
-            "lastRunAt": timestamp,
-            "nextRunAt": timestamp,
+            "lastRunAt": timestamp.clone(),
+            "nextRunAt": timestamp.clone(),
             "owner": "Hermes Coordinator",
             "safeForHome": true,
             "description": format!("Checks Hermes Agent API at {hermes_api_base_url}."),
@@ -412,28 +555,49 @@ fn create_bridge_status(hermes_api_base_url: &str, hermes_model: &str, hermes_ap
             "estimatedCostUsd": 0,
             "windowStartedAt": last_started_at
         },
-        "activity": [{
-            "id": "hermes-bridge-status",
-            "kind": "connection",
-            "title": if connected { "Hermes API connected" } else if auth_failed { "Hermes API auth failed" } else { "Hermes API offline" },
-            "detail": if connected { format!("Forwarding Mission Control tasks to {hermes_api_base_url}.") } else { detail },
-            "timestamp": timestamp,
-            "source": "mission-control-local-agent-bridge",
-            "status": if connected { "succeeded" } else { "failed" },
-            "visibleTo": ["admin", "support", "home"]
-        }]
+        "activity": activity
     })
 }
 
 fn extract_hermes_content(payload: &serde_json::Value) -> String {
-    let Some(choice) = payload.get("choices").and_then(|choices| choices.as_array()).and_then(|choices| choices.first()) else {
-        return String::new();
-    };
-    if let Some(content) = choice.pointer("/message/content").and_then(|content| content.as_str()) {
-        return content.trim().to_string();
+    if let Some(choice) = payload.get("choices").and_then(|choices| choices.as_array()).and_then(|choices| choices.first()) {
+        if let Some(content) = choice.pointer("/message/content") {
+            if let Some(text) = content.as_str() {
+                return text.trim().to_string();
+            }
+            if let Some(parts) = content.as_array() {
+                let text = parts
+                    .iter()
+                    .filter_map(|part| {
+                        if let Some(text) = part.as_str() {
+                            Some(text)
+                        } else {
+                            part.get("text")
+                                .and_then(|text| text.as_str())
+                                .or_else(|| part.get("content").and_then(|text| text.as_str()))
+                        }
+                    })
+                    .collect::<Vec<_>>()
+                    .join("\n")
+                    .trim()
+                    .to_string();
+                if !text.is_empty() {
+                    return text;
+                }
+            }
+        }
+        if let Some(content) = choice.get("text").and_then(|content| content.as_str()) {
+            return content.trim().to_string();
+        }
     }
-    if let Some(content) = choice.get("text").and_then(|content| content.as_str()) {
-        return content.trim().to_string();
+
+    for field in ["message", "content", "response", "output_text"] {
+        if let Some(content) = payload.get(field).and_then(|content| content.as_str()) {
+            let text = content.trim();
+            if !text.is_empty() {
+                return text.to_string();
+            }
+        }
     }
     String::new()
 }
@@ -486,7 +650,12 @@ fn truncate(value: &str, max_len: usize) -> String {
     format!("{}...", value.chars().take(max_len.saturating_sub(3)).collect::<String>().trim())
 }
 
-fn create_task_result(request: serde_json::Value, hermes_api_base_url: &str, hermes_model: &str, hermes_api_key: &str) -> Result<serde_json::Value, String> {
+fn create_task_result(
+    request: serde_json::Value,
+    hermes_api_base_url: &str,
+    hermes_model: &str,
+    hermes_api_key: &str,
+) -> Result<serde_json::Value, BridgeTaskError> {
     let timestamp = now_iso();
     let objective = string_field(&request, "objective", "Review Mission Control task");
     let title = truncate(&objective, 58);
@@ -524,20 +693,57 @@ fn create_task_result(request: serde_json::Value, hermes_api_base_url: &str, her
     let response = http_request(
         "POST",
         &chat_url,
-        Some(&serde_json::to_string(&hermes_body).map_err(|error| error.to_string())?),
+        Some(&serde_json::to_string(&hermes_body).map_err(|error| {
+            BridgeTaskError::bad_gateway(
+                "bridge_request_build_failed",
+                format!("Mission Control bridge could not build the Hermes task request: {error}"),
+                None,
+                None,
+            )
+        })?),
         Some("application/json"),
         hermes_api_key,
-    )?;
+    )
+    .map_err(|error| {
+        BridgeTaskError::bad_gateway(
+            "hermes_http_error",
+            format!("Hermes API task request failed before a response was received: {error}"),
+            None,
+            None,
+        )
+    })?;
     if !(200..300).contains(&response.status_code) {
         if response.status_code == 401 || response.status_code == 403 {
-            return Err(format!("Hermes API auth failed: {}", response.status_code));
+            return Err(BridgeTaskError::bad_gateway(
+                "hermes_auth_failed",
+                format!("Hermes API auth failed: {}", response.status_code),
+                Some(response.status_code),
+                safe_payload_preview(&response.body),
+            ));
         }
-        return Err(format!("Hermes API returned {}: {}", response.status_code, truncate(&response.body, 260)));
+        return Err(BridgeTaskError::bad_gateway(
+            "hermes_http_error",
+            format!("Hermes API returned {}", response.status_code),
+            Some(response.status_code),
+            safe_payload_preview(&response.body),
+        ));
     }
-    let payload: serde_json::Value = serde_json::from_str(&response.body).map_err(|error| error.to_string())?;
+    let payload: serde_json::Value = serde_json::from_str(&response.body).map_err(|error| {
+        BridgeTaskError::bad_gateway(
+            "hermes_invalid_json",
+            format!("Hermes API returned a non-JSON chat response: {error}"),
+            Some(response.status_code),
+            safe_payload_preview(&response.body),
+        )
+    })?;
     let content = extract_hermes_content(&payload);
     if content.is_empty() {
-        return Err("Hermes API returned no assistant content.".to_string());
+        return Err(BridgeTaskError::bad_gateway(
+            "hermes_unsupported_response",
+            "Hermes API returned JSON, but Mission Control could not find assistant text in an OpenAI-compatible field.".to_string(),
+            Some(response.status_code),
+            Some(schema_summary(&payload)),
+        ));
     }
 
     let command_id = format!("hermes-task-{}-{}", create_slug(&request_id), OffsetDateTime::now_utc().unix_timestamp());
@@ -619,6 +825,7 @@ fn handle_bridge_connection(
     hermes_api_key: String,
     request_count: Arc<AtomicU64>,
     running: Arc<AtomicBool>,
+    last_task_failure: Arc<Mutex<Option<BridgeTaskDiagnostic>>>,
     last_started_at: String,
 ) {
     let Ok((method, path, body)) = parse_http_request(&mut stream) else {
@@ -632,12 +839,14 @@ fn handle_bridge_connection(
     }
 
     if method == "GET" && path == "/status" {
+        let task_failure = last_task_failure.lock().ok().and_then(|failure| failure.clone());
         let payload = create_bridge_status(
             &hermes_api_base_url,
             &hermes_model,
             &hermes_api_key,
             request_count.load(Ordering::SeqCst),
             &last_started_at,
+            task_failure,
         );
         send_json(&mut stream, "200 OK", payload);
         return;
@@ -668,9 +877,10 @@ fn handle_bridge_connection(
         let header = "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream; charset=utf-8\r\nCache-Control: no-cache, no-transform\r\nConnection: keep-alive\r\nAccess-Control-Allow-Origin: *\r\n\r\n";
         let _ = stream.write_all(header.as_bytes());
         while running.load(Ordering::SeqCst) {
+            let task_failure = last_task_failure.lock().ok().and_then(|failure| failure.clone());
             let payload = serde_json::json!({
                 "type": "status",
-                "status": create_bridge_status(&hermes_api_base_url, &hermes_model, &hermes_api_key, request_count.load(Ordering::SeqCst), &last_started_at)
+                "status": create_bridge_status(&hermes_api_base_url, &hermes_model, &hermes_api_key, request_count.load(Ordering::SeqCst), &last_started_at, task_failure)
             });
             let line = format!("data: {}\n\n", serde_json::to_string(&payload).unwrap_or_else(|_| "{}".to_string()));
             if stream.write_all(line.as_bytes()).is_err() {
@@ -683,20 +893,31 @@ fn handle_bridge_connection(
 
     if method == "POST" && path == "/tasks" {
         request_count.fetch_add(1, Ordering::SeqCst);
-        match serde_json::from_str::<serde_json::Value>(&body)
-            .map_err(|error| error.to_string())
-            .and_then(|request| create_task_result(request, &hermes_api_base_url, &hermes_model, &hermes_api_key))
-        {
-            Ok(result) => send_json(&mut stream, "200 OK", result),
-            Err(error) => send_json(
+        let request = serde_json::from_str::<serde_json::Value>(&body).map_err(|error| {
+            BridgeTaskError::bad_request(
+                "invalid_task_request",
+                format!("Mission Control bridge received invalid task JSON: {error}"),
+                safe_payload_preview(&body),
+            )
+        });
+
+        match request.and_then(|request| create_task_result(request, &hermes_api_base_url, &hermes_model, &hermes_api_key)) {
+            Ok(result) => {
+                if let Ok(mut failure) = last_task_failure.lock() {
+                    *failure = None;
+                }
+                send_json(&mut stream, "200 OK", result)
+            }
+            Err(error) => {
+                if let Ok(mut failure) = last_task_failure.lock() {
+                    *failure = Some(error.to_diagnostic());
+                }
+                send_json(
                 &mut stream,
-                "502 Bad Gateway",
-                serde_json::json!({
-                    "error": error,
-                    "provider": "hermes",
-                    "hermesApiBaseUrl": hermes_api_base_url
-                }),
-            ),
+                error.http_status,
+                error.to_payload(&hermes_api_base_url),
+                )
+            }
         }
         return;
     }
@@ -716,6 +937,7 @@ fn start_local_bridge_thread(hermes_api_base_url: String, hermes_model: String, 
     let listener = TcpListener::bind(bind_addr).map_err(|error| error.to_string())?;
     listener.set_nonblocking(true).map_err(|error| error.to_string())?;
     let request_count = Arc::new(AtomicU64::new(0));
+    let last_task_failure: Arc<Mutex<Option<BridgeTaskDiagnostic>>> = Arc::new(Mutex::new(None));
 
     thread::spawn(move || {
         while running.load(Ordering::SeqCst) {
@@ -726,9 +948,10 @@ fn start_local_bridge_thread(hermes_api_base_url: String, hermes_model: String, 
                     let api_key = hermes_api_key.clone();
                     let counter = Arc::clone(&request_count);
                     let running_for_client = Arc::clone(&running);
+                    let task_failure = Arc::clone(&last_task_failure);
                     let started_at = last_started_at.clone();
                     thread::spawn(move || {
-                        handle_bridge_connection(stream, base_url, model, api_key, counter, running_for_client, started_at);
+                        handle_bridge_connection(stream, base_url, model, api_key, counter, running_for_client, task_failure, started_at);
                     });
                 }
                 Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {

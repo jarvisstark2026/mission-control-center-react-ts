@@ -8,7 +8,7 @@ describe('missionCommandGateway', () => {
     vi.unstubAllGlobals();
   });
 
-  it('executes approved commands through the local mock gateway', async () => {
+  it('executes approved commands through the local dry-run gateway', async () => {
     const gateway = createMockMissionCommandGateway({ delayMs: 0 });
     const command = initialCommands[0];
 
@@ -21,6 +21,7 @@ describe('missionCommandGateway', () => {
       }),
     ).resolves.toMatchObject({
       status: 'succeeded',
+      result: expect.stringContaining('Local dry-run gateway completed'),
       gatewayMode: 'mock',
       rollbackAvailable: true,
     });

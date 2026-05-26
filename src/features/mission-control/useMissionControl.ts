@@ -98,7 +98,7 @@ export function useMissionControl(role: ShellRole): MissionControlRuntime {
             type: 'command-execution',
             commandId,
             status: 'running',
-            result: `${commandGateway.mode === 'backend' ? 'Backend' : 'Local mock'} gateway is executing the command.`,
+            result: `${commandGateway.mode === 'backend' ? 'Backend' : 'Local dry-run'} gateway is executing the command.`,
             actor: `${commandGateway.mode}-command-gateway`,
             timestamp: new Date().toISOString(),
           } satisfies MissionControlReducerAction);

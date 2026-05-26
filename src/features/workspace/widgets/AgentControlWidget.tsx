@@ -46,6 +46,7 @@ import {
   WorkspaceSectionFrame,
   WorkspaceSummaryPanel,
 } from '../workspaceBlocks';
+import { getAgentGatewayDisplay } from './agentWorkflowDisplay';
 
 function formatDateTime(value: string | null) {
   if (!value) return 'not scheduled';
@@ -202,6 +203,16 @@ const bridgeModeOptions: Array<{ id: AgentBridgeMode; label: string; detail: str
   },
 ];
 
+type AgentControlPanel = 'connection' | 'agents' | 'permissions' | 'diagnostics' | 'help';
+
+const agentControlPanels: Array<{ id: AgentControlPanel; label: string }> = [
+  { id: 'connection', label: 'Connection' },
+  { id: 'agents', label: 'Agents' },
+  { id: 'permissions', label: 'Permissions' },
+  { id: 'diagnostics', label: 'Diagnostics' },
+  { id: 'help', label: 'Help' },
+];
+
 function getStatusUrl(url: string | null | undefined) {
   const trimmedUrl = url?.trim().replace(/\/+$/u, '');
   return trimmedUrl ? `${trimmedUrl}/status` : null;
@@ -309,7 +320,7 @@ export function AgentControlWidget({
   const [localBridgeProcess, setLocalBridgeProcess] = useState<LocalAgentBridgeProcessState | null>(null);
   const [bridgeSetupStatus, setBridgeSetupStatus] = useState('Choose where Hermes runs, then start the desktop local bridge.');
   const [bridgeInputWarning, setBridgeInputWarning] = useState('');
-  const [bridgeHelpOpen, setBridgeHelpOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<AgentControlPanel>('connection');
   const [testProposalStatus, setTestProposalStatus] = useState('Send a safe test proposal when the bridge is connected.');
 
   useEffect(() => {
@@ -363,6 +374,7 @@ export function AgentControlWidget({
   const visibleConnectors = connectors.filter((connector) => connector.id !== 'agent-remote-bridge');
   const visibleConnectorCount = visibleConnectors.filter((connector) => connector.status !== 'not-configured').length;
   const activeConnector = getActiveAgentConnector(state);
+  const gatewayDisplay = getAgentGatewayDisplay(taskGateway.mode, activeConnector);
   const localHermesConnector = connectors.find((connector) => connector.id === 'hermes-local-bridge');
   const bridgeTutorialSteps = getAgentBridgeTutorialSteps(state, bridgeSettings);
   const reachableUrl = getAgentBridgeReachableUrl(state);
@@ -370,6 +382,9 @@ export function AgentControlWidget({
   const preferredStatusUrl = getStatusUrl(reachableUrl ?? bridgeSettings.lastSuccessfulUrl ?? localBridgeUrl);
   const localBridgeChecked = Boolean(localHermesConnector?.healthCheckedAt || localHermesConnector?.lastSeenAt);
   const localBridgeReachable = Boolean(localHermesConnector?.url && localBridgeChecked && !localHermesConnector.error);
+  const latestTaskFailure = state.diagnostics.find((diagnostic) => diagnostic.source === 'tasks' && diagnostic.level !== 'info');
+  const bridgeStoppedOrUnknown = !localBridgeReachable && !localBridgeProcess?.running;
+  const hasAuthFailure = /401|403|auth|api key/iu.test(`${localHermesConnector?.error ?? ''} ${latestTaskFailure?.message ?? ''}`);
   const missionControlBridgeLabel = localBridgeProcess?.running
     ? 'running'
     : localBridgeReachable
@@ -378,17 +393,25 @@ export function AgentControlWidget({
         ? 'desktop controls unavailable'
         : localHermesConnector?.error
           ? 'unreachable'
-          : 'stopped / not probed';
-  const hermesApiLabel = localHermesConnector?.status === 'connected'
-    ? 'connected'
-    : localHermesConnector?.status === 'offline'
-      ? 'offline'
-      : localHermesConnector?.status === 'error'
-        ? 'error'
-        : 'waiting';
-  const taskGatewayLabel = activeConnector.kind !== 'mock' && activeConnector.status === 'connected'
-    ? `bridge / ${activeConnector.provider}`
-    : 'mock fallback active';
+          : 'Mission Control bridge stopped';
+  let hermesApiLabel = 'not checked';
+  if (!bridgeStoppedOrUnknown) {
+    if (hasAuthFailure) {
+      hermesApiLabel = 'auth failed';
+    } else if (localHermesConnector?.status === 'connected') {
+      hermesApiLabel = 'connected';
+    } else if (localHermesConnector?.status === 'offline') {
+      hermesApiLabel = 'offline';
+    } else if (localHermesConnector?.status === 'error') {
+      hermesApiLabel = 'error';
+    }
+  }
+  let taskGatewayLabel = 'Local proposal fallback';
+  if (!bridgeStoppedOrUnknown && latestTaskFailure) {
+    taskGatewayLabel = `Task loop failing / ${latestTaskFailure.message}`;
+  } else if (!bridgeStoppedOrUnknown && localHermesConnector?.status === 'connected' && taskGateway.mode === 'bridge') {
+    taskGatewayLabel = gatewayDisplay.label;
+  }
   const bridgeProcessLabel = localBridgeProcess?.available === false
     ? localBridgeReachable
       ? 'browser preview / bridge reachable'
@@ -462,6 +485,33 @@ export function AgentControlWidget({
       setBridgeSetupStatus(processState.running ? `Local bridge restarted at ${processState.bridgeUrl}.` : processState.lastError ?? 'Local bridge did not restart.');
     } catch (error) {
       setBridgeSetupStatus(error instanceof Error ? `Restart bridge failed: ${error.message}` : 'Restart bridge failed.');
+    }
+  };
+  const restartBridgeAndProbe = async () => {
+    saveBridgeSettings();
+    setBridgeSetupStatus('Restarting local Mission Control bridge and probing /status...');
+    try {
+      const processState = await restartLocalAgentBridge({ hermesApiBaseUrl, hermesModel, hermesApiKey });
+      setLocalBridgeProcess(processState);
+      onUpdateBridgeSettings({
+        localBridgeUrl: processState.bridgeUrl,
+        lastSuccessfulUrl: processState.running ? processState.bridgeUrl : bridgeSettings.lastSuccessfulUrl,
+      });
+      if (!processState.available) {
+        setBridgeSetupStatus(processState.lastError ?? 'Desktop app required to restart the bundled bridge.');
+        return;
+      }
+      if (!processState.running) {
+        setBridgeSetupStatus(processState.lastError ?? 'Local bridge is stopped; /status was not probed.');
+        return;
+      }
+      const result = await onTestBridgeUrl(processState.bridgeUrl);
+      setBridgeSetupStatus(`Restarted local bridge. ${getProbeSummary(result)}`);
+      if (result.ok) {
+        onUpdateBridgeSettings({ localBridgeUrl: processState.bridgeUrl, lastSuccessfulUrl: processState.bridgeUrl });
+      }
+    } catch (error) {
+      setBridgeSetupStatus(error instanceof Error ? `Restart and probe failed: ${error.message}` : 'Restart and probe failed.');
     }
   };
   const testHermesApi = async () => {
@@ -578,6 +628,9 @@ export function AgentControlWidget({
             { label: 'Mission Control bridge', value: missionControlBridgeLabel, wide: true },
             { label: 'Hermes API', value: `${hermesApiLabel} / ${hermesApiBaseUrl}`, wide: true },
             { label: 'Task gateway', value: taskGatewayLabel, wide: true },
+            { label: 'mode', value: bridgeModeOptions.find((option) => option.id === bridgeMode)?.label ?? bridgeMode },
+            { label: 'host / port', value: `${bridgeMode === 'same-pc' ? '127.0.0.1' : hermesHost || 'not set'}:${hermesApiPort || '8642'}`, wide: true },
+            { label: 'API key', value: hermesApiKey ? 'configured' : 'not set' },
             { label: 'reachable', value: reachableUrl ?? 'waiting for /status', wide: true },
             { label: 'last success', value: bridgeSettings.lastSuccessfulUrl ?? 'not recorded', wide: true },
             { label: 'last event', value: formatDateTime(state.lastBridgeEventAt), wide: true },
@@ -600,6 +653,23 @@ export function AgentControlWidget({
         <p className="mission-control-muted">{testProposalStatus}</p>
       </WorkspaceSectionFrame>
 
+      <div className="agent-control-section-tabs" role="tablist" aria-label="Agent Control sections">
+        {agentControlPanels.map((panel) => (
+          <button
+            key={panel.id}
+            type="button"
+            className="agent-control-section-tab"
+            aria-selected={activePanel === panel.id}
+            aria-pressed={activePanel === panel.id}
+            onClick={() => setActivePanel(panel.id)}
+          >
+            {panel.label}
+          </button>
+        ))}
+      </div>
+
+      {activePanel === 'connection' ? (
+        <>
       <WorkspaceSectionFrame
         className="mission-control-list-frame agent-control-connectors-frame"
         eyebrow="agent bridge"
@@ -715,8 +785,8 @@ export function AgentControlWidget({
         <div className="mission-control-actions agent-control-bridge-actions">
           <WorkspaceButton
             variant="secondary"
-            aria-expanded={bridgeHelpOpen}
-            onClick={() => setBridgeHelpOpen((open) => !open)}
+            aria-expanded={false}
+            onClick={() => setActivePanel('help')}
           >
             Bridge help
           </WorkspaceButton>
@@ -732,6 +802,9 @@ export function AgentControlWidget({
           <WorkspaceButton variant="secondary" disabled={!editable || !hermesApiBaseUrl} onClick={restartDesktopBridge}>
             Restart bridge
           </WorkspaceButton>
+          <WorkspaceButton variant="primary" disabled={!editable || !hermesApiBaseUrl} onClick={restartBridgeAndProbe}>
+            Restart bridge and probe
+          </WorkspaceButton>
           <WorkspaceButton variant="secondary" disabled={!editable || !hermesApiBaseUrl} onClick={testHermesApi}>
             Test Hermes API
           </WorkspaceButton>
@@ -741,8 +814,10 @@ export function AgentControlWidget({
         </div>
         <p className="mission-control-muted">{bridgeSetupStatus}</p>
       </WorkspaceSectionFrame>
+        </>
+      ) : null}
 
-      {bridgeHelpOpen ? (
+      {activePanel === 'help' ? (
         <WorkspaceSectionFrame
           className="mission-control-list-frame agent-control-bridge-tutorial"
           eyebrow="bridge help"
@@ -805,6 +880,8 @@ export function AgentControlWidget({
         </WorkspaceSectionFrame>
       ) : null}
 
+      {activePanel === 'diagnostics' ? (
+        <>
       <WorkspaceSectionFrame
         className="mission-control-list-frame"
         eyebrow="bridge diagnostics"
@@ -817,7 +894,23 @@ export function AgentControlWidget({
           ))}
         </div>
       </WorkspaceSectionFrame>
+      <WorkspaceSectionFrame
+        className="mission-control-list-frame"
+        eyebrow="recent activity"
+        title="audit timeline"
+        meta={`${activity.length} records`}
+      >
+        <div className="mission-control-compact-list" role="list" aria-label="Agent activity timeline">
+          {activity.slice(0, 6).map((item) => (
+            <AgentActivityRow key={item.id} activity={item} />
+          ))}
+        </div>
+      </WorkspaceSectionFrame>
+        </>
+      ) : null}
 
+      {activePanel === 'agents' ? (
+        <>
       <WorkspaceSectionFrame
         className="mission-control-list-frame"
         eyebrow="active model"
@@ -876,7 +969,10 @@ export function AgentControlWidget({
           ))}
         </div>
       </WorkspaceSectionFrame>
+        </>
+      ) : null}
 
+      {activePanel === 'permissions' ? (
       <WorkspaceSectionFrame
         className="mission-control-list-frame"
         eyebrow="tool permissions"
@@ -896,19 +992,7 @@ export function AgentControlWidget({
           ))}
         </div>
       </WorkspaceSectionFrame>
-
-      <WorkspaceSectionFrame
-        className="mission-control-list-frame"
-        eyebrow="recent activity"
-        title="audit timeline"
-        meta={`${activity.length} records`}
-      >
-        <div className="mission-control-compact-list" role="list" aria-label="Agent activity timeline">
-          {activity.slice(0, 6).map((item) => (
-            <AgentActivityRow key={item.id} activity={item} />
-          ))}
-        </div>
-      </WorkspaceSectionFrame>
+      ) : null}
     </WorkspaceContentShell>
   );
 }

@@ -195,6 +195,28 @@ function normalizeAgentTaskGatewayResult(value: unknown): AgentTaskGatewayResult
   };
 }
 
+function summarizeBridgeTaskError(status: number, body: unknown) {
+  if (!isRecord(body)) {
+    return {
+      message: `Agent bridge task endpoint returned ${status}.`,
+      payload: body,
+    };
+  }
+
+  const errorCode = typeof body.errorCode === 'string' ? body.errorCode : null;
+  const error = typeof body.error === 'string' ? body.error : `Agent bridge task endpoint returned ${status}.`;
+  const hermesStatusCode = typeof body.hermesStatusCode === 'number' ? body.hermesStatusCode : null;
+  const payloadSummary = typeof body.payloadSummary === 'string' ? body.payloadSummary : null;
+  const prefix = errorCode ? `${errorCode}: ` : '';
+  const suffix = hermesStatusCode ? ` (Hermes ${hermesStatusCode})` : '';
+  const detail = payloadSummary ? ` ${payloadSummary}` : '';
+
+  return {
+    message: `${prefix}${error}${suffix}${detail}`.trim(),
+    payload: body,
+  };
+}
+
 function getBridgeTaskUrl(baseUrl: string) {
   return `${baseUrl.replace(/\/+$/u, '')}/tasks`;
 }
@@ -242,6 +264,7 @@ export function createBridgeAgentTaskGateway(
   return {
     mode: 'bridge',
     async submitTask(request) {
+      let diagnosticEmitted = false;
       try {
         const response = await fetchImpl(getBridgeTaskUrl(baseUrl), {
           method: 'POST',
@@ -253,14 +276,30 @@ export function createBridgeAgentTaskGateway(
         });
 
         if (!response.ok) {
-          throw new Error(`Agent bridge task endpoint returned ${response.status}.`);
+          let body: unknown = null;
+          const rawBody = await response.text().catch(() => '');
+          try {
+            body = rawBody ? JSON.parse(rawBody) : null;
+          } catch {
+            body = rawBody || null;
+          }
+          const summary = summarizeBridgeTaskError(response.status, body);
+          options.onDiagnostic?.(summary.message, {
+            requestId: request.id,
+            objective: request.objective,
+            response: summary.payload,
+          });
+          diagnosticEmitted = true;
+          throw new Error(summary.message);
         }
 
         const body: unknown = await response.json();
         return normalizeAgentTaskGatewayResult(body);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Agent bridge task endpoint failed.';
-        options.onDiagnostic?.(message, { requestId: request.id, objective: request.objective });
+        if (!diagnosticEmitted) {
+          options.onDiagnostic?.(message, { requestId: request.id, objective: request.objective });
+        }
         throw error;
       }
     },

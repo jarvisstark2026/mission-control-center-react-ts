@@ -143,4 +143,31 @@ describe('agentTaskingModel', () => {
       objective: 'Check media status and propose a fix.',
     });
   });
+
+  it('bridge gateway preserves structured Hermes task-loop diagnostics', async () => {
+    const onDiagnostic = vi.fn();
+    const fetchImpl = vi.fn(async () =>
+      new Response(JSON.stringify({
+        error: 'Hermes API returned JSON, but Mission Control could not find assistant text in an OpenAI-compatible field.',
+        errorCode: 'hermes_unsupported_response',
+        provider: 'hermes',
+        hermesApiBaseUrl: 'http://192.0.2.64:8642/v1',
+        hermesStatusCode: 200,
+        payloadSummary: 'top-level keys: status, result',
+      }), {
+        status: 502,
+        headers: { 'content-type': 'application/json' },
+      }),
+    );
+    const gateway = createBridgeAgentTaskGateway('http://127.0.0.1:8787', { fetchImpl, onDiagnostic });
+
+    await expect(gateway.submitTask(createRequest({ id: 'task-hermes-shape' }))).rejects.toThrow(/hermes_unsupported_response/i);
+    expect(onDiagnostic).toHaveBeenCalledWith(expect.stringMatching(/top-level keys: status, result/i), expect.objectContaining({
+      requestId: 'task-hermes-shape',
+      response: expect.objectContaining({
+        errorCode: 'hermes_unsupported_response',
+        hermesStatusCode: 200,
+      }),
+    }));
+  });
 });

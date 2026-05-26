@@ -226,6 +226,7 @@ function renderWorkspaceWidgetContent({
           taskGateway={agentTaskGateway}
           operationalOs={operationalOs}
           bridgeSettings={agentBridgeSettings}
+          onLaunchWorkspaceWidget={onLaunchWorkspaceWidget}
         />
       );
     case 'home-systems':

@@ -20,6 +20,7 @@ import {
   WorkspaceSectionFrame,
   WorkspaceSummaryPanel,
 } from '../workspaceBlocks';
+import { getAgentGatewayDisplay } from './agentWorkflowDisplay';
 
 const scopeLabels: Record<AgentTaskScope, string> = {
   household: 'Household',
@@ -65,6 +66,7 @@ export function AgentConsoleWidget({
   taskGateway,
   operationalOs,
   bridgeSettings,
+  onLaunchWorkspaceWidget,
 }: {
   role: ShellRole;
   missionControl: MissionControlRuntime;
@@ -72,6 +74,7 @@ export function AgentConsoleWidget({
   taskGateway?: AgentTaskGateway;
   operationalOs: OperationalOsRuntime;
   bridgeSettings: AgentBridgeSettings;
+  onLaunchWorkspaceWidget?: (kind: 'command-inbox') => void;
 }) {
   const tasking = useAgentTasking(role, missionControl.ingestEvents, taskGateway);
   const availableScopes = useMemo(() => getAgentTaskScopesForRole(role), [role]);
@@ -88,6 +91,11 @@ export function AgentConsoleWidget({
   const activeConnector = getActiveAgentConnector(agentControl);
   const canView = canViewAgentConsole(role);
   const canSubmit = canSubmitAgentTask(role, { scope, risk });
+  const canRetryLastRequest = tasking.state.lastRequest ? canSubmitAgentTask(role, tasking.state.lastRequest) : false;
+  const gatewayDisplay = getAgentGatewayDisplay(tasking.gatewayMode, activeConnector);
+  const primarySubmitLabel = gatewayDisplay.state === 'ready' ? 'Ask agent' : 'Stage local proposal';
+  const commandById = new Map(missionControl.state.commands.map((command) => [command.id, command]));
+  const proposalByCommandId = new Map(tasking.state.proposals.map((proposal) => [proposal.commandId, proposal]));
 
   useEffect(() => {
     if (preferredAgent) {
@@ -118,6 +126,22 @@ export function AgentConsoleWidget({
       source: 'agent-console',
     });
   };
+  const retryLastRequest = () => {
+    const request = tasking.state.lastRequest;
+    if (!request) return;
+    setObjective(request.objective);
+    setScope(request.scope);
+    setRisk(request.risk);
+    setTargetAgentId(request.targetAgentId);
+    setGoalId(request.goalId ?? '');
+    void tasking.submitTask(request.objective, request.scope, request.risk, request.targetAgentId, {
+      goalId: request.goalId,
+      evidenceIds: request.evidenceIds,
+      workflowRunId: request.workflowRunId,
+      workflowStepId: request.workflowStepId,
+      source: request.source ?? 'agent-console',
+    });
+  };
 
   return (
     <WorkspaceContentShell className="mission-control-surface agent-console-surface">
@@ -125,50 +149,58 @@ export function AgentConsoleWidget({
         eyebrow="Agent console"
         title="chat / proposals"
         metaEyebrow="gateway"
-        meta={`${tasking.gatewayMode} / ${activeConnector.provider}`}
+        meta={gatewayDisplay.label}
       />
 
       <StatusSummary
         label="Gateway status"
-        title={`${activeConnector.provider} / ${activeConnector.status}`}
-        detail={`Agent Console asks the active provider for help, then stages any executable result as a Command Inbox proposal. Current mode is ${tasking.gatewayMode}; mock mode is explicit when no bridge is online.`}
-        meta={`${tasking.state.status} / ${activeConnector.status}`}
+        title={gatewayDisplay.label}
+        detail={gatewayDisplay.detail}
+        meta={`${tasking.state.status} / ${gatewayDisplay.meta}`}
       />
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame agent-console-compose"
         eyebrow="conversation"
-        title="ask agent"
+        title="operator thread"
         meta={tasking.state.status}
       >
+        <div className="agent-console-gateway-strip" data-state={gatewayDisplay.state}>
+          <span>{gatewayDisplay.label}</span>
+          <strong>{activeConnector.provider} / {activeConnector.status}</strong>
+          <small>{gatewayDisplay.detail}</small>
+        </div>
         <AttentionCard label="Selected agent" title={targetAgent.name} risk={risk}>
           <AgentAttribution agent={targetAgent} profile={targetAgent.profile} />
           <p>{targetAgent.summary}</p>
         </AttentionCard>
-        <div className="agent-console-selector-row" role="group" aria-label="Target agent">
-          {visibleAgents.map((agent) => (
-            <button
-              key={agent.id}
-              type="button"
-              className="agent-console-chip"
-              aria-pressed={targetAgentId === agent.id}
-              onClick={() => setTargetAgentId(agent.id)}
-            >
-              {agent.name}
-            </button>
-          ))}
+        <div className="agent-console-context-grid">
+          <label className="agent-console-field">
+            <span>goal</span>
+            <select value={goalId} onChange={(event) => setGoalId(event.currentTarget.value)} aria-label="Related goal">
+              <option value="">No goal link</option>
+              {operationalOs.state.goals.map((goal) => (
+                <option key={goal.id} value={goal.id}>
+                  {goal.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="agent-console-field">
+            <span>target agent</span>
+            <select value={targetAgentId} onChange={(event) => setTargetAgentId(event.currentTarget.value)} aria-label="Target agent">
+              {visibleAgents.map((agent) => (
+                <option key={agent.id} value={agent.id}>
+                  {agent.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="agent-console-context-pill">
+            <span>evidence</span>
+            <strong>{selectedGoal?.evidenceIds.length ?? 0}</strong>
+          </div>
         </div>
-        <label className="agent-console-field">
-          <span>related goal</span>
-          <select value={goalId} onChange={(event) => setGoalId(event.currentTarget.value)} aria-label="Related goal">
-            <option value="">No goal link</option>
-            {operationalOs.state.goals.map((goal) => (
-              <option key={goal.id} value={goal.id}>
-                {goal.title}
-              </option>
-            ))}
-          </select>
-        </label>
         {selectedGoal ? (
           <EvidenceBlock label="goal context" title={selectedGoal.title}>
             {selectedGoal.objective} Evidence linked: {selectedGoal.evidenceIds.length}.
@@ -216,16 +248,18 @@ export function AgentConsoleWidget({
             disabled={!canSubmit || tasking.state.status === 'drafting'}
             onClick={submitTask}
           >
-            Ask agent
+            {primarySubmitLabel}
           </WorkspaceButton>
-          <WorkspaceButton
-            variant="secondary"
-            className="agent-console-submit"
-            disabled={!canSubmit || tasking.state.status === 'drafting'}
-            onClick={submitTask}
-          >
-            Stage proposal
-          </WorkspaceButton>
+          {tasking.state.status === 'failed' && tasking.state.lastRequest ? (
+            <WorkspaceButton
+              variant="secondary"
+              className="agent-console-submit"
+              disabled={!canRetryLastRequest}
+              onClick={retryLastRequest}
+            >
+              Retry last request
+            </WorkspaceButton>
+          ) : null}
         </div>
         {!canSubmit ? <p className="mission-control-muted">This role cannot submit that scope/risk combination.</p> : null}
         {tasking.state.error ? <p className="mission-control-muted">Last error: {tasking.state.error}</p> : null}
@@ -233,30 +267,8 @@ export function AgentConsoleWidget({
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame"
-        eyebrow="proposals"
-        title="sent to Command Inbox"
-        meta={`${tasking.state.proposals.length} staged`}
-      >
-        {tasking.state.proposals.length ? (
-          <div className="mission-control-compact-list" role="list" aria-label="Agent proposals">
-            {tasking.state.proposals.slice(0, 5).map((proposal) => (
-              <div className="mission-control-row" key={proposal.id} role="listitem" data-state={proposal.risk}>
-                <span>{proposal.title}</span>
-                <strong>{proposal.agentName ?? 'Coordinator'}</strong>
-                <small>{proposal.scope} / {proposal.risk} / {formatTime(proposal.timestamp)}</small>
-                <p>{proposal.reasoning}</p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="mission-control-empty">No proposals have been staged from this console yet.</p>
-        )}
-      </WorkspaceSectionFrame>
-
-      <WorkspaceSectionFrame
-        className="mission-control-list-frame"
         eyebrow="conversation"
-        title="recent exchange"
+        title="thread and command cards"
         meta={`${tasking.state.messages.length} messages`}
       >
         <div className="mission-control-compact-list" role="list" aria-label="Agent console conversation">
@@ -265,6 +277,21 @@ export function AgentConsoleWidget({
               <span>{message.author}</span>
               <strong>{message.status ?? formatTime(message.timestamp)}</strong>
               <EvidenceBlock label="message">{message.body}</EvidenceBlock>
+              {message.commandId && proposalByCommandId.has(message.commandId) ? (
+                <div className="agent-console-command-card" data-state={commandById.get(message.commandId)?.status ?? 'pending'}>
+                  <span>Command Inbox card</span>
+                  <strong>{proposalByCommandId.get(message.commandId)?.title}</strong>
+                  <small>
+                    ID {message.commandId} / {proposalByCommandId.get(message.commandId)?.scope} / {proposalByCommandId.get(message.commandId)?.risk} / {commandById.get(message.commandId)?.status ?? 'pending'}
+                  </small>
+                  <p>{proposalByCommandId.get(message.commandId)?.reasoning}</p>
+                  {onLaunchWorkspaceWidget ? (
+                    <WorkspaceButton variant="compact" onClick={() => onLaunchWorkspaceWidget('command-inbox')}>
+                      Open Command Inbox
+                    </WorkspaceButton>
+                  ) : null}
+                </div>
+              ) : null}
               {message.goalId || message.workflowRunId || message.commandId ? (
                 <small>
                   {message.goalId ? `Goal ${message.goalId}` : ''}

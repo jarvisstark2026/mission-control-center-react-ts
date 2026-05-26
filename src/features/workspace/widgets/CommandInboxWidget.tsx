@@ -4,6 +4,7 @@ import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, Workspa
 import { getAllowedCommandActions, type CommandAction, type CommandRequest, type MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { AgentAttribution, AttentionCard, AuditList, EvidenceBlock, StatusSummary } from '../operationalBlocks';
+import { getCommandGatewayDisplay } from './agentWorkflowDisplay';
 
 const commandActionLabels: Record<CommandAction, string> = {
   approve: 'Approve',
@@ -78,7 +79,7 @@ export function CommandInboxWidget({ missionControl, operationalOs }: { missionC
   const completedCommands = commands.filter((command) => command.status !== 'pending');
   const executionCommands = commands.filter((command) => command.execution.status !== 'not-started' || command.status !== 'pending');
   const nextCommand = pendingCommands[0];
-  const gatewayLabel = missionControl.commandGatewayMode === 'backend' ? 'backend gateway' : 'local gateway';
+  const gatewayDisplay = getCommandGatewayDisplay(missionControl.commandGatewayMode);
   const nextAllowedActions = nextCommand ? getAllowedCommandActions(nextCommand, missionControl.role) : [];
   const nextGoal = nextCommand?.goalId ? operationalOs.state.goals.find((goal) => goal.id === nextCommand.goalId) ?? null : null;
   const nextEvidence = nextCommand?.evidenceIds?.length
@@ -107,7 +108,7 @@ export function CommandInboxWidget({ missionControl, operationalOs }: { missionC
       <WorkspaceContentHeader
         eyebrow="Command inbox"
         title="primary approval queue"
-        metaEyebrow={missionControl.state.connection === 'connected' ? 'live telemetry' : 'mock telemetry'}
+        metaEyebrow="operator gate"
         meta={missionControl.role}
       />
       <StatusSummary
@@ -116,28 +117,6 @@ export function CommandInboxWidget({ missionControl, operationalOs }: { missionC
         detail="Agents can propose and explain actions. Operators approve, reject, block, or override by role."
         meta={missionControl.role}
       />
-
-      <WorkspaceSectionFrame
-        className="mission-control-list-frame command-inbox-filter-frame"
-        eyebrow="decision filters"
-        title="triage"
-        meta={`${filteredCommands.length} shown`}
-      >
-        <div className="agent-console-selector-row" role="tablist" aria-label="Command Inbox filters">
-          {(Object.keys(commandFilterLabels) as CommandInboxFilter[]).map((filter) => (
-            <button
-              key={filter}
-              type="button"
-              className="agent-console-chip"
-              aria-selected={activeFilter === filter}
-              aria-pressed={activeFilter === filter}
-              onClick={() => setActiveFilter(filter)}
-            >
-              {commandFilterLabels[filter]} {filterCounts[filter]}
-            </button>
-          ))}
-        </div>
-      </WorkspaceSectionFrame>
 
       {nextCommand ? (
         <AttentionCard
@@ -198,15 +177,37 @@ export function CommandInboxWidget({ missionControl, operationalOs }: { missionC
       ) : null}
 
       <WorkspaceSectionFrame
+        className="mission-control-list-frame command-inbox-filter-frame"
+        eyebrow="decision filters"
+        title="triage"
+        meta={`${filteredCommands.length} shown`}
+      >
+        <div className="agent-console-selector-row" role="tablist" aria-label="Command Inbox filters">
+          {(Object.keys(commandFilterLabels) as CommandInboxFilter[]).map((filter) => (
+            <button
+              key={filter}
+              type="button"
+              className="agent-console-chip"
+              aria-selected={activeFilter === filter}
+              aria-pressed={activeFilter === filter}
+              onClick={() => setActiveFilter(filter)}
+            >
+              {commandFilterLabels[filter]} {filterCounts[filter]}
+            </button>
+          ))}
+        </div>
+      </WorkspaceSectionFrame>
+
+      <WorkspaceSectionFrame
         className="mission-control-list-frame command-inbox-mode-frame"
         eyebrow="execution mode"
-        title={gatewayLabel}
+        title={gatewayDisplay.label}
         meta={`${pendingCommands.length} pending`}
       >
-        <div className="mission-control-row command-inbox-mode-row" data-state={missionControl.commandGatewayMode}>
+        <div className="mission-control-row command-inbox-mode-row" data-state={gatewayDisplay.state}>
           <span>command endpoint</span>
-          <strong>{missionControl.commandGatewayMode === 'backend' ? 'live adapter' : 'browser mock'}</strong>
-          <small>{missionControl.commandGatewayMode === 'backend' ? 'approval posts to configured endpoint' : 'approval is persisted locally and simulated'}</small>
+          <strong>{gatewayDisplay.meta}</strong>
+          <small>{gatewayDisplay.detail}</small>
         </div>
       </WorkspaceSectionFrame>
 
@@ -272,7 +273,7 @@ export function CommandInboxWidget({ missionControl, operationalOs }: { missionC
       <WorkspaceSectionFrame
         className="mission-control-list-frame"
         eyebrow="execution / results"
-        title="mock execution history"
+        title={missionControl.commandGatewayMode === 'backend' ? 'execution history' : 'local dry-run history'}
         meta={`${executionCommands.length} tracked`}
       >
         <AuditList

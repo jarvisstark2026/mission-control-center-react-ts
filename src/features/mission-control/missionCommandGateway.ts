@@ -55,7 +55,7 @@ export function createMockMissionCommandGateway(options: MissionCommandGatewayOp
 
       return {
         status: 'succeeded',
-        result: `Mock gateway completed "${command.title}". No external systems were changed.`,
+        result: `Local dry-run gateway completed "${command.title}". No external systems were changed.`,
         rollbackAvailable: action === 'approve' && command.risk === 'safe',
         completedAt: new Date().toISOString(),
         gatewayMode: 'mock',

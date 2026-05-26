@@ -18,7 +18,7 @@ import {
   markWorkflowRunStepCompleted,
   saveWorkflowRuns,
   startWorkflowRun,
-  syncWorkflowRunWithCommands,
+  syncWorkflowRunsWithCommands,
   type WorkflowRun,
   type WorkflowRunStep,
 } from '../workflowRunModel';
@@ -71,20 +71,15 @@ export function WorkflowWidget({
   }, [workflowRuns]);
 
   useEffect(() => {
-    if (!activeRun) return;
-    const nextRun = syncWorkflowRunWithCommands(activeRun, missionControl.state.commands);
-    const currentSignature = activeRun.steps.map((step) => `${step.id}:${step.status}:${step.commandId ?? ''}`).join('|');
-    const nextSignature = nextRun.steps.map((step) => `${step.id}:${step.status}:${step.commandId ?? ''}`).join('|');
-    if (currentSignature !== nextSignature || activeRun.status !== nextRun.status) {
-      setWorkflowRuns((current) => current.map((run) => (run.id === nextRun.id ? nextRun : run)));
-    }
-  }, [activeRun, missionControl.state.commands]);
+    setWorkflowRuns((current) => syncWorkflowRunsWithCommands(current, missionControl.state.commands));
+  }, [missionControl.state.commands]);
 
   const template = getWorkflowTemplate(draft.templateId);
   const steps = getWorkflowSteps(draft);
   const selectedSkills = workflowSkills.filter((skill) => draft.skillIds.includes(skill.id));
   const selectedSkillIds = new Set(draft.skillIds);
   const canAddCustomStep = newStep.trim().length > 0;
+  const nextActionableStep = activeRun?.steps.find((step) => !['completed', 'blocked', 'failed'].includes(step.status)) ?? null;
   const svgWidth = Math.max(620, steps.length * 170);
 
   const selectTemplate = (templateId: string) => {
@@ -204,7 +199,16 @@ export function WorkflowWidget({
     try {
       const result = await taskGateway.submitTask(request);
       missionControl.ingestEvents(result.missionControlEvents);
-      updateActiveRun((run) => markWorkflowRunAgentRequested(run, step.id, 'workflow'));
+      const commandEvent = result.missionControlEvents.find((event) => (
+        event.type === 'command' &&
+        event.command.workflow?.runId === activeRun.id &&
+        event.command.workflow?.stepId === step.id
+      ));
+      updateActiveRun((run) => (
+        commandEvent?.type === 'command'
+          ? markWorkflowRunApprovalStaged(run, step.id, commandEvent.command.id)
+          : markWorkflowRunAgentRequested(run, step.id, 'workflow')
+      ));
       setStatus(`Asked ${selectedAgent.name} to work on "${step.title}".`);
     } catch (error) {
       setStatus(error instanceof Error ? error.message : 'Agent request failed.');
@@ -284,24 +288,6 @@ export function WorkflowWidget({
         metaEyebrow={template.title}
         meta={`${steps.length} steps - ${selectedSkills.length} skills`}
       />
-      <WorkspaceSummaryPanel className="workflow-summary" title={template.title}>
-        {status}
-      </WorkspaceSummaryPanel>
-
-      <WorkspaceSectionFrame className="workflow-actions" eyebrow="workflow controls" meta="save / export / reset">
-        <WorkspaceButton className="workflow-action" onClick={saveWorkflow}>
-          Save workflow
-        </WorkspaceButton>
-        <WorkspaceButton className="workflow-action" onClick={printWorkflow}>
-          Print / Save PDF
-        </WorkspaceButton>
-        <WorkspaceButton variant="secondary" className="workflow-action is-muted" onClick={copySteps}>
-          Copy steps
-        </WorkspaceButton>
-        <WorkspaceButton variant="secondary" className="workflow-action is-muted" onClick={startNewWorkflow}>
-          New workflow
-        </WorkspaceButton>
-      </WorkspaceSectionFrame>
 
       <WorkspaceSectionFrame
         className="workflow-runbook-frame"
@@ -349,6 +335,15 @@ export function WorkflowWidget({
             title={selectedGoal.title}
             detail={selectedGoal.objective}
             meta={`${selectedGoal.status} / ${selectedGoal.evidenceIds.length} evidence`}
+          />
+        ) : null}
+        {nextActionableStep ? (
+          <StatusSummary
+            className="workflow-next-step-summary"
+            label="Next step"
+            title={nextActionableStep.title}
+            detail={nextActionableStep.expectedOutput ?? 'Advance the next runbook handoff.'}
+            meta={`${nextActionableStep.status} / ${nextActionableStep.assignee}`}
           />
         ) : null}
         {workflowRuns.length ? (
@@ -422,8 +417,33 @@ export function WorkflowWidget({
         ) : null}
       </WorkspaceSectionFrame>
 
-      <div className="workflow-layout">
-        <WorkspaceSectionFrame className="workflow-column workflow-library" eyebrow="Workflow library" title="templates and skills" meta="starter set">
+      <details className="workflow-collapsible-section">
+        <summary>
+          <span>Design runbook / Library</span>
+          <strong>{template.title}</strong>
+          <small>{status}</small>
+        </summary>
+        <WorkspaceSummaryPanel className="workflow-summary" title={template.title}>
+          {status}
+        </WorkspaceSummaryPanel>
+
+        <WorkspaceSectionFrame className="workflow-actions" eyebrow="workflow controls" meta="save / export / reset">
+          <WorkspaceButton className="workflow-action" onClick={saveWorkflow}>
+            Save workflow
+          </WorkspaceButton>
+          <WorkspaceButton className="workflow-action" onClick={printWorkflow}>
+            Print / Save PDF
+          </WorkspaceButton>
+          <WorkspaceButton variant="secondary" className="workflow-action is-muted" onClick={copySteps}>
+            Copy steps
+          </WorkspaceButton>
+          <WorkspaceButton variant="secondary" className="workflow-action is-muted" onClick={startNewWorkflow}>
+            New workflow
+          </WorkspaceButton>
+        </WorkspaceSectionFrame>
+
+        <div className="workflow-layout">
+          <WorkspaceSectionFrame className="workflow-column workflow-library" eyebrow="Workflow library" title="templates and skills" meta="starter set">
           <WorkspaceSectionFrame className="workflow-group" eyebrow="Workflow library" title="template catalog" meta="starter templates">
             <WorkspaceCatalogGrid
               className="workflow-template-list"
@@ -460,9 +480,9 @@ export function WorkflowWidget({
               onSelect={(item) => toggleSkill(item.id)}
             />
           </WorkspaceSectionFrame>
-        </WorkspaceSectionFrame>
+          </WorkspaceSectionFrame>
 
-        <WorkspaceSectionFrame className="workflow-column workflow-canvas" eyebrow="Workflow visualisation" title="step map" meta="step by step">
+          <WorkspaceSectionFrame className="workflow-column workflow-canvas" eyebrow="Workflow visualisation" title="step map" meta="step by step">
           <div className="workflow-diagram" aria-label="Workflow visualisation">
             <svg viewBox={`0 0 ${svgWidth} 180`} role="img" aria-label="Workflow diagram">
               <rect x="0" y="0" width={svgWidth} height="180" fill="transparent" />
@@ -485,9 +505,9 @@ export function WorkflowWidget({
           </ol>
 
           <div className="workflow-status">{status}</div>
-        </WorkspaceSectionFrame>
+          </WorkspaceSectionFrame>
 
-        <WorkspaceSectionFrame className="workflow-column workflow-editor" eyebrow="User workflow" title="edit and save" meta="local draft">
+          <WorkspaceSectionFrame className="workflow-column workflow-editor" eyebrow="User workflow" title="edit and save" meta="local draft">
           <WorkspaceSectionFrame className="workflow-group" eyebrow="User workflow" meta="edit and save">
             <label className="workflow-field">
               <span>Workflow name</span>
@@ -544,8 +564,9 @@ export function WorkflowWidget({
             />
             {savedWorkflows.length ? null : <div className="workflow-empty">No saved workflows yet. Save one and it will stay available locally.</div>}
           </WorkspaceSectionFrame>
-        </WorkspaceSectionFrame>
-      </div>
+          </WorkspaceSectionFrame>
+        </div>
+      </details>
     </WorkspaceContentShell>
   );
 }

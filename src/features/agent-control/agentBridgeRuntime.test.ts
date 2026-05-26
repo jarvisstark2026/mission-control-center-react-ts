@@ -98,6 +98,43 @@ describe('agentBridgeRuntime', () => {
     expect(activeConnector.error).toBeNull();
   });
 
+  it('accepts connected bridge status with task-loop failure activity', () => {
+    const initial = createInitialAgentControlState();
+    const applied = applyAgentBridgeStatus(initial, 'hermes-local-bridge', {
+      status: 'connected',
+      provider: 'hermes',
+      activeEngine: 'Hermes Agent API hermes-agent',
+      activity: [
+        {
+          id: 'hermes-bridge-status',
+          kind: 'connection',
+          title: 'Hermes API connected',
+          detail: 'Forwarding Mission Control tasks to http://192.0.2.64:8642/v1.',
+          timestamp: '2026-05-26T12:00:00.000Z',
+          source: 'mission-control-local-agent-bridge',
+          status: 'succeeded',
+          visibleTo: ['admin', 'support', 'home'],
+        },
+        {
+          id: 'hermes-task-loop-diagnostic',
+          kind: 'failure',
+          title: 'Task proposal loop failed',
+          detail: 'hermes_unsupported_response / top-level keys: status, result',
+          timestamp: '2026-05-26T12:00:01.000Z',
+          source: 'mission-control-local-agent-bridge',
+          status: 'failed',
+          visibleTo: ['admin', 'support', 'home'],
+        },
+      ],
+    });
+
+    expect(selectAgentBridgeConnector(applied.state).status).toBe('connected');
+    expect(applied.state.activity.find((item) => item.id === 'hermes-task-loop-diagnostic')).toMatchObject({
+      kind: 'failure',
+      title: 'Task proposal loop failed',
+    });
+  });
+
   it('normalizes valid bridge events and rejects malformed status payloads', () => {
     const event = createNotificationEvent();
 

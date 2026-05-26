@@ -18,6 +18,7 @@ import {
   saveWorkflowRuns,
   startWorkflowRun,
   syncWorkflowRunWithCommands,
+  syncWorkflowRunsWithCommands,
 } from './workflowRunModel';
 
 describe('workflow studio model', () => {
@@ -103,6 +104,37 @@ describe('workflow studio model', () => {
     ]);
 
     expect(synced.steps.find((step) => step.id === approvalStep.id)?.status).toBe('completed');
+  });
+
+  it('syncs all persisted workflow runs from command decisions', () => {
+    const agentControl = createInitialAgentControlState();
+    const agent = getAgentDescriptorById(agentControl, 'jarvis-workflow');
+    const firstRun = startWorkflowRun(createWorkflowDraft('agent-brief'), agent);
+    const secondRun = startWorkflowRun(createWorkflowDraft('support-diagnostics'), agent);
+    const firstApprovalStep = firstRun.steps.find((step) => step.approvalRequirement === 'command');
+    const secondApprovalStep = secondRun.steps.find((step) => step.approvalRequirement === 'command');
+    const firstEvent = firstApprovalStep ? createWorkflowStepCommandEvent(firstRun, firstApprovalStep.id, agent) : null;
+    const secondEvent = secondApprovalStep ? createWorkflowStepCommandEvent(secondRun, secondApprovalStep.id, agent) : null;
+
+    if (!firstEvent || firstEvent.type !== 'command' || !secondEvent || secondEvent.type !== 'command') {
+      throw new Error('Expected workflow command events');
+    }
+
+    const synced = syncWorkflowRunsWithCommands([firstRun, secondRun], [
+      {
+        ...firstEvent.command,
+        status: 'succeeded',
+        execution: { ...firstEvent.command.execution, status: 'succeeded', result: 'Completed.' },
+      },
+      {
+        ...secondEvent.command,
+        status: 'blocked',
+        execution: { ...secondEvent.command.execution, status: 'blocked', result: 'Blocked.' },
+      },
+    ]);
+
+    expect(synced[0]?.steps.find((step) => step.id === firstApprovalStep?.id)?.status).toBe('completed');
+    expect(synced[1]?.steps.find((step) => step.id === secondApprovalStep?.id)?.status).toBe('blocked');
   });
 
   it('persists workflow runs and lets user steps advance locally', () => {

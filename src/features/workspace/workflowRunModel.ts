@@ -456,6 +456,8 @@ export function syncWorkflowRunWithCommands(run: WorkflowRun, commands: CommandR
   const status = getRunStatusFromSteps(steps);
   const changed = steps.some((step, index) => step.status !== run.steps[index]?.status || step.commandId !== run.steps[index]?.commandId);
 
+  if (!changed && status === run.status) return run;
+
   return {
     ...run,
     steps,
@@ -465,4 +467,25 @@ export function syncWorkflowRunWithCommands(run: WorkflowRun, commands: CommandR
       ? capAuditTrail([...run.auditTrail, createWorkflowRunAudit('command-synced', 'command-inbox', 'Workflow run synced from Command Inbox command status.')])
       : run.auditTrail,
   };
+}
+
+export function syncWorkflowRunsWithCommands(runs: WorkflowRun[], commands: CommandRequest[]): WorkflowRun[] {
+  let changed = false;
+  const nextRuns = runs.map((run) => {
+    const nextRun = syncWorkflowRunWithCommands(run, commands);
+    if (
+      nextRun.status !== run.status ||
+      nextRun.updatedAt !== run.updatedAt ||
+      nextRun.auditTrail.length !== run.auditTrail.length ||
+      nextRun.steps.some((step, index) => (
+        step.status !== run.steps[index]?.status ||
+        step.commandId !== run.steps[index]?.commandId
+      ))
+    ) {
+      changed = true;
+    }
+    return nextRun;
+  });
+
+  return changed ? nextRuns : runs;
 }

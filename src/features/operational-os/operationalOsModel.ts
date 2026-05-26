@@ -190,6 +190,8 @@ export function syncOperationalOsWithCommands(state: OperationalOsState, command
     const commandIds = unique([...goal.commandIds, ...goalCommands.map((command) => command.id)]);
     const evidenceIds = unique([...goal.evidenceIds, ...goalCommands.flatMap((command) => command.evidenceIds ?? [])]);
     const status = getStatusFromCommands(goalCommands, goal.status);
+    const newCommandIds = commandIds.filter((commandId) => !goal.commandIds.includes(commandId));
+    const newEvidenceIds = evidenceIds.filter((evidenceId) => !goal.evidenceIds.includes(evidenceId));
     if (
       status === goal.status &&
       commandIds.length === goal.commandIds.length &&
@@ -199,12 +201,27 @@ export function syncOperationalOsWithCommands(state: OperationalOsState, command
     }
 
     changed = true;
+    const timestamp = nowIso();
+    const auditTrail = [
+      ...goal.auditTrail,
+      ...(newCommandIds.length
+        ? [createAudit('command-linked', 'command-inbox', `${newCommandIds.length} Command Inbox item${newCommandIds.length === 1 ? '' : 's'} linked to this goal.`, timestamp)]
+        : []),
+      ...(newEvidenceIds.length
+        ? [createAudit('evidence-linked', 'command-inbox', `${newEvidenceIds.length} evidence record${newEvidenceIds.length === 1 ? '' : 's'} linked from command context.`, timestamp)]
+        : []),
+      ...(status !== goal.status
+        ? [createAudit(status, 'command-inbox', `Goal moved from ${goal.status} to ${status} from Command Inbox command state.`, timestamp)]
+        : []),
+    ].slice(-18);
+
     return {
       ...goal,
       status,
       commandIds,
       evidenceIds,
-      updatedAt: nowIso(),
+      auditTrail,
+      updatedAt: timestamp,
     };
   });
 

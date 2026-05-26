@@ -15,6 +15,7 @@ let lastHermesStatus = {
   checkedAt: '',
   detail: 'not checked',
 };
+let lastTaskFailure = null;
 
 function nowIso() {
   return new Date().toISOString();
@@ -43,6 +44,69 @@ function truncate(value, maxLength) {
   const text = String(value || '').trim();
   if (text.length <= maxLength) return text;
   return `${text.slice(0, maxLength - 3).trim()}...`;
+}
+
+function safePayloadPreview(value) {
+  const text = String(value || '').trim();
+  return text ? truncate(text, 360) : undefined;
+}
+
+function schemaSummary(value) {
+  if (!value || typeof value !== 'object') {
+    return `top-level type: ${Array.isArray(value) ? 'array' : typeof value}`;
+  }
+  const parts = [];
+  const keys = Object.keys(value).slice(0, 12);
+  parts.push(`top-level keys: ${keys.length ? keys.join(', ') : 'none'}`);
+  const choice = Array.isArray(value.choices) ? value.choices[0] : undefined;
+  if (choice && typeof choice === 'object') {
+    parts.push(`choices[0] keys: ${Object.keys(choice).slice(0, 12).join(', ') || 'none'}`);
+    if (choice.message && typeof choice.message === 'object') {
+      parts.push(`message keys: ${Object.keys(choice.message).slice(0, 12).join(', ') || 'none'}`);
+    }
+  }
+  return parts.join('; ');
+}
+
+class BridgeTaskError extends Error {
+  constructor(errorCode, message, options = {}) {
+    super(message);
+    this.name = 'BridgeTaskError';
+    this.errorCode = errorCode;
+    this.statusCode = options.statusCode;
+    this.payloadSummary = options.payloadSummary;
+    this.httpStatus = options.httpStatus ?? 502;
+  }
+}
+
+function createTaskFailurePayload(error) {
+  const taskError = error instanceof BridgeTaskError
+    ? error
+    : new BridgeTaskError('hermes_task_failed', error instanceof Error ? error.message : 'Hermes task request failed.');
+
+  return {
+    error: taskError.message,
+    errorCode: taskError.errorCode,
+    provider: 'hermes',
+    hermesApiBaseUrl: hermesApiBase,
+    hermesStatusCode: taskError.statusCode ?? null,
+    payloadSummary: taskError.payloadSummary ?? null,
+  };
+}
+
+function rememberTaskFailure(error) {
+  const taskError = error instanceof BridgeTaskError
+    ? error
+    : new BridgeTaskError('hermes_task_failed', error instanceof Error ? error.message : 'Hermes task request failed.');
+
+  lastTaskFailure = {
+    errorCode: taskError.errorCode,
+    message: taskError.message,
+    statusCode: taskError.statusCode ?? null,
+    payloadSummary: taskError.payloadSummary ?? null,
+    timestamp: nowIso(),
+  };
+  return taskError;
 }
 
 function normalizeScope(value) {
@@ -122,6 +186,31 @@ function createBridgeStatus() {
   const timestamp = nowIso();
   const connected = lastHermesStatus.ok;
   const authFailed = lastHermesStatus.detail.includes('auth failed');
+  const activity = [
+    {
+      id: 'hermes-bridge-status',
+      kind: 'connection',
+      title: connected ? 'Hermes API connected' : authFailed ? 'Hermes API auth failed' : 'Hermes API offline',
+      detail: connected ? `Forwarding Mission Control tasks to ${hermesApiBase}.` : lastHermesStatus.detail,
+      timestamp,
+      source: 'hermes-mission-control-bridge',
+      status: connected ? 'succeeded' : 'failed',
+      visibleTo: ['admin', 'support', 'home'],
+    },
+  ];
+
+  if (lastTaskFailure) {
+    activity.push({
+      id: 'hermes-task-loop-diagnostic',
+      kind: 'failure',
+      title: 'Task proposal loop failed',
+      detail: `${lastTaskFailure.errorCode}${lastTaskFailure.statusCode ? ` / ${lastTaskFailure.statusCode}` : ''} / ${lastTaskFailure.payloadSummary || lastTaskFailure.message}`,
+      timestamp: lastTaskFailure.timestamp,
+      source: 'hermes-mission-control-bridge',
+      status: 'failed',
+      visibleTo: ['admin', 'support', 'home'],
+    });
+  }
 
   return {
     status: connected ? 'connected' : 'offline',
@@ -191,18 +280,7 @@ function createBridgeStatus() {
       estimatedCostUsd: 0,
       windowStartedAt,
     },
-    activity: [
-      {
-        id: 'hermes-bridge-status',
-        kind: 'connection',
-        title: connected ? 'Hermes API connected' : authFailed ? 'Hermes API auth failed' : 'Hermes API offline',
-        detail: connected ? `Forwarding Mission Control tasks to ${hermesApiBase}.` : lastHermesStatus.detail,
-        timestamp,
-        source: 'hermes-mission-control-bridge',
-        status: connected ? 'succeeded' : 'failed',
-        visibleTo: ['admin', 'support', 'home'],
-      },
-    ],
+    activity,
   };
 }
 
@@ -241,32 +319,64 @@ function extractHermesContent(payload) {
       .trim();
   }
   if (typeof choice?.text === 'string') return choice.text.trim();
+  for (const field of ['message', 'content', 'response', 'output_text']) {
+    if (typeof payload?.[field] === 'string' && payload[field].trim()) {
+      return payload[field].trim();
+    }
+  }
   return '';
 }
 
 async function askHermes(request) {
-  const response = await fetchWithTimeout(`${hermesApiBase}/chat/completions`, {
-    method: 'POST',
-    headers: createHeaders({ 'content-type': 'application/json' }),
-    body: JSON.stringify({
-      model: hermesModel,
-      stream: false,
-      messages: createPrompt(request),
-    }),
-  });
+  let response;
+  try {
+    response = await fetchWithTimeout(`${hermesApiBase}/chat/completions`, {
+      method: 'POST',
+      headers: createHeaders({ 'content-type': 'application/json' }),
+      body: JSON.stringify({
+        model: hermesModel,
+        stream: false,
+        messages: createPrompt(request),
+      }),
+    });
+  } catch (error) {
+    throw new BridgeTaskError('hermes_http_error', `Hermes API task request failed before a response was received: ${error instanceof Error ? error.message : 'unknown error'}`);
+  }
 
   if (!response.ok) {
     const body = await response.text().catch(() => '');
     if (response.status === 401 || response.status === 403) {
-      throw new Error(`Hermes API auth failed: ${response.status}`);
+      throw new BridgeTaskError('hermes_auth_failed', `Hermes API auth failed: ${response.status}`, {
+        statusCode: response.status,
+        payloadSummary: safePayloadPreview(body),
+      });
     }
-    throw new Error(`Hermes API returned ${response.status}: ${truncate(body, 260)}`);
+    throw new BridgeTaskError('hermes_http_error', `Hermes API returned ${response.status}`, {
+      statusCode: response.status,
+      payloadSummary: safePayloadPreview(body),
+    });
   }
 
-  const payload = await response.json();
+  const rawBody = await response.text();
+  let payload;
+  try {
+    payload = rawBody.trim() ? JSON.parse(rawBody) : null;
+  } catch (error) {
+    throw new BridgeTaskError('hermes_invalid_json', `Hermes API returned a non-JSON chat response: ${error instanceof Error ? error.message : 'invalid JSON'}`, {
+      statusCode: response.status,
+      payloadSummary: safePayloadPreview(rawBody),
+    });
+  }
   const content = extractHermesContent(payload);
   if (!content) {
-    throw new Error('Hermes API returned no assistant content.');
+    throw new BridgeTaskError(
+      'hermes_unsupported_response',
+      'Hermes API returned JSON, but Mission Control could not find assistant text in an OpenAI-compatible field.',
+      {
+        statusCode: response.status,
+        payloadSummary: schemaSummary(payload),
+      },
+    );
   }
   return content;
 }
@@ -454,24 +564,34 @@ const server = http.createServer(async (request, response) => {
   }
 
   if (request.method === 'POST' && url.pathname === '/tasks') {
+    requestCount += 1;
+    let body;
     try {
-      requestCount += 1;
+      body = await readJsonBody(request);
+    } catch (error) {
+      const taskError = rememberTaskFailure(new BridgeTaskError(
+        'invalid_task_request',
+        `Mission Control bridge received invalid task JSON: ${error instanceof Error ? error.message : 'invalid JSON'}`,
+        { httpStatus: 400 },
+      ));
+      sendJson(response, taskError.httpStatus, createTaskFailurePayload(taskError));
+      return;
+    }
+
+    try {
       await checkHermes();
       if (!lastHermesStatus.ok) {
-        throw new Error(`Hermes API is offline: ${lastHermesStatus.detail}`);
+        throw new BridgeTaskError('hermes_http_error', `Hermes API is offline: ${lastHermesStatus.detail}`);
       }
-      const body = await readJsonBody(request);
       const result = await createTaskResult(body);
+      lastTaskFailure = null;
       broadcast({ type: 'activity', activity: createBridgeStatus().activity });
       broadcast({ type: 'mission-events', events: result.missionControlEvents });
       sendJson(response, 200, result);
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Hermes task request failed.';
-      sendJson(response, 502, {
-        error: message,
-        provider: 'hermes',
-        hermesApiBase,
-      });
+      const taskError = rememberTaskFailure(error);
+      broadcast({ type: 'activity', activity: createBridgeStatus().activity });
+      sendJson(response, taskError.httpStatus, createTaskFailurePayload(taskError));
     }
     return;
   }

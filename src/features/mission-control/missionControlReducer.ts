@@ -146,7 +146,7 @@ function getCommandExecutionForDecision(command: CommandRequest, action: Command
   if (action === 'approve' || action === 'override') {
     return {
       status: 'queued',
-      result: 'Queued in mock mode. Backend command execution is not connected yet.',
+      result: 'Queued for local dry-run. No external systems are changed.',
       rollbackAvailable: action === 'approve' && command.risk === 'safe',
       startedAt: decidedAt,
     };

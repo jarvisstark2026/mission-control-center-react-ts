@@ -84,6 +84,11 @@ describe('operational OS model', () => {
     expect(syncedGoal?.evidenceIds).toEqual(expect.arrayContaining([evidence.id, 'evidence-command']));
     expect(syncedGoal?.commandIds).toContain('command-pending');
     expect(syncedGoal?.status).toBe('waiting-approval');
+    expect(syncedGoal?.auditTrail.map((entry) => entry.type)).toEqual(expect.arrayContaining([
+      'command-linked',
+      'evidence-linked',
+      'waiting-approval',
+    ]));
   });
 
   it('detects JSON surface schemas without requiring custom widgets', () => {

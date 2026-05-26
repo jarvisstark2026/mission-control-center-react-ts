@@ -20,7 +20,7 @@ async function ensureWidgetOpen(locator: import('@playwright/test').Locator) {
   }
 }
 
-test('operational core widgets launch and use mock live data', async ({ page }) => {
+test('operational core widgets launch and use local live data', async ({ page }) => {
   await page.goto('/?role=admin');
   await page.evaluate(() => {
     window.localStorage.removeItem('agent-tasking-state:v1');
@@ -33,17 +33,17 @@ test('operational core widgets launch and use mock live data', async ({ page }) 
 
   await openWidget(page, 'Agent console');
   await expect(page.getByText('chat / proposals').first()).toBeVisible();
-  await page.getByRole('button', { name: 'Ask agent' }).click();
+  await page.getByRole('button', { name: 'Stage local proposal' }).click();
   await expect(page.getByText(/prepared a gated command proposal/i)).toBeVisible();
   await expect(page.getByText(/Review current mission state and propose/i).first()).toBeVisible();
 
   await openWidget(page, 'Command inbox');
   await page.getByRole('button', { name: 'Approve' }).first().click();
-  await expect(page.getByText(/Mock gateway completed/).first()).toBeVisible();
+  await expect(page.getByText(/Local dry-run gateway completed/).first()).toBeVisible();
 
   await page.reload();
   await expect(page.getByText('primary approval queue').first()).toBeVisible();
-  await expect(page.getByText(/Mock gateway completed/).first()).toBeVisible();
+  await expect(page.getByText(/Local dry-run gateway completed/).first()).toBeVisible();
 
   await openWidget(page, 'Notifications');
   await expect(page.getByText('live telemetry and alerts')).toBeVisible();
@@ -56,6 +56,7 @@ test('operational core widgets launch and use mock live data', async ({ page }) 
   await openWidget(page, 'Agent control');
   await expect(page.getByText('identity / jobs / permissions').first()).toBeVisible();
   await expect(page.getByText('Hermes / OpenClaw connectors').first()).toBeVisible();
+  await page.getByRole('button', { name: 'Agents' }).click();
   await expect(page.getByText('Jarvis Prime').last()).toBeVisible();
   await expect(page.getByText('Jarvis Workflow').last()).toBeVisible();
 
@@ -77,7 +78,7 @@ test('operational core widgets launch and use mock live data', async ({ page }) 
   await openWidget(page, 'Command inbox');
   await expect(page.getByText('Use solar surplus').first()).toBeVisible();
   await page.locator('.mission-control-card', { hasText: 'Use solar surplus' }).getByRole('button', { name: 'Approve' }).click();
-  await expect(page.getByText(/Mock gateway completed/).first()).toBeVisible();
+  await expect(page.getByText(/Local dry-run gateway completed/).first()).toBeVisible();
 });
 
 test('workflow runbook can stage agent approval through Command Inbox', async ({ page }) => {
@@ -91,7 +92,7 @@ test('workflow runbook can stage agent approval through Command Inbox', async ({
   await expect(page.getByText(/Workflow \//).first()).toBeVisible();
   await expect(page.getByText('Jarvis Workflow').first()).toBeVisible();
   await page.getByRole('button', { name: 'Approve' }).first().click();
-  await expect(page.getByText(/Mock gateway completed/).first()).toBeVisible();
+  await expect(page.getByText(/Local dry-run gateway completed/).first()).toBeVisible();
 });
 
 test('guest access can read command inbox but cannot approve commands', async ({ page }) => {

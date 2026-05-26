@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { addBrowserBookmark, addBrowserHistory, loadBrowserState, normalizeBrowserUrl, saveBrowserState } from '../workspaceBrowserModel';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 
@@ -56,9 +56,12 @@ export function BrowserWidget() {
         meta={frameUrl.replace(/^https?:\/\//i, '')}
       />
 
-      <WorkspaceSummaryPanel className="browser-summary-panel" title="local bookmarks and history">
-        Some websites block iframe embedding. If the preview stays blank, the URL is still saved in local history for quick handoff.
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip
+        source="browser"
+        status={frameStatus}
+        count={`${browserState.bookmarks.length} bookmarks`}
+        updatedAt={`${browserState.history.length} history`}
+      />
 
       <WorkspaceSectionFrame className="browser-address-section" eyebrow="address" title="navigation controls" meta="URL / bookmarks">
         <div className="browser-bar">
@@ -91,7 +94,7 @@ export function BrowserWidget() {
             onSelect={(item) => navigateTo(item.id)}
           />
         ) : (
-          <div className="browser-empty-state">History appears after the first navigation.</div>
+          <WorkspaceEmptyState source="browser" title="No history yet" detail="Navigate once and the URL stays available for quick handoff." />
         )}
       </WorkspaceSectionFrame>
 

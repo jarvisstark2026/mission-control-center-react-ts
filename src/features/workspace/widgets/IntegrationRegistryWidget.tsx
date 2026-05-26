@@ -1,5 +1,5 @@
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame } from '../workspaceBlocks';
-import { PermissionBadge, StatusSummary } from '../operationalBlocks';
+import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { PermissionBadge } from '../operationalBlocks';
 import {
   canEditIntegrationPermission,
   type IntegrationPermission,
@@ -34,11 +34,11 @@ export function IntegrationRegistryWidget({ missionControl }: { missionControl: 
         metaEyebrow="scope"
         meta={missionControl.role}
       />
-      <StatusSummary
-        label="Registry health"
-        title={`${summary.online} online / ${summary.degraded} degraded / ${summary.offline} offline`}
-        detail="Registry data is typed and permission-aware. It tracks health and allowed access; it does not execute actions. Command Inbox remains the only execution gate."
-        meta={missionControl.role}
+      <WorkspaceStatusStrip
+        source={summary.online > 0 ? 'bridge' : integrations.length ? 'local' : 'unavailable'}
+        status={`${summary.online} online / ${summary.degraded} degraded`}
+        count={`${summary.offline} offline`}
+        updatedAt={missionControl.role}
       />
 
       <WorkspaceSectionFrame

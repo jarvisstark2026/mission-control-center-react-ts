@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 
 import { canUseAppProfile, type AppPortalProfile, type OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
-import { AttentionCard, EvidenceBlock, StatusSummary } from '../operationalBlocks';
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame } from '../workspaceBlocks';
+import { AttentionCard, EvidenceBlock } from '../operationalBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 
 function formatTime(value?: string) {
   if (!value) return 'not opened';
@@ -56,9 +56,14 @@ export function AppPortalWidget({ role, operationalOs }: { role: ShellRole; oper
   };
 
   return (
-    <WorkspaceContentShell className="mission-control-surface app-portal-surface">
+      <WorkspaceContentShell className="mission-control-surface app-portal-surface">
       <WorkspaceContentHeader eyebrow="App Portal" title="embedded tools / launch profiles" metaEyebrow="mode" meta={activeProfile?.embedMode ?? 'empty'} />
-      <StatusSummary label="Workspace continuity" title="Keep external tools near the operating loop" detail={status} meta={`${visibleProfiles.length} profiles`} />
+      <WorkspaceStatusStrip
+        source="local"
+        status={status}
+        count={`${visibleProfiles.length} profiles`}
+        updatedAt={activeProfile ? formatTime(activeProfile.lastOpenedAt) : 'not opened'}
+      />
 
       {activeProfile ? (
         <AttentionCard

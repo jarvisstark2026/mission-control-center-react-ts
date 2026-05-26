@@ -12,13 +12,14 @@ import { getActiveAgentConnector, getAgentDescriptorById, getVisibleAgentDescrip
 import type { CommandRisk, MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
-import { AgentAttribution, AttentionCard, EvidenceBlock, StatusSummary } from '../operationalBlocks';
+import { AgentAttribution, AttentionCard, EvidenceBlock } from '../operationalBlocks';
 import {
   WorkspaceButton,
   WorkspaceContentHeader,
   WorkspaceContentShell,
+  WorkspaceEmptyState,
   WorkspaceSectionFrame,
-  WorkspaceSummaryPanel,
+  WorkspaceStatusStrip,
 } from '../workspaceBlocks';
 import { getAgentGatewayDisplay } from './agentWorkflowDisplay';
 
@@ -112,9 +113,7 @@ export function AgentConsoleWidget({
           metaEyebrow="access"
           meta="guest"
         />
-        <WorkspaceSummaryPanel title="No access for this scope">
-          Guest access can review allowed workspace surfaces, but agent tasking is disabled.
-        </WorkspaceSummaryPanel>
+        <WorkspaceEmptyState source="unavailable" title="No access for this scope" detail="Guest access can review allowed workspace surfaces, but agent tasking is disabled." />
       </WorkspaceContentShell>
     );
   }
@@ -166,11 +165,11 @@ export function AgentConsoleWidget({
         meta={gatewayDisplay.label}
       />
 
-      <StatusSummary
-        label="Gateway status"
-        title={gatewayDisplay.label}
-        detail={gatewayDisplay.detail}
-        meta={`${tasking.state.status} / ${gatewayDisplay.meta}`}
+      <WorkspaceStatusStrip
+        source={gatewayDisplay.state === 'ready' ? 'bridge' : 'local'}
+        status={gatewayDisplay.label}
+        count={`${tasking.state.status} / ${gatewayDisplay.meta}`}
+        updatedAt={activeConnector.provider}
       />
 
       <WorkspaceSectionFrame

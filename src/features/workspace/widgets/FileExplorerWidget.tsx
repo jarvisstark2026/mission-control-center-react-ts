@@ -1,6 +1,6 @@
 ﻿import { useRef } from 'react';
 import type { ChangeEvent } from 'react';
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createLocalFileRecord, formatLocalFileSize, generalUseFolderLabel, type LocalFileRecord, type LocalFolderEntry } from '../workspaceLocalFiles';
 
 export function FileExplorerWidget({
@@ -135,9 +135,12 @@ export function FileExplorerWidget({
         meta={explorerStatusLabel}
       />
 
-      <WorkspaceSummaryPanel className="file-explorer-summary" title={loadedEntryCount ? `${loadedEntryCount} ${loadedEntryCount === 1 ? 'entry' : 'entries'}` : 'No entries loaded'}>
-        Single-click selects; click again opens preview.
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip
+        source="file"
+        status={loadedEntryCount ? `${loadedEntryCount} ${loadedEntryCount === 1 ? 'entry' : 'entries'} loaded` : 'no entries loaded'}
+        count={activeFile ? activeFile.previewKind : visibleFolderPath}
+        updatedAt="local"
+      />
 
       <WorkspaceSectionFrame className="file-explorer-toolbar-frame" eyebrow="file controls" title="local intake" meta="browse / clear">
         <div className="file-explorer-toolbar">
@@ -193,9 +196,13 @@ export function FileExplorerWidget({
             ) : null}
           </>
         ) : (
-          <WorkspaceSummaryPanel className="file-explorer-empty-panel" title="General use folder ready.">
-            Select files or open a folder from your PC, then click once to select an item and click it again to open it in the preview panel.
-          </WorkspaceSummaryPanel>
+          <WorkspaceEmptyState
+            className="file-explorer-empty-panel"
+            source="file"
+            title="General use folder ready"
+            detail="Select files or open a folder from this PC. Click once to select; click again to open Preview."
+            action={{ label: 'Browse items', onClick: handleBrowseFilesClick }}
+          />
         )}
       </div>
     </WorkspaceContentShell>

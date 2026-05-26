@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ShellRole } from '../../shell/roles';
 import { DesktopBridgePanel } from '../DesktopBridgePanel';
-import { WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from '../workspaceDesktopApps';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from '../workspaceTypes';
 import { getWidgetLabel, getWorkspaceLauncherEntries } from '../workspaceWidgetCatalog';
@@ -61,9 +61,12 @@ export function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets, acti
         meta="launch / focus / stay in the workspace"
       />
 
-      <WorkspaceSummaryPanel className="launcher-summary-panel" title="workspace hooks">
-        Open or focus widgets in the workspace, with external apps routed through the same desktop bridge.
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip
+        source="local"
+        status="open or focus workspace tools"
+        count={`${workspaceCards.filter((card) => card.active).length} open`}
+        updatedAt={`${desktopApps.length} app profiles`}
+      />
 
       <WorkspaceSectionFrame className="launcher-desktop-section" eyebrow="desktop bridge" meta="installed apps and shortcuts">
         <DesktopBridgePanel

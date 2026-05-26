@@ -1,4 +1,4 @@
-import { WorkspaceActionRowList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceActionRowList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import {
   getManagedWidgetRows,
   getTrackedWorkspaceWidgetGroups,
@@ -27,9 +27,12 @@ export function WindowManagerWidget({
         title="Workspace widgets and pinned surfaces"
         meta={`${summary.open} open - ${summary.visible} visible - ${summary.total} total`}
       />
-      <WorkspaceSummaryPanel className="window-manager-note" title="window controls">
-        Widgets are grouped by workspace. Pin widgets from this list or from each widget toolbar.
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip
+        source="local"
+        status={`${summary.visible} visible widgets`}
+        count={`${trackedGroups.length} ON workspaces`}
+        updatedAt={`${summary.open} open / ${summary.total} tracked`}
+      />
       {trackedGroups.map((group) => (
         <WorkspaceSectionFrame
           key={group.workspaceId}

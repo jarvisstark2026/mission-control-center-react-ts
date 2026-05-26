@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createLocalFileObjectUrl, formatLocalFileSize, revokeLocalFileObjectUrl, type LocalFileRecord } from '../workspaceLocalFiles';
 
 export function ImageWidget({ file }: { file?: LocalFileRecord | null }) {
@@ -27,18 +27,17 @@ export function ImageWidget({ file }: { file?: LocalFileRecord | null }) {
         metaEyebrow="asset"
         meta={imageFile ? formatLocalFileSize(imageFile.file.size) : 'drop-ready'}
       />
-      <WorkspaceSummaryPanel className="image-summary" title={imageFile ? 'active local image' : 'asset staging'}>
-        {imageFile ? `${imageFile.path}. This image is loaded from the local file intake.` : 'Use File Explorer or Preview to load a local image, then inspect it here.'}
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip
+        source={imageFile ? 'file' : 'unavailable'}
+        status={imageFile ? 'active local image' : 'no image loaded'}
+        count={imageFile ? imageFile.path : 'load from File Explorer'}
+      />
       <WorkspaceSectionFrame className="image-frame-section" eyebrow="canvas" title={imageFile ? 'image preview' : 'no image loaded'} meta="image">
         <div className="image-frame">
           {imageFile && objectUrl ? (
             <img className="image-preview-media" src={objectUrl} alt={imageFile.path} />
           ) : (
-            <div className="image-placeholder">
-              <span>no image loaded</span>
-              <small>load an image from File Explorer</small>
-            </div>
+            <WorkspaceEmptyState source="file" title="No image loaded" detail="Use File Explorer or Preview to load a local image, then inspect it here." />
           )}
         </div>
       </WorkspaceSectionFrame>

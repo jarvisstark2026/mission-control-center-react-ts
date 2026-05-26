@@ -10,7 +10,6 @@ import {
   getAgentBridgeTutorialSteps,
   getAgentConnectors,
   getAgentJobSummary,
-  getAgentUsageApprovalRate,
   getCommandAuditAgentActivity,
   getVisibleAgentDescriptors,
   getVisibleAgentActivity,
@@ -37,14 +36,15 @@ import {
 } from '../../agent-control';
 import { createBridgeAgentTaskGateway, type AgentTaskGateway, type AgentTaskScope } from '../../agent-tasking';
 import type { MissionControlRuntime } from '../../mission-control';
-import { AgentAttribution, PermissionBadge, StatusSummary } from '../operationalBlocks';
+import { AgentAttribution, PermissionBadge } from '../operationalBlocks';
 import {
   WorkspaceButton,
   WorkspaceContentHeader,
   WorkspaceContentShell,
+  WorkspaceEmptyState,
   WorkspaceMetricGrid,
   WorkspaceSectionFrame,
-  WorkspaceSummaryPanel,
+  WorkspaceStatusStrip,
 } from '../workspaceBlocks';
 import { getAgentGatewayDisplay } from './agentWorkflowDisplay';
 
@@ -377,9 +377,7 @@ export function AgentControlWidget({
           metaEyebrow="access"
           meta="guest"
         />
-        <WorkspaceSummaryPanel title="No access for this scope">
-          Agent identity, scheduled jobs, and permission details are hidden from guest access.
-        </WorkspaceSummaryPanel>
+        <WorkspaceEmptyState source="unavailable" title="No access for this scope" detail="Agent identity, scheduled jobs, and permission details are hidden from guest access." />
       </WorkspaceContentShell>
     );
   }
@@ -393,7 +391,6 @@ export function AgentControlWidget({
   ].sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp));
   const summary = getAgentJobSummary(jobs);
   const editable = canEditAgentSettings(role);
-  const approvalRate = getAgentUsageApprovalRate(state);
   const connectors = getAgentConnectors(state);
   const visibleConnectors = connectors.filter((connector) => connector.id !== 'agent-remote-bridge');
   const visibleConnectorCount = visibleConnectors.filter((connector) => connector.status !== 'not-configured').length;
@@ -668,27 +665,12 @@ export function AgentControlWidget({
         meta={`${activeConnector.kind} / ${activeConnector.status} / ${activeConnector.activeEngine ?? state.identity.model}`}
       />
 
-      <StatusSummary
-        className="agent-control-summary"
-        label="Active coordinator"
-        title={state.identity.name}
-        detail={state.identity.currentTask}
-        meta={state.identity.connection}
-      />
-
-      <WorkspaceMetricGrid
-        className="mission-control-metrics agent-control-metrics"
-        metrics={[
-          { label: 'status', value: state.identity.status },
-          { label: 'bridge', value: activeConnector.status },
-          { label: 'events', value: state.eventStreamStatus },
-          { label: 'model', value: state.identity.model },
-          { label: 'profile', value: state.identity.activeProfileLabel, wide: true },
-          { label: 'last event', value: formatDateTime(state.lastBridgeEventAt), wide: true },
-          { label: 'jobs', value: `${summary.active}/${summary.total}` },
-          { label: 'approval rate', value: `${approvalRate}%` },
-          { label: 'next run', value: formatDateTime(summary.nextRunAt), wide: true },
-        ]}
+      <WorkspaceStatusStrip
+        source={taskGateway.mode === 'bridge' ? 'bridge' : 'local'}
+        status={`${missionControlBridgeLabel} / ${hermesApiLabel}`}
+        count={taskGatewayLabel}
+        updatedAt={formatDateTime(state.lastBridgeEventAt)}
+        action={{ label: 'Probe', onClick: probeBridgeNow, disabled: !editable }}
       />
 
       <WorkspaceSectionFrame

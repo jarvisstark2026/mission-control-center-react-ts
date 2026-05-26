@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import {
   addLiveTvFavorite,
   createLiveTvSource,
@@ -15,50 +15,21 @@ import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 
 
 
-const liveTvSources: LocalLiveTvSource[] = [
-  {
-    name: 'RTP 1',
-    badge: 'LAN',
-    description: 'Direto',
-    url: 'https://streaming-live.rtp.pt/liverepeater/smil:rtp1HD.smil/playlist.m3u8?tk=1779591600_cf635b1a6af5bfe4ad3331d48d52e4a790974355',
-    streamType: 'hls',
-  },
-  {
-    name: 'Home tuner',
-    badge: 'LAN',
-    description: 'your local internet TV feed',
-    url: 'http://192.168.1.50/live.m3u8',
-    streamType: 'hls',
-  },
-  {
-    name: 'Mux demo',
-    badge: 'DEMO',
-    description: 'public HLS test stream',
-    url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
-    streamType: 'hls',
-  },
-  {
-    name: 'Fallback clip',
-    badge: 'MP4',
-    description: 'basic playback fallback',
-    url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-    streamType: 'mp4',
-  },
-];
+const liveTvSources: LocalLiveTvSource[] = [];
 
-const defaultLiveTvSource = liveTvSources.find((source) => source.streamType === 'mp4') ?? liveTvSources[0] ?? {
-  name: 'Fallback clip',
-  badge: 'MP4',
-  description: 'basic playback fallback',
-  url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-  streamType: 'mp4' as const,
+const defaultLiveTvSource: LocalLiveTvSource = {
+  name: 'No feed configured',
+  badge: 'SETUP',
+  description: 'Add an official HLS or MP4 source from your provider or tuner.',
+  url: '',
+  streamType: 'mp4',
 };
 
 export function LiveTvWidget() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<{ destroy: () => void } | null>(null);
   const [liveTvState, setLiveTvState] = usePersistentWorkspaceState(loadLiveTvState, saveLiveTvState);
-  const [draftUrl, setDraftUrl] = useState(liveTvState.draftSource?.url ?? defaultLiveTvSource.url);
+  const [draftUrl, setDraftUrl] = useState(liveTvState.draftSource?.url ?? '');
   const [draftName, setDraftName] = useState(liveTvState.draftSource?.name ?? 'Custom feed');
   const [hasEditedDraft, setHasEditedDraft] = useState(Boolean(liveTvState.draftSource));
   const [activeSource, setActiveSource] = useState<LocalLiveTvSource>(liveTvState.draftSource ?? defaultLiveTvSource);
@@ -191,9 +162,12 @@ export function LiveTvWidget() {
         meta={status}
       />
 
-      <WorkspaceSummaryPanel className="live-tv-status-panel" title={activeSource.description}>
-        Internet TV playback stays local to the browser. HLS playback is lazy-loaded only when the active source needs it.
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip
+        source={activeSource.url ? 'browser' : 'unavailable'}
+        status={status}
+        count={`${allSources.length} saved feeds`}
+        updatedAt={activeSource.streamType.toUpperCase()}
+      />
 
       <WorkspaceSectionFrame className="live-tv-source-section" eyebrow="sources" title="channel presets" meta={`${allSources.length} feeds`}>
         <WorkspaceCatalogGrid
@@ -256,7 +230,14 @@ export function LiveTvWidget() {
       </WorkspaceSectionFrame>
 
       <WorkspaceSectionFrame className="live-tv-player-section" eyebrow="playback" title="active stream" meta={activeSource.streamType.toUpperCase()}>
-        <video ref={videoRef} className="live-tv-frame" controls autoPlay playsInline preload="metadata" />
+        {activeSource.url ? (
+          <video ref={videoRef} className="live-tv-frame" controls autoPlay playsInline preload="metadata" />
+        ) : (
+          <>
+            <video ref={videoRef} className="live-tv-frame" controls playsInline preload="metadata" aria-label="No Live TV feed selected" />
+            <WorkspaceEmptyState source="browser" title="No Live TV feed configured" detail="Paste an official HLS or MP4 URL above, tune it, then save it as a favorite." />
+          </>
+        )}
       </WorkspaceSectionFrame>
     </WorkspaceContentShell>
   );

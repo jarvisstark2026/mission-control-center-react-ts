@@ -3,6 +3,25 @@ import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { classNames } from '../../lib/classNames';
 import type { WorkspaceWidget } from './workspaceTypes';
 
+export type WidgetSourceState = 'local' | 'live' | 'bridge' | 'file' | 'browser' | 'unavailable';
+
+export type WidgetPrimaryAction = {
+  label: ReactNode;
+  disabled?: boolean;
+  onClick?: () => void;
+  title?: string;
+  roleGate?: ReactNode;
+};
+
+export type WidgetCompactItem = {
+  id: string;
+  title: ReactNode;
+  meta?: ReactNode;
+  detail?: ReactNode;
+  state?: string;
+  action?: WidgetPrimaryAction;
+};
+
 export function WorkspaceWidgetFrame({
   kind,
   className,
@@ -317,6 +336,114 @@ export function WorkspaceActionRowList({
           </button>
         </div>
       ))}
+    </div>
+  );
+}
+
+export function WorkspaceStatusStrip({
+  source,
+  status,
+  count,
+  updatedAt,
+  action,
+  className,
+}: {
+  source: WidgetSourceState;
+  status: ReactNode;
+  count?: ReactNode;
+  updatedAt?: ReactNode;
+  action?: WidgetPrimaryAction;
+  className?: string;
+}) {
+  return (
+    <section className={classNames('workspace-status-strip', className)} data-source={source} aria-label="Widget status">
+      <span className="workspace-status-source">{source}</span>
+      <strong className="workspace-status-main">{status}</strong>
+      {count ? <small className="workspace-status-count">{count}</small> : null}
+      {updatedAt ? <small className="workspace-status-update">{updatedAt}</small> : null}
+      {action ? (
+        <WorkspaceButton
+          variant="compact"
+          className="workspace-status-action"
+          disabled={action.disabled}
+          onClick={action.onClick}
+          title={action.title}
+        >
+          {action.label}
+        </WorkspaceButton>
+      ) : null}
+      {action?.roleGate ? <small className="workspace-status-gate">{action.roleGate}</small> : null}
+    </section>
+  );
+}
+
+export function WorkspaceCompactList({
+  items,
+  empty,
+  ariaLabel,
+  className,
+}: {
+  items: WidgetCompactItem[];
+  empty: ReactNode;
+  ariaLabel?: string;
+  className?: string;
+}) {
+  if (!items.length) {
+    return <p className={classNames('workspace-compact-empty', className)}>{empty}</p>;
+  }
+
+  return (
+    <div className={classNames('workspace-compact-list', className)} role={ariaLabel ? 'list' : undefined} aria-label={ariaLabel}>
+      {items.map((item) => (
+        <div key={item.id} className="workspace-compact-row" data-state={item.state} role={ariaLabel ? 'listitem' : undefined}>
+          <span>{item.meta}</span>
+          <strong>{item.title}</strong>
+          {item.detail ? <small>{item.detail}</small> : null}
+          {item.action ? (
+            <WorkspaceButton
+              variant="compact"
+              className="workspace-compact-row-action"
+              disabled={item.action.disabled}
+              onClick={item.action.onClick}
+              title={item.action.title}
+            >
+              {item.action.label}
+            </WorkspaceButton>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function WorkspaceEmptyState({
+  source,
+  title,
+  detail,
+  action,
+  className,
+}: {
+  source: WidgetSourceState;
+  title: ReactNode;
+  detail?: ReactNode;
+  action?: WidgetPrimaryAction;
+  className?: string;
+}) {
+  return (
+    <div className={classNames('workspace-empty-state', className)} data-source={source}>
+      <span>{source}</span>
+      <strong>{title}</strong>
+      {detail ? <p>{detail}</p> : null}
+      {action ? (
+        <WorkspaceButton
+          variant="secondary"
+          disabled={action.disabled}
+          onClick={action.onClick}
+          title={action.title}
+        >
+          {action.label}
+        </WorkspaceButton>
+      ) : null}
     </div>
   );
 }

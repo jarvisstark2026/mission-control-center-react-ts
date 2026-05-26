@@ -1,28 +1,27 @@
-﻿import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 
 export function MapWidget() {
+  const rows = [
+    { id: 'provider', meta: 'provider', title: 'No live map provider configured', detail: 'unavailable', state: 'offline' },
+    { id: 'local-notes', meta: 'local', title: 'Use goals/evidence to track location notes', detail: 'manual', state: 'ready' },
+    { id: 'routes', meta: 'routes', title: 'Route overlays wait for a real feed or imported file', detail: 'setup', state: 'pending' },
+  ];
+
   return (
     <WorkspaceContentShell className="map-widget-shell">
       <WorkspaceContentHeader
-        eyebrow="Navigation"
-        title="route overview"
-        metaEyebrow="waypoints"
-        meta="3 markers"
+        eyebrow="Map"
+        title="route and location surface"
+        metaEyebrow="source"
+        meta="not connected"
       />
-      <WorkspaceSummaryPanel className="map-summary-panel" title="route telemetry">
-        Navigation now follows the shared Markets hierarchy: concise status first, then the active map stage.
-      </WorkspaceSummaryPanel>
-      <WorkspaceSectionFrame className="media-widget-stage" eyebrow="map" title="active route" meta="local grid">
-        <div className="map-surface">
+      <WorkspaceStatusStrip source="unavailable" status="no map feed configured" count="local notes ready" />
+      <WorkspaceSectionFrame className="media-widget-stage" eyebrow="map" title="setup state" meta="local grid">
+        <div className="map-surface map-surface-idle" aria-hidden="true">
           <div className="map-grid" />
-          <div className="map-route map-route-a" />
-          <div className="map-route map-route-b" />
-          <div className="map-point map-point-a" />
-          <div className="map-point map-point-b" />
-          <div className="map-point map-point-c" />
         </div>
+        <WorkspaceCompactList items={rows} empty="Connect a provider or attach a map file to a goal." ariaLabel="Map setup rows" />
       </WorkspaceSectionFrame>
     </WorkspaceContentShell>
   );
 }
-

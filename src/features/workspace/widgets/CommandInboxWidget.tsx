@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { getAllowedCommandActions, type CommandAction, type CommandRequest, type MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
-import { AgentAttribution, AttentionCard, AuditList, EvidenceBlock, StatusSummary } from '../operationalBlocks';
+import { AgentAttribution, AttentionCard, AuditList, EvidenceBlock } from '../operationalBlocks';
 import { getCommandGatewayDisplay } from './agentWorkflowDisplay';
 
 const commandActionLabels: Record<CommandAction, string> = {
@@ -122,11 +122,11 @@ export function CommandInboxWidget({
         metaEyebrow="operator gate"
         meta={missionControl.role}
       />
-      <StatusSummary
-        label="Human workstream"
-        title={nextCommand ? `${focusedCommand ? 'Focused command' : 'Next action'}: ${nextCommand.title}` : 'No pending action'}
-        detail={focusedCommand ? 'Opened from Agent Console or Workflow. This command remains gated here.' : 'Agents can propose and explain actions. Operators approve, reject, block, or override by role.'}
-        meta={missionControl.role}
+      <WorkspaceStatusStrip
+        source={missionControl.commandGatewayMode === 'backend' ? 'bridge' : 'local'}
+        status={nextCommand ? `${focusedCommand ? 'Focused' : 'Next'}: ${nextCommand.title}` : 'No pending action'}
+        count={`${pendingCommands.length} pending / ${completedCommands.length} history`}
+        updatedAt={gatewayDisplay.label}
       />
       {focusedCommand ? (
         <div className="mission-control-actions command-inbox-focus-actions">

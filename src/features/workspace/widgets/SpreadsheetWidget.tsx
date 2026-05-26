@@ -1,4 +1,4 @@
-import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { loadLocalSheetState, saveLocalSheetState, summarizeSheetColumn, updateSheetCell } from '../workspaceEvidenceModel';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 
@@ -15,9 +15,7 @@ export function SpreadsheetWidget() {
         metaEyebrow="saved"
         meta={`${sheet.rows.length} rows - ${updatedTime}`}
       />
-      <WorkspaceSummaryPanel title="editable evidence table">
-        Edit cells locally. Numeric columns automatically show sum and average so the widget can support quick decisions without a backend.
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip source="local" status="editable evidence table" count={`${sheet.rows.length} rows`} updatedAt={`saved ${updatedTime}`} />
       <WorkspaceSectionFrame className="sheet-grid-frame" eyebrow="grid" title="operating snapshot" meta={`${numericColumns.length} numeric columns`}>
         <div className="sheet-summary-strip" aria-label="Column summaries">
           {numericColumns.map((column, index) => {

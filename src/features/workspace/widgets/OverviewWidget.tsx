@@ -1,31 +1,65 @@
-﻿import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import type { MissionControlRuntime } from '../../mission-control';
+import { WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import type { WorkspaceWidgetGroup } from '../workspaceManagerModel';
 
-export function OverviewWidget() {
+export function OverviewWidget({
+  missionControl,
+  workspaceGroups = [],
+}: {
+  missionControl?: MissionControlRuntime;
+  workspaceGroups?: WorkspaceWidgetGroup[];
+}) {
+  const state = missionControl?.state;
+  const unreadAlerts = state?.notifications.filter((notification) => !notification.acknowledged).length ?? 0;
+  const pendingCommands = state?.commands.filter((command) => command.status === 'pending').length ?? 0;
+  const openWidgets = workspaceGroups.reduce((total, group) => total + group.widgets.filter((widget) => widget.open && !widget.hidden).length, 0);
+  const onWorkspaces = workspaceGroups.filter((group) => group.active || group.widgets.some((widget) => widget.open && !widget.hidden)).length || 1;
+  const latestTelemetry = state?.telemetry[0] ?? null;
+  const updatedAt = state?.lastUpdatedAt ? new Date(state.lastUpdatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'local';
   const stats = [
-    { label: 'system', value: '98%' },
-    { label: 'devices', value: '24' },
-    { label: 'alerts', value: '12' },
-    { label: 'workspace mode', value: 'drag / resize / stack / fade', wide: true },
+    { label: 'alerts', value: unreadAlerts },
+    { label: 'pending', value: pendingCommands },
+    { label: 'widgets', value: openWidgets },
+    { label: 'workspaces on', value: onWorkspaces, wide: true },
+  ];
+  const compactRows = [
+    {
+      id: 'telemetry',
+      meta: state?.connection ?? 'local',
+      title: latestTelemetry ? `${latestTelemetry.label} ${latestTelemetry.value}${latestTelemetry.unit}` : 'No live telemetry sample',
+      detail: latestTelemetry ? latestTelemetry.severity : 'source waiting',
+      state: latestTelemetry?.severity === 'critical' ? 'failed' : latestTelemetry?.severity === 'warning' ? 'warning' : 'ready',
+    },
+    {
+      id: 'commands',
+      meta: 'gate',
+      title: pendingCommands ? `${pendingCommands} commands waiting` : 'Command Inbox clear',
+      detail: 'human approval',
+      state: pendingCommands ? 'pending' : 'ready',
+    },
   ];
 
   return (
     <WorkspaceContentShell className="overview-surface">
       <WorkspaceContentHeader
         eyebrow="System overview"
-        title="status / devices / alerts"
-        metaEyebrow="workspace"
-        meta="live frame"
+        title="current operating state"
+        metaEyebrow={state?.connection ?? 'local'}
+        meta={updatedAt}
       />
-      <WorkspaceSummaryPanel className="overview-summary" title="workspace health">
-        Core workspace telemetry now uses the same header, status, and stage cadence as Markets before expanding into the live command summary.
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip
+        source={state?.connection === 'connected' ? 'live' : 'local'}
+        status={pendingCommands ? `${pendingCommands} decisions waiting` : 'workspace ready'}
+        count={`${openWidgets} open widgets`}
+        updatedAt={updatedAt}
+      />
       <WorkspaceSectionFrame className="overview-dashboard" eyebrow="telemetry" title="command summary" meta={`${stats.length} signals`}>
         <div className="widget-grid">
           <div className="stats-arc" />
           <WorkspaceMetricGrid metrics={stats} />
         </div>
+        <WorkspaceCompactList items={compactRows} empty="No local state is available yet." ariaLabel="Overview status rows" />
       </WorkspaceSectionFrame>
     </WorkspaceContentShell>
   );
 }
-

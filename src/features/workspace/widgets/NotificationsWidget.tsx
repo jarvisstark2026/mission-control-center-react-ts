@@ -1,6 +1,6 @@
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { canAcknowledgeNotifications, type MissionControlRuntime } from '../../mission-control';
-import { AttentionCard, StatusSummary } from '../operationalBlocks';
+import { AttentionCard } from '../operationalBlocks';
 
 export function NotificationsWidget({ missionControl }: { missionControl: MissionControlRuntime }) {
   const { notifications, telemetry, connection } = missionControl.state;
@@ -29,11 +29,11 @@ export function NotificationsWidget({ missionControl }: { missionControl: Missio
         metaEyebrow="transport"
         meta={connection}
       />
-      <StatusSummary
-        label={connection === 'connected' ? 'Live stream' : 'Mock stream'}
-        title={latestTelemetry ? `${latestTelemetry.label} ${latestTelemetry.value}${latestTelemetry.unit}` : 'Telemetry ready'}
-        detail="SSE is used when configured. Otherwise the deterministic mock stream keeps the operational surface alive and clearly marked."
-        meta={`${unreadNotifications.length} unread`}
+      <WorkspaceStatusStrip
+        source={connection === 'connected' ? 'bridge' : 'local'}
+        status={latestTelemetry ? `${latestTelemetry.label} ${latestTelemetry.value}${latestTelemetry.unit}` : 'Telemetry ready'}
+        count={`${unreadNotifications.length} unread`}
+        updatedAt={connection === 'connected' ? 'SSE stream' : 'local fallback events'}
       />
 
       <WorkspaceSectionFrame

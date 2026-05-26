@@ -3,8 +3,8 @@ import { useMemo, useState } from 'react';
 import type { CommandRisk, CommandScope, MissionControlEvent, MissionControlRuntime } from '../../mission-control';
 import { canEditJsonSurface, detectJsonSurfaceSchema, type JsonSurfaceDocument, type JsonSurfaceSchemaHint, type OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
-import { AttentionCard, EvidenceBlock, StatusSummary } from '../operationalBlocks';
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame } from '../workspaceBlocks';
+import { AttentionCard, EvidenceBlock } from '../operationalBlocks';
+import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -204,9 +204,14 @@ export function JsonSurfaceWidget({
   };
 
   return (
-    <WorkspaceContentShell className="mission-control-surface json-surface">
+      <WorkspaceContentShell className="mission-control-surface json-surface">
       <WorkspaceContentHeader eyebrow="JSON Surface" title="agent data renderer" metaEyebrow="schema" meta={selectedDocument?.schemaHint ?? 'none'} />
-      <StatusSummary label="Flexible surface" title="Render structured agent output" detail={status} meta={`${documents.length} documents`} />
+      <WorkspaceStatusStrip
+        source={selectedDocument?.source === 'bridge' ? 'bridge' : selectedDocument ? 'local' : 'unavailable'}
+        status={status}
+        count={`${documents.length} documents`}
+        updatedAt={selectedDocument?.schemaHint ?? 'raw'}
+      />
 
       {selectedDocument ? (
         <AttentionCard

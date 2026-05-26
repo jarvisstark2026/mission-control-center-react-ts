@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { getMarketGraph, marketCategories, type MarketGraph } from '../workspaceMarketData';
 import { getMarketLiveQuote, type MarketLiveState } from '../workspaceMarketLiveData';
 import { loadMarketWatchlist, saveMarketWatchlist, toggleMarketWatchlist } from '../workspaceMarketWatchlistModel';
@@ -35,6 +35,7 @@ export function NewsWidget({
     }),
   );
   const newsItems = watchlistOnly ? allNewsItems.filter((item) => watchlistIds.includes(item.id)) : allNewsItems;
+  const activeSource = activeQuote.status === 'live' ? 'live' : activeQuote.status === 'error' ? 'unavailable' : 'local';
 
   return (
     <WorkspaceContentShell className="news-surface">
@@ -44,14 +45,19 @@ export function NewsWidget({
         metaEyebrow={marketLiveData.sourceLabel}
         meta={`${activeGraph.ticker} - ${watchlistIds.length} watched`}
       />
-      <WorkspaceSummaryPanel className="news-summary" title={activeGraph.label}>
-        {activeGraph.note}. Active quote: {activeQuote.priceLabel} / {activeQuote.changeLabel}. Source: {activeQuote.sourceLabel}.
-        {manualRefreshAt ? ` Manual refresh requested at ${manualRefreshAt}.` : ''}
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip
+        source={activeSource}
+        status={`${activeGraph.label} ${activeQuote.priceLabel}`}
+        count={activeQuote.changeLabel}
+        updatedAt={manualRefreshAt ? `manual ${manualRefreshAt}` : activeQuote.sourceLabel}
+      />
       {marketLiveData.errors.length ? (
-        <WorkspaceSummaryPanel className="market-live-alert" title="Market data fallback">
-          {marketLiveData.errors[0]}
-        </WorkspaceSummaryPanel>
+        <WorkspaceStatusStrip
+          className="market-live-alert"
+          source="unavailable"
+          status="feed issue"
+          count={marketLiveData.errors[0]}
+        />
       ) : null}
       <WorkspaceSectionFrame className="news-watchlist-section" eyebrow="watchlist" title="local market controls" meta="browser saved">
         <div className="news-watchlist-controls">

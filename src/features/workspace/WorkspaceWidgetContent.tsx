@@ -91,13 +91,13 @@ type WorkspaceWidgetContentRendererProps = {
   widget: WorkspaceWidget;
 } & WorkspaceWidgetContentProps;
 
-const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], () => ReactNode>> = {
-  overview: () => <OverviewWidget />,
-  graph: () => <GraphWidget />,
+const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], (props: WorkspaceWidgetContentRendererProps) => ReactNode>> = {
+  overview: ({ missionControl, workspaceWidgetGroups }) => <OverviewWidget missionControl={missionControl} workspaceGroups={workspaceWidgetGroups} />,
+  graph: ({ missionControl }) => <GraphWidget missionControl={missionControl} />,
   sheet: () => <SpreadsheetWidget />,
   docs: () => <DocsWidget />,
   slides: () => <SlidesWidget />,
-  audio: () => <AudioWidget />,
+  audio: ({ agentControl }) => <AudioWidget agentControl={agentControl} />,
   map: () => <MapWidget />,
   diagram: () => <DiagramWidget />,
   browser: () => <BrowserWidget />,
@@ -274,7 +274,42 @@ function renderWorkspaceWidgetContent({
     }
     default: {
       const renderStaticWidget = staticWidgetRenderers[widget.kind];
-      return renderStaticWidget ? renderStaticWidget() : null;
+      return renderStaticWidget ? renderStaticWidget({
+        widget,
+        localFiles,
+        activeLocalFileId,
+        selectedLocalFileId,
+        folderEntries,
+        folderPath,
+        canBrowseFolder,
+        activeMarketGraph,
+        marketLiveData,
+        onBrowseFiles,
+        onBrowseFolder,
+        onOpenPreview,
+        onSelectFile,
+        onClearFiles,
+        onLaunchWorkspaceWidget,
+        focusedCommandId,
+        onOpenCommandInbox,
+        onClearFocusedCommand,
+        onSelectMarketGraph,
+        workspaceWidgets,
+        workspaceWidgetGroups,
+        onFocusWidget,
+        onTogglePinWidget,
+        onCloseWidget,
+        missionControl,
+        agentControl,
+        agentBridgeSettings,
+        onUpdateAgentBridgeSettings,
+        onProbeAgentBridge,
+        onTestAgentBridgeUrl,
+        agentTaskGateway,
+        operationalOs,
+        activeRole,
+        widgetPermissions,
+      }) : null;
     }
   }
 }

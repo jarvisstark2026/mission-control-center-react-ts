@@ -2,8 +2,8 @@ import { useMemo, useState, type CSSProperties } from 'react';
 
 import type { ShellRole } from '../../shell/roles';
 import type { MissionControlRuntime } from '../../mission-control';
-import { AttentionCard, EvidenceBlock, PermissionBadge, RiskBadge, StatusSummary } from '../operationalBlocks';
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame } from '../workspaceBlocks';
+import { AttentionCard, EvidenceBlock, PermissionBadge, RiskBadge } from '../operationalBlocks';
+import { WorkspaceButton, WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createHomeSystemActionEvents, getHomeSystemActionPlansForRole, type HomeSystemActionId } from '../homeSystemsActions';
 import { useHomeSystemsData } from '../homeSystemsAdapter';
 import {
@@ -107,6 +107,92 @@ export function HomeSystemsWidget({
     missionControl.ingestEvents(events);
     setStagedActionId(actionId);
   };
+  const hasBackendData = sourceStatus === 'backend-ready';
+
+  if (!hasBackendData) {
+    const setupRows = [
+      {
+        id: 'backend',
+        meta: sourceStatus,
+        title: homeSystems.error ?? 'Home systems backend is not connected',
+        detail: 'VITE_HOME_SYSTEMS_API_URL',
+        state: sourceStatus === 'offline' ? 'failed' : 'pending',
+      },
+      {
+        id: 'safety',
+        meta: 'gate',
+        title: 'Home actions remain Command Inbox proposals',
+        detail: getControlMode(role),
+        state: actionPlans.length ? 'ready' : 'offline',
+      },
+      {
+        id: 'scope',
+        meta: 'local',
+        title: 'Live energy/device values appear only after a backend responds',
+        detail: 'source required',
+        state: 'ready',
+      },
+    ];
+
+    return (
+      <WorkspaceContentShell className="mission-control-surface home-systems-surface">
+        <WorkspaceContentHeader
+          eyebrow="Home systems"
+          title="energy, safety, automation, and rooms"
+          metaEyebrow={sourceStatus}
+          meta={role}
+        />
+        <WorkspaceStatusStrip
+          source={sourceStatus === 'offline' ? 'unavailable' : 'local'}
+          status={homeSystems.error ?? 'home backend not connected'}
+          count={`${actionPlans.length} gated actions`}
+          updatedAt="setup"
+        />
+        <WorkspaceSectionFrame
+          className="mission-control-list-frame home-action-frame"
+          eyebrow="setup"
+          title="connection and safety"
+          meta="backend required"
+        >
+          <WorkspaceCompactList items={setupRows} empty="Configure the Home Systems backend to show live device data." ariaLabel="Home systems setup rows" />
+        </WorkspaceSectionFrame>
+        <WorkspaceSectionFrame
+          className="mission-control-list-frame home-action-frame"
+          eyebrow="actions"
+          title="stage home proposals"
+          meta={actionPlans.length ? 'Command Inbox gated' : 'read only'}
+        >
+          {actionPlans.length ? (
+            <div className="home-action-grid" role="list" aria-label="Home action proposals">
+              {actionPlans.slice(0, 4).map((plan) => (
+                <AttentionCard
+                  key={plan.id}
+                  className="home-action-card"
+                  label={`${plan.sourceArea} / ${plan.scope}`}
+                  title={plan.title}
+                  risk={plan.risk}
+                  actions={
+                    <WorkspaceButton
+                      variant={plan.risk === 'critical' ? 'destructive' : 'secondary'}
+                      className="mission-control-action"
+                      onClick={() => stageHomeAction(plan.id)}
+                    >
+                      Stage proposal
+                    </WorkspaceButton>
+                  }
+                >
+                  <p>{plan.summary}</p>
+                  <small>{stagedActionId === plan.id ? 'Sent to Command Inbox.' : plan.expectedResult}</small>
+                </AttentionCard>
+              ))}
+            </div>
+          ) : (
+            <p className="mission-control-empty">This access scope can monitor Home Systems but cannot stage home actions.</p>
+          )}
+        </WorkspaceSectionFrame>
+      </WorkspaceContentShell>
+    );
+  }
 
   return (
     <WorkspaceContentShell className="mission-control-surface home-systems-surface">
@@ -117,11 +203,11 @@ export function HomeSystemsWidget({
         meta={role}
       />
 
-      <StatusSummary
-        label="Whole-home state"
-        title={`${formatKw(snapshot.generationKw)} generating / ${formatKw(snapshot.consumptionKw)} consuming`}
-        detail={homeSystems.error ?? 'This widget is the home control surface: energy, Solar PV, EV charging, AC, appliances, automation, safety, cameras, pool, tablets, and other devices. Control actions are staged through Command Inbox.'}
-        meta={sourceStatus}
+      <WorkspaceStatusStrip
+        source={sourceStatus === 'backend-ready' ? 'live' : sourceStatus === 'offline' ? 'unavailable' : 'local'}
+        status={`${formatKw(snapshot.generationKw)} generating / ${formatKw(snapshot.consumptionKw)} consuming`}
+        count={sourceStatus}
+        updatedAt={homeSystems.error ?? `${summary.total} tracked`}
       />
 
       <WorkspaceMetricGrid
@@ -332,11 +418,11 @@ export function HomeSystemsWidget({
         </div>
       </WorkspaceSectionFrame>
 
-      <StatusSummary
-        label="Control mode"
-        title={getControlMode(role)}
-        detail="This surface is backend-ready through VITE_HOME_SYSTEMS_API_URL. Until a local backend is connected, it uses typed mock energy, device, and automation data."
-        meta={`${summary.total} tracked`}
+      <WorkspaceStatusStrip
+        source="bridge"
+        status={getControlMode(role)}
+        count={`${summary.total} tracked`}
+        updatedAt="Command Inbox gates controls"
       />
     </WorkspaceContentShell>
   );

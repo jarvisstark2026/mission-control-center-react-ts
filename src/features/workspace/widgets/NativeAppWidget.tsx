@@ -1,6 +1,6 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { DesktopBridgePanel } from '../DesktopBridgePanel';
-import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from '../workspaceDesktopApps';
 
 export function NativeAppWidget() {
@@ -23,20 +23,18 @@ export function NativeAppWidget() {
     <WorkspaceContentShell className="native-app-surface">
       <WorkspaceContentHeader
         eyebrow="Desktop bridge"
-        title="open installed app / external window"
+        title="installed app launcher"
         metaEyebrow="local"
-        meta="installed apps"
+        meta="external windows"
       />
 
-      <WorkspaceSummaryPanel className="native-app-summary" title="bridge status">
-        Browser containment remains intact while installed apps stay routed through the external app bridge.
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip source="local" status="external app launch profiles" count={`${apps.length} remembered`} updatedAt="desktop handoff" />
 
       <WorkspaceSectionFrame className="native-app-bridge-section" eyebrow="desktop controls" title="app command" meta={`${apps.length} remembered`}>
         <DesktopBridgePanel
           eyebrow="desktop bridge"
           title="open installed app / external window"
-          description="Bridge installed apps and external windows without asking the browser to act as the operating system."
+          description="Launch installed apps through local profiles. Native embedding is intentionally not promised in this surface."
           inputLabel="App or command"
           inputValue={desktopCommand}
           inputPlaceholder="e.g. obsidian, explorer.exe, notepad.exe"
@@ -51,4 +49,3 @@ export function NativeAppWidget() {
     </WorkspaceContentShell>
   );
 }
-

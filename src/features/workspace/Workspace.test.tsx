@@ -436,13 +436,8 @@ describe('Workspace header controls', () => {
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Home systems' }));
     expect(currentRender.getAllByText('energy, safety, automation, and rooms').length).toBeGreaterThan(0);
-    expect(currentRender.getAllByText('Daily load').length).toBeGreaterThan(0);
-    expect(currentRender.getAllByText('Solar PV').length).toBeGreaterThan(0);
-    expect(currentRender.getAllByText('CCTV and doorbell').length).toBeGreaterThan(0);
-    const poolLayerToggle = currentRender.getAllByRole('button', { name: 'Pool' })[0];
-    expect(poolLayerToggle).toHaveAttribute('aria-pressed', 'false');
-    fireEvent.click(poolLayerToggle);
-    expect(poolLayerToggle).toHaveAttribute('aria-pressed', 'true');
+    expect(currentRender.getAllByText(/home backend not connected/i).length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText('Live energy/device values appear only after a backend responds').length).toBeGreaterThan(0);
     const solarActionCard = currentRender.getByText('Use solar surplus').closest('.operational-attention-card');
     expect(solarActionCard).toBeInTheDocument();
     fireEvent.click(within(solarActionCard as HTMLElement).getByRole('button', { name: 'Stage proposal' }));

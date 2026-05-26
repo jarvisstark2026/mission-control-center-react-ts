@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import {
   completeScheduleBlock,
   createScheduleBlock,
@@ -51,6 +51,17 @@ export function ScheduleWidget({
   const visibleBlocks = useMemo(() => filterScheduleBlocks(blocks, activeFilter), [activeFilter, blocks]);
   const openBlocks = blocks.filter((block) => block.status !== 'done');
   const nextBlock = filterScheduleBlocks(blocks, 'today')[0] ?? filterScheduleBlocks(blocks, 'upcoming')[0] ?? null;
+  const priorityRows = openBlocks.slice(0, 3).map((block) => ({
+    id: block.id,
+    meta: block.status,
+    title: `${block.time} / ${block.date}`,
+    detail: block.note || 'local schedule block',
+    state: block.status === 'today' ? 'ready' : 'pending',
+    action: {
+      label: 'Edit',
+      onClick: () => startEditing(block),
+    },
+  }));
 
   const resetDraft = () => {
     setEditingBlockId(null);
@@ -99,11 +110,19 @@ export function ScheduleWidget({
         metaEyebrow={activeFilter}
         meta={`${visibleBlocks.length} shown - ${openBlocks.length} open`}
       />
-      <WorkspaceSummaryPanel className="schedule-summary" title={nextBlock ? `Next: ${nextBlock.title}` : 'No open blocks'}>
-        {nextBlock
-          ? `${nextBlock.time} on ${nextBlock.date}. ${nextBlock.note}`
-          : 'Create a local schedule block to plan the day. Blocks stay in this browser.'}
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip
+        source="local"
+        status={nextBlock ? 'Next block ready' : 'No open blocks'}
+        count={`${openBlocks.length} open`}
+        updatedAt={nextBlock ? `${nextBlock.time} / ${nextBlock.date}` : 'browser saved'}
+        action={{ label: editingBlockId ? 'Editing' : 'Add', onClick: saveDraft, disabled: !draft.title.trim() }}
+      />
+      <WorkspaceCompactList
+        className="schedule-priority-list"
+        items={priorityRows}
+        empty="Create a local schedule block to plan the day. Blocks stay in this browser."
+        ariaLabel="Priority schedule blocks"
+      />
 
       <WorkspaceSectionFrame className="schedule-editor" eyebrow="local block" title={editingBlockId ? 'edit block' : 'create block'} meta="browser saved">
         <div className="schedule-form">

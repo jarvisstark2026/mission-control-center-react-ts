@@ -47,7 +47,7 @@ test('operational core widgets launch and use local live data', async ({ page })
 
   await openWidget(page, 'Notifications');
   await expect(page.getByText('live telemetry and alerts')).toBeVisible();
-  await expect(page.getByText('mock', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Local fallback').first()).toBeVisible();
 
   await openWidget(page, 'Integration registry');
   await expect(page.getByText('devices, heartbeats, and permissions')).toBeVisible();
@@ -62,12 +62,8 @@ test('operational core widgets launch and use local live data', async ({ page })
 
   await openWidget(page, 'Home systems');
   await expect(page.getByText('energy, safety, automation, and rooms').first()).toBeVisible();
-  await expect(page.getByText('Daily load').first()).toBeVisible();
-  await expect(page.getByText('Solar PV').first()).toBeVisible();
-  await expect(page.getByText('Wall tablets').first()).toBeVisible();
-  const homePoolLayer = page.locator('.workspace-widget.kind-home-systems .home-energy-series-toggle', { hasText: 'Pool' });
-  await homePoolLayer.click();
-  await expect(homePoolLayer).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText(/home backend not connected/i).first()).toBeVisible();
+  await expect(page.getByText('Live energy/device values appear only after a backend responds').first()).toBeVisible();
   const solarSurplusProposal = page
     .locator('.workspace-widget.kind-home-systems .home-action-card', { hasText: 'Use solar surplus' })
     .getByRole('button', { name: 'Stage proposal' });

@@ -1,4 +1,4 @@
-import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { loadLocalDocumentState, saveLocalDocumentState } from '../workspaceEvidenceModel';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 
@@ -15,9 +15,7 @@ export function DocsWidget() {
         metaEyebrow="saved"
         meta={`${wordCount} words - ${updatedTime}`}
       />
-      <WorkspaceSummaryPanel title={documentState.title}>
-        Local notes are persisted in this browser and can be used as evidence beside Command Inbox decisions.
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip source="local" status={documentState.title} count={`${wordCount} words`} updatedAt={`saved ${updatedTime}`} />
       <div className="docs-layout">
         <WorkspaceSectionFrame className="docs-sidebar" eyebrow="outline" title="note status" meta="local draft">
           <div className="docs-evidence-summary">

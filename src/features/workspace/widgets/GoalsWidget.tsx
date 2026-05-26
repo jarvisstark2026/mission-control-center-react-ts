@@ -10,8 +10,8 @@ import {
   type OperationalOsRuntime,
 } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
-import { AgentAttribution, AttentionCard, AuditList, EvidenceBlock, StatusSummary } from '../operationalBlocks';
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { AgentAttribution, AttentionCard, AuditList, EvidenceBlock } from '../operationalBlocks';
+import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import type { WorkspaceWidget } from '../workspaceTypes';
 
 const priorityOptions: GoalPriority[] = ['normal', 'high', 'critical', 'low'];
@@ -164,11 +164,12 @@ export function GoalsWidget({
         meta={`${waitingCount} waiting / ${blockedCount} blocked`}
       />
 
-      <StatusSummary
-        label="Operating loop"
-        title={activeGoal ? activeGoal.title : 'No active goal'}
-        detail="Goals connect agent tasks, workflow runbooks, evidence, Command Inbox decisions, and audit history."
-        meta={activeGoal?.status ?? 'empty'}
+      <WorkspaceStatusStrip
+        source="local"
+        status={activeGoal ? activeGoal.title : 'No active goal'}
+        count={`${goals.length} stored / ${waitingCount} waiting`}
+        updatedAt={activeGoal?.status ?? 'empty'}
+        action={{ label: 'Agent Console', onClick: () => onLaunchWorkspaceWidget('agent-console') }}
       />
 
       {activeGoal ? (
@@ -244,7 +245,7 @@ export function GoalsWidget({
             </WorkspaceButton>
           </>
         ) : (
-          <WorkspaceSummaryPanel title="Read-only goals">Guest access can inspect existing goals but cannot create new objectives.</WorkspaceSummaryPanel>
+          <WorkspaceEmptyState source="local" title="Read-only goals" detail="Guest access can inspect existing goals but cannot create new objectives." />
         )}
       </WorkspaceSectionFrame>
 

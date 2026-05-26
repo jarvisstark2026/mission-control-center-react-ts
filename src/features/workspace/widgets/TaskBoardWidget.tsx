@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import {
   createLocalTask,
   createWorkflowDraftFromTask,
@@ -51,6 +51,13 @@ export function TaskBoardWidget({
   const blockedCount = tasks.filter((task) => task.status === 'blocked').length;
   const nextTask = tasks.find((task) => task.status === 'next') ?? tasks.find((task) => task.status === 'blocked') ?? tasks[0] ?? null;
   const title = variant === 'project' ? 'local project board' : 'local task lanes';
+  const laneRows = groups.map((group) => ({
+    id: group.status,
+    meta: group.status,
+    title: group.label,
+    detail: `${group.tasks.length} local tasks`,
+    state: group.status === 'blocked' ? 'blocked' : group.status === 'done' ? 'succeeded' : group.status === 'next' ? 'ready' : 'pending',
+  }));
 
   const createTask = () => {
     if (!draft.title.trim()) return;
@@ -80,9 +87,18 @@ export function TaskBoardWidget({
         metaEyebrow="local board"
         meta={`${tasks.length} tasks - ${blockedCount} blocked`}
       />
-      <WorkspaceSummaryPanel title={nextTask ? `Next: ${nextTask.title}` : 'No local tasks'}>
-        {nextTask ? `${nextTask.status}. ${nextTask.note}` : 'Create a local task and move it through inbox, next, blocked, and done.'}
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip
+        source="local"
+        status={nextTask ? nextTask.title : 'No local tasks'}
+        count={`${tasks.length} tasks / ${blockedCount} blocked`}
+        updatedAt={nextTask ? nextTask.status : 'browser saved'}
+        action={{ label: 'Add', onClick: createTask, disabled: !draft.title.trim() }}
+      />
+      <WorkspaceCompactList
+        items={laneRows}
+        empty="Create a local task and move it through inbox, next, blocked, and done."
+        ariaLabel="Local task lane counts"
+      />
 
       <WorkspaceSectionFrame className="task-board-editor" eyebrow="new task" title="capture work" meta="browser saved">
         <div className="task-board-form">

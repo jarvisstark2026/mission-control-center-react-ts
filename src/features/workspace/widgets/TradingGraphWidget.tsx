@@ -1,4 +1,4 @@
-import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { type MarketGraph } from '../workspaceMarketData';
 import { getMarketLiveQuote, type MarketLiveState } from '../workspaceMarketLiveData';
 
@@ -37,6 +37,7 @@ export function TradingGraphWidget({ graph, marketLiveData }: { graph: MarketGra
     { label: 'updated', value: formatUpdatedAt(quote.updatedAt) },
     { label: 'notes', value: quote.detail, wide: true },
   ];
+  const quoteSource = quote.status === 'live' ? 'live' : quote.status === 'error' ? 'unavailable' : 'local';
 
   return (
     <WorkspaceContentShell className="trading-graph-surface">
@@ -47,13 +48,19 @@ export function TradingGraphWidget({ graph, marketLiveData }: { graph: MarketGra
         metaEyebrow={graph.ticker}
         meta={quote.status}
       />
-      <WorkspaceSummaryPanel className="trading-graph-routing" title="graph routing">
-        Markets drives this focused chart. Crypto and FX use public live feeds; unsupported instruments stay visible as static fallback instead of hiding risk.
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip
+        source={quoteSource}
+        status={`${quote.priceLabel} / ${quote.changeLabel}`}
+        count={quote.sourceLabel}
+        updatedAt={formatUpdatedAt(quote.updatedAt)}
+      />
       {marketLiveData.errors.length ? (
-        <WorkspaceSummaryPanel className="market-live-alert" title="Feed status">
-          {marketLiveData.errors[0]}
-        </WorkspaceSummaryPanel>
+        <WorkspaceStatusStrip
+          className="market-live-alert"
+          source="unavailable"
+          status="feed issue"
+          count={marketLiveData.errors[0]}
+        />
       ) : null}
       <WorkspaceSectionFrame className="trading-graph-body" eyebrow="chart" title="active market trace" meta={graph.ticker}>
         <WorkspaceMetricGrid className="trading-graph-summary" metrics={summary} />

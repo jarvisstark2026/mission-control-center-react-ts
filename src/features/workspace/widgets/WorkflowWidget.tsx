@@ -5,8 +5,8 @@ import { getAgentDescriptorById, getVisibleAgentDescriptors, type AgentControlSt
 import type { MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
-import { StatusSummary, WorkflowStepCard } from '../operationalBlocks';
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkflowStepCard } from '../operationalBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip, WorkspaceSummaryPanel } from '../workspaceBlocks';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from '../workflowStudioModel';
 import {
   addWorkflowRunStepNote,
@@ -315,15 +315,12 @@ export function WorkflowWidget({
         title="live workflow bridge"
         meta={activeRun ? activeRun.status : 'not started'}
       >
-        <StatusSummary
-          label="Current run"
-          title={activeRun ? activeRun.workflowName : 'No active run'}
-          detail={
-            activeRun
-              ? 'Agent-owned steps can stage approval requests directly into Command Inbox.'
-              : 'Start a run to turn this saved workflow into an agent/user handoff path.'
-          }
-          meta={selectedAgent.name}
+        <WorkspaceStatusStrip
+          source="local"
+          status={activeRun ? activeRun.workflowName : 'No active run'}
+          count={activeRun ? `${nextActionableStep ? nextActionableStep.status : activeRun.status}` : `${workflowRuns.length} saved runs`}
+          updatedAt={selectedAgent.name}
+          action={{ label: 'Start runbook', onClick: startRun }}
         />
         <div className="workflow-agent-selector" role="group" aria-label="Workflow agent assignment">
           {visibleAgents.map((agent) => (
@@ -350,11 +347,11 @@ export function WorkflowWidget({
           </select>
         </label>
         {selectedGoal ? (
-          <StatusSummary
-            label="Goal context"
-            title={selectedGoal.title}
-            detail={selectedGoal.objective}
-            meta={`${selectedGoal.status} / ${selectedGoal.evidenceIds.length} evidence`}
+          <WorkspaceStatusStrip
+            source="local"
+            status={selectedGoal.title}
+            count={`${selectedGoal.status} / ${selectedGoal.evidenceIds.length} evidence`}
+            updatedAt="goal context"
           />
         ) : null}
         {activeRun && selectedGoal && activeRun.goalId !== selectedGoal.id ? (
@@ -378,12 +375,12 @@ export function WorkflowWidget({
           </div>
         ) : null}
         {nextActionableStep ? (
-          <StatusSummary
+          <WorkspaceStatusStrip
             className="workflow-next-step-summary"
-            label="Next step"
-            title={nextActionableStep.title}
-            detail={nextActionableStep.expectedOutput ?? 'Advance the next runbook handoff.'}
-            meta={`${nextActionableStep.status} / ${nextActionableStep.assignee}`}
+            source="local"
+            status={nextActionableStep.title}
+            count={`${nextActionableStep.status} / ${nextActionableStep.assignee}`}
+            updatedAt={nextActionableStep.expectedOutput ?? 'next step'}
           />
         ) : null}
         {workflowRuns.length ? (
@@ -398,9 +395,6 @@ export function WorkflowWidget({
             </select>
           </label>
         ) : null}
-        <WorkspaceButton className="workflow-action" onClick={startRun}>
-          Start runbook
-        </WorkspaceButton>
         {activeRun ? (
           <div className="workflow-run-step-list" role="list" aria-label="Active workflow run steps">
             {activeRun.steps.map((step, index) => {

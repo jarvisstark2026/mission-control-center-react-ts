@@ -1,5 +1,5 @@
-﻿import { useState } from 'react';
-import { WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { useState } from 'react';
+import { WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 
 export function SlidesWidget() {
   const slides = ['Vision', 'Stack', 'Workflows', 'Launch'];
@@ -10,7 +10,7 @@ export function SlidesWidget() {
     id: slide.toLowerCase(),
     label: `${index + 1}. ${slide}`,
     note: index === activeSlideIndex ? 'active frame' : 'jump to frame',
-    badge: `slide ${index + 1}`,
+    badge: `frame ${index + 1}`,
     active: index === activeSlideIndex,
   }));
 
@@ -18,19 +18,17 @@ export function SlidesWidget() {
     <WorkspaceContentShell className="slides-surface">
       <WorkspaceContentHeader
         eyebrow="Slides"
-        title="presentation stage"
-        metaEyebrow="slide"
+        title="local presentation draft"
+        metaEyebrow="frame"
         meta={`${activeSlideIndex + 1} / ${slides.length}`}
       />
-      <WorkspaceSummaryPanel title={activeSlide}>
-        Presentation staging for the command story, now sharing the same header and summary hierarchy as Markets.
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip source="local" status={activeSlide} count={`${slides.length} local frames`} updatedAt="draft" />
       <WorkspaceSectionFrame className="slides-stage" eyebrow="stage" title="active frame" meta="preview">
         <div className="slides-canvas">
           <strong>Presentation</strong>
           <p>{activeSlide}</p>
           <small>
-            Slide {activeSlideIndex + 1} of {slides.length} - command story
+            Frame {activeSlideIndex + 1} of {slides.length} - local draft
           </small>
         </div>
       </WorkspaceSectionFrame>
@@ -51,4 +49,3 @@ export function SlidesWidget() {
     </WorkspaceContentShell>
   );
 }
-

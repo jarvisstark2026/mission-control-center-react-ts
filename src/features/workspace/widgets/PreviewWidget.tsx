@@ -1,6 +1,6 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceSummaryPanel } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createLocalFileObjectUrl, formatLocalFileSize, readLocalFileTextPreview, revokeLocalFileObjectUrl, type LocalFileRecord } from '../workspaceLocalFiles';
 
 export function PreviewWidget({
@@ -75,18 +75,15 @@ export function PreviewWidget({
           metaEyebrow="drop-ready"
           meta="image / audio / video / pdf / text"
         />
-        <WorkspaceSummaryPanel className="preview-empty-summary" title="pick a file to inspect">
-          Images, audio, video, PDFs, and text files render here. The rest will be handled with less glamour, but still gracefully.
-        </WorkspaceSummaryPanel>
+        <WorkspaceStatusStrip source="file" status="no file selected" count="image / audio / video / pdf / text" />
         <WorkspaceSectionFrame className="preview-empty-frame" eyebrow="preview stage" title="no file selected" meta="local only">
           <div className="preview-empty-state">
-            <div className="preview-orb preview-orb-a" />
-            <div className="preview-orb preview-orb-b" />
-            <div className="preview-ring" />
-            <div className="preview-scan" />
-            <WorkspaceButton className="preview-empty-button" onClick={handleBrowsePreviewFiles}>
-              Preview a file
-            </WorkspaceButton>
+            <WorkspaceEmptyState
+              source="file"
+              title="Pick a local file to inspect"
+              detail="Images, audio, video, PDFs, and text files render here. Unsupported files still get an open/download handoff."
+              action={{ label: 'Preview a file', onClick: handleBrowsePreviewFiles }}
+            />
             <input
               ref={fileInputRef}
               className="preview-empty-input"
@@ -111,9 +108,7 @@ export function PreviewWidget({
         meta={`${file.file.type || 'unknown type'} - ${formatLocalFileSize(file.file.size)}`}
       />
 
-      <WorkspaceSummaryPanel className="preview-file-summary" title={file.file.name}>
-        {status}
-      </WorkspaceSummaryPanel>
+      <WorkspaceStatusStrip source="file" status={status} count={file.file.name} updatedAt={formatLocalFileSize(file.file.size)} />
 
       <WorkspaceSectionFrame className="preview-file-controls" eyebrow="preview controls" title="local intake" meta="selected file">
         <WorkspaceButton className="preview-empty-button" onClick={handleBrowsePreviewFiles}>

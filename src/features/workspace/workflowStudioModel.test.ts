@@ -11,9 +11,11 @@ import {
 import { createInitialAgentControlState, getAgentDescriptorById } from '../agent-control';
 import {
   addWorkflowRunStepNote,
+  attachEvidenceToWorkflowRun,
   blockWorkflowRunStep,
   createWorkflowStepCommandEvent,
   loadWorkflowRuns,
+  linkWorkflowRunToGoal,
   markWorkflowRunStepCompleted,
   saveWorkflowRuns,
   startWorkflowRun,
@@ -164,6 +166,19 @@ describe('workflow studio model', () => {
       status: 'completed',
       note: 'Operator reviewed the goal.',
     });
+    expect(loadedRun?.steps[1]?.status).toBe('active');
+  });
+
+  it('links active runs to goals and attaches evidence without restarting the run', () => {
+    const agentControl = createInitialAgentControlState();
+    const agent = getAgentDescriptorById(agentControl, 'jarvis-workflow');
+    const run = startWorkflowRun(createWorkflowDraft('agent-brief'), agent);
+    const linked = linkWorkflowRunToGoal(run, 'goal-live', ['evidence-a'], 'admin');
+    const attached = attachEvidenceToWorkflowRun(linked, 'evidence-b', 'admin');
+
+    expect(attached.goalId).toBe('goal-live');
+    expect(attached.evidenceIds).toEqual(['evidence-a', 'evidence-b']);
+    expect(attached.auditTrail.map((entry) => entry.type)).toEqual(expect.arrayContaining(['goal-linked', 'evidence-attached']));
   });
 
   it('blocks workflow steps with audit instead of silently advancing', () => {

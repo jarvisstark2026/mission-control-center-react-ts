@@ -95,6 +95,7 @@ export function useAgentTasking(
             goalId: request.goalId,
             workflowRunId: request.workflowRunId,
             status: 'failed',
+            retryRequest: request,
           },
           timestamp: requestedAt,
         } satisfies AgentTaskingAction);
@@ -124,6 +125,7 @@ export function useAgentTasking(
             goalId: request.goalId,
             workflowRunId: request.workflowRunId,
             status: 'failed',
+            retryRequest: request,
           },
           error: error instanceof Error ? error.message : 'Agent task gateway failed.',
           timestamp,

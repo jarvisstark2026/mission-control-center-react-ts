@@ -7,6 +7,7 @@ import {
   createAgentBridgeTransport,
   isAgentBridgeStatusResponse,
   markAgentBridgeConnectorFailure,
+  normalizeAgentBridgeStatusResponse,
   normalizeAgentBridgeEvent,
   selectAgentBridgeConnector,
 } from './agentBridgeRuntime';
@@ -140,14 +141,57 @@ describe('agentBridgeRuntime', () => {
 
     expect(isAgentBridgeStatusResponse({ status: 'connected', provider: 'hermes' })).toBe(true);
     expect(isAgentBridgeStatusResponse({ status: 'ok', provider: 'hermes' })).toBe(true);
-    expect(isAgentBridgeStatusResponse({ status: 'online', provider: 'hermes' })).toBe(false);
-    expect(isAgentBridgeStatusResponse({ status: 'connected', agents: [{ id: 'missing-required-fields' }] })).toBe(false);
-    expect(isAgentBridgeStatusResponse({ status: 'connected', usage: { requestCount: 1 } })).toBe(false);
+    expect(isAgentBridgeStatusResponse({ status: 'online', provider: 'hermes' })).toBe(true);
+    expect(isAgentBridgeStatusResponse({ status: 'connected', agents: [{ id: 'missing-required-fields' }] })).toBe(true);
+    expect(isAgentBridgeStatusResponse({ usage: { requestCount: 1 } })).toBe(false);
+    expect(isAgentBridgeStatusResponse({})).toBe(false);
     expect(normalizeAgentBridgeEvent({ missionControlEvents: [event] })).toEqual({
       type: 'mission-events',
       events: [event],
     });
     expect(normalizeAgentBridgeEvent({ missionControlEvents: [{ type: 'command', command: { id: '' } }] })).toBeNull();
+  });
+
+  it('adapts loose Hermes/OpenClaw provider status into strict Mission Control records', () => {
+    const normalized = normalizeAgentBridgeStatusResponse({
+      status: 'up',
+      provider: 'Hermes Agent',
+      engine: 'hermes-agent',
+      agents: [
+        {
+          id: 'hermes-coordinator',
+          name: 'Hermes Coordinator',
+          role: 'member',
+          model: 'hermes-agent',
+          status: 'online',
+        },
+      ],
+      activity: [
+        {
+          message: 'Gateway ready',
+          source: 'hermes',
+        },
+      ],
+    });
+
+    expect(normalized).toMatchObject({
+      status: 'connected',
+      provider: 'hermes',
+      activeEngine: 'hermes-agent',
+      agents: [
+        {
+          id: 'hermes-coordinator',
+          specialty: 'home',
+          profile: 'home-operator',
+          connection: 'online',
+          visibleTo: ['home'],
+        },
+      ],
+    });
+    expect(normalized?.activity?.[0]).toMatchObject({
+      kind: 'connection',
+      title: 'Gateway ready',
+    });
   });
 
   it('normalizes Hermes bridge aliases from LAN harness payloads', () => {

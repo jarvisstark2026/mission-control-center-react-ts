@@ -10,8 +10,10 @@ import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, Workspac
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from '../workflowStudioModel';
 import {
   addWorkflowRunStepNote,
+  attachEvidenceToWorkflowRun,
   blockWorkflowRunStep,
   createWorkflowStepCommandEvent,
+  linkWorkflowRunToGoal,
   loadWorkflowRuns,
   markWorkflowRunAgentRequested,
   markWorkflowRunApprovalStaged,
@@ -50,6 +52,7 @@ export function WorkflowWidget({
   const [workflowRuns, setWorkflowRuns] = useState<WorkflowRun[]>(() => loadWorkflowRuns());
   const [activeRunId, setActiveRunId] = useState(() => loadWorkflowRuns()[0]?.id ?? '');
   const [goalId, setGoalId] = useState('');
+  const [runEvidenceId, setRunEvidenceId] = useState('');
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const visibleAgents = getVisibleAgentDescriptors(agentControl, role);
   const defaultAgent = visibleAgents.find((agent) => agent.specialty === 'workflow') ?? visibleAgents[0] ?? getAgentDescriptorById(agentControl, agentControl.activeAgentId);
@@ -57,6 +60,7 @@ export function WorkflowWidget({
   const selectedAgent = getAgentDescriptorById(agentControl, selectedAgentId);
   const activeRun = workflowRuns.find((run) => run.id === activeRunId) ?? null;
   const selectedGoal = operationalOs.state.goals.find((goal) => goal.id === goalId) ?? null;
+  const attachableEvidence = operationalOs.state.evidence.filter((evidence) => !activeRun?.evidenceIds.includes(evidence.id));
 
   useEffect(() => {
     if (!saveSavedWorkflows(savedWorkflows)) {
@@ -149,6 +153,19 @@ export function WorkflowWidget({
     setWorkflowRuns((current) => current.map((run) => (run.id === activeRun.id ? updater(run) : run)));
   };
 
+  const linkActiveRunToSelectedGoal = () => {
+    if (!selectedGoal) return;
+    updateActiveRun((run) => linkWorkflowRunToGoal(run, selectedGoal.id, selectedGoal.evidenceIds, role));
+    setStatus(`Linked active run to ${selectedGoal.title}.`);
+  };
+
+  const attachEvidenceToRun = () => {
+    if (!runEvidenceId) return;
+    updateActiveRun((run) => attachEvidenceToWorkflowRun(run, runEvidenceId, role));
+    setRunEvidenceId('');
+    setStatus('Evidence attached to active workflow run.');
+  };
+
   const stageWorkflowStep = (stepId: string) => {
     if (!activeRun) return;
     const event = createWorkflowStepCommandEvent(activeRun, stepId, selectedAgent);
@@ -204,9 +221,12 @@ export function WorkflowWidget({
         event.command.workflow?.runId === activeRun.id &&
         event.command.workflow?.stepId === step.id
       ));
+      const fallbackCommandEvent = result.missionControlEvents.find((event) => event.type === 'command');
       updateActiveRun((run) => (
         commandEvent?.type === 'command'
           ? markWorkflowRunApprovalStaged(run, step.id, commandEvent.command.id)
+          : fallbackCommandEvent?.type === 'command'
+            ? markWorkflowRunApprovalStaged(run, step.id, fallbackCommandEvent.command.id)
           : markWorkflowRunAgentRequested(run, step.id, 'workflow')
       ));
       setStatus(`Asked ${selectedAgent.name} to work on "${step.title}".`);
@@ -336,6 +356,26 @@ export function WorkflowWidget({
             detail={selectedGoal.objective}
             meta={`${selectedGoal.status} / ${selectedGoal.evidenceIds.length} evidence`}
           />
+        ) : null}
+        {activeRun && selectedGoal && activeRun.goalId !== selectedGoal.id ? (
+          <WorkspaceButton variant="secondary" className="workflow-action" onClick={linkActiveRunToSelectedGoal}>
+            Link active run to selected goal
+          </WorkspaceButton>
+        ) : null}
+        {activeRun && attachableEvidence.length ? (
+          <div className="workflow-step-note-row workflow-evidence-attach-row">
+            <select value={runEvidenceId} onChange={(event) => setRunEvidenceId(event.currentTarget.value)} aria-label="Evidence to attach to workflow run">
+              <option value="">Attach evidence to run</option>
+              {attachableEvidence.map((evidence) => (
+                <option key={evidence.id} value={evidence.id}>
+                  {evidence.title}
+                </option>
+              ))}
+            </select>
+            <WorkspaceButton variant="compact" className="workflow-inline-add" onClick={attachEvidenceToRun} disabled={!runEvidenceId}>
+              Attach
+            </WorkspaceButton>
+          </div>
         ) : null}
         {nextActionableStep ? (
           <StatusSummary

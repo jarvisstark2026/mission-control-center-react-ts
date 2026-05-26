@@ -154,7 +154,7 @@ async function checkHermes() {
           method: 'GET',
           headers: createHeaders(),
         },
-        5000,
+        3000,
       );
       if (response.ok) {
         lastHermesStatus = {

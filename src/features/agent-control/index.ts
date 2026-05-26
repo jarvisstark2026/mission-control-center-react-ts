@@ -26,6 +26,7 @@ export {
   createAgentBridgeTransport,
   isAgentBridgeStatusResponse,
   markAgentBridgeConnectorFailure,
+  normalizeAgentBridgeStatusResponse,
   normalizeAgentBridgeEvent,
   selectAgentBridgeConnector,
 } from './agentBridgeRuntime';

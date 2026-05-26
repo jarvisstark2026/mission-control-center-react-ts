@@ -16,6 +16,7 @@ export type AgentTaskMessage = {
   commandId?: string;
   workflowRunId?: string;
   status?: 'sent' | 'failed' | 'proposal-created';
+  retryRequest?: AgentTaskRequest;
 };
 
 export type AgentTaskProposal = {

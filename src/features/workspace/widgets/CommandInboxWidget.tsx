@@ -72,13 +72,24 @@ function CommandActionButton({
   );
 }
 
-export function CommandInboxWidget({ missionControl, operationalOs }: { missionControl: MissionControlRuntime; operationalOs: OperationalOsRuntime }) {
+export function CommandInboxWidget({
+  missionControl,
+  operationalOs,
+  focusedCommandId = null,
+  onClearFocusedCommand,
+}: {
+  missionControl: MissionControlRuntime;
+  operationalOs: OperationalOsRuntime;
+  focusedCommandId?: string | null;
+  onClearFocusedCommand?: () => void;
+}) {
   const [activeFilter, setActiveFilter] = useState<CommandInboxFilter>('pending');
   const { commands } = missionControl.state;
   const pendingCommands = commands.filter((command) => command.status === 'pending');
   const completedCommands = commands.filter((command) => command.status !== 'pending');
   const executionCommands = commands.filter((command) => command.execution.status !== 'not-started' || command.status !== 'pending');
-  const nextCommand = pendingCommands[0];
+  const focusedCommand = focusedCommandId ? commands.find((command) => command.id === focusedCommandId) ?? null : null;
+  const nextCommand = focusedCommand ?? pendingCommands[0];
   const gatewayDisplay = getCommandGatewayDisplay(missionControl.commandGatewayMode);
   const nextAllowedActions = nextCommand ? getAllowedCommandActions(nextCommand, missionControl.role) : [];
   const nextGoal = nextCommand?.goalId ? operationalOs.state.goals.find((goal) => goal.id === nextCommand.goalId) ?? null : null;
@@ -113,10 +124,22 @@ export function CommandInboxWidget({ missionControl, operationalOs }: { missionC
       />
       <StatusSummary
         label="Human workstream"
-        title={nextCommand ? `Next action: ${nextCommand.title}` : 'No pending action'}
-        detail="Agents can propose and explain actions. Operators approve, reject, block, or override by role."
+        title={nextCommand ? `${focusedCommand ? 'Focused command' : 'Next action'}: ${nextCommand.title}` : 'No pending action'}
+        detail={focusedCommand ? 'Opened from Agent Console or Workflow. This command remains gated here.' : 'Agents can propose and explain actions. Operators approve, reject, block, or override by role.'}
         meta={missionControl.role}
       />
+      {focusedCommand ? (
+        <div className="mission-control-actions command-inbox-focus-actions">
+          <WorkspaceButton variant="compact" onClick={() => setActiveFilter(focusedCommand.status === 'pending' ? 'pending' : 'history')}>
+            Show in list
+          </WorkspaceButton>
+          {onClearFocusedCommand ? (
+            <WorkspaceButton variant="compact" onClick={onClearFocusedCommand}>
+              Clear focus
+            </WorkspaceButton>
+          ) : null}
+        </div>
+      ) : null}
 
       {nextCommand ? (
         <AttentionCard
@@ -223,7 +246,7 @@ export function CommandInboxWidget({ missionControl, operationalOs }: { missionC
               const allowedActions = getAllowedCommandActions(command, missionControl.role);
 
               return (
-                <article className="mission-control-card" key={command.id} role="listitem">
+                <article className="mission-control-card" key={command.id} role="listitem" data-focused={command.id === focusedCommandId ? 'true' : 'false'}>
                   <div className="mission-control-card-head">
                     <div>
                       <span>{command.scope} / {command.risk}</span>

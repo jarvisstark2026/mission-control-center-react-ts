@@ -35,7 +35,7 @@ import {
   type AgentScheduledJob,
   type LocalAgentBridgeProcessState,
 } from '../../agent-control';
-import type { AgentTaskGateway, AgentTaskScope } from '../../agent-tasking';
+import { createBridgeAgentTaskGateway, type AgentTaskGateway, type AgentTaskScope } from '../../agent-tasking';
 import type { MissionControlRuntime } from '../../mission-control';
 import { AgentAttribution, PermissionBadge, StatusSummary } from '../operationalBlocks';
 import {
@@ -259,6 +259,30 @@ function getTestTaskScope(role: ShellRole): AgentTaskScope {
   return 'system';
 }
 
+function getTaskLoopStatusLabel({
+  bridgeStoppedOrUnknown,
+  latestTaskFailure,
+  taskGatewayMode,
+  localConnectorStatus,
+  activityCount,
+}: {
+  bridgeStoppedOrUnknown: boolean;
+  latestTaskFailure?: AgentBridgeDiagnostic;
+  taskGatewayMode: AgentTaskGateway['mode'];
+  localConnectorStatus?: string;
+  activityCount: number;
+}) {
+  if (bridgeStoppedOrUnknown) return 'not tested';
+  if (latestTaskFailure) {
+    if (/401|403|auth|api key/iu.test(latestTaskFailure.message)) return 'auth failed';
+    if (/unsupported|invalid json|non-json|schema/iu.test(latestTaskFailure.message)) return 'unsupported response';
+    if (/offline|refused|timed out|timeout|failed/iu.test(latestTaskFailure.message)) return 'offline';
+    return 'failing';
+  }
+  if (taskGatewayMode === 'bridge' && localConnectorStatus === 'connected' && activityCount > 0) return 'ready';
+  return 'not tested';
+}
+
 function AgentRegistryCard({
   agent,
   selected,
@@ -384,6 +408,13 @@ export function AgentControlWidget({
   const localBridgeReachable = Boolean(localHermesConnector?.url && localBridgeChecked && !localHermesConnector.error);
   const latestTaskFailure = state.diagnostics.find((diagnostic) => diagnostic.source === 'tasks' && diagnostic.level !== 'info');
   const bridgeStoppedOrUnknown = !localBridgeReachable && !localBridgeProcess?.running;
+  const taskLoopStatus = getTaskLoopStatusLabel({
+    bridgeStoppedOrUnknown,
+    latestTaskFailure,
+    taskGatewayMode: taskGateway.mode,
+    localConnectorStatus: localHermesConnector?.status,
+    activityCount: state.activity.filter((item) => item.kind === 'proposal' || item.source.includes('task')).length,
+  });
   const hasAuthFailure = /401|403|auth|api key/iu.test(`${localHermesConnector?.error ?? ''} ${latestTaskFailure?.message ?? ''}`);
   const missionControlBridgeLabel = localBridgeProcess?.running
     ? 'running'
@@ -514,6 +545,55 @@ export function AgentControlWidget({
       setBridgeSetupStatus(error instanceof Error ? `Restart and probe failed: ${error.message}` : 'Restart and probe failed.');
     }
   };
+  const startBridgeAndTestTaskLoop = async () => {
+    saveBridgeSettings();
+    setBridgeSetupStatus('Starting local bridge and testing the task proposal loop...');
+    setTestProposalStatus('Starting bridge before diagnostic proposal...');
+    try {
+      const processState = await restartLocalAgentBridge({ hermesApiBaseUrl, hermesModel, hermesApiKey });
+      setLocalBridgeProcess(processState);
+      onUpdateBridgeSettings({
+        localBridgeUrl: processState.bridgeUrl,
+        lastSuccessfulUrl: processState.running ? processState.bridgeUrl : bridgeSettings.lastSuccessfulUrl,
+      });
+      if (!processState.available) {
+        const message = processState.lastError ?? 'Desktop app required to start the bundled bridge.';
+        setBridgeSetupStatus(message);
+        setTestProposalStatus(message);
+        return;
+      }
+      if (!processState.running) {
+        const message = processState.lastError ?? 'Local bridge did not start.';
+        setBridgeSetupStatus(message);
+        setTestProposalStatus(message);
+        return;
+      }
+
+      const probeResult = await onTestBridgeUrl(processState.bridgeUrl);
+      setBridgeSetupStatus(`Local bridge restarted. ${getProbeSummary(probeResult)}`);
+      if (!probeResult.ok) {
+        setTestProposalStatus(probeResult.error ?? 'Task loop not tested because /status failed.');
+        return;
+      }
+
+      const timestamp = new Date().toISOString();
+      const directGateway = createBridgeAgentTaskGateway(processState.bridgeUrl);
+      const result = await directGateway.submitTask({
+        id: `agent-control-loop-${Date.parse(timestamp).toString(36)}`,
+        objective: 'Verify the Mission Control local bridge can create a safe Command Inbox proposal.',
+        scope: getTestTaskScope(role),
+        risk: 'safe',
+        role,
+        targetAgentId: selectedAgent.id,
+        source: 'agent-control',
+        requestedAt: timestamp,
+      });
+      missionControl.ingestEvents(result.missionControlEvents);
+      setTestProposalStatus(`Task loop ready. ${result.proposals.length || 1} diagnostic proposal sent to Command Inbox.`);
+    } catch (error) {
+      setTestProposalStatus(error instanceof Error ? `Task loop failed: ${error.message}` : 'Task loop failed.');
+    }
+  };
   const testHermesApi = async () => {
     setBridgeSetupStatus(`Testing Hermes API through ${hermesApiBaseUrl}...`);
     try {
@@ -627,6 +707,7 @@ export function AgentControlWidget({
             { label: 'engine', value: activeConnector.activeEngine ?? state.identity.model, wide: true },
             { label: 'Mission Control bridge', value: missionControlBridgeLabel, wide: true },
             { label: 'Hermes API', value: `${hermesApiLabel} / ${hermesApiBaseUrl}`, wide: true },
+            { label: 'Task loop', value: taskLoopStatus, wide: true },
             { label: 'Task gateway', value: taskGatewayLabel, wide: true },
             { label: 'mode', value: bridgeModeOptions.find((option) => option.id === bridgeMode)?.label ?? bridgeMode },
             { label: 'host / port', value: `${bridgeMode === 'same-pc' ? '127.0.0.1' : hermesHost || 'not set'}:${hermesApiPort || '8642'}`, wide: true },
@@ -648,6 +729,9 @@ export function AgentControlWidget({
           </WorkspaceButton>
           <WorkspaceButton variant="primary" disabled={!editable} onClick={sendTestProposal}>
             Send test proposal
+          </WorkspaceButton>
+          <WorkspaceButton variant="secondary" disabled={!editable} onClick={startBridgeAndTestTaskLoop}>
+            Start bridge and test task loop
           </WorkspaceButton>
         </div>
         <p className="mission-control-muted">{testProposalStatus}</p>

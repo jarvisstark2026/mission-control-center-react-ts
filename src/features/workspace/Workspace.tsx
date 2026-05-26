@@ -530,6 +530,7 @@ export function Workspace({
   const activeRole = role ?? getCurrentShellRole();
   const missionControl = useMissionControl(activeRole);
   const [agentBridgeSettings, setAgentBridgeSettings] = useState<AgentBridgeSettings>(readAgentBridgeSettings);
+  const [focusedCommandId, setFocusedCommandId] = useState<string | null>(null);
   const agentBridge = useAgentBridgeRuntime({
     localBridgeUrl: agentBridgeSettings.localBridgeUrl,
     remoteApiUrl: agentBridgeSettings.remoteApiUrl,
@@ -1927,6 +1928,11 @@ export function Workspace({
   const onSelectFile = useEventCallback(setSelectedLocalFileId);
   const onClearFiles = useEventCallback(clearLocalFiles);
   const onLaunchWorkspaceWidget = useEventCallback(openWorkspaceWidget);
+  const onOpenCommandInbox = useEventCallback((commandId?: string) => {
+    if (commandId) setFocusedCommandId(commandId);
+    openWorkspaceWidget('command-inbox');
+  });
+  const onClearFocusedCommand = useEventCallback(() => setFocusedCommandId(null));
   const onSelectMarketGraph = useEventCallback(openMarketGraph);
   const onFocusWidget = useEventCallback(focusManagedWidget);
   const onTogglePinWidget = useEventCallback(toggleManagedWidgetPin);
@@ -2011,6 +2017,9 @@ export function Workspace({
     onSelectFile,
     onClearFiles,
     onLaunchWorkspaceWidget,
+    focusedCommandId,
+    onOpenCommandInbox,
+    onClearFocusedCommand,
     onSelectMarketGraph,
     workspaceWidgets: widgets,
     workspaceWidgetGroups,

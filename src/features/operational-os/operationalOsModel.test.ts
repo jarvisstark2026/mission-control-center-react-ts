@@ -91,6 +91,46 @@ describe('operational OS model', () => {
     ]));
   });
 
+  it('mirrors command decision and execution audit into the related goal', () => {
+    const state = createInitialOperationalOsState('2026-05-25T12:00:00.000Z');
+    const goal = createGoal({
+      title: 'Ship the agent loop',
+      objective: 'Approve an agent proposal and track the result.',
+      ownerRole: 'admin',
+      priority: 'high',
+    });
+    const withGoal = addGoalToState(state, goal);
+    const command = {
+      ...createCommand(goal.id, 'succeeded'),
+      auditTrail: [
+        ...createCommand(goal.id, 'succeeded').auditTrail,
+        {
+          id: 'audit-approved',
+          type: 'approved' as const,
+          actor: 'admin',
+          timestamp: '2026-05-25T12:01:00.000Z',
+          detail: 'Approved by operator.',
+        },
+        {
+          id: 'audit-succeeded',
+          type: 'succeeded' as const,
+          actor: 'gateway',
+          timestamp: '2026-05-25T12:02:00.000Z',
+          detail: 'Local dry-run completed.',
+        },
+      ],
+    };
+
+    const synced = syncOperationalOsWithCommands(withGoal, [command]);
+    const syncedGoal = synced.goals.find((item) => item.id === goal.id);
+
+    expect(syncedGoal?.auditTrail.map((entry) => entry.type)).toEqual(expect.arrayContaining([
+      'command-approved',
+      'command-succeeded',
+    ]));
+    expect(syncedGoal?.auditTrail.find((entry) => entry.type === 'command-succeeded')?.detail).toContain('Local dry-run completed.');
+  });
+
   it('detects JSON surface schemas without requiring custom widgets', () => {
     expect(detectJsonSurfaceSchema([{ name: 'Grid', value: 12 }])).toBe('table');
     expect(detectJsonSurfaceSchema([{ title: 'Step one', done: false }])).toBe('checklist');

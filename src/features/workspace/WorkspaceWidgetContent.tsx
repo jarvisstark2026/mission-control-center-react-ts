@@ -66,6 +66,9 @@ export type WorkspaceWidgetContentProps = {
   onSelectFile: (id: string | null) => void;
   onClearFiles: () => void;
   onLaunchWorkspaceWidget: (kind: WorkspaceWidget['kind']) => void;
+  focusedCommandId?: string | null;
+  onOpenCommandInbox?: (commandId?: string) => void;
+  onClearFocusedCommand?: () => void;
   onSelectMarketGraph: (graph: MarketGraph) => void;
   workspaceWidgets: WorkspaceWidget[];
   workspaceWidgetGroups: WorkspaceWidgetGroup[];
@@ -120,6 +123,9 @@ function renderWorkspaceWidgetContent({
   onSelectFile,
   onClearFiles,
   onLaunchWorkspaceWidget,
+  focusedCommandId,
+  onOpenCommandInbox,
+  onClearFocusedCommand,
   onSelectMarketGraph,
   workspaceWidgets,
   workspaceWidgetGroups,
@@ -199,7 +205,14 @@ function renderWorkspaceWidgetContent({
         />
       );
     case 'command-inbox':
-      return <CommandInboxWidget missionControl={missionControl} operationalOs={operationalOs} />;
+      return (
+        <CommandInboxWidget
+          missionControl={missionControl}
+          operationalOs={operationalOs}
+          focusedCommandId={focusedCommandId}
+          onClearFocusedCommand={onClearFocusedCommand}
+        />
+      );
     case 'notifications':
       return <NotificationsWidget missionControl={missionControl} />;
     case 'integration-registry':
@@ -226,7 +239,7 @@ function renderWorkspaceWidgetContent({
           taskGateway={agentTaskGateway}
           operationalOs={operationalOs}
           bridgeSettings={agentBridgeSettings}
-          onLaunchWorkspaceWidget={onLaunchWorkspaceWidget}
+          onOpenCommandInbox={onOpenCommandInbox}
         />
       );
     case 'home-systems':

@@ -66,7 +66,7 @@ export type AgentBridgeTransportOptions = {
 };
 
 const validConnectorStatuses: AgentConnectorStatus[] = ['connected', 'available', 'offline', 'error', 'not-configured'];
-const validBridgeStatusAliases = ['ok'];
+const validBridgeStatusAliases = ['ok', 'up', 'ready', 'healthy', 'online', 'down', 'unreachable', 'upstream_error'];
 const validProviders: AgentRuntimeProvider[] = ['hermes', 'openclaw', 'openai', 'custom'];
 const bridgeActiveStatuses: AgentConnectorStatus[] = ['connected', 'available'];
 const validConnectionStates = ['online', 'degraded', 'offline', 'reconnecting'];
@@ -154,7 +154,12 @@ export function appendAgentBridgeDiagnostic(state: AgentControlState, diagnostic
 }
 
 function normalizeConnectorStatus(value: unknown, fallback: AgentConnectorStatus): AgentConnectorStatus {
-  if (value === 'ok') return 'connected';
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['ok', 'up', 'ready', 'healthy', 'online'].includes(normalized)) return 'connected';
+    if (['down', 'offline', 'unreachable', 'not-listening', 'not_listening'].includes(normalized)) return 'offline';
+    if (['upstream_error', 'auth_failed', 'error'].includes(normalized)) return 'error';
+  }
   return validConnectorStatuses.includes(value as AgentConnectorStatus) ? (value as AgentConnectorStatus) : fallback;
 }
 
@@ -299,6 +304,119 @@ function normalizeAgentPermissionList(value: unknown): AgentPermission[] | null 
   return normalized.every(Boolean) ? (normalized as AgentPermission[]) : null;
 }
 
+function normalizeLooseProvider(value: unknown, fallback: AgentRuntimeProvider): AgentRuntimeProvider {
+  if (typeof value !== 'string') return fallback;
+  const normalized = value.trim().toLowerCase();
+  if (normalized.includes('hermes')) return 'hermes';
+  if (normalized.includes('openclaw')) return 'openclaw';
+  if (normalized.includes('openai')) return 'openai';
+  return normalizeProvider(normalized, fallback);
+}
+
+function normalizeLooseRoleList(value: unknown): AgentDescriptor['visibleTo'] {
+  const roles = normalizeVisibleRoles(Array.isArray(value) ? value : typeof value === 'string' ? [value] : ['admin', 'support', 'home']);
+  return roles?.length ? roles : ['admin', 'support', 'home'];
+}
+
+function normalizeLooseAgentSpecialty(value: unknown): AgentDescriptor['specialty'] {
+  if (typeof value !== 'string') return 'coordinator';
+  const normalized = value.trim().toLowerCase();
+  if (validAgentSpecialties.includes(normalized)) return normalized as AgentDescriptor['specialty'];
+  if (normalized.includes('security')) return 'security';
+  if (normalized.includes('member')) return 'home';
+  if (normalized.includes('home')) return 'home';
+  if (normalized.includes('workflow')) return 'workflow';
+  if (normalized.includes('support')) return 'support';
+  return 'coordinator';
+}
+
+function normalizeLooseAgentProfile(value: unknown, roles: AgentDescriptor['visibleTo']): AgentDescriptor['profile'] {
+  if (typeof value === 'string' && validAgentProfiles.includes(value)) return value as AgentDescriptor['profile'];
+  if (roles.includes('support')) return 'support-diagnostics';
+  if (roles.includes('home')) return 'home-operator';
+  return 'guest-readonly';
+}
+
+function normalizeLooseAgentStatus(value: unknown, connectorStatus: AgentConnectorStatus): AgentDescriptor['status'] {
+  if (typeof value === 'string' && validAgentStatuses.includes(value)) return value as AgentDescriptor['status'];
+  if (connectorStatus === 'connected' || connectorStatus === 'available') return 'available';
+  if (connectorStatus === 'error') return 'limited';
+  return 'waiting';
+}
+
+function normalizeLooseAgentConnection(value: unknown, connectorStatus: AgentConnectorStatus): AgentDescriptor['connection'] {
+  if (typeof value === 'string' && validConnectionStates.includes(value)) return value as AgentDescriptor['connection'];
+  if (connectorStatus === 'connected') return 'online';
+  if (connectorStatus === 'available') return 'reconnecting';
+  return 'offline';
+}
+
+function normalizeLooseAgentDescriptorList(
+  value: unknown,
+  provider: AgentRuntimeProvider,
+  activeEngine: string | null,
+  connectorStatus: AgentConnectorStatus,
+): AgentDescriptor[] | null {
+  const strict = normalizeAgentDescriptorList(value);
+  if (strict) return strict;
+
+  if (!Array.isArray(value)) return null;
+
+  const normalized = value
+    .map((item, index): AgentDescriptor | null => {
+      if (!isRecord(item)) return null;
+      const id = getString(item.id) ?? getString(item.agentId) ?? getString(item.name)?.toLowerCase().replace(/[^a-z0-9]+/giu, '-') ?? `${provider}-agent-${index + 1}`;
+      const roles = normalizeLooseRoleList(item.visibleTo ?? item.roles ?? item.role);
+      const name = getString(item.name) ?? getString(item.label) ?? `${provider} agent ${index + 1}`;
+      const model = getString(item.model) ?? getString(item.engine) ?? activeEngine ?? `${provider}-agent`;
+
+      return {
+        id,
+        name,
+        specialty: normalizeLooseAgentSpecialty(item.specialty ?? item.role ?? item.profile),
+        provider,
+        model,
+        profile: normalizeLooseAgentProfile(item.profile, roles),
+        status: normalizeLooseAgentStatus(item.status, connectorStatus),
+        connection: normalizeLooseAgentConnection(item.connection, connectorStatus),
+        summary: getString(item.summary) ?? getString(item.description) ?? `External ${provider} agent reported by the bridge.`,
+        visibleTo: roles,
+      } satisfies AgentDescriptor;
+    })
+    .filter((item): item is AgentDescriptor => item !== null);
+
+  return normalized.length ? normalized : null;
+}
+
+function normalizeLooseActivityList(value: unknown, provider: AgentRuntimeProvider, status: AgentConnectorStatus): AgentActivity[] | null {
+  const strict = normalizeAgentActivityList(value);
+  if (strict) return strict;
+
+  if (Array.isArray(value)) {
+  const normalized = value
+      .map((item, index): AgentActivity | null => {
+        if (!isRecord(item)) return null;
+        const visibleTo = normalizeLooseRoleList(item.visibleTo ?? item.roles ?? item.role);
+        const kind = typeof item.kind === 'string' && validActivityKinds.includes(item.kind) ? item.kind as AgentActivity['kind'] : 'connection';
+        return {
+          id: getString(item.id) ?? `${provider}-activity-${index + 1}`,
+          kind,
+          title: getString(item.title) ?? getString(item.message) ?? `${provider} bridge update`,
+          detail: getString(item.detail) ?? getString(item.message) ?? `Bridge reported ${status}.`,
+          timestamp: getString(item.timestamp) ?? getString(item.time) ?? new Date().toISOString(),
+          source: getString(item.source) ?? provider,
+          status: typeof item.status === 'string' ? item.status as AgentActivity['status'] : undefined,
+          visibleTo,
+        } satisfies AgentActivity;
+      })
+      .filter((item): item is AgentActivity => item !== null);
+
+    return normalized.length ? normalized : null;
+  }
+
+  return null;
+}
+
 function isAgentActivityList(value: unknown): value is AgentActivity[] {
   return (
     Array.isArray(value) &&
@@ -387,7 +505,7 @@ function isAgentUsageSummary(value: unknown): value is AgentUsageSummary {
   );
 }
 
-export function isAgentBridgeStatusResponse(value: unknown): value is AgentBridgeStatusResponse {
+function isStrictAgentBridgeStatusResponse(value: unknown): value is AgentBridgeStatusResponse {
   if (!isRecord(value)) return false;
   if (
     value.status !== undefined &&
@@ -411,6 +529,84 @@ export function isAgentBridgeStatusResponse(value: unknown): value is AgentBridg
   return true;
 }
 
+export function normalizeAgentBridgeStatusResponse(value: unknown): AgentBridgeStatusResponse | null {
+  if (!isRecord(value)) return null;
+  const statusKeys = [
+    'status',
+    'state',
+    'ok',
+    'provider',
+    'runtimeProvider',
+    'engineProvider',
+    'activeEngine',
+    'engine',
+    'model',
+    'activeModel',
+    'currentTask',
+    'task',
+    'message',
+    'agents',
+    'agentRecords',
+    'availableAgents',
+    'activity',
+    'activities',
+    'capabilities',
+    'lastSeenAt',
+    'missionControlEvents',
+    'events',
+  ];
+  if (!statusKeys.some((key) => key in value)) return null;
+
+  if (isStrictAgentBridgeStatusResponse(value)) {
+    return {
+      ...value,
+      status: normalizeConnectorStatus(value.status, 'connected'),
+      provider: normalizeLooseProvider(value.provider, 'custom'),
+      missionControlEvents: normalizeBridgeMissionEvents(value.missionControlEvents),
+    };
+  }
+
+  const rawStatus = value.status ?? value.state ?? (value.ok === true ? 'ok' : undefined);
+  const status = normalizeConnectorStatus(rawStatus, 'connected');
+  const provider = normalizeLooseProvider(value.provider ?? value.runtimeProvider ?? value.engineProvider, 'custom');
+  const activeEngine =
+    getString(value.activeEngine) ??
+    getString(value.engine) ??
+    getString(value.model) ??
+    getString(value.activeModel) ??
+    getString(value.modelName) ??
+    null;
+  const agents = normalizeLooseAgentDescriptorList(value.agents ?? value.agentRecords ?? value.availableAgents, provider, activeEngine, status);
+  const jobs = normalizeAgentJobList(value.jobs);
+  const permissions = normalizeAgentPermissionList(value.permissions);
+  const activity = normalizeLooseActivityList(value.activity ?? value.activities, provider, status);
+  const usage = isAgentUsageSummary(value.usage) ? value.usage : undefined;
+  const capabilities = isStringArray(value.capabilities) ? value.capabilities : undefined;
+  const missionControlEvents = normalizeBridgeMissionEvents(value.missionControlEvents ?? value.events);
+
+  const normalized: AgentBridgeStatusResponse = {
+    status,
+    provider,
+    activeEngine,
+    activeAgentId: getString(value.activeAgentId) ?? getString(value.agentId) ?? agents?.[0]?.id ?? null,
+    currentTask: getString(value.currentTask) ?? getString(value.task) ?? getString(value.message) ?? null,
+    agents: agents ?? undefined,
+    jobs: jobs ?? undefined,
+    permissions: permissions ?? undefined,
+    usage,
+    activity: activity ?? undefined,
+    capabilities,
+    lastSeenAt: getString(value.lastSeenAt) ?? getString(value.timestamp) ?? new Date().toISOString(),
+    missionControlEvents,
+  };
+
+  return isStrictAgentBridgeStatusResponse(normalized) ? normalized : null;
+}
+
+export function isAgentBridgeStatusResponse(value: unknown): value is AgentBridgeStatusResponse {
+  return normalizeAgentBridgeStatusResponse(value) !== null;
+}
+
 export function normalizeAgentBridgeEvent(payload: unknown): AgentBridgeEvent | null {
   if (isMissionControlEventList(payload)) {
     return { type: 'mission-events', events: normalizeBridgeMissionEvents(payload) };
@@ -426,8 +622,9 @@ export function normalizeAgentBridgeEvent(payload: unknown): AgentBridgeEvent | 
     return { type: 'mission-events', events: normalizeBridgeMissionEvents(payload.missionControlEvents) };
   }
 
-  if (payload.type === 'status' && isAgentBridgeStatusResponse(payload.status)) {
-    return { type: 'status', status: payload.status };
+  const statusPayload = normalizeAgentBridgeStatusResponse(payload.status);
+  if (payload.type === 'status' && statusPayload) {
+    return { type: 'status', status: statusPayload };
   }
 
   const activity = normalizeAgentActivityList(payload.activity);
@@ -435,8 +632,9 @@ export function normalizeAgentBridgeEvent(payload: unknown): AgentBridgeEvent | 
     return { type: 'activity', activity };
   }
 
-  if (isAgentBridgeStatusResponse(payload) && (payload.status || payload.provider || payload.activeEngine || payload.currentTask)) {
-    return { type: 'status', status: payload };
+  const directStatusPayload = normalizeAgentBridgeStatusResponse(payload);
+  if (directStatusPayload && (payload.status || payload.provider || payload.activeEngine || payload.currentTask || payload.ok)) {
+    return { type: 'status', status: directStatusPayload };
   }
 
   return null;
@@ -682,11 +880,12 @@ export function createAgentBridgeTransport(
       }
 
       const body: unknown = await response.json();
-      if (!isAgentBridgeStatusResponse(body)) {
+      const normalized = normalizeAgentBridgeStatusResponse(body);
+      if (!normalized) {
         throw new Error('Agent bridge status returned an invalid payload.');
       }
 
-      return body;
+      return normalized;
     },
     connectEvents(onEvent, onError) {
       const source = eventSourceFactory(getBridgePath(connector.url as string, 'events'));

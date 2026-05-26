@@ -381,7 +381,7 @@ fn parse_http_url(url: &str) -> Result<(String, u16, String), String> {
     Ok((host, port, path))
 }
 
-fn http_request(method: &str, url: &str, body: Option<&str>, content_type: Option<&str>, bearer_token: &str) -> Result<SimpleHttpResponse, String> {
+fn http_request(method: &str, url: &str, body: Option<&str>, content_type: Option<&str>, bearer_token: &str, read_timeout_secs: u64) -> Result<SimpleHttpResponse, String> {
     let (host, port, path) = parse_http_url(url)?;
     let addr = (host.as_str(), port)
         .to_socket_addrs()
@@ -389,7 +389,7 @@ fn http_request(method: &str, url: &str, body: Option<&str>, content_type: Optio
         .next()
         .ok_or_else(|| "Hermes API host did not resolve.".to_string())?;
     let mut stream = TcpStream::connect_timeout(&addr, Duration::from_secs(3)).map_err(|error| error.to_string())?;
-    stream.set_read_timeout(Some(Duration::from_secs(120))).map_err(|error| error.to_string())?;
+    stream.set_read_timeout(Some(Duration::from_secs(read_timeout_secs))).map_err(|error| error.to_string())?;
     stream.set_write_timeout(Some(Duration::from_secs(10))).map_err(|error| error.to_string())?;
 
     let payload = body.unwrap_or("");
@@ -441,7 +441,7 @@ fn http_request(method: &str, url: &str, body: Option<&str>, content_type: Optio
 fn check_hermes_api(hermes_api_base_url: &str, hermes_api_key: &str) -> (bool, String) {
     let base = hermes_api_base_url.trim_end_matches('/');
     let models_url = format!("{base}/models");
-    match http_request("GET", &models_url, None, None, hermes_api_key) {
+    match http_request("GET", &models_url, None, None, hermes_api_key, 3) {
         Ok(response) if (200..300).contains(&response.status_code) => (true, format!("{} OK", response.status_code)),
         Ok(response) if response.status_code == 401 || response.status_code == 403 => (false, format!("Hermes API auth failed at {models_url}: {}", response.status_code)),
         Ok(response) => (false, format!("{models_url} returned {}", response.status_code)),
@@ -703,6 +703,7 @@ fn create_task_result(
         })?),
         Some("application/json"),
         hermes_api_key,
+        120,
     )
     .map_err(|error| {
         BridgeTaskError::bad_gateway(

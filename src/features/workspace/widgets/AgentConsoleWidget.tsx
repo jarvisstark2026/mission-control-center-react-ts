@@ -66,7 +66,7 @@ export function AgentConsoleWidget({
   taskGateway,
   operationalOs,
   bridgeSettings,
-  onLaunchWorkspaceWidget,
+  onOpenCommandInbox,
 }: {
   role: ShellRole;
   missionControl: MissionControlRuntime;
@@ -74,7 +74,7 @@ export function AgentConsoleWidget({
   taskGateway?: AgentTaskGateway;
   operationalOs: OperationalOsRuntime;
   bridgeSettings: AgentBridgeSettings;
-  onLaunchWorkspaceWidget?: (kind: 'command-inbox') => void;
+  onOpenCommandInbox?: (commandId?: string) => void;
 }) {
   const tasking = useAgentTasking(role, missionControl.ingestEvents, taskGateway);
   const availableScopes = useMemo(() => getAgentTaskScopesForRole(role), [role]);
@@ -129,6 +129,20 @@ export function AgentConsoleWidget({
   const retryLastRequest = () => {
     const request = tasking.state.lastRequest;
     if (!request) return;
+    setObjective(request.objective);
+    setScope(request.scope);
+    setRisk(request.risk);
+    setTargetAgentId(request.targetAgentId);
+    setGoalId(request.goalId ?? '');
+    void tasking.submitTask(request.objective, request.scope, request.risk, request.targetAgentId, {
+      goalId: request.goalId,
+      evidenceIds: request.evidenceIds,
+      workflowRunId: request.workflowRunId,
+      workflowStepId: request.workflowStepId,
+      source: request.source ?? 'agent-console',
+    });
+  };
+  const retryRequest = (request: NonNullable<typeof tasking.state.lastRequest>) => {
     setObjective(request.objective);
     setScope(request.scope);
     setRisk(request.risk);
@@ -277,19 +291,26 @@ export function AgentConsoleWidget({
               <span>{message.author}</span>
               <strong>{message.status ?? formatTime(message.timestamp)}</strong>
               <EvidenceBlock label="message">{message.body}</EvidenceBlock>
-              {message.commandId && proposalByCommandId.has(message.commandId) ? (
+              {message.commandId && (proposalByCommandId.has(message.commandId) || commandById.has(message.commandId)) ? (
                 <div className="agent-console-command-card" data-state={commandById.get(message.commandId)?.status ?? 'pending'}>
                   <span>Command Inbox card</span>
-                  <strong>{proposalByCommandId.get(message.commandId)?.title}</strong>
+                  <strong>{proposalByCommandId.get(message.commandId)?.title ?? commandById.get(message.commandId)?.title}</strong>
                   <small>
-                    ID {message.commandId} / {proposalByCommandId.get(message.commandId)?.scope} / {proposalByCommandId.get(message.commandId)?.risk} / {commandById.get(message.commandId)?.status ?? 'pending'}
+                    ID {message.commandId} / {proposalByCommandId.get(message.commandId)?.scope ?? commandById.get(message.commandId)?.scope} / {proposalByCommandId.get(message.commandId)?.risk ?? commandById.get(message.commandId)?.risk} / {commandById.get(message.commandId)?.status ?? 'pending'}
                   </small>
-                  <p>{proposalByCommandId.get(message.commandId)?.reasoning}</p>
-                  {onLaunchWorkspaceWidget ? (
-                    <WorkspaceButton variant="compact" onClick={() => onLaunchWorkspaceWidget('command-inbox')}>
+                  <p>{proposalByCommandId.get(message.commandId)?.reasoning ?? commandById.get(message.commandId)?.reasoning}</p>
+                  {onOpenCommandInbox ? (
+                    <WorkspaceButton variant="compact" onClick={() => onOpenCommandInbox(message.commandId)}>
                       Open Command Inbox
                     </WorkspaceButton>
                   ) : null}
+                </div>
+              ) : null}
+              {message.status === 'failed' && message.retryRequest && canSubmitAgentTask(role, message.retryRequest) ? (
+                <div className="mission-control-actions">
+                  <WorkspaceButton variant="secondary" onClick={() => retryRequest(message.retryRequest!)}>
+                    Retry this request
+                  </WorkspaceButton>
                 </div>
               ) : null}
               {message.goalId || message.workflowRunId || message.commandId ? (

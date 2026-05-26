@@ -110,7 +110,8 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
       return (
         left.missionControl.role === right.missionControl.role &&
         left.missionControl.state.version === right.missionControl.state.version &&
-        left.operationalOs.state.version === right.operationalOs.state.version
+        left.operationalOs.state.version === right.operationalOs.state.version &&
+        left.focusedCommandId === right.focusedCommandId
       );
     case 'goals':
     case 'app-portal':
@@ -151,7 +152,8 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.agentTaskGateway.mode === right.agentTaskGateway.mode &&
         left.agentBridgeSettings.preferredAgentId === right.agentBridgeSettings.preferredAgentId &&
         left.missionControl.state.version === right.missionControl.state.version &&
-        left.operationalOs.state.version === right.operationalOs.state.version
+        left.operationalOs.state.version === right.operationalOs.state.version &&
+        left.focusedCommandId === right.focusedCommandId
       );
     case '3d':
       return left.widget.previewFileId === right.widget.previewFileId && left.localFiles === right.localFiles;

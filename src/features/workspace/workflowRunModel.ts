@@ -38,7 +38,16 @@ export type WorkflowRun = {
 
 export type WorkflowRunAuditEntry = {
   id: string;
-  type: 'started' | 'step-completed' | 'step-blocked' | 'step-note' | 'approval-staged' | 'agent-requested' | 'command-synced';
+  type:
+    | 'started'
+    | 'step-completed'
+    | 'step-blocked'
+    | 'step-note'
+    | 'approval-staged'
+    | 'agent-requested'
+    | 'command-synced'
+    | 'goal-linked'
+    | 'evidence-attached';
   actor: string;
   timestamp: string;
   detail: string;
@@ -160,6 +169,16 @@ function getRunStatusFromSteps(steps: WorkflowRunStep[]): WorkflowRun['status'] 
   if (steps.every((step) => step.status === 'completed')) return 'completed';
   if (steps.some((step) => step.status === 'waiting-approval')) return 'waiting-approval';
   return 'active';
+}
+
+function activateNextPendingStep(steps: WorkflowRunStep[]): WorkflowRunStep[] {
+  if (steps.some((step) => step.status === 'active' || step.status === 'running')) {
+    return steps;
+  }
+
+  const nextIndex = steps.findIndex((step) => step.status === 'pending');
+  if (nextIndex < 0) return steps;
+  return steps.map((step, index) => (index === nextIndex ? { ...step, status: 'active' as const } : step));
 }
 
 function isWorkflowRunStep(value: unknown): value is WorkflowRunStep {
@@ -350,7 +369,7 @@ export function markWorkflowRunStepCompleted(run: WorkflowRun, stepId: string, a
   const step = run.steps.find((item) => item.id === stepId);
   if (!step) return run;
 
-  const steps = run.steps.map((item) => (item.id === stepId ? { ...item, status: 'completed' as const } : item));
+  const steps = activateNextPendingStep(run.steps.map((item) => (item.id === stepId ? { ...item, status: 'completed' as const } : item)));
   return {
     ...run,
     steps,
@@ -408,6 +427,36 @@ export function markWorkflowRunApprovalStaged(run: WorkflowRun, stepId: string, 
   };
 }
 
+export function linkWorkflowRunToGoal(run: WorkflowRun, goalId: string, evidenceIds: string[] = [], actor = 'workflow'): WorkflowRun {
+  if (!goalId || (run.goalId === goalId && evidenceIds.every((evidenceId) => run.evidenceIds.includes(evidenceId)))) return run;
+  const timestamp = new Date().toISOString();
+  const nextEvidenceIds = [...new Set([...run.evidenceIds, ...evidenceIds])];
+  return {
+    ...run,
+    goalId,
+    evidenceIds: nextEvidenceIds,
+    updatedAt: timestamp,
+    auditTrail: capAuditTrail([
+      ...run.auditTrail,
+      createWorkflowRunAudit('goal-linked', actor, `Run linked to goal ${goalId}.`, timestamp),
+    ]),
+  };
+}
+
+export function attachEvidenceToWorkflowRun(run: WorkflowRun, evidenceId: string, actor = 'workflow'): WorkflowRun {
+  if (!evidenceId || run.evidenceIds.includes(evidenceId)) return run;
+  const timestamp = new Date().toISOString();
+  return {
+    ...run,
+    evidenceIds: [...run.evidenceIds, evidenceId],
+    updatedAt: timestamp,
+    auditTrail: capAuditTrail([
+      ...run.auditTrail,
+      createWorkflowRunAudit('evidence-attached', actor, `Evidence ${evidenceId} attached to the run.`, timestamp),
+    ]),
+  };
+}
+
 export function markWorkflowRunAgentRequested(run: WorkflowRun, stepId: string, actor = 'workflow'): WorkflowRun {
   const timestamp = new Date().toISOString();
   const step = run.steps.find((item) => item.id === stepId);
@@ -453,14 +502,15 @@ export function syncWorkflowRunWithCommands(run: WorkflowRun, commands: CommandR
     return step;
   });
 
-  const status = getRunStatusFromSteps(steps);
-  const changed = steps.some((step, index) => step.status !== run.steps[index]?.status || step.commandId !== run.steps[index]?.commandId);
+  const promotedSteps = activateNextPendingStep(steps);
+  const status = getRunStatusFromSteps(promotedSteps);
+  const changed = promotedSteps.some((step, index) => step.status !== run.steps[index]?.status || step.commandId !== run.steps[index]?.commandId);
 
   if (!changed && status === run.status) return run;
 
   return {
     ...run,
-    steps,
+    steps: promotedSteps,
     status,
     updatedAt: new Date().toISOString(),
     auditTrail: changed

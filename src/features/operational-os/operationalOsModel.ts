@@ -1,6 +1,6 @@
 import { createId } from '../../lib/createId';
 import type { ShellRole } from '../shell/roles';
-import type { CommandRequest } from '../mission-control';
+import type { CommandAuditEntry, CommandRequest } from '../mission-control';
 import type {
   AppPortalProfile,
   AuditEntry,
@@ -172,6 +172,19 @@ function getStatusFromCommands(commands: CommandRequest[], currentStatus: GoalSt
   return currentStatus;
 }
 
+const mirroredCommandAuditTypes = new Set(['approved', 'rejected', 'blocked', 'overridden', 'queued', 'running', 'succeeded', 'failed']);
+
+function createMirroredCommandAudit(command: CommandRequest, entry: CommandAuditEntry): AuditEntry | null {
+  if (!mirroredCommandAuditTypes.has(entry.type)) return null;
+  return {
+    id: `goal-command-audit-${command.id}-${entry.id}`,
+    type: `command-${entry.type}`,
+    actor: entry.actor,
+    timestamp: entry.timestamp,
+    detail: `${command.title}: ${entry.detail}`,
+  };
+}
+
 export function syncOperationalOsWithCommands(state: OperationalOsState, commands: CommandRequest[]): OperationalOsState {
   let changed = false;
   const commandsByGoal = new Map<string, CommandRequest[]>();
@@ -192,10 +205,15 @@ export function syncOperationalOsWithCommands(state: OperationalOsState, command
     const status = getStatusFromCommands(goalCommands, goal.status);
     const newCommandIds = commandIds.filter((commandId) => !goal.commandIds.includes(commandId));
     const newEvidenceIds = evidenceIds.filter((evidenceId) => !goal.evidenceIds.includes(evidenceId));
+    const existingAuditIds = new Set(goal.auditTrail.map((entry) => entry.id));
+    const mirroredCommandAudits = goalCommands
+      .flatMap((command) => command.auditTrail.map((entry) => createMirroredCommandAudit(command, entry)))
+      .filter((entry): entry is AuditEntry => entry !== null && !existingAuditIds.has(entry.id));
     if (
       status === goal.status &&
       commandIds.length === goal.commandIds.length &&
-      evidenceIds.length === goal.evidenceIds.length
+      evidenceIds.length === goal.evidenceIds.length &&
+      mirroredCommandAudits.length === 0
     ) {
       return goal;
     }
@@ -213,6 +231,7 @@ export function syncOperationalOsWithCommands(state: OperationalOsState, command
       ...(status !== goal.status
         ? [createAudit(status, 'command-inbox', `Goal moved from ${goal.status} to ${status} from Command Inbox command state.`, timestamp)]
         : []),
+      ...mirroredCommandAudits,
     ].slice(-18);
 
     return {

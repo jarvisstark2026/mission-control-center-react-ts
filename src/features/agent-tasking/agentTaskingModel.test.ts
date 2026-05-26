@@ -51,6 +51,30 @@ describe('agentTaskingModel', () => {
     expect(next.messages[0]?.body).toBe(`Objective ${agentTaskingBufferLimits.messages + 7}`);
   });
 
+  it('keeps failed task requests available for per-message retry', () => {
+    const state = createInitialAgentTaskingState();
+    const request = createRequest({ id: 'task-retry', goalId: 'goal-1' });
+    const failed = agentTaskingReducer(state, {
+      type: 'request-failed',
+      message: {
+        id: 'task-retry-failed',
+        author: 'system',
+        body: 'Bridge stopped.',
+        timestamp: '2026-05-22T20:01:00.000Z',
+        goalId: request.goalId,
+        status: 'failed',
+        retryRequest: request,
+      },
+      error: 'Bridge stopped.',
+      timestamp: '2026-05-22T20:01:00.000Z',
+    });
+
+    expect(failed.messages[0]?.retryRequest).toMatchObject({
+      id: 'task-retry',
+      goalId: 'goal-1',
+    });
+  });
+
   it('mock gateway creates a message, proposal, notification, and pending command', async () => {
     const gateway = createMockAgentTaskGateway({ delayMs: 0 });
     const result = await gateway.submitTask(createRequest());

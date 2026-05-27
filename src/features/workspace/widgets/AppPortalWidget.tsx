@@ -3,7 +3,9 @@ import { useMemo, useState } from 'react';
 import { canUseAppProfile, type AppPortalProfile, type OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
 import { AttentionCard, EvidenceBlock } from '../operationalBlocks';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { createRuntimeSnapshotEvidenceInput, createUrlEvidenceInput } from '../workspaceEvidenceModel';
 
 function formatTime(value?: string) {
   if (!value) return 'not opened';
@@ -63,6 +65,29 @@ export function AppPortalWidget({ role, operationalOs }: { role: ShellRole; oper
         status={status}
         count={`${visibleProfiles.length} profiles`}
         updatedAt={activeProfile ? formatTime(activeProfile.lastOpenedAt) : 'not opened'}
+      />
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={
+          activeProfile
+            ? activeProfile.type === 'web' || activeProfile.type === 'protocol'
+              ? createUrlEvidenceInput(
+                  activeProfile.launchTarget,
+                  `${activeProfile.name} portal profile`,
+                  'app-portal-widget',
+                  `${activeProfile.type} / ${activeProfile.embedMode} / last opened ${formatTime(activeProfile.lastOpenedAt)}`,
+                )
+              : createRuntimeSnapshotEvidenceInput(
+                  `${activeProfile.name} portal profile`,
+                  'app-portal-widget',
+                  `${activeProfile.type} / ${activeProfile.embedMode} / ${activeProfile.launchTarget}`,
+                )
+            : createRuntimeSnapshotEvidenceInput('App Portal profile', 'app-portal-widget', 'No app profile selected.')
+        }
+        disabled={!activeProfile}
+        disabledReason={!activeProfile ? 'Add or select an app profile before attaching evidence.' : undefined}
       />
 
       {activeProfile ? (

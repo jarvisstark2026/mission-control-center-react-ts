@@ -4,6 +4,7 @@ import type { CommandRisk, CommandScope, MissionControlEvent, MissionControlRunt
 import { canEditJsonSurface, detectJsonSurfaceSchema, type JsonSurfaceDocument, type JsonSurfaceSchemaHint, type OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
 import { AttentionCard, EvidenceBlock } from '../operationalBlocks';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -211,6 +212,23 @@ export function JsonSurfaceWidget({
         status={status}
         count={`${documents.length} documents`}
         updatedAt={selectedDocument?.schemaHint ?? 'raw'}
+      />
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={
+          selectedDocument
+            ? {
+                type: 'json',
+                title: selectedDocument.title,
+                source: `json-surface-${selectedDocument.source}`,
+                summary: `JSON document rendered as ${selectedDocument.schemaHint ?? detectJsonSurfaceSchema(selectedDocument.payload)}.`,
+              }
+            : { type: 'json', title: 'JSON document', source: 'json-surface', summary: 'No JSON document selected.' }
+        }
+        disabled={!selectedDocument}
+        disabledReason={!selectedDocument ? 'Render or select a JSON document before attaching evidence.' : undefined}
       />
 
       {selectedDocument ? (

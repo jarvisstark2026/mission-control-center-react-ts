@@ -1,5 +1,8 @@
 import { useState } from 'react';
 
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import {
   WorkspaceButton,
   WorkspaceCompactList,
@@ -9,6 +12,7 @@ import {
   WorkspaceSectionFrame,
   WorkspaceStatusStrip,
 } from '../workspaceBlocks';
+import { createRuntimeSnapshotEvidenceInput, createUrlEvidenceInput } from '../workspaceEvidenceModel';
 import {
   addNativeAppProfile,
   canLaunchNativeAppProfile,
@@ -25,7 +29,7 @@ function getProfileActionLabel(profile: NativeAppProfile) {
   return 'Track';
 }
 
-export function NativeAppWidget() {
+export function NativeAppWidget({ role, operationalOs }: { role: ShellRole; operationalOs: OperationalOsRuntime }) {
   const [profileState, setProfileState] = usePersistentWorkspaceState(loadNativeAppProfileState, saveNativeAppProfileState);
   const [profileName, setProfileName] = useState('');
   const [launchTarget, setLaunchTarget] = useState('');
@@ -69,6 +73,29 @@ export function NativeAppWidget() {
           onClick: () => selectedProfile && openProfile(selectedProfile),
           title: selectedProfile?.type === 'manual' ? 'Track manual app profile; direct executable launch is blocked' : 'Open selected external target',
         }}
+      />
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={
+          selectedProfile
+            ? selectedProfile.type === 'web' || selectedProfile.type === 'protocol'
+              ? createUrlEvidenceInput(
+                  selectedProfile.launchTarget,
+                  `${selectedProfile.name} app profile`,
+                  'native-app-widget',
+                  `${selectedProfile.type} / ${status}`,
+                )
+              : createRuntimeSnapshotEvidenceInput(
+                  `${selectedProfile.name} manual app profile`,
+                  'native-app-widget',
+                  `manual handoff / ${selectedProfile.launchTarget} / direct executable launch blocked`,
+                )
+            : createRuntimeSnapshotEvidenceInput('Native app profile', 'native-app-widget', 'No app profile selected.')
+        }
+        disabled={!selectedProfile}
+        disabledReason={!selectedProfile ? 'Save or select an app profile before attaching evidence.' : undefined}
       />
 
       <WorkspaceSectionFrame className="native-app-bridge-section" eyebrow="profiles" title="external handoff" meta="web / protocol / manual">

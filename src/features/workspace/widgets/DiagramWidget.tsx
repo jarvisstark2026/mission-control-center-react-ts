@@ -1,5 +1,8 @@
 import { useRef, useState } from 'react';
 
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import {
   WorkspaceButton,
   WorkspaceCompactList,
@@ -9,6 +12,7 @@ import {
   WorkspaceSectionFrame,
   WorkspaceStatusStrip,
 } from '../workspaceBlocks';
+import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 import {
   createDiagramFromTitle,
   importDiagramJson,
@@ -31,7 +35,7 @@ function renderLinkPath(from: DiagramNode | null, to: DiagramNode | null) {
   return `M ${from.x} ${from.y} Q ${controlX} ${controlY} ${to.x} ${to.y}`;
 }
 
-export function DiagramWidget() {
+export function DiagramWidget({ role, operationalOs }: { role: ShellRole; operationalOs: OperationalOsRuntime }) {
   const [diagramState, setDiagramState] = usePersistentWorkspaceState(loadDiagramSurfaceState, saveDiagramSurfaceState);
   const [titleDraft, setTitleDraft] = useState('');
   const [nodeDraft, setNodeDraft] = useState('');
@@ -125,6 +129,22 @@ export function DiagramWidget() {
         status={selectedDiagram ? `${nodeCount} nodes / ${linkCount} links` : 'no diagram selected'}
         count={`${diagramState.diagrams.length} saved diagrams`}
         updatedAt={selectedDiagram ? `updated ${new Date(selectedDiagram.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 'local'}
+      />
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={
+          selectedDiagram
+            ? createRuntimeSnapshotEvidenceInput(
+                `${selectedDiagram.title} diagram`,
+                selectedDiagram.source === 'json' ? 'diagram-json' : 'diagram-local',
+                `${selectedDiagram.nodes.length} nodes / ${selectedDiagram.links.length} links / ${selectedDiagram.source}`,
+              )
+            : createRuntimeSnapshotEvidenceInput('Diagram document', 'diagram-widget', 'No diagram selected.')
+        }
+        disabled={!selectedDiagram}
+        disabledReason={!selectedDiagram ? 'Create or import a diagram before attaching evidence.' : undefined}
       />
 
       <WorkspaceSectionFrame className="media-widget-stage diagram-feature-stage" eyebrow="canvas" title="graph document" meta="nodes / links">

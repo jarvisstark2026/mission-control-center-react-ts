@@ -176,6 +176,7 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await liveTvWidget.getByPlaceholder('Paste an official HLS / MP4 source').fill('https://example.com/local.mp4');
   await liveTvWidget.getByRole('button', { name: 'Save favorite' }).click({ force: true });
   await expect(liveTvWidget.getByText('E2E MP4').first()).toBeVisible();
+  await clickControl(liveTvWidget.getByRole('button', { name: 'Attach evidence' }));
 
   const mapWidget = page.locator('.workspace-widget.kind-map');
   await ensureWidgetOpen(mapWidget);
@@ -183,6 +184,7 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await mapWidget.getByPlaceholder('Why this place matters').fill('local map note');
   await mapWidget.getByRole('button', { name: 'Save place' }).click({ force: true });
   await expect(mapWidget.getByText('E2E site').first()).toBeVisible();
+  await clickControl(mapWidget.getByRole('button', { name: 'Attach evidence' }));
 
   await openWidget(page, 'Diagram preview');
   const diagramWidget = page.locator('.workspace-widget.kind-diagram');
@@ -194,6 +196,7 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await diagramWidget.getByPlaceholder('API, sensor, app, step').fill('Bridge');
   await clickControl(diagramWidget.getByRole('button', { name: 'Add node' }));
   await expect(diagramWidget.getByText('E2E topology').first()).toBeVisible();
+  await clickControl(diagramWidget.getByRole('button', { name: 'Attach evidence' }));
 
   const audioWidget = page.locator('.workspace-widget.kind-audio');
   await ensureWidgetOpen(audioWidget);
@@ -201,6 +204,7 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await audioWidget.getByPlaceholder('https://...mp3 or WAV').fill('https://example.com/sample.mp3');
   await clickControl(audioWidget.getByRole('button', { name: 'Save source' }));
   await expect(audioWidget.getByText('E2E audio').first()).toBeVisible();
+  await clickControl(audioWidget.getByRole('button', { name: 'Attach evidence' }));
 
   await openWidget(page, 'Media frame');
   const videoWidget = page.locator('.workspace-widget.kind-video');
@@ -209,6 +213,7 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await videoWidget.getByPlaceholder('https://...mp4 or WebM').fill('https://example.com/video.mp4');
   await clickControl(videoWidget.getByRole('button', { name: 'Save source' }));
   await expect(videoWidget.getByText('E2E video').first()).toBeVisible();
+  await clickControl(videoWidget.getByRole('button', { name: 'Attach evidence' }));
 
   const nativeAppWidget = page.locator('.workspace-widget.kind-native-app');
   await ensureWidgetOpen(nativeAppWidget);
@@ -216,6 +221,24 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await nativeAppWidget.getByPlaceholder('https://..., codex://, or manual path').fill('codex://');
   await clickControl(nativeAppWidget.getByRole('button', { name: 'Save profile' }));
   await expect(nativeAppWidget.getByText('E2E portal').first()).toBeVisible();
+  await clickControl(nativeAppWidget.getByRole('button', { name: 'Attach evidence' }));
+
+  await openWidget(page, 'App Portal');
+  const appPortalWidget = page.locator('.workspace-widget.kind-app-portal');
+  await ensureWidgetOpen(appPortalWidget);
+  await clickControl(appPortalWidget.getByRole('button', { name: 'Attach evidence' }));
+
+  await openWidget(page, 'JSON Surface');
+  const jsonWidget = page.locator('.workspace-widget.kind-json-surface');
+  await ensureWidgetOpen(jsonWidget);
+  await jsonWidget.getByPlaceholder('Bridge payload, task result, custom table...').fill('E2E JSON');
+  await jsonWidget.locator('textarea').fill('{"status":"ready","items":[{"title":"Evidence"}]}');
+  await clickControl(jsonWidget.getByRole('button', { name: 'Render JSON' }));
+  await expect(jsonWidget.getByText('E2E JSON').first()).toBeVisible();
+  await clickControl(jsonWidget.getByRole('button', { name: 'Attach evidence' }));
+
+  await openWidget(page, 'Goals');
+  await expect(page.locator('.workspace-widget.kind-goals').getByText(/evidence/i).first()).toBeVisible();
 
   await openWidget(page, '3D studio');
   const modelWidget = page.locator('.workspace-widget.kind-3d-studio');

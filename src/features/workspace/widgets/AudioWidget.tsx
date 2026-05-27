@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { AgentControlState } from '../../agent-control';
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import {
   WorkspaceButton,
   WorkspaceCompactList,
@@ -10,6 +13,7 @@ import {
   WorkspaceSectionFrame,
   WorkspaceStatusStrip,
 } from '../workspaceBlocks';
+import { createLocalFileEvidenceInput, createUrlEvidenceInput } from '../workspaceEvidenceModel';
 import { createLocalFileObjectUrl, formatLocalFileSize, revokeLocalFileObjectUrl, type LocalFileRecord } from '../workspaceLocalFiles';
 import {
   addMediaSource,
@@ -23,6 +27,8 @@ import {
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 
 export type AudioWidgetProps = {
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
   agentControl?: AgentControlState;
   files?: LocalFileRecord[];
   activeFileId?: string | null;
@@ -52,6 +58,8 @@ function getBestAudioFile(files: LocalFileRecord[], activeFileId?: string | null
 }
 
 export function AudioWidget({
+  role,
+  operationalOs,
   agentControl,
   files = [],
   activeFileId = null,
@@ -138,34 +146,31 @@ export function AudioWidget({
     setSourceUrl('');
   };
 
-  const sourceItems = useMemo(
-    () => [
-      ...audioFiles.slice(0, 4).map((file) => ({
-        id: file.id,
-        meta: 'file',
-        title: file.file.name,
-        detail: `${formatLocalFileSize(file.file.size)} / ${file.path}`,
-        state: file.id === selectedFile?.id ? 'active' : 'file',
-        action: {
-          label: file.id === selectedFile?.id ? 'Preview' : 'Open',
-          onClick: () => onOpenPreview?.(file),
-        },
-      })),
-      ...audioState.sources.slice(0, 5).map((source: MediaSourceRecord) => ({
-        id: source.id,
-        meta: 'browser',
-        title: source.name,
-        detail: source.url,
-        state: source.id === selectedSource?.id && !selectedFile ? 'active' : 'browser',
-        action: {
-          label: source.id === selectedSource?.id && !selectedFile ? 'Active' : 'Use',
-          disabled: source.id === selectedSource?.id && !selectedFile,
-          onClick: () => setAudioState((current) => ({ ...current, selectedSourceId: source.id, updatedAt: new Date().toISOString() })),
-        },
-      })),
-    ],
-    [audioFiles, audioState.sources, onOpenPreview, selectedFile, selectedSource, setAudioState],
-  );
+  const sourceItems = [
+    ...audioFiles.slice(0, 4).map((file) => ({
+      id: file.id,
+      meta: 'file',
+      title: file.file.name,
+      detail: `${formatLocalFileSize(file.file.size)} / ${file.path}`,
+      state: file.id === selectedFile?.id ? 'active' : 'file',
+      action: {
+        label: file.id === selectedFile?.id ? 'Preview' : 'Open',
+        onClick: () => onOpenPreview?.(file),
+      },
+    })),
+    ...audioState.sources.slice(0, 5).map((source: MediaSourceRecord) => ({
+      id: source.id,
+      meta: 'browser',
+      title: source.name,
+      detail: source.url,
+      state: source.id === selectedSource?.id && !selectedFile ? 'active' : 'browser',
+      action: {
+        label: source.id === selectedSource?.id && !selectedFile ? 'Active' : 'Use',
+        disabled: source.id === selectedSource?.id && !selectedFile,
+        onClick: () => setAudioState((current) => ({ ...current, selectedSourceId: source.id, updatedAt: new Date().toISOString() })),
+      },
+    })),
+  ];
 
   return (
     <WorkspaceContentShell className="audio-widget-shell widget-feature-shell">
@@ -186,6 +191,20 @@ export function AudioWidget({
           disabled: !onBrowseFiles,
           title: 'Load audio files from this workspace',
         }}
+      />
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={
+          selectedFile
+            ? createLocalFileEvidenceInput(selectedFile, 'audio-widget')
+            : activeSource?.url
+              ? createUrlEvidenceInput(activeSource.url, `${activeSource.title} audio source`, 'audio-widget', `${activeSource.kind} audio / ${activeSource.detail}`)
+              : { type: 'file', title: 'Audio source', source: 'audio-widget', summary: 'No audio source selected.' }
+        }
+        disabled={!selectedFile && !activeSource?.url}
+        disabledReason={!selectedFile && !activeSource?.url ? 'Load or save an audio source before attaching evidence.' : undefined}
       />
 
       <WorkspaceSectionFrame className="media-widget-stage audio-feature-stage" eyebrow="playback" title="real audio analyser" meta="Web Audio">

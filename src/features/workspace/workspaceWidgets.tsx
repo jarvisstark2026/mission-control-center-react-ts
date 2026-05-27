@@ -96,7 +96,21 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.operationalOs.state.version === right.operationalOs.state.version
       );
     case 'browser':
+    case 'map':
+    case 'diagram':
+    case 'watch-video':
+    case 'native-app':
       return (
+        left.activeRole === right.activeRole &&
+        left.operationalOs.state.version === right.operationalOs.state.version
+      );
+    case 'audio':
+    case 'video':
+      return (
+        left.localFiles === right.localFiles &&
+        left.activeLocalFileId === right.activeLocalFileId &&
+        left.selectedLocalFileId === right.selectedLocalFileId &&
+        left.agentControl.version === right.agentControl.version &&
         left.activeRole === right.activeRole &&
         left.operationalOs.state.version === right.operationalOs.state.version
       );

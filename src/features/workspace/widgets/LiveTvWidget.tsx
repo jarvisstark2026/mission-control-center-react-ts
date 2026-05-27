@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { createUrlEvidenceInput } from '../workspaceEvidenceModel';
 import {
   addLiveTvFavorite,
   createLiveTvSource,
@@ -25,7 +29,7 @@ const defaultLiveTvSource: LocalLiveTvSource = {
   streamType: 'mp4',
 };
 
-export function LiveTvWidget() {
+export function LiveTvWidget({ role, operationalOs }: { role: ShellRole; operationalOs: OperationalOsRuntime }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<{ destroy: () => void } | null>(null);
   const [liveTvState, setLiveTvState] = usePersistentWorkspaceState(loadLiveTvState, saveLiveTvState);
@@ -167,6 +171,18 @@ export function LiveTvWidget() {
         status={status}
         count={`${allSources.length} saved feeds`}
         updatedAt={activeSource.streamType.toUpperCase()}
+      />
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={
+          activeSource.url
+            ? createUrlEvidenceInput(activeSource.url, `${activeSource.name} stream`, 'live-tv-widget', `${activeSource.streamType.toUpperCase()} / ${status}`)
+            : { type: 'url', title: 'Live TV stream', source: 'live-tv-widget', summary: 'No stream URL configured.' }
+        }
+        disabled={!activeSource.url}
+        disabledReason={!activeSource.url ? 'Tune or save an official stream URL before attaching evidence.' : undefined}
       />
 
       <WorkspaceSectionFrame className="live-tv-source-section" eyebrow="sources" title="channel presets" meta={`${allSources.length} feeds`}>

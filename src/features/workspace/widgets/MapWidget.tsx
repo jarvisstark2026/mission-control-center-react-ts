@@ -1,5 +1,8 @@
 import { useMemo, useState } from 'react';
 
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import {
   WorkspaceButton,
   WorkspaceCompactList,
@@ -9,6 +12,7 @@ import {
   WorkspaceSectionFrame,
   WorkspaceStatusStrip,
 } from '../workspaceBlocks';
+import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 import {
   addMapPlace,
   addMapRoute,
@@ -29,7 +33,7 @@ function getMapHandoffUrl(record: Pick<MapSurfacePlace | MapSurfaceRoute, 'hando
   return record.handoffUrl || `https://www.google.com/maps/search/${encodeURIComponent(record.title)}`;
 }
 
-export function MapWidget() {
+export function MapWidget({ role, operationalOs }: { role: ShellRole; operationalOs: OperationalOsRuntime }) {
   const [mapState, setMapState] = usePersistentWorkspaceState(loadMapSurfaceState, saveMapSurfaceState);
   const [placeTitle, setPlaceTitle] = useState('');
   const [placeDetail, setPlaceDetail] = useState('');
@@ -40,6 +44,7 @@ export function MapWidget() {
 
   const selectedPlace = mapState.places.find((place) => place.id === mapState.selectedPlaceId) ?? mapState.places[0] ?? null;
   const selectedRoute = mapState.routes.find((route) => route.id === mapState.selectedRouteId) ?? mapState.routes[0] ?? null;
+  const selectedRecord = selectedPlace ?? selectedRoute;
   const visiblePins = useMemo(() => mapState.places.slice(0, 7), [mapState.places]);
   const mapCount = mapState.places.length + mapState.routes.length;
 
@@ -81,6 +86,22 @@ export function MapWidget() {
           onClick: () => openExternalMap(selectedPlace ?? selectedRoute),
           title: 'Open selected place or route in an external map',
         }}
+      />
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={
+          selectedRecord
+            ? createRuntimeSnapshotEvidenceInput(
+                `${selectedRecord.title} map record`,
+                'map-widget',
+                `${selectedPlace ? 'place' : 'route'} / ${selectedRecord.detail || 'local map note'} / ${getMapHandoffUrl(selectedRecord)}`,
+              )
+            : createRuntimeSnapshotEvidenceInput('Map record', 'map-widget', 'No saved place or route selected.')
+        }
+        disabled={!selectedRecord}
+        disabledReason={!selectedRecord ? 'Save or select a place or route before attaching evidence.' : undefined}
       />
 
       <WorkspaceSectionFrame className="media-widget-stage map-feature-stage" eyebrow="surface" title="saved location layer" meta="local notes">

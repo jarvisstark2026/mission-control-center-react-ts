@@ -99,8 +99,10 @@ const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], (props: Wor
   sheet: ({ activeRole, operationalOs }) => <SpreadsheetWidget role={activeRole} operationalOs={operationalOs} />,
   docs: ({ activeRole, operationalOs }) => <DocsWidget role={activeRole} operationalOs={operationalOs} />,
   slides: ({ activeRole, operationalOs }) => <SlidesWidget role={activeRole} operationalOs={operationalOs} />,
-  audio: ({ agentControl, localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview }) => (
+  audio: ({ agentControl, localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview, activeRole, operationalOs }) => (
     <AudioWidget
+      role={activeRole}
+      operationalOs={operationalOs}
       agentControl={agentControl}
       files={localFiles}
       activeFileId={activeLocalFileId}
@@ -109,13 +111,15 @@ const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], (props: Wor
       onOpenPreview={onOpenPreview}
     />
   ),
-  map: () => <MapWidget />,
-  diagram: () => <DiagramWidget />,
+  map: ({ activeRole, operationalOs }) => <MapWidget role={activeRole} operationalOs={operationalOs} />,
+  diagram: ({ activeRole, operationalOs }) => <DiagramWidget role={activeRole} operationalOs={operationalOs} />,
   browser: ({ activeRole, operationalOs }) => <BrowserWidget role={activeRole} operationalOs={operationalOs} />,
-  'watch-video': () => <LiveTvWidget />,
-  'native-app': () => <NativeAppWidget />,
-  video: ({ localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview }) => (
+  'watch-video': ({ activeRole, operationalOs }) => <LiveTvWidget role={activeRole} operationalOs={operationalOs} />,
+  'native-app': ({ activeRole, operationalOs }) => <NativeAppWidget role={activeRole} operationalOs={operationalOs} />,
+  video: ({ localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview, activeRole, operationalOs }) => (
     <VideoWidget
+      role={activeRole}
+      operationalOs={operationalOs}
       files={localFiles}
       activeFileId={activeLocalFileId}
       selectedFileId={selectedLocalFileId}

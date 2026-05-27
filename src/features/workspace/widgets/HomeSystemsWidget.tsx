@@ -2,10 +2,13 @@ import { useMemo, useState, type CSSProperties } from 'react';
 
 import type { ShellRole } from '../../shell/roles';
 import type { MissionControlRuntime } from '../../mission-control';
+import type { OperationalOsRuntime } from '../../operational-os';
 import { AttentionCard, EvidenceBlock, PermissionBadge, RiskBadge } from '../operationalBlocks';
 import { WorkspaceButton, WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import { createHomeSystemActionEvents, getHomeSystemActionPlansForRole, type HomeSystemActionId } from '../homeSystemsActions';
 import { useHomeSystemsData } from '../homeSystemsAdapter';
+import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 import {
   defaultVisibleHomeEnergySeriesIds,
   getHomeEnergyBalance,
@@ -57,9 +60,11 @@ function buildEnergySeriesPoints(series: HomeEnergySeries, dailyProfile: HomeEne
 export function HomeSystemsWidget({
   role,
   missionControl,
+  operationalOs,
 }: {
   role: ShellRole;
   missionControl: MissionControlRuntime;
+  operationalOs: OperationalOsRuntime;
 }) {
   const [visibleSeriesIds, setVisibleSeriesIds] = useState<HomeEnergySeriesId[]>(defaultVisibleHomeEnergySeriesIds);
   const [stagedActionId, setStagedActionId] = useState<HomeSystemActionId | null>(null);
@@ -149,6 +154,15 @@ export function HomeSystemsWidget({
           count={`${actionPlans.length} gated actions`}
           updatedAt="local baseline"
         />
+        <WorkspaceEvidenceAttachPanel
+          role={role}
+          operationalOs={operationalOs}
+          evidence={createRuntimeSnapshotEvidenceInput(
+            'Home systems setup snapshot',
+            sourceStatus === 'offline' ? 'home-systems-unavailable' : 'home-systems-local-baseline',
+            `${sourceLabel} / ${homeSystems.error ?? 'backend not connected'} / ${actionPlans.length} gated actions available`,
+          )}
+        />
         <WorkspaceSectionFrame
           className="mission-control-list-frame home-action-frame"
           eyebrow="setup"
@@ -209,6 +223,15 @@ export function HomeSystemsWidget({
         status={`${formatKw(snapshot.generationKw)} generating / ${formatKw(snapshot.consumptionKw)} consuming`}
         count={sourceLabel}
         updatedAt={homeSystems.error ?? `${summary.total} tracked`}
+      />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={createRuntimeSnapshotEvidenceInput(
+          'Home systems runtime snapshot',
+          sourceStatus === 'backend-ready' ? 'home-systems-live' : 'home-systems-local-baseline',
+          `${sourceLabel} / generation ${formatKw(snapshot.generationKw)} / consumption ${formatKw(snapshot.consumptionKw)} / ${summary.total} tracked systems`,
+        )}
       />
 
       <WorkspaceMetricGrid

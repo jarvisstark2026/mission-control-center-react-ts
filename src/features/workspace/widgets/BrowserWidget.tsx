@@ -1,10 +1,14 @@
 import { useState } from 'react';
 
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { addBrowserBookmark, addBrowserHistory, loadBrowserState, normalizeBrowserUrl, saveBrowserState } from '../workspaceBrowserModel';
+import { createUrlEvidenceInput } from '../workspaceEvidenceModel';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 
-export function BrowserWidget() {
+export function BrowserWidget({ role, operationalOs }: { role: ShellRole; operationalOs: OperationalOsRuntime }) {
   const [browserState, setBrowserState] = usePersistentWorkspaceState(loadBrowserState, saveBrowserState);
   const [url, setUrl] = useState('https://example.org');
   const [frameUrl, setFrameUrl] = useState(url);
@@ -45,6 +49,8 @@ export function BrowserWidget() {
     setFrameStatus('Loading');
     setBrowserState((current) => addBrowserHistory(current, nextUrl));
   };
+  const evidenceUrl = normalizeBrowserUrl(frameUrl || url);
+  const evidenceTitle = evidenceUrl.replace(/^https?:\/\//i, '') || 'Browser URL';
 
   return (
     <WorkspaceContentShell className="browser-surface">
@@ -61,6 +67,19 @@ export function BrowserWidget() {
         status={frameStatus}
         count={`${browserState.bookmarks.length} bookmarks`}
         updatedAt={`${browserState.history.length} history`}
+      />
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={createUrlEvidenceInput(
+          evidenceUrl,
+          evidenceTitle,
+          'browser-widget',
+          `${frameStatus} / ${browserState.bookmarks.length} bookmarks / ${browserState.history.length} history`,
+        )}
+        disabled={!evidenceUrl}
+        disabledReason={!evidenceUrl ? 'Enter or open a URL before attaching evidence.' : undefined}
       />
 
       <WorkspaceSectionFrame className="browser-address-section" eyebrow="address" title="navigation controls" meta="URL / bookmarks">
@@ -94,7 +113,7 @@ export function BrowserWidget() {
             onSelect={(item) => navigateTo(item.id)}
           />
         ) : (
-          <WorkspaceEmptyState source="browser" title="No history yet" detail="Navigate once and the URL stays available for quick handoff." />
+          <WorkspaceEmptyState source="browser" title="No browser history" detail="Open or bookmark a URL to keep it as local reference evidence." />
         )}
       </WorkspaceSectionFrame>
 

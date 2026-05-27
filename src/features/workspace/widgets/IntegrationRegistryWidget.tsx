@@ -1,5 +1,9 @@
 import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { PermissionBadge } from '../operationalBlocks';
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
+import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 import {
   canEditIntegrationPermission,
   type IntegrationPermission,
@@ -17,7 +21,15 @@ function getIntegrationStatusCounts(integrations: IntegrationRecord[]) {
   };
 }
 
-export function IntegrationRegistryWidget({ missionControl }: { missionControl: MissionControlRuntime }) {
+export function IntegrationRegistryWidget({
+  missionControl,
+  role,
+  operationalOs,
+}: {
+  missionControl: MissionControlRuntime;
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
+}) {
   const { devices, integrations } = missionControl.state;
   const summary = getIntegrationStatusCounts(integrations);
   const canEditPermissions = canEditIntegrationPermission(missionControl.role);
@@ -39,6 +51,17 @@ export function IntegrationRegistryWidget({ missionControl }: { missionControl: 
         status={`${summary.online} online / ${summary.degraded} degraded`}
         count={`${summary.offline} offline`}
         updatedAt={missionControl.role}
+      />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={createRuntimeSnapshotEvidenceInput(
+          'Integration registry snapshot',
+          summary.online > 0 ? 'integrations-bridge' : integrations.length ? 'integrations-local' : 'integrations-unavailable',
+          `${integrations.length} integrations / ${summary.online} online / ${summary.degraded} degraded / ${devices.length} devices`,
+        )}
+        disabled={!integrations.length && !devices.length}
+        disabledReason={!integrations.length && !devices.length ? 'No integration or device records are available yet.' : undefined}
       />
 
       <WorkspaceSectionFrame

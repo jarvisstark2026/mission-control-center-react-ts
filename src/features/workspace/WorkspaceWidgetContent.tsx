@@ -92,8 +92,10 @@ type WorkspaceWidgetContentRendererProps = {
 } & WorkspaceWidgetContentProps;
 
 const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], (props: WorkspaceWidgetContentRendererProps) => ReactNode>> = {
-  overview: ({ missionControl, workspaceWidgetGroups }) => <OverviewWidget missionControl={missionControl} workspaceGroups={workspaceWidgetGroups} />,
-  graph: ({ missionControl }) => <GraphWidget missionControl={missionControl} />,
+  overview: ({ missionControl, workspaceWidgetGroups, activeRole, operationalOs }) => (
+    <OverviewWidget missionControl={missionControl} workspaceGroups={workspaceWidgetGroups} role={activeRole} operationalOs={operationalOs} />
+  ),
+  graph: ({ missionControl, activeRole, operationalOs }) => <GraphWidget missionControl={missionControl} role={activeRole} operationalOs={operationalOs} />,
   sheet: ({ activeRole, operationalOs }) => <SpreadsheetWidget role={activeRole} operationalOs={operationalOs} />,
   docs: ({ activeRole, operationalOs }) => <DocsWidget role={activeRole} operationalOs={operationalOs} />,
   slides: ({ activeRole, operationalOs }) => <SlidesWidget role={activeRole} operationalOs={operationalOs} />,
@@ -109,7 +111,7 @@ const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], (props: Wor
   ),
   map: () => <MapWidget />,
   diagram: () => <DiagramWidget />,
-  browser: () => <BrowserWidget />,
+  browser: ({ activeRole, operationalOs }) => <BrowserWidget role={activeRole} operationalOs={operationalOs} />,
   'watch-video': () => <LiveTvWidget />,
   'native-app': () => <NativeAppWidget />,
   video: ({ localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview }) => (
@@ -174,6 +176,8 @@ function renderWorkspaceWidgetContent({
     case 'file-explorer':
       return (
         <FileExplorerWidget
+          role={activeRole}
+          operationalOs={operationalOs}
           files={localFiles}
           activeFileId={activeLocalFileId}
           selectedFileId={selectedLocalFileId}
@@ -188,9 +192,9 @@ function renderWorkspaceWidgetContent({
         />
       );
     case 'trading-graph':
-      return <TradingGraphWidget graph={activeMarketGraph} marketLiveData={marketLiveData} />;
+      return <TradingGraphWidget graph={activeMarketGraph} marketLiveData={marketLiveData} role={activeRole} operationalOs={operationalOs} />;
     case 'news':
-      return <NewsWidget activeGraph={activeMarketGraph} marketLiveData={marketLiveData} onSelectGraph={onSelectMarketGraph} />;
+      return <NewsWidget activeGraph={activeMarketGraph} marketLiveData={marketLiveData} onSelectGraph={onSelectMarketGraph} role={activeRole} operationalOs={operationalOs} />;
     case 'project':
       return <ProjectWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} />;
     case 'schedule':
@@ -241,9 +245,9 @@ function renderWorkspaceWidgetContent({
         />
       );
     case 'notifications':
-      return <NotificationsWidget missionControl={missionControl} />;
+      return <NotificationsWidget missionControl={missionControl} role={activeRole} operationalOs={operationalOs} />;
     case 'integration-registry':
-      return <IntegrationRegistryWidget missionControl={missionControl} />;
+      return <IntegrationRegistryWidget missionControl={missionControl} role={activeRole} operationalOs={operationalOs} />;
     case 'agent-control':
       return (
         <AgentControlWidget
@@ -270,7 +274,7 @@ function renderWorkspaceWidgetContent({
         />
       );
     case 'home-systems':
-      return <HomeSystemsWidget role={activeRole} missionControl={missionControl} />;
+      return <HomeSystemsWidget role={activeRole} missionControl={missionControl} operationalOs={operationalOs} />;
     case 'flow':
       return (
         <WorkflowWidget

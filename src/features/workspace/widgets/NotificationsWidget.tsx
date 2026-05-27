@@ -1,8 +1,20 @@
 import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { canAcknowledgeNotifications, type MissionControlRuntime } from '../../mission-control';
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
 import { AttentionCard } from '../operationalBlocks';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
+import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 
-export function NotificationsWidget({ missionControl }: { missionControl: MissionControlRuntime }) {
+export function NotificationsWidget({
+  missionControl,
+  role,
+  operationalOs,
+}: {
+  missionControl: MissionControlRuntime;
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
+}) {
   const { notifications, telemetry, connection } = missionControl.state;
   const commandTitleById = new Map(missionControl.state.commands.map((command) => [command.id, command.title]));
   const unreadNotifications = notifications.filter((notification) => !notification.acknowledged);
@@ -34,6 +46,17 @@ export function NotificationsWidget({ missionControl }: { missionControl: Missio
         status={latestTelemetry ? `${latestTelemetry.label} ${latestTelemetry.value}${latestTelemetry.unit}` : 'Telemetry ready'}
         count={`${unreadNotifications.length} unread`}
         updatedAt={connection === 'connected' ? 'SSE stream' : 'local seed events'}
+      />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={createRuntimeSnapshotEvidenceInput(
+          'Notification feed snapshot',
+          connection === 'connected' ? 'notifications-bridge' : 'notifications-local',
+          `${notifications.length} notifications / ${unreadNotifications.length} unread / ${telemetry.length} telemetry samples`,
+        )}
+        disabled={!notifications.length && !telemetry.length}
+        disabledReason={!notifications.length && !telemetry.length ? 'Notifications or telemetry are required before attaching evidence.' : undefined}
       />
 
       <WorkspaceSectionFrame

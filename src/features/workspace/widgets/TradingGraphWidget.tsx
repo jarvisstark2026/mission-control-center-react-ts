@@ -1,4 +1,8 @@
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 import { type MarketGraph } from '../workspaceMarketData';
 import { getMarketLiveQuote, type MarketLiveState } from '../workspaceMarketLiveData';
 
@@ -26,7 +30,17 @@ function formatUpdatedAt(value: string) {
   }).format(date);
 }
 
-export function TradingGraphWidget({ graph, marketLiveData }: { graph: MarketGraph; marketLiveData: MarketLiveState }) {
+export function TradingGraphWidget({
+  graph,
+  marketLiveData,
+  role,
+  operationalOs,
+}: {
+  graph: MarketGraph;
+  marketLiveData: MarketLiveState;
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
+}) {
   const quote = getMarketLiveQuote(marketLiveData, graph);
   const sparklinePoints = buildSparklinePoints(quote.sparkline);
   const summary = [
@@ -53,6 +67,15 @@ export function TradingGraphWidget({ graph, marketLiveData }: { graph: MarketGra
         status={`${quote.priceLabel} / ${quote.changeLabel}`}
         count={quote.sourceLabel}
         updatedAt={formatUpdatedAt(quote.updatedAt)}
+      />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={createRuntimeSnapshotEvidenceInput(
+          `${graph.label} quote snapshot`,
+          `market-${quote.status}`,
+          `${graph.ticker} / ${quote.priceLabel} / ${quote.changeLabel} / ${quote.sourceLabel}. ${quote.detail}`,
+        )}
       />
       {marketLiveData.errors.length ? (
         <WorkspaceStatusStrip

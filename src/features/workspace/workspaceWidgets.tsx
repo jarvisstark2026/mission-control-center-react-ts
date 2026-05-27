@@ -82,6 +82,24 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
   if (!isTransferAnimationEqual(left.transferAnimation, right.transferAnimation)) return false;
 
   switch (right.widget.kind) {
+    case 'overview':
+      return (
+        left.missionControl.state.version === right.missionControl.state.version &&
+        getWorkspaceGroupSignature(left.workspaceWidgetGroups) === getWorkspaceGroupSignature(right.workspaceWidgetGroups) &&
+        left.activeRole === right.activeRole &&
+        left.operationalOs.state.version === right.operationalOs.state.version
+      );
+    case 'graph':
+      return (
+        left.missionControl.state.version === right.missionControl.state.version &&
+        left.activeRole === right.activeRole &&
+        left.operationalOs.state.version === right.operationalOs.state.version
+      );
+    case 'browser':
+      return (
+        left.activeRole === right.activeRole &&
+        left.operationalOs.state.version === right.operationalOs.state.version
+      );
     case 'file-explorer':
       return (
         left.localFiles === right.localFiles &&
@@ -89,14 +107,18 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.selectedLocalFileId === right.selectedLocalFileId &&
         left.folderEntries === right.folderEntries &&
         left.folderPath === right.folderPath &&
-        left.canBrowseFolder === right.canBrowseFolder
+        left.canBrowseFolder === right.canBrowseFolder &&
+        left.activeRole === right.activeRole &&
+        left.operationalOs.state.version === right.operationalOs.state.version
       );
     case 'trading-graph':
     case 'news':
       return (
         left.activeMarketGraph.id === right.activeMarketGraph.id &&
         left.marketLiveData.status === right.marketLiveData.status &&
-        left.marketLiveData.updatedAt === right.marketLiveData.updatedAt
+        left.marketLiveData.updatedAt === right.marketLiveData.updatedAt &&
+        left.activeRole === right.activeRole &&
+        left.operationalOs.state.version === right.operationalOs.state.version
       );
     case 'launcher':
       return (
@@ -130,7 +152,9 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
     case 'home-systems':
       return (
         left.missionControl.role === right.missionControl.role &&
-        left.missionControl.state.version === right.missionControl.state.version
+        left.missionControl.state.version === right.missionControl.state.version &&
+        left.activeRole === right.activeRole &&
+        left.operationalOs.state.version === right.operationalOs.state.version
       );
     case 'agent-control':
       return (

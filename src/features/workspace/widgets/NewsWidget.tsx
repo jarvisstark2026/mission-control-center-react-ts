@@ -1,6 +1,10 @@
 import { useState } from 'react';
 
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 import { getMarketGraph, marketCategories, type MarketGraph } from '../workspaceMarketData';
 import { getMarketLiveQuote, type MarketLiveState } from '../workspaceMarketLiveData';
 import { loadMarketWatchlist, saveMarketWatchlist, toggleMarketWatchlist } from '../workspaceMarketWatchlistModel';
@@ -10,10 +14,14 @@ export function NewsWidget({
   activeGraph,
   marketLiveData,
   onSelectGraph,
+  role,
+  operationalOs,
 }: {
   activeGraph: MarketGraph;
   marketLiveData: MarketLiveState;
   onSelectGraph: (graph: MarketGraph) => void;
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
 }) {
   const [watchlistIds, setWatchlistIds] = usePersistentWorkspaceState(loadMarketWatchlist, saveMarketWatchlist);
   const [watchlistOnly, setWatchlistOnly] = useState(false);
@@ -50,6 +58,15 @@ export function NewsWidget({
         status={`${activeGraph.label} ${activeQuote.priceLabel}`}
         count={activeQuote.changeLabel}
         updatedAt={manualRefreshAt ? `manual ${manualRefreshAt}` : activeQuote.sourceLabel}
+      />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={createRuntimeSnapshotEvidenceInput(
+          `${activeGraph.label} market watch`,
+          `market-${activeQuote.status}`,
+          `${activeGraph.ticker} / ${activeQuote.priceLabel} / ${activeQuote.changeLabel} / ${activeQuote.sourceLabel}. ${activeQuote.detail}`,
+        )}
       />
       {marketLiveData.errors.length ? (
         <WorkspaceStatusStrip

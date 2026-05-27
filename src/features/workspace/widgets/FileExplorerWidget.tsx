@@ -1,9 +1,15 @@
 ﻿import { useRef } from 'react';
 import type { ChangeEvent } from 'react';
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { createLocalFileEvidenceInput } from '../workspaceEvidenceModel';
 import { createLocalFileRecord, formatLocalFileSize, generalUseFolderLabel, type LocalFileRecord, type LocalFolderEntry } from '../workspaceLocalFiles';
 
 export function FileExplorerWidget({
+  role,
+  operationalOs,
   files,
   activeFileId,
   selectedFileId,
@@ -16,6 +22,8 @@ export function FileExplorerWidget({
   onSelectFile,
   onClearFiles,
 }: {
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
   files: LocalFileRecord[];
   activeFileId: string | null;
   selectedFileId: string | null;
@@ -30,6 +38,10 @@ export function FileExplorerWidget({
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const activeFile = files.find((record) => record.id === activeFileId) ?? null;
+  const selectedFile =
+    files.find((record) => record.id === selectedFileId) ??
+    activeFile ??
+    null;
   const hasRealFolderEntries = folderEntries.length > 0;
   const folderTreeEntries: LocalFolderEntry[] = hasRealFolderEntries
     ? folderEntries
@@ -140,6 +152,18 @@ export function FileExplorerWidget({
         status={loadedEntryCount ? `${loadedEntryCount} ${loadedEntryCount === 1 ? 'entry' : 'entries'} loaded` : 'no entries loaded'}
         count={activeFile ? activeFile.previewKind : visibleFolderPath}
         updatedAt="local"
+      />
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={
+          selectedFile
+            ? createLocalFileEvidenceInput(selectedFile, 'file-explorer-widget')
+            : { type: 'file', title: 'Selected local file', source: 'file-explorer-widget', summary: 'No file selected.' }
+        }
+        disabled={!selectedFile}
+        disabledReason={!selectedFile ? 'Select a local file before attaching evidence.' : undefined}
       />
 
       <WorkspaceSectionFrame className="file-explorer-toolbar-frame" eyebrow="file controls" title="local intake" meta="browse / clear">

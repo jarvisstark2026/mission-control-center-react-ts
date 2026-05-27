@@ -1,13 +1,21 @@
 import type { MissionControlRuntime } from '../../mission-control';
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import { WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 import type { WorkspaceWidgetGroup } from '../workspaceManagerModel';
 
 export function OverviewWidget({
   missionControl,
   workspaceGroups = [],
+  role,
+  operationalOs,
 }: {
   missionControl?: MissionControlRuntime;
   workspaceGroups?: WorkspaceWidgetGroup[];
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
 }) {
   const state = missionControl?.state;
   const unreadAlerts = state?.notifications.filter((notification) => !notification.acknowledged).length ?? 0;
@@ -52,6 +60,15 @@ export function OverviewWidget({
         status={pendingCommands ? `${pendingCommands} decisions waiting` : 'workspace ready'}
         count={`${openWidgets} open widgets`}
         updatedAt={updatedAt}
+      />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={createRuntimeSnapshotEvidenceInput(
+          'Mission Control overview snapshot',
+          'overview-widget',
+          `${pendingCommands} pending commands / ${unreadAlerts} unread alerts / ${openWidgets} open widgets / ${onWorkspaces} workspaces on`,
+        )}
       />
       <WorkspaceSectionFrame className="overview-dashboard" eyebrow="telemetry" title="command summary" meta={`${stats.length} signals`}>
         <div className="widget-grid">

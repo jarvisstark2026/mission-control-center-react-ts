@@ -4,8 +4,12 @@ import {
   addSheetColumn,
   addSheetRow,
   addSlideFrame,
+  createLocalFileEvidenceInput,
+  createRuntimeSnapshotEvidenceInput,
+  createUrlEvidenceInput,
   createDefaultSheetState,
   createDefaultSlidesState,
+  getEvidenceTypeForLocalFile,
   removeSlideFrame,
   selectSlideFrame,
   summarizeSheetColumn,
@@ -54,5 +58,40 @@ describe('workspaceEvidenceModel', () => {
     expect(updated.frames.find((frame) => frame.id === added.activeFrameId)?.title).toBe('Evidence frame');
     expect(selected.activeFrameId).toBe(state.activeFrameId);
     expect(removed.frames).toHaveLength(state.frames.length);
+  });
+
+  it('builds evidence inputs for URLs, files, and runtime snapshots', () => {
+    const imageRecord = {
+      id: 'image',
+      path: 'panel.png',
+      previewKind: 'image' as const,
+      file: new File(['image'], 'panel.png', { type: 'image/png' }),
+    };
+    const pdfRecord = {
+      id: 'pdf',
+      path: 'brief.pdf',
+      previewKind: 'pdf' as const,
+      file: new File(['pdf'], 'brief.pdf', { type: 'application/pdf' }),
+    };
+
+    expect(getEvidenceTypeForLocalFile(imageRecord)).toBe('image');
+    expect(getEvidenceTypeForLocalFile(pdfRecord)).toBe('pdf');
+    expect(createLocalFileEvidenceInput(imageRecord, 'file-explorer')).toMatchObject({
+      type: 'image',
+      title: 'panel.png',
+      source: 'file-explorer',
+    });
+    expect(createUrlEvidenceInput('https://example.com', 'Example', 'browser')).toEqual({
+      type: 'url',
+      title: 'Example',
+      source: 'browser',
+      summary: 'https://example.com',
+    });
+    expect(createRuntimeSnapshotEvidenceInput('Snapshot', 'overview', 'local status')).toEqual({
+      type: 'note',
+      title: 'Snapshot',
+      source: 'overview',
+      summary: 'local status',
+    });
   });
 });

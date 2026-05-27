@@ -162,6 +162,13 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await clickControl(browserWidget.getByRole('button', { name: 'Go' }));
   await clickControl(browserWidget.getByRole('button', { name: 'Save bookmark' }));
   await expect(browserWidget.getByText('openai.com').first()).toBeVisible();
+  await clickControl(browserWidget.getByRole('button', { name: 'Attach evidence' }));
+
+  const tradingWidget = page.locator('.workspace-widget.kind-trading-graph');
+  await ensureWidgetOpen(tradingWidget);
+  await clickControl(tradingWidget.getByRole('button', { name: 'Attach evidence' }));
+  await openWidget(page, 'Goals');
+  await expect(page.locator('.workspace-widget.kind-goals').getByText(/evidence/i).first()).toBeVisible();
 
   const liveTvWidget = page.locator('.workspace-widget.kind-watch-video');
   await ensureWidgetOpen(liveTvWidget);

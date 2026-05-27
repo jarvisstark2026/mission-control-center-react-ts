@@ -1,7 +1,19 @@
 import type { MissionControlRuntime } from '../../mission-control';
+import type { ShellRole } from '../../shell/roles';
+import type { OperationalOsRuntime } from '../../operational-os';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import { WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 
-export function GraphWidget({ missionControl }: { missionControl?: MissionControlRuntime }) {
+export function GraphWidget({
+  missionControl,
+  role,
+  operationalOs,
+}: {
+  missionControl?: MissionControlRuntime;
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
+}) {
   const telemetry = missionControl?.state.telemetry ?? [];
   const latest = telemetry[0] ?? null;
   const channelMetrics = telemetry.slice(0, 4).map((sample) => ({
@@ -28,6 +40,19 @@ export function GraphWidget({ missionControl }: { missionControl?: MissionContro
         source={missionControl?.state.connection === 'connected' ? 'live' : 'local'}
         status={latest ? `${latest.value}${latest.unit} ${latest.trend}` : 'waiting for telemetry'}
         count={`${channelMetrics.length} channels`}
+      />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={createRuntimeSnapshotEvidenceInput(
+          'Telemetry snapshot',
+          missionControl?.state.connection === 'connected' ? 'telemetry-live' : 'telemetry-local',
+          latest
+            ? `${latest.label} ${latest.value}${latest.unit} / ${latest.trend} / ${latest.severity}. ${telemetry.length} buffered samples.`
+            : 'No telemetry samples available.',
+        )}
+        disabled={!telemetry.length}
+        disabledReason={!telemetry.length ? 'Telemetry evidence appears after local or live samples are available.' : undefined}
       />
       <WorkspaceSectionFrame className="graph-stage" eyebrow="chart" title="latest samples" meta={latest?.timestamp ? new Date(latest.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'no feed'}>
         <div className="spark-panel" aria-hidden="true">

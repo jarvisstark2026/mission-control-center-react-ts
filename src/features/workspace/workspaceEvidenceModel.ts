@@ -1,5 +1,7 @@
 import { createId } from '../../lib/createId';
+import type { CreateEvidenceInput } from '../operational-os';
 import { readLocalStorageJson, writeLocalStorageJson } from './browserStorage';
+import type { LocalFileRecord } from './workspaceLocalFiles';
 
 export type LocalDocumentState = {
   title: string;
@@ -211,5 +213,49 @@ export function selectSlideFrame(state: LocalSlidesState, frameId: string, now =
     ...state,
     activeFrameId: frameId,
     updatedAt: now,
+  };
+}
+
+export function getEvidenceTypeForLocalFile(record: LocalFileRecord): CreateEvidenceInput['type'] {
+  if (record.previewKind === 'image') return 'image';
+  if (record.previewKind === 'pdf') return 'pdf';
+  return 'file';
+}
+
+export function createLocalFileEvidenceInput(record: LocalFileRecord, source = 'file-widget'): Pick<CreateEvidenceInput, 'type' | 'title' | 'source' | 'summary'> {
+  const sizeLabel = `${Math.max(1, Math.round(record.file.size / 1024))} KB`;
+
+  return {
+    type: getEvidenceTypeForLocalFile(record),
+    title: record.path,
+    source,
+    summary: `${record.previewKind} file / ${record.file.type || 'unknown type'} / ${sizeLabel}`,
+  };
+}
+
+export function createUrlEvidenceInput(
+  url: string,
+  title: string,
+  source = 'browser-widget',
+  summary?: string,
+): Pick<CreateEvidenceInput, 'type' | 'title' | 'source' | 'summary'> {
+  return {
+    type: 'url',
+    title: title.trim() || url,
+    source,
+    summary: summary ?? url,
+  };
+}
+
+export function createRuntimeSnapshotEvidenceInput(
+  title: string,
+  source: string,
+  summary: string,
+): Pick<CreateEvidenceInput, 'type' | 'title' | 'source' | 'summary'> {
+  return {
+    type: 'note',
+    title,
+    source,
+    summary,
   };
 }

@@ -1320,13 +1320,17 @@ describe('Workspace header controls', () => {
   it('stores browser bookmarks and live TV favorites locally', () => {
     const { container } = render(<Workspace />);
     const browserWidget = within(getOpenWidget(container, 'browser'));
+    const marketWidget = within(getOpenWidget(container, 'trading-graph'));
     const liveTvWidget = within(getOpenWidget(container, 'watch-video'));
 
     fireEvent.change(browserWidget.getByLabelText('Browser URL'), { target: { value: 'openai.com' } });
     fireEvent.click(browserWidget.getByRole('button', { name: 'Go' }));
     fireEvent.click(browserWidget.getByRole('button', { name: 'Save bookmark' }));
+    fireEvent.click(browserWidget.getByRole('button', { name: 'Attach evidence' }));
+    fireEvent.click(marketWidget.getByRole('button', { name: 'Attach evidence' }));
 
     expect(browserWidget.getAllByText('openai.com').length).toBeGreaterThan(0);
+    expect(within(getOpenWidget(container, 'goals')).getAllByText(/3 evidence/i).length).toBeGreaterThan(0);
 
     fireEvent.change(liveTvWidget.getByPlaceholderText('Name this source'), { target: { value: 'Local MP4' } });
     fireEvent.change(liveTvWidget.getByPlaceholderText('Paste an official HLS / MP4 source'), {

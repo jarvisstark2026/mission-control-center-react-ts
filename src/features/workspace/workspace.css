@@ -2070,10 +2070,6 @@
   border-radius: 6px;
 }
 
-.widget-scroll-pane > .widget-workflow-cue + .workspace-content-shell {
-  min-height: auto;
-}
-
 .widget-workflow-cue-primary,
 .widget-workflow-cue-secondary,
 .widget-workflow-cue-secondary div {
@@ -5180,8 +5176,8 @@
 
 .workspace-section-frame {
   display: grid;
-  gap: 8px;
-  padding: 10px 12px;
+  gap: 7px;
+  padding: 9px 10px;
   border: 1px solid rgba(86, 221, 255, 0.095);
   border-radius: 6px;
   background:
@@ -5193,10 +5189,10 @@
 .workspace-status-strip {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto auto auto;
-  gap: 7px;
+  gap: 6px;
   align-items: center;
-  min-height: 30px;
-  padding: 6px 8px;
+  min-height: 28px;
+  padding: 5px 7px;
   border: 1px solid rgba(86, 221, 255, 0.12);
   border-radius: 6px;
   background:
@@ -5286,7 +5282,7 @@
   gap: 8px;
   align-items: center;
   min-width: 0;
-  padding: 7px 8px;
+  padding: 6px 7px;
   border: 1px solid rgba(255, 255, 255, 0.085);
   border-radius: 5px;
   background: rgba(255, 255, 255, 0.018);
@@ -5345,8 +5341,8 @@
 
 .workspace-empty-state {
   display: grid;
-  gap: 8px;
-  padding: 12px;
+  gap: 7px;
+  padding: 10px;
   border: 1px dashed rgba(86, 221, 255, 0.22);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.012);
@@ -5360,6 +5356,33 @@
 .workspace-empty-state strong {
   color: rgba(255, 255, 255, 0.9);
   font-size: 0.66rem;
+}
+
+.workspace-evidence-attach-panel {
+  order: 70;
+}
+
+.browser-address-section,
+.live-tv-controls-section,
+.agent-console-compose,
+.workflow-runbook-frame {
+  order: 10;
+}
+
+.browser-frame-section,
+.live-tv-player-section {
+  order: 20;
+}
+
+.browser-history-section,
+.live-tv-source-section {
+  order: 30;
+}
+
+.workflow-collapsible-section,
+.agent-control-bridge-tutorial,
+.agent-control-diagnostics-frame {
+  order: 80;
 }
 
 .workspace-section-head {

@@ -1244,7 +1244,7 @@ describe('Workspace header controls', () => {
     for (const widget of widgets) {
       if (widget.classList.contains('is-open')) {
         expect(widget.querySelector('.widget-scroll-pane')).toBeInTheDocument();
-        expect(widget.querySelector('.widget-workflow-cue')).toBeInTheDocument();
+        expect(widget.querySelector('.widget-workflow-cue')).not.toBeInTheDocument();
       } else {
         expect(widget.querySelector('.widget-scroll-pane')).not.toBeInTheDocument();
       }

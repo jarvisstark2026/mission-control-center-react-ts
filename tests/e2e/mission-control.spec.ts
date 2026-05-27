@@ -20,6 +20,15 @@ async function ensureWidgetOpen(locator: import('@playwright/test').Locator) {
   }
 }
 
+async function expectAbove(top: import('@playwright/test').Locator, bottom: import('@playwright/test').Locator) {
+  await expect(top).toBeVisible();
+  await expect(bottom).toBeVisible();
+  const [topBox, bottomBox] = await Promise.all([top.boundingBox(), bottom.boundingBox()]);
+  expect(topBox).not.toBeNull();
+  expect(bottomBox).not.toBeNull();
+  expect(topBox!.y).toBeLessThan(bottomBox!.y);
+}
+
 test('operational core widgets launch and use local live data', async ({ page }) => {
   await page.goto('/?role=admin');
   await page.evaluate(() => {
@@ -113,6 +122,41 @@ test('guest access can read command inbox but cannot approve commands', async ({
   await expect(page.getByRole('menuitem', { name: 'Home systems' })).toBeVisible();
   await page.getByRole('menuitem', { name: 'Home systems' }).click();
   await expect(page.getByText('This access scope can monitor Home Systems but cannot stage home actions.')).toBeVisible();
+});
+
+test('widgets prioritize primary work surfaces before secondary panels', async ({ page }) => {
+  await page.goto('/?role=admin');
+  await expect(page.locator('.widget-workflow-cue')).toHaveCount(0);
+
+  await openWidget(page, 'Live TV');
+  const liveTvWidget = page.locator('.workspace-widget.kind-watch-video');
+  await ensureWidgetOpen(liveTvWidget);
+  await expectAbove(liveTvWidget.locator('.live-tv-controls-section'), liveTvWidget.locator('.workspace-evidence-attach-panel'));
+  await expectAbove(liveTvWidget.locator('.live-tv-player-section'), liveTvWidget.locator('.live-tv-source-section'));
+
+  await openWidget(page, 'Browser');
+  const browserWidget = page.locator('.workspace-widget.kind-browser');
+  await ensureWidgetOpen(browserWidget);
+  await expectAbove(browserWidget.locator('.browser-address-section'), browserWidget.locator('.browser-frame-section'));
+  await expectAbove(browserWidget.locator('.browser-frame-section'), browserWidget.locator('.browser-history-section'));
+  await expectAbove(browserWidget.locator('.browser-frame-section'), browserWidget.locator('.workspace-evidence-attach-panel'));
+
+  await openWidget(page, 'Agent console');
+  const agentConsoleWidget = page.locator('.workspace-widget.kind-agent-console');
+  await ensureWidgetOpen(agentConsoleWidget);
+  await expectAbove(agentConsoleWidget.locator('.agent-console-compose'), agentConsoleWidget.locator('.workspace-evidence-attach-panel'));
+  await agentConsoleWidget.getByRole('button', { name: 'Stage local proposal' }).click();
+
+  await openWidget(page, 'Command inbox');
+  const commandInboxWidget = page.locator('.workspace-widget.kind-command-inbox');
+  await ensureWidgetOpen(commandInboxWidget);
+  await expectAbove(commandInboxWidget.locator('.mission-control-card').first(), commandInboxWidget.locator('.workspace-evidence-attach-panel'));
+
+  await openWidget(page, 'Workflows');
+  const workflowWidget = page.locator('.workspace-widget.kind-flow');
+  await ensureWidgetOpen(workflowWidget);
+  await workflowWidget.getByRole('button', { name: 'Start runbook' }).click();
+  await expectAbove(workflowWidget.locator('.workflow-next-step-summary'), workflowWidget.locator('.workspace-evidence-attach-panel'));
 });
 
 test('local productivity widgets persist useful browser-only state', async ({ page }) => {

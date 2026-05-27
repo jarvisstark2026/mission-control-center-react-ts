@@ -13,7 +13,6 @@ import type { MarketLiveState } from './workspaceMarketLiveData';
 import type { WorkspaceWidget } from './workspaceTypes';
 import type { WorkspaceWidgetPermissionMatrix } from './workspaceWidgetPermissions';
 import { WidgetScrollPane } from './workspaceBlocks';
-import { WorkspaceWidgetWorkflowCue } from './WorkspaceWidgetWorkflowCue';
 import {
   AudioWidget,
   AgentConsoleWidget,
@@ -352,11 +351,8 @@ function renderWorkspaceWidgetContent({
 }
 
 export function WorkspaceWidgetContent(props: WorkspaceWidgetContentRendererProps) {
-  const showWorkflowCue = props.widget.open && !props.widget.hidden;
-
   return (
     <WidgetScrollPane>
-      {showWorkflowCue ? <WorkspaceWidgetWorkflowCue kind={props.widget.kind} /> : null}
       {renderWorkspaceWidgetContent(props)}
     </WidgetScrollPane>
   );

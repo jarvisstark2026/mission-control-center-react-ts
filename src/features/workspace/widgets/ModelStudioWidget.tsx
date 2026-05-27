@@ -12,6 +12,9 @@ import {
 import { createLocalFileObjectUrl, formatLocalFileSize, revokeLocalFileObjectUrl, type LocalFileRecord } from '../workspaceLocalFiles';
 import { loadModelStudioState, saveModelStudioState } from '../workspaceWidgetFeatureModels';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
+import type { OperationalOsRuntime } from '../../operational-os';
+import type { ShellRole } from '../../shell/roles';
 
 export type ModelStudioWidgetProps = {
   files?: LocalFileRecord[];
@@ -19,6 +22,8 @@ export type ModelStudioWidgetProps = {
   selectedFileId?: string | null;
   onBrowseFiles?: (files: FileList | File[]) => Promise<LocalFileRecord[]>;
   onOpenPreview?: (file: LocalFileRecord) => void;
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
 };
 
 function getBestModelFile(files: LocalFileRecord[], storedFileId: string | null, activeFileId?: string | null, selectedFileId?: string | null) {
@@ -31,7 +36,7 @@ function getBestModelFile(files: LocalFileRecord[], storedFileId: string | null,
   );
 }
 
-export function ModelStudioWidget({ files = [], activeFileId = null, selectedFileId = null, onBrowseFiles, onOpenPreview }: ModelStudioWidgetProps) {
+export function ModelStudioWidget({ files = [], activeFileId = null, selectedFileId = null, onBrowseFiles, onOpenPreview, role, operationalOs }: ModelStudioWidgetProps) {
   const mountRef = useRef<HTMLDivElement | null>(null);
   const [modelState, setModelState] = usePersistentWorkspaceState(loadModelStudioState, saveModelStudioState);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
@@ -198,6 +203,18 @@ export function ModelStudioWidget({ files = [], activeFileId = null, selectedFil
           title: 'Load GLB or GLTF model files',
         }}
       />
+      {selectedModel ? (
+        <WorkspaceEvidenceAttachPanel
+          role={role}
+          operationalOs={operationalOs}
+          evidence={{
+            type: 'file',
+            title: selectedModel.file.name,
+            source: selectedModel.path,
+            summary: `Local GLB/GLTF model, ${formatLocalFileSize(selectedModel.file.size)}. Render status: ${renderStatus}.`,
+          }}
+        />
+      ) : null}
 
       <div className="model-studio-layout">
         <WorkspaceSectionFrame className="model-studio-canvas-frame" eyebrow="viewport" title="local render" meta="Three.js">
@@ -206,7 +223,16 @@ export function ModelStudioWidget({ files = [], activeFileId = null, selectedFil
           ) : (
             <div className="model-studio-canvas model-studio-canvas-idle">
               <div className="model-studio-grid" />
-              <WorkspaceEmptyState source="file" title="No GLB or GLTF model selected" detail="Load a model file through the workspace file intake." />
+              <WorkspaceEmptyState
+                source="file"
+                title="No GLB or GLTF model selected"
+                detail="Import a GLB or GLTF file to render it locally."
+                action={{
+                  label: 'Import model',
+                  onClick: () => document.getElementById('model-studio-file-input')?.click(),
+                  disabled: !onBrowseFiles,
+                }}
+              />
             </div>
           )}
         </WorkspaceSectionFrame>

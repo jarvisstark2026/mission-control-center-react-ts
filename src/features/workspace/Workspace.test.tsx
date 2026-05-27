@@ -1281,15 +1281,40 @@ describe('Workspace header controls', () => {
 
     fireEvent.change(docsWidget.getByLabelText('Document body'), { target: { value: 'Evidence note from local docs.' } });
     fireEvent.change(sheetWidget.getByLabelText('Q1 row 1'), { target: { value: '42.5' } });
+    fireEvent.click(docsWidget.getByRole('button', { name: 'Attach evidence' }));
+    fireEvent.click(sheetWidget.getByRole('button', { name: 'Attach evidence' }));
 
     expect(docsWidget.getByDisplayValue('Evidence note from local docs.')).toBeInTheDocument();
     expect(sheetWidget.getByText('115.6')).toBeInTheDocument();
+    expect(within(getOpenWidget(container, 'goals')).getAllByText(/3 evidence/i).length).toBeGreaterThan(0);
 
     unmount();
     const { container: nextContainer } = render(<Workspace />);
 
     expect(within(getOpenWidget(nextContainer, 'docs')).getByDisplayValue('Evidence note from local docs.')).toBeInTheDocument();
     expect(within(getOpenWidget(nextContainer, 'sheet')).getByDisplayValue('42.5')).toBeInTheDocument();
+    expect(within(getOpenWidget(nextContainer, 'goals')).getAllByText(/3 evidence/i).length).toBeGreaterThan(0);
+  });
+
+  it('persists editable local slide frames and attaches slide evidence', () => {
+    const { container, unmount } = render(<Workspace />);
+    const slidesWidget = within(getOpenWidget(container, 'slides'));
+
+    fireEvent.click(slidesWidget.getByRole('button', { name: 'Add frame' }));
+    fireEvent.change(slidesWidget.getByLabelText('Slide title'), { target: { value: 'Evidence slide' } });
+    fireEvent.change(slidesWidget.getByLabelText('Slide body'), { target: { value: 'Slide-backed decision record.' } });
+    fireEvent.click(slidesWidget.getByRole('button', { name: 'Attach evidence' }));
+
+    expect(slidesWidget.getByDisplayValue('Evidence slide')).toBeInTheDocument();
+    expect(within(getOpenWidget(container, 'goals')).getAllByText(/2 evidence/i).length).toBeGreaterThan(0);
+
+    unmount();
+    const { container: nextContainer } = render(<Workspace />);
+    const nextSlidesWidget = within(getOpenWidget(nextContainer, 'slides'));
+
+    expect(nextSlidesWidget.getByDisplayValue('Evidence slide')).toBeInTheDocument();
+    expect(nextSlidesWidget.getByDisplayValue('Slide-backed decision record.')).toBeInTheDocument();
+    expect(within(getOpenWidget(nextContainer, 'goals')).getAllByText(/2 evidence/i).length).toBeGreaterThan(0);
   });
 
   it('stores browser bookmarks and live TV favorites locally', () => {

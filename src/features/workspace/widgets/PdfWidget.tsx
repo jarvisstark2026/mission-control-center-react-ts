@@ -2,8 +2,11 @@ import { useEffect, useState } from 'react';
 
 import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createLocalFileObjectUrl, formatLocalFileSize, revokeLocalFileObjectUrl, type LocalFileRecord } from '../workspaceLocalFiles';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
+import type { OperationalOsRuntime } from '../../operational-os';
+import type { ShellRole } from '../../shell/roles';
 
-export function PdfWidget({ file }: { file?: LocalFileRecord | null }) {
+export function PdfWidget({ file, role, operationalOs }: { file?: LocalFileRecord | null; role: ShellRole; operationalOs: OperationalOsRuntime }) {
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
   const pdfFile = file?.previewKind === 'pdf' ? file : null;
 
@@ -32,6 +35,18 @@ export function PdfWidget({ file }: { file?: LocalFileRecord | null }) {
         status={pdfFile ? 'active local PDF' : 'no PDF loaded'}
         count={pdfFile ? pdfFile.path : 'load from File Explorer'}
       />
+      {pdfFile ? (
+        <WorkspaceEvidenceAttachPanel
+          role={role}
+          operationalOs={operationalOs}
+          evidence={{
+            type: 'pdf',
+            title: pdfFile.file.name,
+            source: pdfFile.path,
+            summary: `Local PDF file, ${formatLocalFileSize(pdfFile.file.size)}.`,
+          }}
+        />
+      ) : null}
       <WorkspaceSectionFrame className="pdf-page-section" eyebrow="document" title={pdfFile ? 'PDF preview' : 'no PDF loaded'} meta="pdf">
         {pdfFile && objectUrl ? (
           <iframe className="pdf-preview-frame" src={objectUrl} title={pdfFile.path} />

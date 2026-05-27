@@ -1,11 +1,15 @@
-import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
-import { loadLocalSheetState, saveLocalSheetState, summarizeSheetColumn, updateSheetCell } from '../workspaceEvidenceModel';
+import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { addSheetColumn, addSheetRow, loadLocalSheetState, saveLocalSheetState, summarizeSheetColumn, updateSheetCell } from '../workspaceEvidenceModel';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
+import type { OperationalOsRuntime } from '../../operational-os';
+import type { ShellRole } from '../../shell/roles';
 
-export function SpreadsheetWidget() {
+export function SpreadsheetWidget({ role, operationalOs }: { role: ShellRole; operationalOs: OperationalOsRuntime }) {
   const [sheet, setSheet] = usePersistentWorkspaceState(loadLocalSheetState, saveLocalSheetState);
   const numericColumns = sheet.columns.slice(1);
   const updatedTime = new Date(sheet.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const sheetSummary = `${sheet.rows.length} rows / ${sheet.columns.length} columns`;
 
   return (
     <WorkspaceContentShell className="sheet-surface">
@@ -16,7 +20,25 @@ export function SpreadsheetWidget() {
         meta={`${sheet.rows.length} rows - ${updatedTime}`}
       />
       <WorkspaceStatusStrip source="local" status="editable evidence table" count={`${sheet.rows.length} rows`} updatedAt={`saved ${updatedTime}`} />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={{
+          type: 'spreadsheet',
+          title: 'Local spreadsheet snapshot',
+          source: 'spreadsheet-widget',
+          summary: `${sheetSummary}. Columns: ${sheet.columns.join(', ')}.`,
+        }}
+      />
       <WorkspaceSectionFrame className="sheet-grid-frame" eyebrow="grid" title="operating snapshot" meta={`${numericColumns.length} numeric columns`}>
+        <div className="sheet-action-row">
+          <WorkspaceButton variant="compact" onClick={() => setSheet((current) => addSheetRow(current))}>
+            Add row
+          </WorkspaceButton>
+          <WorkspaceButton variant="compact" onClick={() => setSheet((current) => addSheetColumn(current))}>
+            Add column
+          </WorkspaceButton>
+        </div>
         <div className="sheet-summary-strip" aria-label="Column summaries">
           {numericColumns.map((column, index) => {
             const summary = summarizeSheetColumn(sheet, index + 1);

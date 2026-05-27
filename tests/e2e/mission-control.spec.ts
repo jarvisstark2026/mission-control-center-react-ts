@@ -134,11 +134,33 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await taskWidget.getByRole('tab', { name: /Blocked/i }).evaluate((element) => (element as HTMLElement).click());
   await expect(taskWidget.getByText('E2E local task')).toBeVisible();
 
+  const docsWidget = page.locator('.workspace-widget.kind-docs');
+  await ensureWidgetOpen(docsWidget);
+  await docsWidget.getByLabel('Document body').fill('E2E evidence note from Docs.');
+  await clickControl(docsWidget.getByRole('button', { name: 'Attach evidence' }));
+
+  const sheetWidget = page.locator('.workspace-widget.kind-sheet');
+  await ensureWidgetOpen(sheetWidget);
+  await sheetWidget.getByLabel('Q1 row 1').fill('42.5');
+  await clickControl(sheetWidget.getByRole('button', { name: 'Add row' }));
+  await clickControl(sheetWidget.getByRole('button', { name: 'Attach evidence' }));
+
+  await openWidget(page, 'Presentation');
+  const slidesWidget = page.locator('.workspace-widget.kind-slides');
+  await ensureWidgetOpen(slidesWidget);
+  await clickControl(slidesWidget.getByRole('button', { name: 'Add frame' }));
+  await slidesWidget.getByLabel('Slide title').fill('E2E slide');
+  await slidesWidget.getByLabel('Slide body').fill('Slide evidence persists.');
+  await clickControl(slidesWidget.getByRole('button', { name: 'Attach evidence' }));
+
+  await openWidget(page, 'Goals');
+  await expect(page.locator('.workspace-widget.kind-goals').getByText(/evidence/i).first()).toBeVisible();
+
   const browserWidget = page.locator('.workspace-widget.kind-browser');
   await ensureWidgetOpen(browserWidget);
   await browserWidget.getByLabel('Browser URL').fill('openai.com');
-  await browserWidget.getByRole('button', { name: 'Go' }).click({ force: true });
-  await browserWidget.getByRole('button', { name: 'Save bookmark' }).click({ force: true });
+  await clickControl(browserWidget.getByRole('button', { name: 'Go' }));
+  await clickControl(browserWidget.getByRole('button', { name: 'Save bookmark' }));
   await expect(browserWidget.getByText('openai.com').first()).toBeVisible();
 
   const liveTvWidget = page.locator('.workspace-widget.kind-watch-video');
@@ -199,6 +221,12 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await ensureWidgetOpen(page.locator('.workspace-widget.kind-list'));
   await page.locator('.workspace-widget.kind-list').getByRole('tab', { name: /Blocked/i }).evaluate((element) => (element as HTMLElement).click());
   await expect(page.locator('.workspace-widget.kind-list').getByText('E2E local task')).toBeVisible();
+  await ensureWidgetOpen(page.locator('.workspace-widget.kind-docs'));
+  await expect(page.locator('.workspace-widget.kind-docs').getByLabel('Document body')).toHaveValue('E2E evidence note from Docs.');
+  await ensureWidgetOpen(page.locator('.workspace-widget.kind-sheet'));
+  await expect(page.locator('.workspace-widget.kind-sheet').getByLabel('Q1 row 1')).toHaveValue('42.5');
+  await ensureWidgetOpen(page.locator('.workspace-widget.kind-slides'));
+  await expect(page.locator('.workspace-widget.kind-slides').getByLabel('Slide title')).toHaveValue('E2E slide');
   await ensureWidgetOpen(page.locator('.workspace-widget.kind-browser'));
   await expect(page.locator('.workspace-widget.kind-browser').getByText('openai.com').first()).toBeVisible();
   await ensureWidgetOpen(page.locator('.workspace-widget.kind-watch-video'));

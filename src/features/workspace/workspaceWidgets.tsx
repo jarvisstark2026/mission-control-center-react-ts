@@ -116,6 +116,9 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
     case 'goals':
     case 'app-portal':
     case 'json-surface':
+    case 'docs':
+    case 'sheet':
+    case 'slides':
       return (
         left.activeRole === right.activeRole &&
         left.operationalOs.state.version === right.operationalOs.state.version &&
@@ -156,13 +159,28 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.focusedCommandId === right.focusedCommandId
       );
     case '3d':
-      return left.widget.previewFileId === right.widget.previewFileId && left.localFiles === right.localFiles;
+      return (
+        left.widget.previewFileId === right.widget.previewFileId &&
+        left.localFiles === right.localFiles &&
+        left.activeRole === right.activeRole &&
+        left.operationalOs.state.version === right.operationalOs.state.version
+      );
     case 'image':
     case 'pdf':
       return (
         left.localFiles === right.localFiles &&
         left.activeLocalFileId === right.activeLocalFileId &&
-        left.selectedLocalFileId === right.selectedLocalFileId
+        left.selectedLocalFileId === right.selectedLocalFileId &&
+        left.activeRole === right.activeRole &&
+        left.operationalOs.state.version === right.operationalOs.state.version
+      );
+    case '3d-studio':
+      return (
+        left.localFiles === right.localFiles &&
+        left.activeLocalFileId === right.activeLocalFileId &&
+        left.selectedLocalFileId === right.selectedLocalFileId &&
+        left.activeRole === right.activeRole &&
+        left.operationalOs.state.version === right.operationalOs.state.version
       );
     default:
       return true;

@@ -1,8 +1,11 @@
 import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { loadLocalDocumentState, saveLocalDocumentState } from '../workspaceEvidenceModel';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
+import type { OperationalOsRuntime } from '../../operational-os';
+import type { ShellRole } from '../../shell/roles';
 
-export function DocsWidget() {
+export function DocsWidget({ role, operationalOs }: { role: ShellRole; operationalOs: OperationalOsRuntime }) {
   const [documentState, setDocumentState] = usePersistentWorkspaceState(loadLocalDocumentState, saveLocalDocumentState);
   const wordCount = documentState.body.trim().split(/\s+/).filter(Boolean).length;
   const updatedTime = new Date(documentState.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -16,6 +19,18 @@ export function DocsWidget() {
         meta={`${wordCount} words - ${updatedTime}`}
       />
       <WorkspaceStatusStrip source="local" status={documentState.title} count={`${wordCount} words`} updatedAt={`saved ${updatedTime}`} />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={{
+          type: 'note',
+          title: documentState.title,
+          source: 'docs-widget',
+          summary: documentState.body.slice(0, 240),
+        }}
+        disabled={!documentState.body.trim()}
+        disabledReason={!documentState.body.trim() ? 'Write a note before attaching evidence.' : undefined}
+      />
       <div className="docs-layout">
         <WorkspaceSectionFrame className="docs-sidebar" eyebrow="outline" title="note status" meta="local draft">
           <div className="docs-evidence-summary">

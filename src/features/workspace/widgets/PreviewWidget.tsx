@@ -2,15 +2,28 @@
 import type { ChangeEvent } from 'react';
 import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createLocalFileObjectUrl, formatLocalFileSize, readLocalFileTextPreview, revokeLocalFileObjectUrl, type LocalFileRecord } from '../workspaceLocalFiles';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
+import type { CreateEvidenceInput, OperationalOsRuntime } from '../../operational-os';
+import type { ShellRole } from '../../shell/roles';
+
+function getEvidenceTypeForFile(file: LocalFileRecord): CreateEvidenceInput['type'] {
+  if (file.previewKind === 'image') return 'image';
+  if (file.previewKind === 'pdf') return 'pdf';
+  return 'file';
+}
 
 export function PreviewWidget({
   file,
   onBrowseFiles,
   onOpenPreview,
+  role,
+  operationalOs,
 }: {
   file: LocalFileRecord | null;
   onBrowseFiles: (files: FileList | File[]) => Promise<LocalFileRecord[]>;
   onOpenPreview: (file: LocalFileRecord) => void;
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
 }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [objectUrl, setObjectUrl] = useState<string | null>(null);
@@ -109,6 +122,16 @@ export function PreviewWidget({
       />
 
       <WorkspaceStatusStrip source="file" status={status} count={file.file.name} updatedAt={formatLocalFileSize(file.file.size)} />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={{
+          type: getEvidenceTypeForFile(file),
+          title: file.file.name,
+          source: file.path,
+          summary: `Local ${file.previewKind} preview, ${formatLocalFileSize(file.file.size)}.`,
+        }}
+      />
 
       <WorkspaceSectionFrame className="preview-file-controls" eyebrow="preview controls" title="local intake" meta="selected file">
         <WorkspaceButton className="preview-empty-button" onClick={handleBrowsePreviewFiles}>

@@ -94,9 +94,9 @@ type WorkspaceWidgetContentRendererProps = {
 const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], (props: WorkspaceWidgetContentRendererProps) => ReactNode>> = {
   overview: ({ missionControl, workspaceWidgetGroups }) => <OverviewWidget missionControl={missionControl} workspaceGroups={workspaceWidgetGroups} />,
   graph: ({ missionControl }) => <GraphWidget missionControl={missionControl} />,
-  sheet: () => <SpreadsheetWidget />,
-  docs: () => <DocsWidget />,
-  slides: () => <SlidesWidget />,
+  sheet: ({ activeRole, operationalOs }) => <SpreadsheetWidget role={activeRole} operationalOs={operationalOs} />,
+  docs: ({ activeRole, operationalOs }) => <DocsWidget role={activeRole} operationalOs={operationalOs} />,
+  slides: ({ activeRole, operationalOs }) => <SlidesWidget role={activeRole} operationalOs={operationalOs} />,
   audio: ({ agentControl, localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview }) => (
     <AudioWidget
       agentControl={agentControl}
@@ -121,13 +121,15 @@ const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], (props: Wor
       onOpenPreview={onOpenPreview}
     />
   ),
-  '3d-studio': ({ localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview }) => (
+  '3d-studio': ({ localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview, activeRole, operationalOs }) => (
     <ModelStudioWidget
       files={localFiles}
       activeFileId={activeLocalFileId}
       selectedFileId={selectedLocalFileId}
       onBrowseFiles={onBrowseFiles}
       onOpenPreview={onOpenPreview}
+      role={activeRole}
+      operationalOs={operationalOs}
     />
   ),
 };
@@ -201,7 +203,7 @@ function renderWorkspaceWidgetContent({
         localFiles.find((record) => record.id === selectedLocalFileId && record.previewKind === 'image') ??
         localFiles.find((record) => record.previewKind === 'image') ??
         null;
-      return <ImageWidget file={imageFile} />;
+      return <ImageWidget file={imageFile} role={activeRole} operationalOs={operationalOs} />;
     }
     case 'pdf': {
       const pdfFile =
@@ -209,7 +211,7 @@ function renderWorkspaceWidgetContent({
         localFiles.find((record) => record.id === selectedLocalFileId && record.previewKind === 'pdf') ??
         localFiles.find((record) => record.previewKind === 'pdf') ??
         null;
-      return <PdfWidget file={pdfFile} />;
+      return <PdfWidget file={pdfFile} role={activeRole} operationalOs={operationalOs} />;
     }
     case 'launcher':
       return (
@@ -295,7 +297,7 @@ function renderWorkspaceWidgetContent({
       return <JsonSurfaceWidget role={activeRole} operationalOs={operationalOs} missionControl={missionControl} />;
     case '3d': {
       const previewFile = widget.previewFileId ? localFiles.find((record) => record.id === widget.previewFileId) ?? null : null;
-      return <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} />;
+      return <PreviewWidget file={previewFile} onBrowseFiles={onBrowseFiles} onOpenPreview={onOpenPreview} role={activeRole} operationalOs={operationalOs} />;
     }
     default: {
       const renderStaticWidget = staticWidgetRenderers[widget.kind];

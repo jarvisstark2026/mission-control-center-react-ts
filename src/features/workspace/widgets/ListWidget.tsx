@@ -1,10 +1,16 @@
+import type { OperationalOsRuntime } from '../../operational-os';
+import type { ShellRole } from '../../shell/roles';
 import type { WorkspaceWidget } from '../workspaceTypes';
 import { TaskBoardWidget } from './TaskBoardWidget';
 
 export function ListWidget({
   onLaunchWorkspaceWidget,
+  role,
+  operationalOs,
 }: {
   onLaunchWorkspaceWidget?: (kind: WorkspaceWidget['kind']) => void;
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
 }) {
-  return <TaskBoardWidget variant="list" onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} />;
+  return <TaskBoardWidget variant="list" onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} role={role} operationalOs={operationalOs} />;
 }

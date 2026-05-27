@@ -9,14 +9,13 @@ export function WorkspaceWidgetWorkflowCue({ kind }: { kind: WidgetKind }) {
       <div className="widget-workflow-cue-primary" title={`${guidance.intent}: ${guidance.value}`}>
         <span>Role</span>
         <strong>{guidance.intent}</strong>
-        <p>{guidance.value}</p>
+        <small>{guidance.evidence}</small>
       </div>
       <div className="widget-workflow-cue-secondary" title={guidance.next}>
         <div>
           <span>Handoff</span>
           <p>{guidance.next}</p>
         </div>
-        <small>{guidance.evidence}</small>
       </div>
     </section>
   );

@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
 
 import { WorkspaceButton, WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
+import type { OperationalOsRuntime } from '../../operational-os';
+import type { ShellRole } from '../../shell/roles';
+import { createScheduleEvidenceInput } from '../workspaceEvidenceModel';
 import {
   completeScheduleBlock,
   createScheduleBlock,
@@ -40,17 +44,24 @@ function getEmptyScheduleDraft() {
 
 export function ScheduleWidget({
   onLaunchWorkspaceWidget,
+  role,
+  operationalOs,
 }: {
   onLaunchWorkspaceWidget?: (kind: WorkspaceWidget['kind']) => void;
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
 }) {
   const [blocks, setBlocks] = usePersistentWorkspaceState(loadLocalSchedule, saveLocalSchedule);
   const [activeFilter, setActiveFilter] = useState<LocalScheduleStatus>('today');
   const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [selectedBlockId, setSelectedBlockId] = useState<string | null>(null);
   const [draft, setDraft] = useState(getEmptyScheduleDraft);
 
   const visibleBlocks = useMemo(() => filterScheduleBlocks(blocks, activeFilter), [activeFilter, blocks]);
   const openBlocks = blocks.filter((block) => block.status !== 'done');
   const nextBlock = filterScheduleBlocks(blocks, 'today')[0] ?? filterScheduleBlocks(blocks, 'upcoming')[0] ?? null;
+  const selectedBlock = selectedBlockId ? blocks.find((block) => block.id === selectedBlockId) ?? null : null;
+  const evidenceInput = createScheduleEvidenceInput(blocks, selectedBlock?.id ?? null);
   const priorityRows = openBlocks.slice(0, 3).map((block) => ({
     id: block.id,
     meta: block.status,
@@ -58,8 +69,8 @@ export function ScheduleWidget({
     detail: block.note || 'local schedule block',
     state: block.status === 'today' ? 'ready' : 'pending',
     action: {
-      label: 'Edit',
-      onClick: () => startEditing(block),
+      label: selectedBlock?.id === block.id ? 'Selected' : 'Select',
+      onClick: () => setSelectedBlockId(block.id),
     },
   }));
 
@@ -82,16 +93,15 @@ export function ScheduleWidget({
         }),
       );
     } else {
-      setBlocks((current) => [
-        ...current,
-        createScheduleBlock({
+      const nextBlockRecord = createScheduleBlock({
           time: draft.time,
           date: draft.date,
           title: draft.title,
           note: draft.note,
           linkedWorkflowTemplateId: draft.linkedWorkflowTemplateId.trim() || null,
-        }),
-      ]);
+        });
+      setBlocks((current) => [...current, nextBlockRecord]);
+      setSelectedBlockId(nextBlockRecord.id);
     }
 
     resetDraft();
@@ -99,6 +109,7 @@ export function ScheduleWidget({
 
   const startEditing = (block: LocalScheduleBlock) => {
     setEditingBlockId(block.id);
+    setSelectedBlockId(block.id);
     setDraft(getDraftFromBlock(block));
   };
 
@@ -120,8 +131,15 @@ export function ScheduleWidget({
       <WorkspaceCompactList
         className="schedule-priority-list"
         items={priorityRows}
-        empty="Create a local schedule block to plan the day. Blocks stay in this browser."
+        empty="No local schedule blocks in this filter."
         ariaLabel="Priority schedule blocks"
+      />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={evidenceInput}
+        disabled={!blocks.length}
+        disabledReason={!blocks.length ? 'No schedule blocks are available to attach.' : selectedBlock ? `selected / ${selectedBlock.status}` : 'agenda snapshot'}
       />
 
       <WorkspaceSectionFrame className="schedule-editor" eyebrow="local block" title={editingBlockId ? 'edit block' : 'create block'} meta="browser saved">
@@ -180,7 +198,13 @@ export function ScheduleWidget({
 
         <div className="schedule-rows" role="list" aria-label="Local schedule blocks">
           {visibleBlocks.length ? visibleBlocks.map((block) => (
-            <article key={block.id} className="schedule-block-card" role="listitem" data-state={block.status}>
+            <article
+              key={block.id}
+              className="schedule-block-card"
+              role="listitem"
+              data-state={block.status}
+              data-selected={selectedBlock?.id === block.id ? 'true' : 'false'}
+            >
               <div className="schedule-block-time">
                 <strong>{block.time}</strong>
                 <span>{block.date}</span>
@@ -191,6 +215,9 @@ export function ScheduleWidget({
                 {block.linkedWorkflowTemplateId ? <small>Workflow: {block.linkedWorkflowTemplateId}</small> : null}
               </div>
               <div className="schedule-block-actions">
+                <WorkspaceButton variant="compact" onClick={() => setSelectedBlockId(block.id)}>
+                  {selectedBlock?.id === block.id ? 'Selected' : 'Select'}
+                </WorkspaceButton>
                 <WorkspaceButton variant="compact" onClick={() => startEditing(block)}>Edit</WorkspaceButton>
                 <WorkspaceButton variant="compact" onClick={() => setBlocks((current) => completeScheduleBlock(current, block.id))} disabled={block.status === 'done'}>Done</WorkspaceButton>
                 <WorkspaceButton variant="compact" onClick={() => setBlocks((current) => postponeScheduleBlock(current, block.id))}>Postpone</WorkspaceButton>

@@ -1,4 +1,8 @@
-import { WorkspaceActionRowList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import type { OperationalOsRuntime } from '../../operational-os';
+import type { ShellRole } from '../../shell/roles';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
+import { WorkspaceActionRowList, WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { createWindowStateEvidenceInput } from '../workspaceEvidenceModel';
 import {
   getManagedWidgetRows,
   getTrackedWorkspaceWidgetGroups,
@@ -11,14 +15,27 @@ export function WindowManagerWidget({
   onFocusWidget,
   onTogglePinWidget,
   onCloseWidget,
+  role,
+  operationalOs,
 }: {
   workspaceGroups: WorkspaceWidgetGroup[];
   onFocusWidget: (id: string) => void;
   onTogglePinWidget: (id: string) => void;
   onCloseWidget: (id: string) => void;
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
 }) {
   const trackedGroups = getTrackedWorkspaceWidgetGroups(workspaceGroups);
   const summary = getWorkspaceWidgetGroupSummary(trackedGroups);
+  const evidenceInput = createWindowStateEvidenceInput(workspaceGroups);
+  const pinnedCount = trackedGroups.reduce((count, group) => count + group.visibleWidgets.filter((widget) => widget.pinned).length, 0);
+  const workspaceRows = trackedGroups.map((group) => ({
+    id: group.workspaceId,
+    meta: group.active ? 'active' : 'workspace',
+    title: group.label,
+    detail: `${group.visibleWidgets.length} visible / ${group.openWidgetCount} open`,
+    state: group.active ? 'ready' : 'pending',
+  }));
 
   return (
     <WorkspaceContentShell className="window-manager-surface">
@@ -32,6 +49,18 @@ export function WindowManagerWidget({
         status={`${summary.visible} visible widgets`}
         count={`${trackedGroups.length} ON workspaces`}
         updatedAt={`${summary.open} open / ${summary.total} tracked`}
+      />
+      <WorkspaceCompactList
+        items={workspaceRows}
+        empty="No workspace windows are available to manage."
+        ariaLabel="Workspace window summary"
+      />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={evidenceInput}
+        disabled={summary.visible === 0}
+        disabledReason={summary.visible === 0 ? 'No visible workspace widgets are available to attach.' : `${summary.visible} visible / ${pinnedCount} pinned`}
       />
       {trackedGroups.map((group) => (
         <WorkspaceSectionFrame

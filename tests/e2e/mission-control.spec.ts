@@ -36,8 +36,10 @@ test('operational core widgets launch and use local live data', async ({ page })
   await page.getByRole('button', { name: 'Stage local proposal' }).click();
   await expect(page.getByText(/prepared a gated command proposal/i)).toBeVisible();
   await expect(page.getByText(/Review current mission state and propose/i).first()).toBeVisible();
+  await clickControl(page.locator('.workspace-widget.kind-agent-console').getByRole('button', { name: 'Attach evidence' }));
 
   await openWidget(page, 'Command inbox');
+  await clickControl(page.locator('.workspace-widget.kind-command-inbox').getByRole('button', { name: 'Attach evidence' }));
   await page.getByRole('button', { name: 'Approve' }).first().click();
   await expect(page.getByText(/Local dry-run gateway completed/).first()).toBeVisible();
 
@@ -87,6 +89,7 @@ test('workflow runbook can stage agent approval through Command Inbox', async ({
 
   await openWidget(page, 'Workflows');
   await page.getByRole('button', { name: 'Start runbook' }).click();
+  await clickControl(page.locator('.workspace-widget.kind-flow').getByRole('button', { name: 'Attach evidence' }));
   await page.getByRole('button', { name: 'Stage approval' }).first().click();
 
   await openWidget(page, 'Command inbox');
@@ -121,6 +124,7 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await scheduleWidget.getByLabel('Schedule block note').fill('persists after reload');
   await scheduleWidget.getByRole('button', { name: 'Add block' }).click();
   await expect(scheduleWidget.getByText('E2E local block')).toBeVisible();
+  await clickControl(scheduleWidget.getByRole('button', { name: 'Attach evidence' }));
 
   const taskWidget = page.locator('.workspace-widget.kind-list');
   await ensureWidgetOpen(taskWidget);
@@ -133,6 +137,7 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await taskCard.getByLabel('Move E2E local task').selectOption('blocked');
   await taskWidget.getByRole('tab', { name: /Blocked/i }).evaluate((element) => (element as HTMLElement).click());
   await expect(taskWidget.getByText('E2E local task')).toBeVisible();
+  await clickControl(taskWidget.getByRole('button', { name: 'Attach evidence' }));
 
   const docsWidget = page.locator('.workspace-widget.kind-docs');
   await ensureWidgetOpen(docsWidget);
@@ -236,6 +241,11 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await clickControl(jsonWidget.getByRole('button', { name: 'Render JSON' }));
   await expect(jsonWidget.getByText('E2E JSON').first()).toBeVisible();
   await clickControl(jsonWidget.getByRole('button', { name: 'Attach evidence' }));
+
+  await openWidget(page, 'Manager');
+  const managerWidget = page.locator('.workspace-widget.kind-window-manager');
+  await ensureWidgetOpen(managerWidget);
+  await clickControl(managerWidget.getByRole('button', { name: 'Attach evidence' }));
 
   await openWidget(page, 'Goals');
   await expect(page.locator('.workspace-widget.kind-goals').getByText(/evidence/i).first()).toBeVisible();

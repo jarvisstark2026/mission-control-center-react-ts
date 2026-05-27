@@ -7,6 +7,8 @@ import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
 import { WorkflowStepCard } from '../operationalBlocks';
 import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
+import { createWorkflowRunEvidenceInput } from '../workspaceEvidenceModel';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from '../workflowStudioModel';
 import {
   addWorkflowRunStepNote,
@@ -61,6 +63,7 @@ export function WorkflowWidget({
   const activeRun = workflowRuns.find((run) => run.id === activeRunId) ?? null;
   const selectedGoal = operationalOs.state.goals.find((goal) => goal.id === goalId) ?? null;
   const attachableEvidence = operationalOs.state.evidence.filter((evidence) => !activeRun?.evidenceIds.includes(evidence.id));
+  const runEvidenceInput = createWorkflowRunEvidenceInput(activeRun);
 
   useEffect(() => {
     if (!saveSavedWorkflows(savedWorkflows)) {
@@ -354,6 +357,13 @@ export function WorkflowWidget({
             updatedAt="goal context"
           />
         ) : null}
+        <WorkspaceEvidenceAttachPanel
+          role={role}
+          operationalOs={operationalOs}
+          evidence={runEvidenceInput}
+          disabled={!activeRun}
+          disabledReason={activeRun ? `${activeRun.status} / ${activeRun.steps.length} steps` : 'Start or select a runbook before attaching a workflow snapshot.'}
+        />
         {activeRun && selectedGoal && activeRun.goalId !== selectedGoal.id ? (
           <WorkspaceButton variant="secondary" className="workflow-action" onClick={linkActiveRunToSelectedGoal}>
             Link active run to selected goal

@@ -13,6 +13,7 @@ import type { CommandRisk, MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
 import { AgentAttribution, AttentionCard, EvidenceBlock } from '../operationalBlocks';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import {
   WorkspaceButton,
   WorkspaceContentHeader,
@@ -21,6 +22,7 @@ import {
   WorkspaceSectionFrame,
   WorkspaceStatusStrip,
 } from '../workspaceBlocks';
+import { createAgentConversationEvidenceInput } from '../workspaceEvidenceModel';
 import { getAgentGatewayDisplay } from './agentWorkflowDisplay';
 
 const scopeLabels: Record<AgentTaskScope, string> = {
@@ -97,6 +99,17 @@ export function AgentConsoleWidget({
   const primarySubmitLabel = gatewayDisplay.state === 'ready' ? 'Ask agent' : 'Stage local proposal';
   const commandById = new Map(missionControl.state.commands.map((command) => [command.id, command]));
   const proposalByCommandId = new Map(tasking.state.proposals.map((proposal) => [proposal.commandId, proposal]));
+  const conversationEvidenceInput = createAgentConversationEvidenceInput(
+    selectedGoal ? `Agent conversation: ${selectedGoal.title}` : 'Agent conversation snapshot',
+    'agent-console-widget',
+    [
+      `${tasking.state.messages.length} messages`,
+      `${tasking.state.proposals.length} proposals`,
+      `${targetAgent.name} / ${gatewayDisplay.label}`,
+      selectedGoal ? `goal ${selectedGoal.title}` : 'unlinked',
+      tasking.state.lastRequest ? `last request ${tasking.state.lastRequest.scope} / ${tasking.state.lastRequest.risk}` : '',
+    ],
+  );
 
   useEffect(() => {
     if (preferredAgent) {
@@ -277,6 +290,14 @@ export function AgentConsoleWidget({
         {!canSubmit ? <p className="mission-control-muted">This role cannot submit that scope/risk combination.</p> : null}
         {tasking.state.error ? <p className="mission-control-muted">Last error: {tasking.state.error}</p> : null}
       </WorkspaceSectionFrame>
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={conversationEvidenceInput}
+        disabled={tasking.state.messages.length === 0}
+        disabledReason={tasking.state.messages.length ? `${tasking.state.messages.length} messages / ${tasking.state.proposals.length} proposals` : 'Ask or stage a proposal before attaching the conversation.'}
+      />
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame"

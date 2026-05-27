@@ -1,6 +1,10 @@
 import { useMemo, useState } from 'react';
 
 import { WorkspaceButton, WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
+import type { OperationalOsRuntime } from '../../operational-os';
+import type { ShellRole } from '../../shell/roles';
+import { createTaskBoardEvidenceInput } from '../workspaceEvidenceModel';
 import {
   createLocalTask,
   createWorkflowDraftFromTask,
@@ -39,17 +43,24 @@ function createWorkflowFromTask(task: LocalTask) {
 export function TaskBoardWidget({
   variant,
   onLaunchWorkspaceWidget,
+  role,
+  operationalOs,
 }: {
   variant: TaskBoardVariant;
   onLaunchWorkspaceWidget?: (kind: WorkspaceWidget['kind']) => void;
+  role: ShellRole;
+  operationalOs: OperationalOsRuntime;
 }) {
   const [tasks, setTasks] = usePersistentWorkspaceState(loadLocalTaskBoard, saveLocalTaskBoard);
   const [selectedLane, setSelectedLane] = useState<LocalTaskStatus>('inbox');
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [draft, setDraft] = useState({ title: '', note: '' });
   const groups = useMemo(() => groupLocalTasksByLane(tasks), [tasks]);
   const activeGroup = groups.find((group) => group.status === selectedLane) ?? groups[0];
   const blockedCount = tasks.filter((task) => task.status === 'blocked').length;
   const nextTask = tasks.find((task) => task.status === 'next') ?? tasks.find((task) => task.status === 'blocked') ?? tasks[0] ?? null;
+  const selectedTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
+  const evidenceInput = createTaskBoardEvidenceInput(tasks, selectedTask?.id ?? null, selectedLane);
   const title = variant === 'project' ? 'local project board' : 'local task lanes';
   const laneRows = groups.map((group) => ({
     id: group.status,
@@ -62,10 +73,9 @@ export function TaskBoardWidget({
   const createTask = () => {
     if (!draft.title.trim()) return;
 
-    setTasks((current) => [
-      createLocalTask({ title: draft.title, note: draft.note, status: selectedLane === 'done' ? 'inbox' : selectedLane }),
-      ...current,
-    ]);
+    const nextTaskRecord = createLocalTask({ title: draft.title, note: draft.note, status: selectedLane === 'done' ? 'inbox' : selectedLane });
+    setTasks((current) => [nextTaskRecord, ...current]);
+    setSelectedTaskId(nextTaskRecord.id);
     setDraft({ title: '', note: '' });
   };
 
@@ -96,8 +106,15 @@ export function TaskBoardWidget({
       />
       <WorkspaceCompactList
         items={laneRows}
-        empty="Create a local task and move it through inbox, next, blocked, and done."
+        empty="No local tasks captured."
         ariaLabel="Local task lane counts"
+      />
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={evidenceInput}
+        disabled={!tasks.length}
+        disabledReason={!tasks.length ? 'No local tasks are available to attach.' : selectedTask ? `selected / ${selectedTask.status}` : `${selectedLane} lane snapshot`}
       />
 
       <WorkspaceSectionFrame className="task-board-editor" eyebrow="new task" title="capture work" meta="browser saved">
@@ -138,7 +155,13 @@ export function TaskBoardWidget({
 
         <div className="task-board-lane" role="list" aria-label={`${activeGroup.label} tasks`}>
           {activeGroup.tasks.length ? activeGroup.tasks.map((task) => (
-            <article key={task.id} className="task-card" role="listitem" data-state={task.status}>
+            <article
+              key={task.id}
+              className="task-card"
+              role="listitem"
+              data-state={task.status}
+              data-selected={selectedTask?.id === task.id ? 'true' : 'false'}
+            >
               <div className="task-card-main">
                 <span>{task.status}</span>
                 <strong>{task.title}</strong>
@@ -156,10 +179,21 @@ export function TaskBoardWidget({
                     {taskLaneOrder.map((status) => <option key={status} value={status}>{status}</option>)}
                   </select>
                 </label>
+                <WorkspaceButton variant="compact" onClick={() => setSelectedTaskId(task.id)}>
+                  {selectedTask?.id === task.id ? 'Selected' : 'Select'}
+                </WorkspaceButton>
                 <WorkspaceButton variant="compact" onClick={() => moveTask(task.id, 'blocked')}>Block</WorkspaceButton>
                 <WorkspaceButton variant="compact" onClick={() => moveTask(task.id, 'done')}>Done</WorkspaceButton>
                 <WorkspaceButton variant="compact" onClick={() => convertTask(task)}>Convert to workflow</WorkspaceButton>
-                <WorkspaceButton variant="destructive" onClick={() => setTasks((current) => removeLocalTask(current, task.id))}>Remove</WorkspaceButton>
+                <WorkspaceButton
+                  variant="destructive"
+                  onClick={() => {
+                    setTasks((current) => removeLocalTask(current, task.id));
+                    setSelectedTaskId((current) => (current === task.id ? null : current));
+                  }}
+                >
+                  Remove
+                </WorkspaceButton>
               </div>
             </article>
           )) : (

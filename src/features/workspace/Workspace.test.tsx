@@ -335,6 +335,8 @@ describe('Workspace header controls', () => {
     const closedManagerCard = getManagerCard();
     expect(closedManagerCard).toHaveTextContent(/closed/i);
     expect(closedManagerCard).toHaveTextContent(/double-click to open/i);
+    expect(within(getWidget(container, 'launcher')).getByText('save external app targets')).toBeInTheDocument();
+    expect(within(getWidget(container, 'launcher')).queryByText(/load installed apps into memory/i)).not.toBeInTheDocument();
 
     fireEvent.click(closedManagerCard);
 
@@ -412,11 +414,17 @@ describe('Workspace header controls', () => {
     });
     expect(await currentRender.findByText(/prepared a gated command proposal/i)).toBeInTheDocument();
     expect((await currentRender.findAllByText(/Review current mission state and propose/i)).length).toBeGreaterThan(0);
+    const agentConsoleWidget = getOpenWidget(container, 'agent-console');
+    fireEvent.click(within(agentConsoleWidget).getByRole('button', { name: 'Attach evidence' }));
+    expect(within(getOpenWidget(container, 'goals')).getAllByText(/2 evidence/i).length).toBeGreaterThan(0);
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Command inbox' }));
     expect(currentRender.getAllByText('primary approval queue').length).toBeGreaterThan(0);
     expect(currentRender.getAllByText(/Review current mission state and propose/i).length).toBeGreaterThan(0);
+    const commandInboxWidget = getOpenWidget(container, 'command-inbox');
+    fireEvent.click(within(commandInboxWidget).getByRole('button', { name: 'Attach evidence' }));
+    expect(within(getOpenWidget(container, 'goals')).getAllByText(/3 evidence/i).length).toBeGreaterThan(0);
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Notifications' }));
@@ -455,6 +463,9 @@ describe('Workspace header controls', () => {
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Workflows' }));
     fireEvent.click(currentRender.getByRole('button', { name: 'Start runbook' }));
+    const workflowWidget = getOpenWidget(container, 'flow');
+    fireEvent.click(within(workflowWidget).getByRole('button', { name: 'Attach evidence' }));
+    expect(within(getOpenWidget(container, 'goals')).getAllByText(/2 evidence/i).length).toBeGreaterThan(0);
     fireEvent.click(currentRender.getAllByRole('button', { name: 'Stage approval' })[0]);
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
@@ -615,11 +626,14 @@ describe('Workspace header controls', () => {
     expect(managerWidget).toBeInTheDocument();
     expect(managerWidget?.querySelector('.widget-labels .widget-kind-icon')).toBeInTheDocument();
     expect(within(managerWidget as HTMLElement).getAllByText('Manager').length).toBeGreaterThan(0);
-    expect(within(managerWidget as HTMLElement).getByText('Main workspace')).toBeInTheDocument();
+    expect(within(managerWidget as HTMLElement).getAllByText('Main workspace').length).toBeGreaterThan(0);
 
     const commandCoreRow = within(managerWidget as HTMLElement).getByText('Command core').closest('.workspace-action-row');
     expect(commandCoreRow).toBeInTheDocument();
     expect(commandCoreRow).toHaveTextContent('minimized');
+
+    fireEvent.click(within(managerWidget as HTMLElement).getByRole('button', { name: 'Attach evidence' }));
+    expect(within(getOpenWidget(container, 'goals')).getAllByText(/2 evidence/i).length).toBeGreaterThan(0);
   }, 30000);
 
   it('categorizes Manager rows by workspace and controls extension widgets', () => {
@@ -647,8 +661,8 @@ describe('Workspace header controls', () => {
     const managerWidget = container.querySelector<HTMLElement>('.workspace-widget.kind-window-manager');
     expect(managerWidget).toBeInTheDocument();
 
-    expect(within(managerWidget as HTMLElement).getByText('Main workspace')).toBeInTheDocument();
-    expect(within(managerWidget as HTMLElement).getByText('Workspace 1')).toBeInTheDocument();
+    expect(within(managerWidget as HTMLElement).getAllByText('Main workspace').length).toBeGreaterThan(0);
+    expect(within(managerWidget as HTMLElement).getAllByText('Workspace 1').length).toBeGreaterThan(0);
 
     const extensionList = within(managerWidget as HTMLElement).getByRole('list', { name: 'Visible widgets in Workspace 1' });
     const telemetryRow = within(extensionList).getByText('Telemetry').closest('.workspace-action-row');
@@ -1248,6 +1262,9 @@ describe('Workspace header controls', () => {
     fireEvent.change(scheduleWidget.getByLabelText('Schedule block title'), { target: { value: 'Test schedule block' } });
     fireEvent.change(scheduleWidget.getByLabelText('Schedule block note'), { target: { value: 'local proof' } });
     fireEvent.click(scheduleWidget.getByRole('button', { name: 'Add block' }));
+    fireEvent.click(scheduleWidget.getByRole('button', { name: 'Attach evidence' }));
+    expect(within(getOpenWidget(container, 'goals')).getAllByText(/2 evidence/i).length).toBeGreaterThan(0);
+
     const createdScheduleCard = scheduleWidget.getByText('Test schedule block').closest('.schedule-block-card') as HTMLElement;
     fireEvent.click(within(createdScheduleCard).getByRole('button', { name: 'Done' }));
 
@@ -1266,6 +1283,9 @@ describe('Workspace header controls', () => {
     fireEvent.change(projectWidget.getByLabelText('Task title'), { target: { value: 'Evidence follow-up' } });
     fireEvent.change(projectWidget.getByLabelText('Task note'), { target: { value: 'needs local file' } });
     fireEvent.click(projectWidget.getByRole('button', { name: 'Add task' }));
+    fireEvent.click(projectWidget.getByRole('button', { name: 'Attach evidence' }));
+    expect(within(getOpenWidget(container, 'goals')).getAllByText(/2 evidence/i).length).toBeGreaterThan(0);
+
     const createdTaskCard = projectWidget.getByText('Evidence follow-up').closest('.task-card') as HTMLElement;
     fireEvent.click(within(createdTaskCard).getByRole('button', { name: 'Block' }));
     fireEvent.click(projectWidget.getByRole('tab', { name: /Blocked/i }));

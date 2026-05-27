@@ -200,11 +200,11 @@ function renderWorkspaceWidgetContent({
     case 'news':
       return <NewsWidget activeGraph={activeMarketGraph} marketLiveData={marketLiveData} onSelectGraph={onSelectMarketGraph} role={activeRole} operationalOs={operationalOs} />;
     case 'project':
-      return <ProjectWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} />;
+      return <ProjectWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} role={activeRole} operationalOs={operationalOs} />;
     case 'schedule':
-      return <ScheduleWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} />;
+      return <ScheduleWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} role={activeRole} operationalOs={operationalOs} />;
     case 'list':
-      return <ListWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} />;
+      return <ListWidget onLaunchWorkspaceWidget={onLaunchWorkspaceWidget} role={activeRole} operationalOs={operationalOs} />;
     case 'image': {
       const imageFile =
         localFiles.find((record) => record.id === activeLocalFileId && record.previewKind === 'image') ??
@@ -237,6 +237,8 @@ function renderWorkspaceWidgetContent({
           onFocusWidget={onFocusWidget}
           onTogglePinWidget={onTogglePinWidget}
           onCloseWidget={onCloseWidget}
+          role={activeRole}
+          operationalOs={operationalOs}
         />
       );
     case 'command-inbox':

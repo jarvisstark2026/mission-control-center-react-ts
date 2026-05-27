@@ -56,9 +56,9 @@ export function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets, acti
       <WorkspaceContentHeader
         className="launcher-head"
         eyebrow="Workspace launcher"
-        title="open installed apps into the workspace"
-        metaEyebrow="command bridge"
-        meta="launch / focus / stay in the workspace"
+        title="open and focus workspace tools"
+        metaEyebrow="local"
+        meta="widgets / external handoff"
       />
 
       <WorkspaceStatusStrip
@@ -68,17 +68,17 @@ export function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets, acti
         updatedAt={`${desktopApps.length} app profiles`}
       />
 
-      <WorkspaceSectionFrame className="launcher-desktop-section" eyebrow="desktop bridge" meta="installed apps and shortcuts">
+      <WorkspaceSectionFrame className="launcher-desktop-section" eyebrow="external handoff" meta="saved links and shortcuts">
         <DesktopBridgePanel
-          eyebrow="installed apps"
-          title="load installed apps into memory"
-          description="Command line stays available while installed apps remain linked to the workspace launcher."
-          inputLabel="Installed app or command"
+          eyebrow="launch profiles"
+          title="save external app targets"
+          description="Remember web, protocol, or manual desktop targets without executing arbitrary paths inside Mission Control."
+          inputLabel="External target"
           inputValue={desktopCommand}
           inputPlaceholder="e.g. explorer.exe, obsidian, notepad.exe"
-          submitLabel="Open installed app"
+          submitLabel="Save profile"
           apps={desktopApps}
-          appsLabel="installed app list"
+          appsLabel="saved launch profiles"
           onChangeInput={setDesktopCommand}
           onSubmit={openInstalledApp}
           onSelectApp={recallInstalledApp}

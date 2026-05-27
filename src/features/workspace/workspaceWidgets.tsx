@@ -141,7 +141,11 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         getPermissionSignature(left.widgetPermissions) === getPermissionSignature(right.widgetPermissions)
       );
     case 'window-manager':
-      return getWorkspaceGroupSignature(left.workspaceWidgetGroups) === getWorkspaceGroupSignature(right.workspaceWidgetGroups);
+      return (
+        getWorkspaceGroupSignature(left.workspaceWidgetGroups) === getWorkspaceGroupSignature(right.workspaceWidgetGroups) &&
+        left.activeRole === right.activeRole &&
+        left.operationalOs.state.version === right.operationalOs.state.version
+      );
     case 'command-inbox':
       return (
         left.missionControl.role === right.missionControl.role &&
@@ -155,6 +159,9 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
     case 'docs':
     case 'sheet':
     case 'slides':
+    case 'project':
+    case 'schedule':
+    case 'list':
       return (
         left.activeRole === right.activeRole &&
         left.operationalOs.state.version === right.operationalOs.state.version &&
@@ -195,6 +202,14 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.missionControl.state.version === right.missionControl.state.version &&
         left.operationalOs.state.version === right.operationalOs.state.version &&
         left.focusedCommandId === right.focusedCommandId
+      );
+    case 'flow':
+      return (
+        left.activeRole === right.activeRole &&
+        left.agentControl.version === right.agentControl.version &&
+        left.agentTaskGateway.mode === right.agentTaskGateway.mode &&
+        left.missionControl.state.version === right.missionControl.state.version &&
+        left.operationalOs.state.version === right.operationalOs.state.version
       );
     case '3d':
       return (

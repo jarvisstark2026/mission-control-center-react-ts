@@ -5,6 +5,8 @@ import { getAllowedCommandActions, type CommandAction, type CommandRequest, type
 import type { OperationalOsRuntime } from '../../operational-os';
 import { AgentAttribution, AttentionCard, AuditList, EvidenceBlock } from '../operationalBlocks';
 import { getCommandGatewayDisplay } from './agentWorkflowDisplay';
+import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
+import { createCommandDecisionEvidenceInput } from '../workspaceEvidenceModel';
 
 const commandActionLabels: Record<CommandAction, string> = {
   approve: 'Approve',
@@ -92,6 +94,7 @@ export function CommandInboxWidget({
   const nextCommand = focusedCommand ?? pendingCommands[0];
   const gatewayDisplay = getCommandGatewayDisplay(missionControl.commandGatewayMode);
   const nextAllowedActions = nextCommand ? getAllowedCommandActions(nextCommand, missionControl.role) : [];
+  const decisionEvidenceInput = createCommandDecisionEvidenceInput(nextCommand);
   const nextGoal = nextCommand?.goalId ? operationalOs.state.goals.find((goal) => goal.id === nextCommand.goalId) ?? null : null;
   const nextEvidence = nextCommand?.evidenceIds?.length
     ? operationalOs.state.evidence.filter((evidence) => nextCommand.evidenceIds?.includes(evidence.id))
@@ -140,6 +143,14 @@ export function CommandInboxWidget({
           ) : null}
         </div>
       ) : null}
+
+      <WorkspaceEvidenceAttachPanel
+        role={missionControl.role}
+        operationalOs={operationalOs}
+        evidence={decisionEvidenceInput}
+        disabled={!nextCommand}
+        disabledReason={nextCommand ? `${nextCommand.status} / ${nextCommand.risk}` : 'No selected command is available to attach.'}
+      />
 
       {nextCommand ? (
         <AttentionCard

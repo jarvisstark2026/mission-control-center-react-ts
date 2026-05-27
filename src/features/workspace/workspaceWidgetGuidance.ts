@@ -11,7 +11,7 @@ export const widgetWorkflowGuidance: Record<WidgetKind, WidgetWorkflowGuidance> 
   overview: {
     intent: 'Orient the workspace',
     value: 'Start here when the workspace feels busy. It summarizes health, devices, and alerts before you open deeper surfaces.',
-    next: 'Use Command Inbox for decisions or Manager to find a window.',
+    next: 'Command Inbox handles decisions; Manager finds windows.',
     evidence: 'status, devices, alerts',
   },
   graph: {
@@ -107,19 +107,19 @@ export const widgetWorkflowGuidance: Record<WidgetKind, WidgetWorkflowGuidance> 
   slides: {
     intent: 'Preview presentation state',
     value: 'Keep a deck or briefing frame visible while building or reviewing a narrative.',
-    next: 'Use Docs for detailed notes and Slides for the operator-facing frame.',
+    next: 'Docs hold detail; Slides hold the operator frame.',
     evidence: 'slide frame',
   },
   'trading-graph': {
     intent: 'Analyze market signals',
     value: 'Review focused chart context after selecting a signal from Markets.',
-    next: 'Use the market selector when the active ticker is no longer the main signal.',
+    next: 'Switch the market selector when focus changes.',
     evidence: 'price trace',
   },
   image: {
     intent: 'Inspect visual assets',
     value: 'Stage images before annotating, previewing, or referencing them in a workflow.',
-    next: 'Use File Explorer or Preview when a local image needs exact inspection.',
+    next: 'File Explorer and Preview handle exact inspection.',
     evidence: 'canvas',
   },
   pdf: {
@@ -131,7 +131,7 @@ export const widgetWorkflowGuidance: Record<WidgetKind, WidgetWorkflowGuidance> 
   video: {
     intent: 'Preview media',
     value: 'Preview saved URL or file-backed video sources without switching surfaces.',
-    next: 'Use Live TV for active streams and this frame for static preview state.',
+    next: 'Live TV handles streams; this frame handles previews.',
     evidence: 'media frame',
   },
   '3d': {

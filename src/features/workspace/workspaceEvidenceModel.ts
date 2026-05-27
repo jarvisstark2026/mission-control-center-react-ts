@@ -1,7 +1,12 @@
 import { createId } from '../../lib/createId';
 import type { CreateEvidenceInput } from '../operational-os';
+import type { CommandRequest } from '../mission-control';
 import { readLocalStorageJson, writeLocalStorageJson } from './browserStorage';
+import type { WorkspaceWidgetGroup } from './workspaceManagerModel';
 import type { LocalFileRecord } from './workspaceLocalFiles';
+import type { LocalScheduleBlock } from './workspaceScheduleModel';
+import type { LocalTask, LocalTaskStatus } from './workspaceTaskBoardModel';
+import type { WorkflowRun } from './workflowRunModel';
 
 export type LocalDocumentState = {
   title: string;
@@ -258,4 +263,122 @@ export function createRuntimeSnapshotEvidenceInput(
     source,
     summary,
   };
+}
+
+export function createScheduleEvidenceInput(
+  blocks: LocalScheduleBlock[],
+  selectedBlockId: string | null,
+  source = 'schedule-widget',
+): Pick<CreateEvidenceInput, 'type' | 'title' | 'source' | 'summary'> {
+  const selectedBlock = selectedBlockId ? blocks.find((block) => block.id === selectedBlockId) ?? null : null;
+  if (selectedBlock) {
+    const workflowLink = selectedBlock.linkedWorkflowTemplateId ? ` / workflow ${selectedBlock.linkedWorkflowTemplateId}` : '';
+    return createRuntimeSnapshotEvidenceInput(
+      `Schedule block: ${selectedBlock.title}`,
+      source,
+      `${selectedBlock.status} / ${selectedBlock.date} ${selectedBlock.time} / ${selectedBlock.note}${workflowLink}`,
+    );
+  }
+
+  const openBlocks = blocks.filter((block) => block.status !== 'done');
+  const nextBlock = openBlocks[0] ?? blocks[0] ?? null;
+  return createRuntimeSnapshotEvidenceInput(
+    'Schedule snapshot',
+    source,
+    `${blocks.length} local blocks / ${openBlocks.length} open${nextBlock ? ` / next ${nextBlock.time} ${nextBlock.title}` : ''}`,
+  );
+}
+
+export function createTaskBoardEvidenceInput(
+  tasks: LocalTask[],
+  selectedTaskId: string | null,
+  selectedLane: LocalTaskStatus,
+  source = 'task-board-widget',
+): Pick<CreateEvidenceInput, 'type' | 'title' | 'source' | 'summary'> {
+  const selectedTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
+  if (selectedTask) {
+    const workflowLink = selectedTask.linkedWorkflowTemplateId ? ` / workflow ${selectedTask.linkedWorkflowTemplateId}` : '';
+    return createRuntimeSnapshotEvidenceInput(
+      `Task: ${selectedTask.title}`,
+      source,
+      `${selectedTask.status} / ${selectedTask.note}${workflowLink}`,
+    );
+  }
+
+  const laneCount = tasks.filter((task) => task.status === selectedLane).length;
+  const blockedCount = tasks.filter((task) => task.status === 'blocked').length;
+  const nextTask = tasks.find((task) => task.status === 'next') ?? tasks.find((task) => task.status === selectedLane) ?? tasks[0] ?? null;
+  return createRuntimeSnapshotEvidenceInput(
+    'Task board snapshot',
+    source,
+    `${tasks.length} local tasks / ${laneCount} in ${selectedLane} / ${blockedCount} blocked${nextTask ? ` / next ${nextTask.title}` : ''}`,
+  );
+}
+
+export function createWindowStateEvidenceInput(
+  workspaceGroups: WorkspaceWidgetGroup[],
+  source = 'window-manager-widget',
+): Pick<CreateEvidenceInput, 'type' | 'title' | 'source' | 'summary'> {
+  const manageableWidgets = workspaceGroups.flatMap((group) => group.widgets.filter((widget) => widget.kind !== 'window-manager'));
+  const visibleWidgets = manageableWidgets.filter((widget) => !widget.hidden);
+  const openWidgets = visibleWidgets.filter((widget) => widget.open);
+  const pinnedWidgets = visibleWidgets.filter((widget) => widget.pinned);
+  const activeWorkspace = workspaceGroups.find((group) => group.active)?.label ?? 'unknown workspace';
+  const visibleByWorkspace = workspaceGroups
+    .map((group) => `${group.label}: ${group.widgets.filter((widget) => widget.kind !== 'window-manager' && !widget.hidden).length}`)
+    .join(' / ');
+
+  return createRuntimeSnapshotEvidenceInput(
+    'Workspace window state',
+    source,
+    `${activeWorkspace} active / ${openWidgets.length} open / ${visibleWidgets.length} visible / ${pinnedWidgets.length} pinned / ${visibleByWorkspace}`,
+  );
+}
+
+export function createWorkflowRunEvidenceInput(
+  run: WorkflowRun | null,
+  source = 'workflow-widget',
+): Pick<CreateEvidenceInput, 'type' | 'title' | 'source' | 'summary'> {
+  if (!run) {
+    return createRuntimeSnapshotEvidenceInput('Workflow run snapshot', source, 'No active workflow run selected.');
+  }
+
+  const statusCounts = run.steps.reduce<Record<string, number>>((counts, step) => {
+    counts[step.status] = (counts[step.status] ?? 0) + 1;
+    return counts;
+  }, {});
+  const statusSummary = Object.entries(statusCounts).map(([status, count]) => `${status} ${count}`).join(' / ');
+  const nextStep = run.steps.find((step) => !['completed', 'blocked', 'failed'].includes(step.status));
+  return createRuntimeSnapshotEvidenceInput(
+    `Workflow run: ${run.workflowName}`,
+    source,
+    `${run.status} / ${run.steps.length} steps / ${statusSummary}${nextStep ? ` / next ${nextStep.title}` : ''}`,
+  );
+}
+
+export function createCommandDecisionEvidenceInput(
+  command: CommandRequest | null,
+  source = 'command-inbox-widget',
+): Pick<CreateEvidenceInput, 'type' | 'title' | 'source' | 'summary'> {
+  if (!command) {
+    return createRuntimeSnapshotEvidenceInput('Command Inbox snapshot', source, 'No command is selected.');
+  }
+
+  return createRuntimeSnapshotEvidenceInput(
+    `Command decision: ${command.title}`,
+    source,
+    `${command.status} / ${command.scope} / ${command.risk} / ${command.agent.agentName} / ${command.execution.status}: ${command.execution.result}`,
+  );
+}
+
+export function createAgentConversationEvidenceInput(
+  title: string,
+  source: string,
+  summaryParts: string[],
+): Pick<CreateEvidenceInput, 'type' | 'title' | 'source' | 'summary'> {
+  return createRuntimeSnapshotEvidenceInput(
+    title,
+    source,
+    summaryParts.filter(Boolean).join(' / '),
+  );
 }

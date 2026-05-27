@@ -193,7 +193,7 @@ export function ModelStudioWidget({ files = [], activeFileId = null, selectedFil
       />
       <WorkspaceStatusStrip
         source={selectedModel ? 'file' : 'unavailable'}
-        status={selectedModel ? renderStatus : 'no supported model loaded'}
+        status={selectedModel ? renderStatus : 'model source required'}
         count={`${modelFiles.length} model files`}
         updatedAt={selectedModel ? formatLocalFileSize(selectedModel.file.size) : 'GLB / GLTF only'}
         action={{
@@ -225,7 +225,7 @@ export function ModelStudioWidget({ files = [], activeFileId = null, selectedFil
               <div className="model-studio-grid" />
               <WorkspaceEmptyState
                 source="file"
-                title="No GLB or GLTF model selected"
+                title="Model source required"
                 detail="Import a GLB or GLTF file to render it locally."
                 action={{
                   label: 'Import model',
@@ -250,7 +250,7 @@ export function ModelStudioWidget({ files = [], activeFileId = null, selectedFil
               event.currentTarget.value = '';
             }}
           />
-          <WorkspaceCompactList items={modelItems} empty="No GLB or GLTF files loaded." ariaLabel="Model files" />
+          <WorkspaceCompactList items={modelItems} empty="GLB and GLTF files appear after local import." ariaLabel="Model files" />
           <small className="widget-feature-note">Unsupported files stay in Preview; Model Studio renders GLB/GLTF only.</small>
         </WorkspaceSectionFrame>
       </div>

@@ -340,7 +340,7 @@ export function createWorkflowRunEvidenceInput(
   source = 'workflow-widget',
 ): Pick<CreateEvidenceInput, 'type' | 'title' | 'source' | 'summary'> {
   if (!run) {
-    return createRuntimeSnapshotEvidenceInput('Workflow run snapshot', source, 'No active workflow run selected.');
+    return createRuntimeSnapshotEvidenceInput('Workflow run snapshot', source, 'Workflow run not selected.');
   }
 
   const statusCounts = run.steps.reduce<Record<string, number>>((counts, step) => {
@@ -361,7 +361,7 @@ export function createCommandDecisionEvidenceInput(
   source = 'command-inbox-widget',
 ): Pick<CreateEvidenceInput, 'type' | 'title' | 'source' | 'summary'> {
   if (!command) {
-    return createRuntimeSnapshotEvidenceInput('Command Inbox snapshot', source, 'No command is selected.');
+    return createRuntimeSnapshotEvidenceInput('Command Inbox snapshot', source, 'Command not selected.');
   }
 
   return createRuntimeSnapshotEvidenceInput(

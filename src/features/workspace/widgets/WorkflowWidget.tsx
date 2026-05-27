@@ -610,7 +610,7 @@ export function WorkflowWidget({
                 if (workflow) loadWorkflow(workflow);
               }}
             />
-            {savedWorkflows.length ? null : <div className="workflow-empty">No saved workflows yet. Save one and it will stay available locally.</div>}
+            {savedWorkflows.length ? null : <div className="workflow-empty">Saved workflows appear here after you save a local draft.</div>}
           </WorkspaceSectionFrame>
           </WorkspaceSectionFrame>
         </div>

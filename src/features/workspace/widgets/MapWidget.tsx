@@ -77,7 +77,7 @@ export function MapWidget({ role, operationalOs }: { role: ShellRole; operationa
       />
       <WorkspaceStatusStrip
         source="local"
-        status={mapCount ? `${mapCount} saved map records` : 'no saved map records'}
+        status={mapCount ? `${mapCount} saved map records` : 'location record required'}
         count={`${mapState.places.length} places / ${mapState.routes.length} routes`}
         updatedAt={`updated ${formatMapUpdatedAt(mapState.updatedAt)}`}
         action={{
@@ -98,7 +98,7 @@ export function MapWidget({ role, operationalOs }: { role: ShellRole; operationa
                 'map-widget',
                 `${selectedPlace ? 'place' : 'route'} / ${selectedRecord.detail || 'local map note'} / ${getMapHandoffUrl(selectedRecord)}`,
               )
-            : createRuntimeSnapshotEvidenceInput('Map record', 'map-widget', 'No saved place or route selected.')
+            : createRuntimeSnapshotEvidenceInput('Map record', 'map-widget', 'Location record required.')
         }
         disabled={!selectedRecord}
         disabledReason={!selectedRecord ? 'Save or select a place or route before attaching evidence.' : undefined}
@@ -175,7 +175,7 @@ export function MapWidget({ role, operationalOs }: { role: ShellRole; operationa
                 id: place.id,
                 meta: 'place',
                 title: place.title,
-                detail: place.detail || 'local saved place',
+                detail: place.detail || 'local place note',
                 state: place.id === selectedPlace?.id ? 'active' : 'local',
                 action: {
                   label: place.id === selectedPlace?.id ? 'Open' : 'Select',
@@ -200,10 +200,10 @@ export function MapWidget({ role, operationalOs }: { role: ShellRole; operationa
                 },
               })),
             ]}
-            empty="No saved places or routes."
+            empty="Saved places and routes appear after local capture."
           />
         ) : (
-          <WorkspaceEmptyState source="local" title="No places saved" detail="Add a place or route note, then open it in your preferred map provider when needed." />
+          <WorkspaceEmptyState source="local" title="Location record required" detail="Add a place or route note, then open it in your preferred map provider." />
         )}
       </WorkspaceSectionFrame>
     </WorkspaceContentShell>

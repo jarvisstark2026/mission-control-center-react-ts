@@ -182,7 +182,7 @@ export function AudioWidget({
       />
       <WorkspaceStatusStrip
         source={activeSource?.kind === 'file' ? 'file' : activeSource?.kind === 'browser' ? 'browser' : bridgeConnected ? 'bridge' : 'unavailable'}
-        status={activeSource ? playbackStatus : bridgeConnected ? 'agent activity available' : 'no audio source selected'}
+        status={activeSource ? playbackStatus : bridgeConnected ? 'agent activity available' : 'source required'}
         count={`amp ${formatAudioMetric(meter.amplitude)} / peak ${formatAudioMetric(meter.peak)}`}
         updatedAt={meter.dominantFrequencyHz ? `${meter.dominantFrequencyHz} Hz` : '-- Hz'}
         action={{
@@ -201,7 +201,7 @@ export function AudioWidget({
             ? createLocalFileEvidenceInput(selectedFile, 'audio-widget')
             : activeSource?.url
               ? createUrlEvidenceInput(activeSource.url, `${activeSource.title} audio source`, 'audio-widget', `${activeSource.kind} audio / ${activeSource.detail}`)
-              : { type: 'file', title: 'Audio source', source: 'audio-widget', summary: 'No audio source selected.' }
+              : { type: 'file', title: 'Audio source', source: 'audio-widget', summary: 'Audio source required.' }
         }
         disabled={!selectedFile && !activeSource?.url}
         disabledReason={!selectedFile && !activeSource?.url ? 'Load or save an audio source before attaching evidence.' : undefined}
@@ -228,7 +228,7 @@ export function AudioWidget({
             onError={() => setPlaybackStatus('Playback failed')}
           />
         ) : (
-          <WorkspaceEmptyState source="file" title="No audio loaded" detail="Load a local audio file or save a trusted URL source." />
+          <WorkspaceEmptyState source="file" title="Audio source required" detail="Browse a local file or save a trusted URL. Meter values appear during playback." />
         )}
 
         <div className="audio-feature-meter" aria-label="Audio analyser values">
@@ -266,7 +266,7 @@ export function AudioWidget({
           </WorkspaceButton>
         </div>
 
-        <WorkspaceCompactList items={sourceItems} empty="No local audio files or saved URL sources." ariaLabel="Audio sources" />
+        <WorkspaceCompactList items={sourceItems} empty="Audio sources appear after local import or URL save." ariaLabel="Audio sources" />
       </WorkspaceSectionFrame>
     </WorkspaceContentShell>
   );

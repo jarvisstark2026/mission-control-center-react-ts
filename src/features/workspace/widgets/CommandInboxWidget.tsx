@@ -127,7 +127,7 @@ export function CommandInboxWidget({
       />
       <WorkspaceStatusStrip
         source={missionControl.commandGatewayMode === 'backend' ? 'bridge' : 'local'}
-        status={nextCommand ? `${focusedCommand ? 'Focused' : 'Next'}: ${nextCommand.title}` : 'No pending action'}
+        status={nextCommand ? `${focusedCommand ? 'Focused' : 'Next'}: ${nextCommand.title}` : 'Queue clear'}
         count={`${pendingCommands.length} pending / ${completedCommands.length} history`}
         updatedAt={gatewayDisplay.label}
       />
@@ -198,7 +198,7 @@ export function CommandInboxWidget({
             </EvidenceBlock>
           ) : null}
           <AuditList
-            empty="No audit events yet."
+            empty="Audit trail starts when a command is proposed or decided."
             items={nextCommand.auditTrail.slice(-4).map((entry) => ({
               id: entry.id,
               title: entry.detail,
@@ -300,7 +300,7 @@ export function CommandInboxWidget({
             })}
           </div>
         ) : (
-          <p className="mission-control-empty">No commands are waiting for action.</p>
+          <p className="mission-control-empty">Queue clear for this filter.</p>
         )}
       </WorkspaceSectionFrame>
 
@@ -311,7 +311,7 @@ export function CommandInboxWidget({
         meta={`${executionCommands.length} tracked`}
       >
         <AuditList
-          empty="No command has entered execution yet."
+          empty="Execution history starts after approval."
           items={executionCommands.slice(0, 8).map((command) => ({
             id: `${command.id}-execution`,
             title: command.title,
@@ -329,7 +329,7 @@ export function CommandInboxWidget({
         meta={`${completedCommands.length} resolved`}
       >
         <AuditList
-          empty="No command decisions yet."
+          empty="Decision history starts after approval, rejection, block, or override."
           items={(activeFilter === 'history' ? filteredCommands : completedCommands).slice(0, 6).map((command) => ({
             id: command.id,
             title: command.title,

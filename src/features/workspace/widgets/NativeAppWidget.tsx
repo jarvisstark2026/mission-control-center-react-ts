@@ -64,7 +64,7 @@ export function NativeAppWidget({ role, operationalOs }: { role: ShellRole; oper
 
       <WorkspaceStatusStrip
         source="local"
-        status={status}
+        status={selectedProfile ? status : 'profile required'}
         count={`${profileState.profiles.length} profiles`}
         updatedAt={selectedProfile ? selectedProfile.type : 'manual safe mode'}
         action={{
@@ -92,7 +92,7 @@ export function NativeAppWidget({ role, operationalOs }: { role: ShellRole; oper
                   'native-app-widget',
                   `manual handoff / ${selectedProfile.launchTarget} / direct executable launch blocked`,
                 )
-            : createRuntimeSnapshotEvidenceInput('Native app profile', 'native-app-widget', 'No app profile selected.')
+            : createRuntimeSnapshotEvidenceInput('Native app profile', 'native-app-widget', 'App profile required.')
         }
         disabled={!selectedProfile}
         disabledReason={!selectedProfile ? 'Save or select an app profile before attaching evidence.' : undefined}
@@ -133,10 +133,10 @@ export function NativeAppWidget({ role, operationalOs }: { role: ShellRole; oper
                     : setProfileState((current) => ({ ...current, selectedProfileId: profile.id, updatedAt: new Date().toISOString() })),
               },
             }))}
-            empty="No external app profiles saved."
+            empty="External handoff profiles appear after local save."
           />
         ) : (
-          <WorkspaceEmptyState source="local" title="No app profiles" detail="Save a web or protocol target for quick external handoff." />
+          <WorkspaceEmptyState source="local" title="App profile required" detail="Save a web or protocol target for quick external handoff." />
         )}
 
         <small className="widget-feature-note">

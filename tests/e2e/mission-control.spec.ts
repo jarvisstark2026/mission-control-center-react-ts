@@ -253,7 +253,7 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await openWidget(page, '3D studio');
   const modelWidget = page.locator('.workspace-widget.kind-3d-studio');
   await ensureWidgetOpen(modelWidget);
-  await expect(modelWidget.getByText('No GLB or GLTF files loaded.')).toBeVisible();
+  await expect(modelWidget.getByText('GLB and GLTF files appear after local import.')).toBeVisible();
 
   await page.reload();
   await ensureWidgetOpen(page.locator('.workspace-widget.kind-schedule'));

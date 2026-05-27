@@ -96,7 +96,7 @@ export function VideoWidget({ role, operationalOs, files = [], activeFileId = nu
       />
       <WorkspaceStatusStrip
         source={activeSource?.kind === 'file' ? 'file' : activeSource?.kind === 'browser' ? 'browser' : 'unavailable'}
-        status={activeSource ? playbackStatus : 'no video source selected'}
+        status={activeSource ? playbackStatus : 'source required'}
         count={`${videoFiles.length} local / ${videoState.sources.length} saved`}
         updatedAt={activeSource?.detail ?? 'load or save a source'}
         action={{
@@ -115,7 +115,7 @@ export function VideoWidget({ role, operationalOs, files = [], activeFileId = nu
             ? createLocalFileEvidenceInput(selectedFile, 'video-widget')
             : activeSource?.url
               ? createUrlEvidenceInput(activeSource.url, `${activeSource.title} video source`, 'video-widget', `${activeSource.kind} video / ${activeSource.detail}`)
-              : { type: 'file', title: 'Video source', source: 'video-widget', summary: 'No video source selected.' }
+              : { type: 'file', title: 'Video source', source: 'video-widget', summary: 'Video source required.' }
         }
         disabled={!selectedFile && !activeSource?.url}
         disabledReason={!selectedFile && !activeSource?.url ? 'Load or save a video source before attaching evidence.' : undefined}
@@ -135,7 +135,7 @@ export function VideoWidget({ role, operationalOs, files = [], activeFileId = nu
             onError={() => setPlaybackStatus('Playback failed')}
           />
         ) : (
-          <WorkspaceEmptyState source="file" title="No video loaded" detail="Load a local video file or save a trusted URL source." />
+          <WorkspaceEmptyState source="file" title="Video source required" detail="Browse a local file or save a trusted URL before playback." />
         )}
 
         <input
@@ -165,7 +165,7 @@ export function VideoWidget({ role, operationalOs, files = [], activeFileId = nu
           </WorkspaceButton>
         </div>
 
-        <WorkspaceCompactList items={sourceItems} empty="No local video files or saved URL sources." ariaLabel="Video sources" />
+        <WorkspaceCompactList items={sourceItems} empty="Video sources appear after local import or URL save." ariaLabel="Video sources" />
       </WorkspaceSectionFrame>
     </WorkspaceContentShell>
   );

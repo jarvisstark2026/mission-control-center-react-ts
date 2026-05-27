@@ -84,7 +84,7 @@ export function AppPortalWidget({ role, operationalOs }: { role: ShellRole; oper
                   'app-portal-widget',
                   `${activeProfile.type} / ${activeProfile.embedMode} / ${activeProfile.launchTarget}`,
                 )
-            : createRuntimeSnapshotEvidenceInput('App Portal profile', 'app-portal-widget', 'No app profile selected.')
+            : createRuntimeSnapshotEvidenceInput('App Portal profile', 'app-portal-widget', 'App profile required.')
         }
         disabled={!activeProfile}
         disabledReason={!activeProfile ? 'Add or select an app profile before attaching evidence.' : undefined}

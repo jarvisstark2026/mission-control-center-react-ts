@@ -22,7 +22,7 @@ import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 const liveTvSources: LocalLiveTvSource[] = [];
 
 const defaultLiveTvSource: LocalLiveTvSource = {
-  name: 'No feed configured',
+  name: 'Feed setup required',
   badge: 'SETUP',
   description: 'Add an official HLS or MP4 source from your provider or tuner.',
   url: '',
@@ -71,7 +71,7 @@ export function LiveTvWidget({ role, operationalOs }: { role: ShellRole; operati
     const source = activeSource;
     const sourceUrl = source.url.trim();
     if (!sourceUrl) {
-      setStatus('No stream URL loaded');
+      setStatus('Stream URL required');
       return;
     }
 
@@ -179,7 +179,7 @@ export function LiveTvWidget({ role, operationalOs }: { role: ShellRole; operati
         evidence={
           activeSource.url
             ? createUrlEvidenceInput(activeSource.url, `${activeSource.name} stream`, 'live-tv-widget', `${activeSource.streamType.toUpperCase()} / ${status}`)
-            : { type: 'url', title: 'Live TV stream', source: 'live-tv-widget', summary: 'No stream URL configured.' }
+            : { type: 'url', title: 'Live TV stream', source: 'live-tv-widget', summary: 'Stream URL required.' }
         }
         disabled={!activeSource.url}
         disabledReason={!activeSource.url ? 'Tune or save an official stream URL before attaching evidence.' : undefined}
@@ -250,8 +250,8 @@ export function LiveTvWidget({ role, operationalOs }: { role: ShellRole; operati
           <video ref={videoRef} className="live-tv-frame" controls autoPlay playsInline preload="metadata" />
         ) : (
           <>
-            <video ref={videoRef} className="live-tv-frame" controls playsInline preload="metadata" aria-label="No Live TV feed selected" />
-            <WorkspaceEmptyState source="browser" title="No Live TV feed configured" detail="Paste an official HLS or MP4 URL above, tune it, then save it as a favorite." />
+            <video ref={videoRef} className="live-tv-frame" controls playsInline preload="metadata" aria-label="Live TV feed setup required" />
+            <WorkspaceEmptyState source="browser" title="Stream source required" detail="Paste an official HLS or MP4 URL, tune it, then save it as a favorite." />
           </>
         )}
       </WorkspaceSectionFrame>

@@ -114,7 +114,7 @@ const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], (props: Wor
   diagram: ({ activeRole, operationalOs }) => <DiagramWidget role={activeRole} operationalOs={operationalOs} />,
   browser: ({ activeRole, operationalOs }) => <BrowserWidget role={activeRole} operationalOs={operationalOs} />,
   'watch-video': ({ activeRole, operationalOs }) => <LiveTvWidget role={activeRole} operationalOs={operationalOs} />,
-  'native-app': ({ activeRole, operationalOs }) => <NativeAppWidget role={activeRole} operationalOs={operationalOs} />,
+  'native-app': ({ activeRole, missionControl, operationalOs }) => <NativeAppWidget role={activeRole} missionControl={missionControl} operationalOs={operationalOs} />,
   video: ({ localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview, activeRole, operationalOs }) => (
     <VideoWidget
       role={activeRole}

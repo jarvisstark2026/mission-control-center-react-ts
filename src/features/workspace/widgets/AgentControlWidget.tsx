@@ -16,11 +16,14 @@ import {
   getVisibleAgentJobs,
   getVisibleAgentPermissions,
   getAgentDescriptorById,
-  getHermesApiBaseUrlForMode,
+  getHermesApiBaseUrlForModeAndScheme,
   getLocalAgentBridgeStatus,
+  hermesApiKeySecretRef,
+  isDesktopAgentSecretStoreAvailable,
   restartLocalAgentBridge,
   startLocalAgentBridge,
   stopLocalAgentBridge,
+  writeAgentBridgeSecret,
   type AgentActivity,
   type AgentBridgeMode,
   type AgentBridgeProbeResult,
@@ -32,6 +35,7 @@ import {
   type AgentPermission,
   type AgentPermissionLevel,
   type AgentScheduledJob,
+  type HermesApiScheme,
   type LocalAgentBridgeProcessState,
 } from '../../agent-control';
 import { createBridgeAgentTaskGateway, type AgentTaskGateway, type AgentTaskScope } from '../../agent-tasking';
@@ -335,8 +339,10 @@ export function AgentControlWidget({
   const initialBridgeMode = bridgeSettings.bridgeMode ?? 'same-pc';
   const [bridgeMode, setBridgeMode] = useState<AgentBridgeMode>(initialBridgeMode);
   const [hermesHost, setHermesHost] = useState(bridgeSettings.hermesHost ?? '');
+  const [hermesApiScheme, setHermesApiScheme] = useState<HermesApiScheme>(bridgeSettings.hermesApiScheme ?? 'http');
   const [hermesApiPort, setHermesApiPort] = useState(bridgeSettings.hermesApiPort ?? '8642');
   const [hermesApiKey, setHermesApiKey] = useState(bridgeSettings.hermesApiKey ?? '');
+  const [hasSavedHermesApiKey, setHasSavedHermesApiKey] = useState(Boolean(bridgeSettings.hasHermesApiKey));
   const [hermesModel, setHermesModel] = useState(bridgeSettings.hermesModel ?? 'hermes-agent');
   const [localBridgeUrl, setLocalBridgeUrl] = useState(bridgeSettings.localBridgeUrl);
   const [localBridgeProcess, setLocalBridgeProcess] = useState<LocalAgentBridgeProcessState | null>(null);
@@ -348,13 +354,15 @@ export function AgentControlWidget({
   useEffect(() => {
     setBridgeMode(bridgeSettings.bridgeMode ?? 'same-pc');
     setHermesHost(bridgeSettings.hermesHost ?? '');
+    setHermesApiScheme(bridgeSettings.hermesApiScheme ?? 'http');
     setHermesApiPort(bridgeSettings.hermesApiPort ?? '8642');
     setHermesApiKey(bridgeSettings.hermesApiKey ?? '');
+    setHasSavedHermesApiKey(Boolean(bridgeSettings.hasHermesApiKey));
     setHermesModel(bridgeSettings.hermesModel ?? 'hermes-agent');
     setLocalBridgeUrl(bridgeSettings.localBridgeUrl);
-  }, [bridgeSettings.bridgeMode, bridgeSettings.hermesHost, bridgeSettings.hermesApiPort, bridgeSettings.hermesApiKey, bridgeSettings.hermesModel, bridgeSettings.localBridgeUrl]);
+  }, [bridgeSettings.bridgeMode, bridgeSettings.hermesHost, bridgeSettings.hermesApiScheme, bridgeSettings.hermesApiPort, bridgeSettings.hermesApiKey, bridgeSettings.hasHermesApiKey, bridgeSettings.hermesModel, bridgeSettings.localBridgeUrl]);
 
-  const hermesApiBaseUrl = getHermesApiBaseUrlForMode(bridgeMode, hermesHost, hermesApiPort);
+  const hermesApiBaseUrl = getHermesApiBaseUrlForModeAndScheme(bridgeMode, hermesHost, hermesApiPort, hermesApiScheme);
 
   useEffect(() => {
     let cancelled = false;
@@ -454,13 +462,34 @@ export function AgentControlWidget({
       permissions: permissions.filter((permission) => permission.level === level),
     }))
     .filter((group) => group.permissions.length > 0);
-  const saveBridgeSettings = () => {
+  const saveBridgeSettings = async () => {
     const savedHermesHost = bridgeMode === 'same-pc' ? '' : hermesHost;
+    const keyInput = hermesApiKey.trim();
+    let hermesApiKeyRef = bridgeSettings.hermesApiKeyRef;
+    let rawHermesApiKey = bridgeSettings.hermesApiKey;
+    let keyPresent = Boolean(bridgeSettings.hasHermesApiKey);
+    if (keyInput) {
+      const secretResult = await writeAgentBridgeSecret(keyInput, hermesApiKeySecretRef);
+      if (secretResult.available) {
+        hermesApiKeyRef = secretResult.keyRef;
+        rawHermesApiKey = undefined;
+        keyPresent = true;
+        setHermesApiKey('');
+        setHasSavedHermesApiKey(true);
+      } else {
+        rawHermesApiKey = keyInput;
+        keyPresent = true;
+        setHasSavedHermesApiKey(true);
+      }
+    }
     onUpdateBridgeSettings({
       bridgeMode,
       hermesHost: savedHermesHost,
+      hermesApiScheme,
       hermesApiPort,
-      hermesApiKey,
+      hermesApiKey: rawHermesApiKey,
+      hermesApiKeyRef,
+      hasHermesApiKey: keyPresent,
       hermesApiBaseUrl,
       hermesModel,
       localBridgeUrl: 'http://127.0.0.1:8787',
@@ -468,8 +497,21 @@ export function AgentControlWidget({
       preferredAgentId: selectedAgent.id,
     });
     setLocalBridgeUrl('http://127.0.0.1:8787');
-    setBridgeSetupStatus('Bridge mode saved. Mission Control will use the local desktop bridge at http://127.0.0.1:8787.');
+    setBridgeSetupStatus(
+      keyInput && isDesktopAgentSecretStoreAvailable()
+        ? 'Bridge mode saved. Hermes API key moved to the desktop credential store.'
+        : keyInput
+          ? 'Bridge mode saved. Browser preview stores the API key locally; use the installed app for desktop credential storage.'
+          : 'Bridge mode saved. Mission Control will use the local desktop bridge at http://127.0.0.1:8787.',
+    );
+    return { hermesApiKey: rawHermesApiKey, hermesApiKeyRef };
   };
+  const getBridgeStartInput = (secret: { hermesApiKey?: string; hermesApiKeyRef?: string } = {}) => ({
+    hermesApiBaseUrl,
+    hermesModel,
+    hermesApiKey: secret.hermesApiKey ?? (hermesApiKey.trim() || bridgeSettings.hermesApiKey),
+    hermesApiKeyRef: secret.hermesApiKeyRef ?? bridgeSettings.hermesApiKeyRef,
+  });
   const probeBridgeNow = async () => {
     setBridgeSetupStatus('Probing configured bridge endpoints...');
     const results = await onProbeBridge();
@@ -487,10 +529,10 @@ export function AgentControlWidget({
     return processState;
   };
   const startDesktopBridge = async () => {
-    saveBridgeSettings();
+    const secret = await saveBridgeSettings();
     setBridgeSetupStatus('Starting local Mission Control bridge...');
     try {
-      const processState = await startLocalAgentBridge({ hermesApiBaseUrl, hermesModel, hermesApiKey });
+      const processState = await startLocalAgentBridge(getBridgeStartInput(secret));
       setLocalBridgeProcess(processState);
       onUpdateBridgeSettings({ localBridgeUrl: processState.bridgeUrl, lastSuccessfulUrl: processState.running ? processState.bridgeUrl : bridgeSettings.lastSuccessfulUrl });
       setBridgeSetupStatus(processState.running ? `Local bridge running at ${processState.bridgeUrl}.` : processState.lastError ?? 'Local bridge did not start.');
@@ -505,10 +547,10 @@ export function AgentControlWidget({
     setBridgeSetupStatus(!processState.available ? processState.lastError ?? 'Desktop app required to stop the bundled bridge.' : processState.running ? 'Local bridge is still running.' : 'Local bridge stopped.');
   };
   const restartDesktopBridge = async () => {
-    saveBridgeSettings();
+    const secret = await saveBridgeSettings();
     setBridgeSetupStatus('Restarting local Mission Control bridge...');
     try {
-      const processState = await restartLocalAgentBridge({ hermesApiBaseUrl, hermesModel, hermesApiKey });
+      const processState = await restartLocalAgentBridge(getBridgeStartInput(secret));
       setLocalBridgeProcess(processState);
       onUpdateBridgeSettings({ localBridgeUrl: processState.bridgeUrl, lastSuccessfulUrl: processState.running ? processState.bridgeUrl : bridgeSettings.lastSuccessfulUrl });
       setBridgeSetupStatus(processState.running ? `Local bridge restarted at ${processState.bridgeUrl}.` : processState.lastError ?? 'Local bridge did not restart.');
@@ -517,10 +559,10 @@ export function AgentControlWidget({
     }
   };
   const restartBridgeAndProbe = async () => {
-    saveBridgeSettings();
+    const secret = await saveBridgeSettings();
     setBridgeSetupStatus('Restarting local Mission Control bridge and probing /status...');
     try {
-      const processState = await restartLocalAgentBridge({ hermesApiBaseUrl, hermesModel, hermesApiKey });
+      const processState = await restartLocalAgentBridge(getBridgeStartInput(secret));
       setLocalBridgeProcess(processState);
       onUpdateBridgeSettings({
         localBridgeUrl: processState.bridgeUrl,
@@ -544,11 +586,11 @@ export function AgentControlWidget({
     }
   };
   const startBridgeAndTestTaskLoop = async () => {
-    saveBridgeSettings();
+    const secret = await saveBridgeSettings();
     setBridgeSetupStatus('Starting local bridge and testing the task proposal loop...');
     setTestProposalStatus('Starting bridge before diagnostic proposal...');
     try {
-      const processState = await restartLocalAgentBridge({ hermesApiBaseUrl, hermesModel, hermesApiKey });
+      const processState = await restartLocalAgentBridge(getBridgeStartInput(secret));
       setLocalBridgeProcess(processState);
       onUpdateBridgeSettings({
         localBridgeUrl: processState.bridgeUrl,
@@ -596,8 +638,8 @@ export function AgentControlWidget({
     setBridgeSetupStatus(`Testing Hermes API through ${hermesApiBaseUrl}...`);
     try {
       const processState = localBridgeProcess?.running
-        ? await restartLocalAgentBridge({ hermesApiBaseUrl, hermesModel, hermesApiKey })
-        : await startLocalAgentBridge({ hermesApiBaseUrl, hermesModel, hermesApiKey });
+        ? await restartLocalAgentBridge(getBridgeStartInput())
+        : await startLocalAgentBridge(getBridgeStartInput());
       setLocalBridgeProcess(processState);
       if (!processState.available) {
         setBridgeSetupStatus(processState.lastError ?? 'Desktop app required to test Hermes through the bundled bridge.');
@@ -760,7 +802,9 @@ export function AgentControlWidget({
               onChange={(event) => {
                 const nextHost = event.currentTarget.value;
                 const pastedPort = getPortFromEndpointInput(nextHost);
-                setBridgeInputWarning(/^https:\/\//iu.test(nextHost.trim()) ? 'The bundled Mission Control bridge supports HTTP Hermes API endpoints only. Use an HTTP port, not HTTPS.' : '');
+                if (/^https:\/\//iu.test(nextHost.trim())) setHermesApiScheme('https');
+                if (/^http:\/\//iu.test(nextHost.trim())) setHermesApiScheme('http');
+                setBridgeInputWarning(/^https:\/\//iu.test(nextHost.trim()) ? 'HTTPS is supported with normal certificate validation. Self-signed or invalid certificates will fail.' : '');
                 setHermesHost(pastedPort ? getHostFromEndpointInput(nextHost) : nextHost);
                 if (pastedPort) setHermesApiPort(pastedPort);
               }}
@@ -768,6 +812,13 @@ export function AgentControlWidget({
             />
           </label>
         ) : null}
+        <label className="agent-control-bridge-field">
+          <span>Hermes API scheme</span>
+          <select value={hermesApiScheme} disabled={!editable} onChange={(event) => setHermesApiScheme(event.currentTarget.value as HermesApiScheme)}>
+            <option value="http">HTTP</option>
+            <option value="https">HTTPS</option>
+          </select>
+        </label>
         <label className="agent-control-bridge-field">
           <span>Hermes API port</span>
           <input
@@ -788,14 +839,14 @@ export function AgentControlWidget({
           />
         </label>
         <label className="agent-control-bridge-field">
-          <span>Hermes API key</span>
+          <span>Hermes API key{hasSavedHermesApiKey ? ' saved' : ''}</span>
           <input
             value={hermesApiKey}
             disabled={!editable}
             type="password"
             autoComplete="off"
             onChange={(event) => setHermesApiKey(event.currentTarget.value)}
-            placeholder="optional bearer token"
+            placeholder={hasSavedHermesApiKey ? 'saved in desktop credential store' : 'optional bearer token'}
           />
         </label>
         <div className="agent-control-bridge-status-grid">

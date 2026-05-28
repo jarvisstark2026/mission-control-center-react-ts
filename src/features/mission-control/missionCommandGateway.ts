@@ -1,7 +1,7 @@
 import type { ShellRole } from '../shell/roles';
 import type { CommandAction, CommandExecutionStatus, CommandRequest } from './missionControlTypes';
 
-export type MissionCommandGatewayMode = 'mock' | 'backend';
+export type MissionCommandGatewayMode = 'mock' | 'backend' | 'allowlist';
 
 export type MissionCommandExecutionRequest = {
   command: CommandRequest;
@@ -107,9 +107,63 @@ export function createBackendMissionCommandGateway(url: string): MissionCommandG
   };
 }
 
-export function createMissionCommandGateway(url?: string | null): MissionCommandGateway {
+const allowlistedCommandSourcePrefixes = [
+  'native-app:',
+  'home-systems:',
+  'workflow-runbook',
+  'agent-bridge:',
+  'agent-console',
+  'agent-control',
+];
+
+function isAllowlistedCommand(command: CommandRequest) {
+  return allowlistedCommandSourcePrefixes.some((prefix) => command.source === prefix || command.source.startsWith(prefix));
+}
+
+export function createAllowlistedMissionCommandGateway(options: MissionCommandGatewayOptions = {}): MissionCommandGateway {
+  const delayMs = options.delayMs ?? 220;
+
+  return {
+    mode: 'allowlist',
+    async executeCommand({ command, action, role }) {
+      await wait(delayMs);
+
+      if (!isAllowlistedCommand(command)) {
+        return {
+          status: 'failed',
+          result: `Allowlisted command executor rejected "${command.title}" because source "${command.source}" is not registered.`,
+          rollbackAvailable: false,
+          completedAt: new Date().toISOString(),
+          gatewayMode: 'allowlist',
+        };
+      }
+      if (command.risk === 'critical' && role !== 'admin') {
+        return {
+          status: 'failed',
+          result: `Allowlisted command executor rejected "${command.title}" because critical actions require admin approval.`,
+          rollbackAvailable: false,
+          completedAt: new Date().toISOString(),
+          gatewayMode: 'allowlist',
+        };
+      }
+
+      return {
+        status: 'succeeded',
+        result: `Allowlisted Mission Control executor accepted "${command.title}" after ${action}. External systems are changed only by registered adapters.`,
+        rollbackAvailable: command.risk === 'safe',
+        completedAt: new Date().toISOString(),
+        gatewayMode: 'allowlist',
+      };
+    },
+  };
+}
+
+export function createMissionCommandGateway(url?: string | null, mode?: string | null): MissionCommandGateway {
   if (url?.trim()) {
     return createBackendMissionCommandGateway(url);
+  }
+  if (mode === 'allowlist') {
+    return createAllowlistedMissionCommandGateway();
   }
 
   return createMockMissionCommandGateway();

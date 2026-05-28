@@ -50,6 +50,14 @@ export function getCommandGatewayDisplay(gatewayMode: MissionCommandGatewayMode)
       state: 'ready',
     };
   }
+  if (gatewayMode === 'allowlist') {
+    return {
+      label: 'Allowlisted command gateway',
+      detail: 'Approved commands run only through registered Mission Control adapters and role/risk checks.',
+      meta: 'registered actions',
+      state: 'ready',
+    };
+  }
 
   return {
     label: 'Local dry-run gateway',

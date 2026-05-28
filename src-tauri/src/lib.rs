@@ -2,8 +2,9 @@ use std::{
     collections::BTreeMap,
     fs,
     io::{Read, Write},
-    net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs},
+    net::{SocketAddr, TcpListener, TcpStream},
     path::PathBuf,
+    process::{Command, Stdio},
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex,
@@ -18,6 +19,7 @@ use time::{format_description::well_known::Rfc3339, OffsetDateTime};
 type DesktopState = BTreeMap<String, String>;
 
 const STATE_FILE_NAME: &str = "mission-control-state.json";
+const AGENT_BRIDGE_SECRET_FILE_NAME: &str = "agent-bridge-secrets.json";
 const LOCAL_AGENT_BRIDGE_URL: &str = "http://127.0.0.1:8787";
 const LOCAL_AGENT_BRIDGE_BIND: &str = "127.0.0.1:8787";
 
@@ -39,6 +41,16 @@ struct StartAgentBridgeRequest {
     hermes_api_base_url: String,
     hermes_model: String,
     hermes_api_key: Option<String>,
+    hermes_api_key_ref: Option<String>,
+}
+
+#[derive(Clone, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AgentBridgeSecretResult {
+    available: bool,
+    key_ref: String,
+    saved_at: Option<String>,
+    error: Option<String>,
 }
 
 struct LocalBridgeRuntime {
@@ -91,6 +103,127 @@ fn write_state(app: &AppHandle, state: &DesktopState) -> Result<(), String> {
     let path = state_path(app)?;
     let raw = serde_json::to_string_pretty(state).map_err(|error| error.to_string())?;
     fs::write(path, raw).map_err(|error| error.to_string())
+}
+
+fn agent_bridge_secret_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let app_data_dir = app.path().app_data_dir().map_err(|error| error.to_string())?;
+    fs::create_dir_all(&app_data_dir).map_err(|error| error.to_string())?;
+    Ok(app_data_dir.join(AGENT_BRIDGE_SECRET_FILE_NAME))
+}
+
+fn read_agent_bridge_secret_store(app: &AppHandle) -> Result<DesktopState, String> {
+    let path = agent_bridge_secret_path(app)?;
+    if !path.exists() {
+        return Ok(DesktopState::new());
+    }
+
+    let raw = fs::read_to_string(path).map_err(|error| error.to_string())?;
+    serde_json::from_str(&raw).map_err(|error| error.to_string())
+}
+
+fn write_agent_bridge_secret_store(app: &AppHandle, state: &DesktopState) -> Result<(), String> {
+    let path = agent_bridge_secret_path(app)?;
+    let raw = serde_json::to_string_pretty(state).map_err(|error| error.to_string())?;
+    fs::write(path, raw).map_err(|error| error.to_string())
+}
+
+fn run_powershell_dpapi(script: &str, input: &str) -> Result<String, String> {
+    let mut child = Command::new("powershell")
+        .args(["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", script])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|error| format!("Windows credential helper failed to start: {error}"))?;
+
+    if let Some(stdin) = child.stdin.as_mut() {
+        stdin
+            .write_all(input.as_bytes())
+            .map_err(|error| format!("Windows credential helper failed to receive input: {error}"))?;
+    }
+
+    let output = child
+        .wait_with_output()
+        .map_err(|error| format!("Windows credential helper failed: {error}"))?;
+    if !output.status.success() {
+        let error = String::from_utf8_lossy(&output.stderr).trim().to_string();
+        return Err(if error.is_empty() {
+            "Windows credential helper returned an error.".to_string()
+        } else {
+            error
+        });
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
+}
+
+fn protect_secret(secret: &str) -> Result<String, String> {
+    run_powershell_dpapi(
+        "Add-Type -AssemblyName System.Security; $raw=[Console]::In.ReadToEnd(); $bytes=[Text.Encoding]::UTF8.GetBytes($raw); $protected=[Security.Cryptography.ProtectedData]::Protect($bytes,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Out.Write([Convert]::ToBase64String($protected))",
+        secret,
+    )
+}
+
+fn unprotect_secret(secret_blob: &str) -> Result<String, String> {
+    run_powershell_dpapi(
+        "Add-Type -AssemblyName System.Security; $raw=[Console]::In.ReadToEnd().Trim(); $bytes=[Convert]::FromBase64String($raw); $plain=[Security.Cryptography.ProtectedData]::Unprotect($bytes,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Out.Write([Text.Encoding]::UTF8.GetString($plain))",
+        secret_blob,
+    )
+}
+
+fn read_agent_bridge_secret_value(app: &AppHandle, key_ref: &str) -> Result<Option<String>, String> {
+    let key = key_ref.trim();
+    if key.is_empty() {
+        return Ok(None);
+    }
+
+    let store = read_agent_bridge_secret_store(app)?;
+    let Some(secret_blob) = store.get(key) else {
+        return Ok(None);
+    };
+    Ok(Some(unprotect_secret(secret_blob)?))
+}
+
+#[tauri::command]
+fn write_agent_bridge_secret(app: AppHandle, key_ref: String, secret: String) -> Result<AgentBridgeSecretResult, String> {
+    let normalized_key_ref = key_ref.trim();
+    if normalized_key_ref.is_empty() {
+        return Err("Secret key reference is required.".to_string());
+    }
+    let normalized_secret = secret.trim();
+    if normalized_secret.is_empty() {
+        return Err("Secret value is required.".to_string());
+    }
+
+    let protected = protect_secret(normalized_secret)?;
+    let mut store = read_agent_bridge_secret_store(&app)?;
+    store.insert(normalized_key_ref.to_string(), protected);
+    write_agent_bridge_secret_store(&app, &store)?;
+    Ok(AgentBridgeSecretResult {
+        available: true,
+        key_ref: normalized_key_ref.to_string(),
+        saved_at: Some(now_iso()),
+        error: None,
+    })
+}
+
+#[tauri::command]
+fn read_agent_bridge_secret(app: AppHandle, key_ref: String) -> Result<Option<String>, String> {
+    read_agent_bridge_secret_value(&app, &key_ref)
+}
+
+#[tauri::command]
+fn delete_agent_bridge_secret(app: AppHandle, key_ref: String) -> Result<AgentBridgeSecretResult, String> {
+    let normalized_key_ref = key_ref.trim();
+    let mut store = read_agent_bridge_secret_store(&app)?;
+    store.remove(normalized_key_ref);
+    write_agent_bridge_secret_store(&app, &store)?;
+    Ok(AgentBridgeSecretResult {
+        available: true,
+        key_ref: normalized_key_ref.to_string(),
+        saved_at: None,
+        error: None,
+    })
 }
 
 #[tauri::command]
@@ -149,6 +282,18 @@ fn normalize_hermes_model(value: &str) -> String {
 
 fn normalize_hermes_api_key(value: Option<&String>) -> String {
     value.map(|item| item.trim().to_string()).unwrap_or_default()
+}
+
+fn resolve_hermes_api_key(app: &AppHandle, request: &StartAgentBridgeRequest) -> Result<String, String> {
+    let direct_key = normalize_hermes_api_key(request.hermes_api_key.as_ref());
+    if !direct_key.is_empty() {
+        return Ok(direct_key);
+    }
+
+    let Some(key_ref) = request.hermes_api_key_ref.as_ref().map(|value| value.trim()).filter(|value| !value.is_empty()) else {
+        return Ok(String::new());
+    };
+    read_agent_bridge_secret_value(app, key_ref).map(|value| value.unwrap_or_default())
 }
 
 fn http_response(status: &str, content_type: &str, body: &str) -> Vec<u8> {
@@ -334,108 +479,48 @@ fn schema_summary(value: &serde_json::Value) -> String {
     parts.join("; ")
 }
 
-fn decode_chunked_body(raw: &[u8]) -> Vec<u8> {
-    let mut index = 0_usize;
-    let mut decoded = Vec::new();
-
-    while index < raw.len() {
-        let Some(line_end) = raw[index..].windows(2).position(|window| window == b"\r\n") else {
-            break;
-        };
-        let size_line = String::from_utf8_lossy(&raw[index..index + line_end]);
-        let size_text = size_line.split(';').next().unwrap_or("0").trim();
-        let size = usize::from_str_radix(size_text, 16).unwrap_or(0);
-        index += line_end + 2;
-        if size == 0 {
-            break;
-        }
-        if index + size > raw.len() {
-            break;
-        }
-        decoded.extend_from_slice(&raw[index..index + size]);
-        index += size + 2;
-    }
-
-    decoded
-}
-
-fn parse_http_url(url: &str) -> Result<(String, u16, String), String> {
-    let trimmed = url.trim();
-    let without_scheme = trimmed
-        .strip_prefix("http://")
-        .ok_or_else(|| "Only http:// Hermes API URLs are supported by the bundled local bridge.".to_string())?;
-    let (host_port, path) = without_scheme
-        .split_once('/')
-        .map(|(host, path)| (host, format!("/{path}")))
-        .unwrap_or((without_scheme, "/".to_string()));
-    let (host, port) = if let Some((host, port)) = host_port.rsplit_once(':') {
-        (host.to_string(), port.parse::<u16>().map_err(|_| "Invalid Hermes API port.".to_string())?)
-    } else {
-        (host_port.to_string(), 80)
-    };
-
-    if host.is_empty() {
-        return Err("Hermes API host is empty.".to_string());
-    }
-
-    Ok((host, port, path))
-}
-
 fn http_request(method: &str, url: &str, body: Option<&str>, content_type: Option<&str>, bearer_token: &str, read_timeout_secs: u64) -> Result<SimpleHttpResponse, String> {
-    let (host, port, path) = parse_http_url(url)?;
-    let addr = (host.as_str(), port)
-        .to_socket_addrs()
-        .map_err(|error| error.to_string())?
-        .next()
-        .ok_or_else(|| "Hermes API host did not resolve.".to_string())?;
-    let mut stream = TcpStream::connect_timeout(&addr, Duration::from_secs(3)).map_err(|error| error.to_string())?;
-    stream.set_read_timeout(Some(Duration::from_secs(read_timeout_secs))).map_err(|error| error.to_string())?;
-    stream.set_write_timeout(Some(Duration::from_secs(10))).map_err(|error| error.to_string())?;
+    if !url.trim_start().starts_with("http://") && !url.trim_start().starts_with("https://") {
+        return Err("Hermes API URL must start with http:// or https://.".to_string());
+    }
 
-    let payload = body.unwrap_or("");
-    let authorization = if bearer_token.trim().is_empty() {
-        String::new()
-    } else {
-        format!("Authorization: Bearer {}\r\n", bearer_token.trim())
-    };
-    let request = format!(
-        "{method} {path} HTTP/1.1\r\nHost: {host}:{port}\r\nAccept: application/json\r\n{}{}Content-Length: {}\r\nConnection: close\r\n\r\n{}",
-        authorization,
-        content_type
-            .map(|value| format!("Content-Type: {value}\r\n"))
-            .unwrap_or_default(),
-        payload.as_bytes().len(),
-        payload
-    );
-    stream.write_all(request.as_bytes()).map_err(|error| error.to_string())?;
+    let agent = ureq::AgentBuilder::new()
+        .timeout_connect(Duration::from_secs(3))
+        .timeout_read(Duration::from_secs(read_timeout_secs))
+        .timeout_write(Duration::from_secs(10))
+        .build();
+    let mut request = match method {
+        "GET" => agent.get(url),
+        "POST" => agent.post(url),
+        _ => return Err(format!("Unsupported Hermes API method: {method}")),
+    }
+    .set("Accept", "application/json");
 
-    let mut raw = Vec::new();
-    stream.read_to_end(&mut raw).map_err(|error| error.to_string())?;
-    let header_end = raw
-        .windows(4)
-        .position(|window| window == b"\r\n\r\n")
-        .map(|index| index + 4)
-        .ok_or_else(|| "Hermes API returned an invalid HTTP response.".to_string())?;
-    let header_text = String::from_utf8_lossy(&raw[..header_end]);
-    let status_code = header_text
-        .lines()
-        .next()
-        .and_then(|line| line.split_whitespace().nth(1))
-        .and_then(|code| code.parse::<u16>().ok())
-        .unwrap_or(0);
-    let is_chunked = header_text
-        .lines()
-        .any(|line| line.to_ascii_lowercase().starts_with("transfer-encoding:") && line.to_ascii_lowercase().contains("chunked"));
-    let body_bytes = if is_chunked {
-        decode_chunked_body(&raw[header_end..])
+    if let Some(value) = content_type {
+        request = request.set("Content-Type", value);
+    }
+    if !bearer_token.trim().is_empty() {
+        request = request.set("Authorization", &format!("Bearer {}", bearer_token.trim()));
+    }
+
+    let response = if let Some(payload) = body {
+        request.send_string(payload)
     } else {
-        raw[header_end..].to_vec()
+        request.call()
     };
 
-    Ok(SimpleHttpResponse {
-        status_code,
-        body: String::from_utf8_lossy(&body_bytes).to_string(),
-    })
+    match response {
+        Ok(response) => {
+            let status_code = response.status();
+            let body = response.into_string().unwrap_or_default();
+            Ok(SimpleHttpResponse { status_code, body })
+        }
+        Err(ureq::Error::Status(status_code, response)) => {
+            let body = response.into_string().unwrap_or_default();
+            Ok(SimpleHttpResponse { status_code, body })
+        }
+        Err(error) => Err(error.to_string()),
+    }
 }
 
 fn check_hermes_api(hermes_api_base_url: &str, hermes_api_key: &str) -> (bool, String) {
@@ -976,6 +1061,7 @@ fn get_agent_bridge_status(manager: tauri::State<'_, LocalBridgeManager>) -> Res
 
 #[tauri::command]
 fn start_agent_bridge(
+    app: AppHandle,
     manager: tauri::State<'_, LocalBridgeManager>,
     request: StartAgentBridgeRequest,
 ) -> Result<LocalAgentBridgeProcessState, String> {
@@ -983,13 +1069,13 @@ fn start_agent_bridge(
     if runtime.running {
         runtime.hermes_api_base_url = normalize_hermes_api_base_url(&request.hermes_api_base_url);
         runtime.hermes_model = normalize_hermes_model(&request.hermes_model);
-        runtime.hermes_api_key = normalize_hermes_api_key(request.hermes_api_key.as_ref());
+        runtime.hermes_api_key = resolve_hermes_api_key(&app, &request)?;
         return Ok(process_state(&runtime));
     }
 
     let hermes_api_base_url = normalize_hermes_api_base_url(&request.hermes_api_base_url);
     let hermes_model = normalize_hermes_model(&request.hermes_model);
-    let hermes_api_key = normalize_hermes_api_key(request.hermes_api_key.as_ref());
+    let hermes_api_key = resolve_hermes_api_key(&app, &request)?;
     let running = Arc::new(AtomicBool::new(true));
     let started_at = now_iso();
 
@@ -1034,6 +1120,7 @@ fn stop_agent_bridge(manager: tauri::State<'_, LocalBridgeManager>) -> Result<Lo
 
 #[tauri::command]
 fn restart_agent_bridge(
+    app: AppHandle,
     manager: tauri::State<'_, LocalBridgeManager>,
     request: StartAgentBridgeRequest,
 ) -> Result<LocalAgentBridgeProcessState, String> {
@@ -1047,7 +1134,7 @@ fn restart_agent_bridge(
         runtime.stop_flag = None;
     }
     thread::sleep(Duration::from_millis(250));
-    start_agent_bridge(manager, request)
+    start_agent_bridge(app, manager, request)
 }
 
 pub fn run() {
@@ -1086,6 +1173,9 @@ pub fn run() {
             load_app_state,
             write_app_state,
             remove_app_state,
+            write_agent_bridge_secret,
+            read_agent_bridge_secret,
+            delete_agent_bridge_secret,
             start_agent_bridge,
             stop_agent_bridge,
             restart_agent_bridge,

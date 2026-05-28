@@ -26,6 +26,7 @@ export {
   missionControlReducer,
 } from './missionControlReducer';
 export {
+  createAllowlistedMissionCommandGateway,
   createBackendMissionCommandGateway,
   createMissionCommandGateway,
   createMockMissionCommandGateway,

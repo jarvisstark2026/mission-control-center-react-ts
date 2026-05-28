@@ -126,7 +126,7 @@ export function CommandInboxWidget({
         meta={missionControl.role}
       />
       <WorkspaceStatusStrip
-        source={missionControl.commandGatewayMode === 'backend' ? 'bridge' : 'local'}
+        source={missionControl.commandGatewayMode === 'backend' ? 'bridge' : missionControl.commandGatewayMode === 'allowlist' ? 'local' : 'local'}
         status={nextCommand ? `${focusedCommand ? 'Focused' : 'Next'}: ${nextCommand.title}` : 'Queue clear'}
         count={`${pendingCommands.length} pending / ${completedCommands.length} history`}
         updatedAt={gatewayDisplay.label}
@@ -307,7 +307,7 @@ export function CommandInboxWidget({
       <WorkspaceSectionFrame
         className="mission-control-list-frame"
         eyebrow="execution / results"
-        title={missionControl.commandGatewayMode === 'backend' ? 'execution history' : 'local dry-run history'}
+        title={missionControl.commandGatewayMode === 'backend' ? 'execution history' : missionControl.commandGatewayMode === 'allowlist' ? 'allowlisted execution history' : 'local dry-run history'}
         meta={`${executionCommands.length} tracked`}
       >
         <AuditList

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { defaultAgentLocalBridgeUrl } from './agentControlModel';
-import { getHermesApiBaseUrlForMode, readAgentBridgeSettings, writeAgentBridgeSettings } from './agentBridgeSettings';
+import { getHermesApiBaseUrlForMode, getHermesApiBaseUrlForModeAndScheme, readAgentBridgeSettings, writeAgentBridgeSettings } from './agentBridgeSettings';
 
 describe('agentBridgeSettings', () => {
   beforeEach(() => {
@@ -24,6 +24,7 @@ describe('agentBridgeSettings', () => {
     expect(settings.bridgeMode).toBe('same-pc');
     expect(settings.hermesApiPort).toBe('8642');
     expect(settings.hermesApiKey).toBeUndefined();
+    expect(settings.hasHermesApiKey).toBe(false);
     expect(settings.hermesApiBaseUrl).toBe('http://127.0.0.1:8642/v1');
     expect(settings.preferredAgentId).toBeUndefined();
     expect(settings.lastSuccessfulUrl).toBeUndefined();
@@ -35,6 +36,7 @@ describe('agentBridgeSettings', () => {
     expect(getHermesApiBaseUrlForMode('tailscale', 'http://198.51.100.119:8642/v1/status')).toBe('http://198.51.100.119:8642/v1');
     expect(getHermesApiBaseUrlForMode('lan', '192.0.2.64', '8445')).toBe('http://192.0.2.64:8445/v1');
     expect(getHermesApiBaseUrlForMode('tailscale', 'http://198.51.100.119:8446/v1/status')).toBe('http://198.51.100.119:8446/v1');
+    expect(getHermesApiBaseUrlForModeAndScheme('lan', '192.0.2.64', '8642', 'https')).toBe('https://192.0.2.64:8642/v1');
   });
 
   it('preserves custom Hermes API port settings', () => {
@@ -58,18 +60,34 @@ describe('agentBridgeSettings', () => {
     });
 
     expect(settings.hermesApiKey).toBe('test-secret');
+    expect(settings.hasHermesApiKey).toBe(true);
     expect(readAgentBridgeSettings().hermesApiKey).toBe('test-secret');
+  });
+
+  it('stores desktop secret references without keeping the raw key', () => {
+    const settings = writeAgentBridgeSettings({
+      bridgeMode: 'lan',
+      hermesHost: '192.0.2.64',
+      hermesApiKeyRef: 'desktop-secret:hermes-api-key',
+      hasHermesApiKey: true,
+      hermesApiKey: '',
+    });
+
+    expect(settings.hermesApiKey).toBeUndefined();
+    expect(settings.hermesApiKeyRef).toBe('desktop-secret:hermes-api-key');
+    expect(readAgentBridgeSettings().hasHermesApiKey).toBe(true);
   });
 
   it('extracts host and port from a pasted Hermes URL', () => {
     const settings = writeAgentBridgeSettings({
       bridgeMode: 'lan',
-      hermesHost: 'http://192.0.2.64:8446/v1/models',
+      hermesHost: 'https://192.0.2.64:8446/v1/models',
     });
 
     expect(settings.hermesHost).toBe('192.0.2.64');
+    expect(settings.hermesApiScheme).toBe('https');
     expect(settings.hermesApiPort).toBe('8446');
-    expect(settings.hermesApiBaseUrl).toBe('http://192.0.2.64:8446/v1');
+    expect(settings.hermesApiBaseUrl).toBe('https://192.0.2.64:8446/v1');
   });
 
   it('merges preferred agent and last successful URL updates', () => {

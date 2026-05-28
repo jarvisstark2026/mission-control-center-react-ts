@@ -93,6 +93,8 @@ describe('workspaceWidgetFeatureModels', () => {
     expect(getNativeAppProfileType('https://example.com')).toBe('web');
     expect(getNativeAppProfileType('codex://')).toBe('protocol');
     expect(getNativeAppProfileType('C:\\Tools\\editor.exe')).toBe('manual');
+    expect(withProtocol.profiles[0].allowlistStatus).toBe('approved');
+    expect(withManual.profiles[0].allowlistStatus).toBe('blocked');
     expect(canLaunchNativeAppProfile(withProtocol.profiles[0])).toBe(true);
     expect(canLaunchNativeAppProfile(withManual.profiles[0])).toBe(false);
     expect(normalizeNativeAppProfileState(withManual).profiles).toHaveLength(3);

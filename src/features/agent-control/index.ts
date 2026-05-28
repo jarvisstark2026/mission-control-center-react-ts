@@ -33,11 +33,21 @@ export {
 export { useAgentBridgeRuntime, type AgentBridgeRuntime } from './useAgentBridgeRuntime';
 export {
   getHermesApiBaseUrlForMode,
+  getHermesApiBaseUrlForModeAndScheme,
   readAgentBridgeSettings,
   writeAgentBridgeSettings,
   type AgentBridgeMode,
   type AgentBridgeSettings,
+  type HermesApiScheme,
 } from './agentBridgeSettings';
+export {
+  hermesApiKeySecretRef,
+  isDesktopAgentSecretStoreAvailable,
+  writeAgentBridgeSecret,
+  readAgentBridgeSecret,
+  deleteAgentBridgeSecret,
+  type AgentBridgeSecretResult,
+} from './agentBridgeSecrets';
 export {
   getLocalAgentBridgeStatus,
   restartLocalAgentBridge,

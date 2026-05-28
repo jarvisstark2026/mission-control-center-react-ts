@@ -25,6 +25,7 @@ export type MissionControlRuntime = {
 type MissionControlImportMetaEnv = ImportMetaEnv & {
   readonly VITE_MISSION_CONTROL_SSE_URL?: string;
   readonly VITE_MISSION_COMMAND_API_URL?: string;
+  readonly VITE_MISSION_COMMAND_EXECUTOR_MODE?: string;
 };
 
 function getMissionControlSseUrl() {
@@ -35,8 +36,12 @@ function getMissionCommandApiUrl() {
   return (import.meta.env as MissionControlImportMetaEnv).VITE_MISSION_COMMAND_API_URL;
 }
 
+function getMissionCommandExecutorMode() {
+  return (import.meta.env as MissionControlImportMetaEnv).VITE_MISSION_COMMAND_EXECUTOR_MODE;
+}
+
 export function useMissionControl(role: ShellRole): MissionControlRuntime {
-  const commandGateway = useMemo(() => createMissionCommandGateway(getMissionCommandApiUrl()), []);
+  const commandGateway = useMemo(() => createMissionCommandGateway(getMissionCommandApiUrl(), getMissionCommandExecutorMode()), []);
   const [state, dispatch] = useReducer(missionControlReducer, undefined, () =>
     loadPersistedMissionControlState(createInitialMissionControlState()),
   );
@@ -98,7 +103,7 @@ export function useMissionControl(role: ShellRole): MissionControlRuntime {
             type: 'command-execution',
             commandId,
             status: 'running',
-            result: `${commandGateway.mode === 'backend' ? 'Backend' : 'Local dry-run'} gateway is executing the command.`,
+            result: `${commandGateway.mode === 'backend' ? 'Backend' : commandGateway.mode === 'allowlist' ? 'Allowlisted' : 'Local dry-run'} gateway is executing the command.`,
             actor: `${commandGateway.mode}-command-gateway`,
             timestamp: new Date().toISOString(),
           } satisfies MissionControlReducerAction);

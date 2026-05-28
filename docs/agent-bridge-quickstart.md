@@ -14,9 +14,9 @@ The local bridge then connects to Hermes through one of three modes:
 
 | Mode | Hermes API base URL |
 | --- | --- |
-| Same PC | `http://127.0.0.1:<port>/v1` |
-| LAN PC | `http://<lan-host-or-ip>:<port>/v1` |
-| Tailscale | `http://<tailscale-host-or-ip>:<port>/v1` |
+| Same PC | `http(s)://127.0.0.1:<port>/v1` |
+| LAN PC | `http(s)://<lan-host-or-ip>:<port>/v1` |
+| Tailscale | `http(s)://<tailscale-host-or-ip>:<port>/v1` |
 
 Browser preview can edit settings and test the loop, but it cannot start or stop the bundled local bridge. Use the Windows desktop app for the normal user setup.
 
@@ -51,7 +51,7 @@ Typical Hermes URL on the Hermes machine:
 http://127.0.0.1:8642/v1
 ```
 
-The default port is `8642`. Change the port in Agent Control if Hermes is listening on another HTTP port such as `80`, `8445`, or `8446`.
+The default port is `8642`. Change the port in Agent Control if Hermes is listening on another port such as `80`, `8445`, or `8446`.
 
 For another PC, verify from the Mission Control PC:
 
@@ -74,15 +74,15 @@ Use the LAN address if it works. Use Tailscale if LAN routing or firewall rules 
 2. Open `Bridge setup`.
 3. Choose `Same PC`, `LAN PC`, or `Tailscale`.
 4. For LAN/Tailscale, enter only the host or IP, for example `192.0.2.64` or `198.51.100.119`.
-5. Set `Hermes API port`; keep `8642` unless Hermes is listening elsewhere.
-6. Paste the `Hermes API key` if Hermes requires bearer auth.
+5. Set `Hermes API scheme` and `Hermes API port`; keep `HTTP` and `8642` unless Hermes is listening elsewhere.
+6. Paste the `Hermes API key` if Hermes requires bearer auth. The installed desktop app stores it through the desktop secret adapter; browser preview stores it locally for development only.
 7. Click `Save settings`.
 8. Click `Start bridge`.
 9. Click `Test Hermes API`.
 10. Click `Send test proposal`.
 11. Review the pending proposal in `Command Inbox`.
 
-The bundled Mission Control bridge currently supports HTTP Hermes API endpoints. HTTPS support is a separate bridge enhancement.
+The bundled Mission Control bridge supports HTTP and HTTPS Hermes API endpoints. HTTPS uses normal certificate validation; invalid or self-signed certificates fail until trusted by Windows.
 
 ## Safety Rule
 

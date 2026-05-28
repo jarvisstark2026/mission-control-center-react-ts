@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { initialCommands } from './missionControlMock';
-import { createBackendMissionCommandGateway, createMockMissionCommandGateway } from './missionCommandGateway';
+import { createAllowlistedMissionCommandGateway, createBackendMissionCommandGateway, createMockMissionCommandGateway } from './missionCommandGateway';
 
 describe('missionCommandGateway', () => {
   afterEach(() => {
@@ -58,5 +58,41 @@ describe('missionCommandGateway', () => {
       gatewayMode: 'backend',
     });
     expect(fetchMock).toHaveBeenCalledWith('/api/commands', expect.objectContaining({ method: 'POST' }));
+  });
+
+  it('executes only registered Mission Control actions through the allowlisted gateway', async () => {
+    const gateway = createAllowlistedMissionCommandGateway({ delayMs: 0 });
+    const command = { ...initialCommands[0], source: 'native-app:web', risk: 'safe' as const };
+
+    await expect(
+      gateway.executeCommand({
+        command,
+        action: 'approve',
+        role: 'admin',
+        requestedAt: '2026-05-22T19:00:00.000Z',
+      }),
+    ).resolves.toMatchObject({
+      status: 'succeeded',
+      gatewayMode: 'allowlist',
+      result: expect.stringContaining('Allowlisted Mission Control executor accepted'),
+    });
+  });
+
+  it('rejects unregistered sources through the allowlisted gateway', async () => {
+    const gateway = createAllowlistedMissionCommandGateway({ delayMs: 0 });
+    const command = { ...initialCommands[0], source: 'external-shell' };
+
+    await expect(
+      gateway.executeCommand({
+        command,
+        action: 'approve',
+        role: 'admin',
+        requestedAt: '2026-05-22T19:00:00.000Z',
+      }),
+    ).resolves.toMatchObject({
+      status: 'failed',
+      gatewayMode: 'allowlist',
+      result: expect.stringContaining('rejected'),
+    });
   });
 });

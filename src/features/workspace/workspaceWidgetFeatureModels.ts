@@ -79,6 +79,8 @@ export type NativeAppProfile = {
   name: string;
   launchTarget: string;
   type: 'web' | 'protocol' | 'manual';
+  allowlistStatus: 'approved' | 'pending' | 'blocked';
+  approvedAt?: string;
   source: 'local';
   createdAt: string;
   updatedAt: string;
@@ -501,6 +503,8 @@ export function createDefaultNativeAppProfileState(now = new Date().toISOString(
         name: 'Mission Control',
         launchTarget: 'http://127.0.0.1:5173/?role=admin',
         type: 'web',
+        allowlistStatus: 'approved',
+        approvedAt: now,
         source: 'local',
         createdAt: now,
         updatedAt: now,
@@ -518,8 +522,8 @@ export function getNativeAppProfileType(target: string): NativeAppProfile['type'
   return 'manual';
 }
 
-export function canLaunchNativeAppProfile(profile: Pick<NativeAppProfile, 'type'>) {
-  return profile.type === 'web' || profile.type === 'protocol';
+export function canLaunchNativeAppProfile(profile: Pick<NativeAppProfile, 'type' | 'allowlistStatus'>) {
+  return (profile.type === 'web' || profile.type === 'protocol') && profile.allowlistStatus === 'approved';
 }
 
 function normalizeNativeAppProfile(value: unknown, now: string): NativeAppProfile | null {
@@ -529,11 +533,18 @@ function normalizeNativeAppProfile(value: unknown, now: string): NativeAppProfil
   if (!name || !launchTarget) return null;
   const createdAt = normalizeDate(value.createdAt, now);
   const type = value.type === 'web' || value.type === 'protocol' || value.type === 'manual' ? value.type : getNativeAppProfileType(launchTarget);
+  const allowlistStatus = value.allowlistStatus === 'pending' || value.allowlistStatus === 'blocked' || value.allowlistStatus === 'approved'
+    ? value.allowlistStatus
+    : type === 'manual'
+      ? 'blocked'
+      : 'approved';
   return {
     id: normalizeText(value.id, createId('app', name, createdAt)),
     name,
     launchTarget,
     type,
+    allowlistStatus,
+    approvedAt: value.approvedAt ? normalizeDate(value.approvedAt, createdAt) : allowlistStatus === 'approved' ? createdAt : undefined,
     source: 'local',
     createdAt,
     updatedAt: normalizeDate(value.updatedAt, createdAt),
@@ -576,6 +587,8 @@ export function addNativeAppProfile(
     name,
     launchTarget,
     type: getNativeAppProfileType(launchTarget),
+    allowlistStatus: getNativeAppProfileType(launchTarget) === 'manual' ? 'blocked' : 'approved',
+    approvedAt: getNativeAppProfileType(launchTarget) === 'manual' ? undefined : now,
     source: 'local',
     createdAt: now,
     updatedAt: now,

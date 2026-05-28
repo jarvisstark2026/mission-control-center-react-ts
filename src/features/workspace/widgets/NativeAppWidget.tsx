@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import type { ShellRole } from '../../shell/roles';
+import type { MissionControlEvent, MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import {
@@ -24,12 +25,67 @@ import {
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 
 function getProfileActionLabel(profile: NativeAppProfile) {
-  if (profile.type === 'web') return 'Open web';
-  if (profile.type === 'protocol') return 'Open link';
+  if (profile.type === 'web') return 'Stage web launch';
+  if (profile.type === 'protocol') return 'Stage protocol launch';
   return 'Track';
 }
 
-export function NativeAppWidget({ role, operationalOs }: { role: ShellRole; operationalOs: OperationalOsRuntime }) {
+function createNativeAppLaunchEvents(profile: NativeAppProfile, role: ShellRole): MissionControlEvent[] {
+  if (!canLaunchNativeAppProfile(profile)) return [];
+  const timestamp = new Date().toISOString();
+  const commandId = `native-app-${profile.id}-${Date.parse(timestamp).toString(36)}`;
+  return [
+    {
+      type: 'command',
+      command: {
+        id: commandId,
+        title: `Open ${profile.name}`,
+        summary: `Open allowlisted ${profile.type} target from Native App.`,
+        source: `native-app:${profile.type}`,
+        agent: {
+          agentId: 'mission-control-shell',
+          agentName: 'Mission Control Shell',
+          profile: 'native-app-launch',
+        },
+        reasoning: `${profile.name} is an allowlisted ${profile.type} profile. Mission Control stages the launch through Command Inbox before any external handoff.`,
+        expectedResult: `The approved command opens ${profile.launchTarget} through the registered Mission Control desktop adapter.`,
+        scope: 'system',
+        risk: profile.type === 'protocol' ? 'elevated' : 'safe',
+        status: 'pending',
+        requestedAt: timestamp,
+        execution: {
+          status: 'not-started',
+          result: 'Waiting in Command Inbox. Native App does not execute launches directly.',
+          rollbackAvailable: false,
+        },
+        auditTrail: [
+          {
+            id: `audit-${commandId}-proposed`,
+            type: 'proposed',
+            actor: `native-app:${role}`,
+            timestamp,
+            detail: `${profile.name} launch was staged from the Native App widget.`,
+          },
+        ],
+      },
+    },
+    {
+      type: 'notification',
+      notification: {
+        id: `notification-${commandId}`,
+        level: profile.type === 'protocol' ? 'warning' : 'notice',
+        title: 'Native App launch staged',
+        body: `${profile.name} is waiting in Command Inbox.`,
+        source: 'native-app',
+        timestamp,
+        acknowledged: false,
+        relatedCommandId: commandId,
+      },
+    },
+  ];
+}
+
+export function NativeAppWidget({ role, missionControl, operationalOs }: { role: ShellRole; missionControl: MissionControlRuntime; operationalOs: OperationalOsRuntime }) {
   const [profileState, setProfileState] = usePersistentWorkspaceState(loadNativeAppProfileState, saveNativeAppProfileState);
   const [profileName, setProfileName] = useState('');
   const [launchTarget, setLaunchTarget] = useState('');
@@ -46,11 +102,11 @@ export function NativeAppWidget({ role, operationalOs }: { role: ShellRole; oper
   const openProfile = (profile: NativeAppProfile) => {
     setProfileState((current) => markNativeAppProfileOpened(current, profile.id));
     if (!canLaunchNativeAppProfile(profile)) {
-      setStatus('Manual desktop profile tracked. Direct executable launch is blocked.');
+      setStatus('Profile tracked. Direct executable launch is blocked unless an allowlisted adapter is designed.');
       return;
     }
-    if (typeof window !== 'undefined') window.open(profile.launchTarget, '_blank', 'noopener,noreferrer');
-    setStatus(`${profile.type === 'web' ? 'Opened web profile' : 'Opened protocol link'}: ${profile.name}`);
+    missionControl.ingestEvents(createNativeAppLaunchEvents(profile, role));
+    setStatus(`${profile.name} launch staged in Command Inbox.`);
   };
 
   return (
@@ -90,7 +146,7 @@ export function NativeAppWidget({ role, operationalOs }: { role: ShellRole; oper
               : createRuntimeSnapshotEvidenceInput(
                   `${selectedProfile.name} manual app profile`,
                   'native-app-widget',
-                  `manual handoff / ${selectedProfile.launchTarget} / direct executable launch blocked`,
+                  `${selectedProfile.allowlistStatus} / ${selectedProfile.launchTarget} / direct executable launch blocked`,
                 )
             : createRuntimeSnapshotEvidenceInput('Native app profile', 'native-app-widget', 'App profile required.')
         }
@@ -123,8 +179,8 @@ export function NativeAppWidget({ role, operationalOs }: { role: ShellRole; oper
               detail:
                 profile.type === 'manual'
                   ? 'manual handoff only; executable launch blocked'
-                  : profile.launchTarget,
-              state: profile.id === selectedProfile?.id ? 'active' : profile.type,
+                  : `${profile.allowlistStatus} / ${profile.launchTarget}`,
+              state: profile.id === selectedProfile?.id ? 'active' : profile.allowlistStatus,
               action: {
                 label: profile.id === selectedProfile?.id ? getProfileActionLabel(profile) : 'Select',
                 onClick: () =>

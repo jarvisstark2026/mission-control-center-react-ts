@@ -1425,7 +1425,7 @@
     linear-gradient(180deg, rgba(86, 221, 255, var(--widget-surface-alpha, 0.04)), rgba(255, 255, 255, 0.008)),
     radial-gradient(circle at 22% 0%, rgba(86, 221, 255, 0.06), transparent 44%),
     radial-gradient(circle at 88% 100%, rgba(255, 188, 92, 0.032), transparent 34%),
-    var(--glass-panel-bg);
+    var(--workspace-widget-frame-bg);
   box-shadow:
     0 14px 34px rgba(0, 0, 0, 0.3),
     0 0 14px rgba(86, 221, 255, 0.028),
@@ -1476,6 +1476,11 @@
 }
 
 .workspace-widget:hover {
+  background:
+    linear-gradient(180deg, rgba(86, 221, 255, calc(var(--widget-surface-alpha, 0.04) + 0.01)), rgba(255, 255, 255, 0.012)),
+    radial-gradient(circle at 22% 0%, rgba(86, 221, 255, 0.07), transparent 44%),
+    radial-gradient(circle at 88% 100%, rgba(255, 188, 92, 0.038), transparent 34%),
+    var(--workspace-widget-frame-bg-hover);
   box-shadow:
     0 14px 34px rgba(0, 0, 0, 0.3),
     0 0 16px rgba(86, 221, 255, 0.042),
@@ -5072,7 +5077,7 @@
   border-radius: 6px;
   background:
     linear-gradient(180deg, rgba(86, 221, 255, 0.025), rgba(255, 255, 255, 0.006)),
-    rgba(255, 255, 255, 0.012);
+    var(--workspace-widget-inner-bg);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.026);
 }
 
@@ -5087,7 +5092,7 @@
   border-radius: 6px;
   background:
     linear-gradient(90deg, rgba(86, 221, 255, 0.045), rgba(255, 255, 255, 0.008)),
-    rgba(7, 17, 27, 0.3);
+    var(--workspace-widget-card-bg);
 }
 
 .workspace-status-strip[data-source='live'],
@@ -5175,7 +5180,7 @@
   padding: 6px 7px;
   border: 1px solid rgba(255, 255, 255, 0.085);
   border-radius: 5px;
-  background: rgba(255, 255, 255, 0.018);
+  background: var(--workspace-widget-inner-bg);
 }
 
 .workspace-compact-row[data-state='online'],
@@ -5235,7 +5240,7 @@
   padding: 10px;
   border: 1px dashed rgba(86, 221, 255, 0.22);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.012);
+  background: var(--workspace-widget-inner-bg);
 }
 
 .workspace-empty-state span {
@@ -5434,7 +5439,7 @@
   border-radius: 6px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012)),
-    rgba(7, 17, 27, 0.34);
+    var(--workspace-widget-card-bg);
 }
 
 .mission-control-card[data-state='warning'],
@@ -5618,7 +5623,7 @@
   border-radius: 8px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.044), rgba(255, 255, 255, 0.014)),
-    rgba(7, 17, 27, 0.34);
+    var(--workspace-widget-card-bg);
 }
 
 .operational-card-head span,
@@ -5700,7 +5705,7 @@
   padding: 10px;
   border: 1px solid rgba(255, 255, 255, 0.085);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.018);
+  background: var(--workspace-widget-inner-bg);
 }
 
 .operational-action-strip {

@@ -64,6 +64,10 @@
   --glass-panel-tint: var(--glass-panel-bg);
   --glass-panel-shadow: var(--glass-shadow);
   --glass-panel-blur: 14px;
+  --workspace-widget-frame-bg: rgba(8, 18, 29, 0.91);
+  --workspace-widget-frame-bg-hover: rgba(8, 19, 31, 0.93);
+  --workspace-widget-inner-bg: rgba(8, 19, 31, 0.54);
+  --workspace-widget-card-bg: rgba(9, 20, 32, 0.64);
 
   --radius-xs: 4px;
   --radius-sm: 6px;
@@ -141,6 +145,10 @@
   --color-bg-mid: #08213a;
   --color-surface-glass: rgba(6, 23, 39, 0.84);
   --color-surface-glass-strong: rgba(4, 17, 31, 0.92);
+  --workspace-widget-frame-bg: rgba(5, 19, 34, 0.91);
+  --workspace-widget-frame-bg-hover: rgba(5, 21, 38, 0.93);
+  --workspace-widget-inner-bg: rgba(6, 24, 42, 0.56);
+  --workspace-widget-card-bg: rgba(7, 26, 45, 0.66);
   --color-surface-overlay: rgba(5, 20, 36, 0.94);
   --color-surface-overlay-strong: rgba(5, 20, 36, 0.96);
   --jarvis-cyan: rgba(104, 232, 255, 0.94);
@@ -190,6 +198,10 @@
   --color-text-muted: rgba(255, 230, 207, 0.58);
   --color-surface-glass: rgba(24, 17, 13, 0.84);
   --color-surface-glass-strong: rgba(18, 12, 9, 0.93);
+  --workspace-widget-frame-bg: rgba(21, 13, 9, 0.91);
+  --workspace-widget-frame-bg-hover: rgba(23, 14, 9, 0.93);
+  --workspace-widget-inner-bg: rgba(28, 17, 10, 0.56);
+  --workspace-widget-card-bg: rgba(31, 19, 11, 0.66);
   --color-surface-overlay: rgba(22, 14, 10, 0.94);
   --color-surface-overlay-strong: rgba(22, 14, 10, 0.96);
   --color-border-subtle: rgba(255, 201, 146, 0.105);
@@ -244,6 +256,10 @@
   --color-surface-glass: rgba(16, 22, 30, 0.82);
   --color-surface-glass-soft: rgba(255, 255, 255, 0.012);
   --color-surface-glass-strong: rgba(10, 15, 22, 0.92);
+  --workspace-widget-frame-bg: rgba(12, 17, 24, 0.88);
+  --workspace-widget-frame-bg-hover: rgba(13, 19, 27, 0.91);
+  --workspace-widget-inner-bg: rgba(15, 22, 31, 0.5);
+  --workspace-widget-card-bg: rgba(17, 24, 34, 0.6);
   --color-surface-overlay: rgba(12, 18, 26, 0.94);
   --color-surface-overlay-strong: rgba(12, 18, 26, 0.96);
   --color-border-subtle: rgba(224, 232, 240, 0.09);

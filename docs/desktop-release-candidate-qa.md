@@ -5,7 +5,7 @@ Use this checklist for every Windows desktop release candidate. Run the installe
 ## Build Outputs
 
 - Release executable: `src-tauri/target/release/mission-control-center.exe`
-- NSIS installer: `src-tauri/target/release/bundle/nsis/Mission Control Center_0.1.0_x64-setup.exe`
+- NSIS installer: `src-tauri/target/release/bundle/nsis/Mission Control_0.1.0_x64-setup.exe`
 
 ## Build Checklist
 
@@ -39,7 +39,7 @@ Use this checklist for every Windows desktop release candidate. Run the installe
 
 ## Release Acceptance
 
-- [ ] Installer branding shows Mission Control Center and the Jarvis-style app icon.
+- [ ] Installer branding shows Mission Control and the current app icon.
 - [ ] Installed app opens without requiring the repo, Vite, or a terminal.
 - [ ] Browser preview still works through `npm run dev`.
 - [ ] No unrelated files, including `shopify-theme/`, are staged in the release commit.

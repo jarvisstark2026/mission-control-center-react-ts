@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { getAllowedCommandActions, type CommandAction, type CommandRequest, type MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { AgentAttribution, AttentionCard, AuditList, EvidenceBlock } from '../operationalBlocks';
@@ -119,12 +119,6 @@ export function CommandInboxWidget({
 
   return (
     <WorkspaceContentShell className="mission-control-surface command-inbox-surface">
-      <WorkspaceContentHeader
-        eyebrow="Command inbox"
-        title="primary approval queue"
-        metaEyebrow="operator gate"
-        meta={missionControl.role}
-      />
       <WorkspaceStatusStrip
         source={missionControl.commandGatewayMode === 'backend' ? 'bridge' : missionControl.commandGatewayMode === 'allowlist' ? 'local' : 'local'}
         status={nextCommand ? `${focusedCommand ? 'Focused' : 'Next'}: ${nextCommand.title}` : 'Queue clear'}
@@ -143,14 +137,6 @@ export function CommandInboxWidget({
           ) : null}
         </div>
       ) : null}
-
-      <WorkspaceEvidenceAttachPanel
-        role={missionControl.role}
-        operationalOs={operationalOs}
-        evidence={decisionEvidenceInput}
-        disabled={!nextCommand}
-        disabledReason={nextCommand ? `${nextCommand.status} / ${nextCommand.risk}` : 'No selected command is available to attach.'}
-      />
 
       {nextCommand ? (
         <AttentionCard
@@ -209,6 +195,14 @@ export function CommandInboxWidget({
           />
         </AttentionCard>
       ) : null}
+
+      <WorkspaceEvidenceAttachPanel
+        role={missionControl.role}
+        operationalOs={operationalOs}
+        evidence={decisionEvidenceInput}
+        disabled={!nextCommand}
+        disabledReason={nextCommand ? `${nextCommand.status} / ${nextCommand.risk}` : 'No selected command is available to attach.'}
+      />
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame command-inbox-filter-frame"

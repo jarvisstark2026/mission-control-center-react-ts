@@ -3,15 +3,11 @@ import { useEffect, useState } from 'react';
 import type { ShellRole } from '../../shell/roles';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import {
-  WorkspaceButton,
-  WorkspaceCompactList,
-  WorkspaceContentHeader,
-  WorkspaceContentShell,
+import { WorkspaceButton,
+  WorkspaceCompactList,  WorkspaceContentShell,
   WorkspaceEmptyState,
   WorkspaceSectionFrame,
-  WorkspaceStatusStrip,
-} from '../workspaceBlocks';
+  WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createLocalFileEvidenceInput, createUrlEvidenceInput } from '../workspaceEvidenceModel';
 import { createLocalFileObjectUrl, formatLocalFileSize, revokeLocalFileObjectUrl, type LocalFileRecord } from '../workspaceLocalFiles';
 import { addMediaSource, loadVideoMediaState, saveVideoMediaState, type MediaSourceRecord } from '../workspaceWidgetFeatureModels';
@@ -88,12 +84,6 @@ export function VideoWidget({ role, operationalOs, files = [], activeFileId = nu
 
   return (
     <WorkspaceContentShell className="video-widget-shell widget-feature-shell">
-      <WorkspaceContentHeader
-        eyebrow="Video"
-        title={activeSource?.title ?? 'local video and URL sources'}
-        metaEyebrow="source"
-        meta={activeSource?.kind ?? 'unavailable'}
-      />
       <WorkspaceStatusStrip
         source={activeSource?.kind === 'file' ? 'file' : activeSource?.kind === 'browser' ? 'browser' : 'unavailable'}
         status={activeSource ? playbackStatus : 'source required'}

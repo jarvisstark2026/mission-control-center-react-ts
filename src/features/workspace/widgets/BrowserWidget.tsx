@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { ShellRole } from '../../shell/roles';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { addBrowserBookmark, addBrowserHistory, loadBrowserState, normalizeBrowserUrl, saveBrowserState } from '../workspaceBrowserModel';
 import { createUrlEvidenceInput } from '../workspaceEvidenceModel';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
@@ -54,32 +54,11 @@ export function BrowserWidget({ role, operationalOs }: { role: ShellRole; operat
 
   return (
     <WorkspaceContentShell className="browser-surface">
-      <WorkspaceContentHeader
-        className="browser-head"
-        eyebrow="Browser"
-        title="embedded web preview"
-        metaEyebrow={frameStatus}
-        meta={frameUrl.replace(/^https?:\/\//i, '')}
-      />
-
       <WorkspaceStatusStrip
         source="browser"
         status={frameStatus}
         count={`${browserState.bookmarks.length} bookmarks`}
         updatedAt={`${browserState.history.length} history`}
-      />
-
-      <WorkspaceEvidenceAttachPanel
-        role={role}
-        operationalOs={operationalOs}
-        evidence={createUrlEvidenceInput(
-          evidenceUrl,
-          evidenceTitle,
-          'browser-widget',
-          `${frameStatus} / ${browserState.bookmarks.length} bookmarks / ${browserState.history.length} history`,
-        )}
-        disabled={!evidenceUrl}
-        disabledReason={!evidenceUrl ? 'Enter or open a URL before attaching evidence.' : undefined}
       />
 
       <WorkspaceSectionFrame className="browser-address-section" eyebrow="address" title="navigation controls" meta="URL / bookmarks">
@@ -103,6 +82,16 @@ export function BrowserWidget({ role, operationalOs }: { role: ShellRole; operat
         />
       </WorkspaceSectionFrame>
 
+      <WorkspaceSectionFrame className="browser-frame-section" eyebrow="preview" title="remote page" meta="iframe">
+        <iframe
+          title="Browser preview"
+          src={frameUrl}
+          className="browser-frame"
+          onLoad={() => setFrameStatus('Loaded')}
+          onError={() => setFrameStatus('Blocked or unavailable')}
+        />
+      </WorkspaceSectionFrame>
+
       <WorkspaceSectionFrame className="browser-history-section" eyebrow="history" title="recent pages" meta={`${historyItems.length} saved`}>
         {historyItems.length ? (
           <WorkspaceCatalogGrid
@@ -117,15 +106,18 @@ export function BrowserWidget({ role, operationalOs }: { role: ShellRole; operat
         )}
       </WorkspaceSectionFrame>
 
-      <WorkspaceSectionFrame className="browser-frame-section" eyebrow="preview" title="remote page" meta="iframe">
-        <iframe
-          title="Browser preview"
-          src={frameUrl}
-          className="browser-frame"
-          onLoad={() => setFrameStatus('Loaded')}
-          onError={() => setFrameStatus('Blocked or unavailable')}
-        />
-      </WorkspaceSectionFrame>
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={createUrlEvidenceInput(
+          evidenceUrl,
+          evidenceTitle,
+          'browser-widget',
+          `${frameStatus} / ${browserState.bookmarks.length} bookmarks / ${browserState.history.length} history`,
+        )}
+        disabled={!evidenceUrl}
+        disabledReason={!evidenceUrl ? 'Enter or open a URL before attaching evidence.' : undefined}
+      />
     </WorkspaceContentShell>
   );
 }

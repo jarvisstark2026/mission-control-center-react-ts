@@ -2,7 +2,7 @@ import type { MissionControlRuntime } from '../../mission-control';
 import type { ShellRole } from '../../shell/roles';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import { WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceCompactList, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 import type { WorkspaceWidgetGroup } from '../workspaceManagerModel';
 
@@ -49,18 +49,19 @@ export function OverviewWidget({
 
   return (
     <WorkspaceContentShell className="overview-surface">
-      <WorkspaceContentHeader
-        eyebrow="System overview"
-        title="current operating state"
-        metaEyebrow={state?.connection ?? 'local'}
-        meta={updatedAt}
-      />
       <WorkspaceStatusStrip
         source={state?.connection === 'connected' ? 'live' : 'local'}
         status={pendingCommands ? `${pendingCommands} decisions waiting` : 'workspace ready'}
         count={`${openWidgets} open widgets`}
         updatedAt={updatedAt}
       />
+      <WorkspaceSectionFrame className="overview-dashboard" eyebrow="telemetry" title="command summary" meta={`${stats.length} signals`}>
+        <div className="widget-grid">
+          <div className="stats-arc" />
+          <WorkspaceMetricGrid metrics={stats} />
+        </div>
+        <WorkspaceCompactList items={compactRows} empty="No local state is available yet." ariaLabel="Overview status rows" />
+      </WorkspaceSectionFrame>
       <WorkspaceEvidenceAttachPanel
         role={role}
         operationalOs={operationalOs}
@@ -70,13 +71,6 @@ export function OverviewWidget({
           `${pendingCommands} pending commands / ${unreadAlerts} unread alerts / ${openWidgets} open widgets / ${onWorkspaces} workspaces on`,
         )}
       />
-      <WorkspaceSectionFrame className="overview-dashboard" eyebrow="telemetry" title="command summary" meta={`${stats.length} signals`}>
-        <div className="widget-grid">
-          <div className="stats-arc" />
-          <WorkspaceMetricGrid metrics={stats} />
-        </div>
-        <WorkspaceCompactList items={compactRows} empty="No local state is available yet." ariaLabel="Overview status rows" />
-      </WorkspaceSectionFrame>
     </WorkspaceContentShell>
   );
 }

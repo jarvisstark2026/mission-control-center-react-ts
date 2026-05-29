@@ -54,35 +54,6 @@ export function WorkspaceContentShell({
   return <div className={classNames('workspace-content-shell', className)}>{children}</div>;
 }
 
-export function WorkspaceContentHeader({
-  eyebrow,
-  title,
-  metaEyebrow,
-  meta,
-  className,
-}: {
-  eyebrow: ReactNode;
-  title: ReactNode;
-  metaEyebrow?: ReactNode;
-  meta?: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={classNames('workspace-content-head', className)}>
-      <div>
-        <span>{eyebrow}</span>
-        <strong>{title}</strong>
-      </div>
-      {metaEyebrow || meta ? (
-        <div className="workspace-content-head-meta">
-          {metaEyebrow ? <span>{metaEyebrow}</span> : null}
-          {meta ? <small>{meta}</small> : null}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 export function WorkspaceSectionFrame({
   eyebrow,
   title,

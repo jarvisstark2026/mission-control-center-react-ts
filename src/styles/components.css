@@ -6,11 +6,11 @@
   border: 1px solid var(--glass-panel-border);
   border-radius: var(--radius-sm);
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03)),
+    linear-gradient(180deg, var(--theme-glint-medium), var(--theme-surface-subtle)),
     var(--glass-panel-tint);
   box-shadow:
     var(--glass-panel-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    inset 0 1px 0 var(--theme-glint-medium);
   backdrop-filter: blur(var(--glass-panel-blur));
   overflow: hidden;
 }
@@ -19,7 +19,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent 38%);
+  background: linear-gradient(135deg, var(--theme-glint-medium), transparent 38%);
   opacity: 0.35;
   pointer-events: none;
 }
@@ -30,11 +30,11 @@
 }
 
 .glass-panel--selected {
-  border-color: rgba(140, 182, 255, 0.26);
+  border-color: var(--glass-panel-selected-border);
   box-shadow:
-    0 0 0 1px rgba(140, 182, 255, 0.24),
+    0 0 0 1px var(--glass-panel-selected-ring),
     var(--glass-panel-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    inset 0 1px 0 var(--theme-glint-medium);
 }
 
 .status-chip {
@@ -43,7 +43,7 @@
   justify-content: center;
   min-height: 24px;
   padding: 5px 9px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid var(--theme-border-muted);
   border-radius: var(--radius-pill);
   background: var(--color-surface-control);
   color: var(--color-text-primary);
@@ -55,18 +55,18 @@
 }
 
 .status-chip--ice {
-  border-color: rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.07);
+  border-color: var(--theme-border-strong);
+  background: var(--theme-surface-muted);
 }
 
 .status-chip--cool {
-  border-color: rgba(140, 182, 255, 0.24);
-  background: rgba(140, 182, 255, 0.08);
+  border-color: var(--jarvis-cyan-line);
+  background: var(--jarvis-cyan-dim);
 }
 
 .status-chip--neutral {
-  border-color: rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--theme-border-muted);
+  background: var(--theme-surface-subtle);
 }
 
 .section-header {

@@ -584,7 +584,7 @@ fn create_bridge_status(
         } else {
             format!("Waiting for Hermes API at {hermes_api_base_url}. {detail}")
         },
-        "capabilities": ["status", "events", "tasks", "mission-control-events", "json-surface", "hermes-chat-completions"],
+        "capabilities": ["status", "events", "tasks", "workspace-layout-control", "mission-control-events", "json-surface", "hermes-chat-completions"],
         "lastSeenAt": timestamp.clone(),
         "agents": [{
             "id": "hermes-coordinator",
@@ -904,6 +904,147 @@ fn create_task_result(
     }))
 }
 
+fn extract_json_from_text(text: &str) -> Result<serde_json::Value, BridgeTaskError> {
+    let cleaned = text
+        .trim()
+        .trim_start_matches("```json")
+        .trim_start_matches("```")
+        .trim_end_matches("```")
+        .trim();
+    let first_object = cleaned.find('{');
+    let first_array = cleaned.find('[');
+    let first = match (first_object, first_array) {
+        (Some(object), Some(array)) => object.min(array),
+        (Some(object), None) => object,
+        (None, Some(array)) => array,
+        (None, None) => {
+            return Err(BridgeTaskError::bad_gateway(
+                "layout_unsupported_response",
+                "Hermes did not return JSON layout directives.".to_string(),
+                None,
+                safe_payload_preview(cleaned),
+            ))
+        }
+    };
+    let last = cleaned.rfind('}').into_iter().chain(cleaned.rfind(']')).max().unwrap_or(first);
+    if last < first {
+        return Err(BridgeTaskError::bad_gateway(
+            "layout_unsupported_response",
+            "Hermes returned incomplete JSON layout directives.".to_string(),
+            None,
+            safe_payload_preview(cleaned),
+        ));
+    }
+    serde_json::from_str(&cleaned[first..=last]).map_err(|error| {
+        BridgeTaskError::bad_gateway(
+            "layout_invalid_json",
+            format!("Hermes layout response was not valid JSON: {error}"),
+            None,
+            safe_payload_preview(cleaned),
+        )
+    })
+}
+
+fn normalize_layout_plan_payload(value: serde_json::Value) -> Result<serde_json::Value, BridgeTaskError> {
+    if value.is_array() {
+        return Ok(serde_json::json!({
+            "directives": value,
+            "provider": "hermes",
+            "generatedAt": now_iso()
+        }));
+    }
+    if value.get("directives").and_then(|directives| directives.as_array()).is_some() {
+        return Ok(serde_json::json!({
+            "directives": value.get("directives").cloned().unwrap_or_else(|| serde_json::json!([])),
+            "provider": "hermes",
+            "generatedAt": now_iso()
+        }));
+    }
+    Err(BridgeTaskError::bad_gateway(
+        "layout_unsupported_response",
+        "Hermes layout response did not include a directives array.".to_string(),
+        None,
+        Some(schema_summary(&value)),
+    ))
+}
+
+fn create_layout_plan_result(
+    snapshot: serde_json::Value,
+    hermes_api_base_url: &str,
+    hermes_model: &str,
+    hermes_api_key: &str,
+) -> Result<serde_json::Value, BridgeTaskError> {
+    if snapshot.get("workspaceId").and_then(|value| value.as_str()).is_none()
+        || snapshot.get("widgets").and_then(|value| value.as_array()).is_none()
+    {
+        return Err(BridgeTaskError::bad_request(
+            "invalid_layout_snapshot",
+            "Mission Control bridge received an invalid workspace layout snapshot.".to_string(),
+            safe_payload_preview(&serde_json::to_string(&snapshot).unwrap_or_default()),
+        ));
+    }
+
+    let messages = serde_json::json!([
+        {
+            "role": "system",
+            "content": "You are Hermes controlling only Mission Control widget layout geometry. Return JSON only, no prose. You may move, resize, move-resize, open, minimize, or focus non-pinned visible widgets. Do not propose commands. Do not claim external actions. Use this schema: {\"directives\":[{\"id\":\"short-id\",\"workspaceId\":\"...\",\"widgetId\":\"...\",\"action\":\"move|resize|move-resize|open|minimize|focus\",\"target\":{\"x\":0,\"y\":0,\"width\":390,\"height\":360},\"path\":[{\"x\":0,\"y\":0}],\"durationMs\":520,\"easing\":\"ease-out\",\"reason\":\"short reason\"}]}. Keep durationMs between 120 and 1600."
+        },
+        {
+            "role": "user",
+            "content": format!("Arrange this Mission Control workspace in a helpful way for the user. Respect locks and pinned widgets:\n{}", serde_json::to_string_pretty(&snapshot).unwrap_or_else(|_| "{}".to_string()))
+        }
+    ]);
+    let hermes_body = serde_json::json!({
+        "model": hermes_model,
+        "stream": false,
+        "messages": messages,
+        "response_format": { "type": "json_object" }
+    });
+    let chat_url = format!("{}/chat/completions", hermes_api_base_url.trim_end_matches('/'));
+    let body = serde_json::to_string(&hermes_body).map_err(|error| {
+        BridgeTaskError::bad_gateway(
+            "bridge_request_build_failed",
+            format!("Mission Control bridge could not build the Hermes layout request: {error}"),
+            None,
+            None,
+        )
+    })?;
+    let response = http_request("POST", &chat_url, Some(&body), Some("application/json"), hermes_api_key, 30).map_err(|error| {
+        BridgeTaskError::bad_gateway(
+            "layout_http_error",
+            format!("Hermes layout request failed before a response was received: {error}"),
+            None,
+            None,
+        )
+    })?;
+    if !(200..300).contains(&response.status_code) {
+        return Err(BridgeTaskError::bad_gateway(
+            if response.status_code == 401 || response.status_code == 403 { "layout_auth_failed" } else { "layout_http_error" },
+            format!("Hermes layout request returned {}", response.status_code),
+            Some(response.status_code),
+            safe_payload_preview(&response.body),
+        ));
+    }
+    let payload: serde_json::Value = serde_json::from_str(&response.body).map_err(|error| {
+        BridgeTaskError::bad_gateway(
+            "layout_invalid_json",
+            format!("Hermes layout request returned non-JSON transport payload: {error}"),
+            Some(response.status_code),
+            safe_payload_preview(&response.body),
+        )
+    })?;
+    let content = extract_hermes_content(&payload);
+    if content.is_empty() {
+        return Err(BridgeTaskError::bad_gateway(
+            "layout_unsupported_response",
+            "Hermes layout request returned JSON without assistant text.".to_string(),
+            Some(response.status_code),
+            Some(schema_summary(&payload)),
+        ));
+    }
+    normalize_layout_plan_payload(extract_json_from_text(&content)?)
+}
+
 fn handle_bridge_connection(
     mut stream: TcpStream,
     hermes_api_base_url: String,
@@ -1008,12 +1149,32 @@ fn handle_bridge_connection(
         return;
     }
 
+    if method == "POST" && path == "/workspace/layout/plan" {
+        let request = serde_json::from_str::<serde_json::Value>(&body).map_err(|error| {
+            BridgeTaskError::bad_request(
+                "invalid_layout_snapshot",
+                format!("Mission Control bridge received invalid layout JSON: {error}"),
+                safe_payload_preview(&body),
+            )
+        });
+
+        match request.and_then(|request| create_layout_plan_result(request, &hermes_api_base_url, &hermes_model, &hermes_api_key)) {
+            Ok(result) => send_json(&mut stream, "200 OK", result),
+            Err(error) => send_json(
+                &mut stream,
+                error.http_status,
+                error.to_payload(&hermes_api_base_url),
+            ),
+        }
+        return;
+    }
+
     send_json(
         &mut stream,
         "404 Not Found",
         serde_json::json!({
             "error": "Not found",
-            "endpoints": ["/status", "/events", "/tasks", "/sample-json"]
+            "endpoints": ["/status", "/events", "/tasks", "/workspace/layout/plan", "/sample-json"]
         }),
     );
 }

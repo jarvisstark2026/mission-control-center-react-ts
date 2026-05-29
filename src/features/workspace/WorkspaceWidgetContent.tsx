@@ -10,6 +10,8 @@ import type { OperationalOsRuntime } from '../operational-os';
 import type { WorkspaceWidgetGroup } from './workspaceManagerModel';
 import type { MarketGraph } from './workspaceMarketData';
 import type { MarketLiveState } from './workspaceMarketLiveData';
+import type { WorkspacePlacement } from './workspaceInstances';
+import type { AgentLiveLayoutGlobalState, AgentLiveLayoutControlState } from './workspaceAgentLayout';
 import type { WorkspaceWidget } from './workspaceTypes';
 import type { WorkspaceWidgetPermissionMatrix } from './workspaceWidgetPermissions';
 import { WidgetScrollPane } from './workspaceBlocks';
@@ -81,6 +83,11 @@ export type WorkspaceWidgetContentProps = {
   onProbeAgentBridge: () => Promise<AgentBridgeProbeResult[]>;
   onTestAgentBridgeUrl: (url: string) => Promise<AgentBridgeProbeResult>;
   agentTaskGateway: AgentTaskGateway;
+  agentLiveLayout: AgentLiveLayoutControlState;
+  agentLiveLayoutGlobal: AgentLiveLayoutGlobalState;
+  onSetAgentLiveLayoutEnabled: (placement: WorkspacePlacement, enabled: boolean) => void;
+  onSetAllAgentLiveLayoutEnabled: (enabled: boolean) => void;
+  onPauseAllAgentLiveLayout: () => void;
   operationalOs: OperationalOsRuntime;
   activeRole: ShellRole;
   widgetPermissions: WorkspaceWidgetPermissionMatrix;
@@ -171,6 +178,11 @@ function renderWorkspaceWidgetContent({
   onProbeAgentBridge,
   onTestAgentBridgeUrl,
   agentTaskGateway,
+  agentLiveLayout,
+  agentLiveLayoutGlobal,
+  onSetAgentLiveLayoutEnabled,
+  onSetAllAgentLiveLayoutEnabled,
+  onPauseAllAgentLiveLayout,
   operationalOs,
   activeRole,
   widgetPermissions,
@@ -264,6 +276,11 @@ function renderWorkspaceWidgetContent({
           onProbeBridge={onProbeAgentBridge}
           onTestBridgeUrl={onTestAgentBridgeUrl}
           taskGateway={agentTaskGateway}
+          liveLayout={agentLiveLayout}
+          liveLayoutGlobal={agentLiveLayoutGlobal}
+          onSetLiveLayoutEnabled={onSetAgentLiveLayoutEnabled}
+          onSetAllLiveLayoutEnabled={onSetAllAgentLiveLayoutEnabled}
+          onPauseAllLiveLayout={onPauseAllAgentLiveLayout}
         />
       );
     case 'agent-console':
@@ -342,6 +359,11 @@ function renderWorkspaceWidgetContent({
         onProbeAgentBridge,
         onTestAgentBridgeUrl,
         agentTaskGateway,
+        agentLiveLayout,
+        agentLiveLayoutGlobal,
+        onSetAgentLiveLayoutEnabled,
+        onSetAllAgentLiveLayoutEnabled,
+        onPauseAllAgentLiveLayout,
         operationalOs,
         activeRole,
         widgetPermissions,

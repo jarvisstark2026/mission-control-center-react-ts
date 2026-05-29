@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ShellRole } from '../../shell/roles';
 import { DesktopBridgePanel } from '../DesktopBridgePanel';
-import { WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceCatalogGrid, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { defaultDesktopApps, rememberDesktopApp, type DesktopAppRecord } from '../workspaceDesktopApps';
 import { isWorkspaceWidgetKind, type WorkspaceWidget } from '../workspaceTypes';
 import { getWidgetLabel, getWorkspaceLauncherEntries } from '../workspaceWidgetCatalog';
@@ -53,14 +53,6 @@ export function LauncherWidget({ onLaunchWorkspaceWidget, workspaceWidgets, acti
 
   return (
     <WorkspaceContentShell className="launcher-surface">
-      <WorkspaceContentHeader
-        className="launcher-head"
-        eyebrow="Workspace launcher"
-        title="open and focus workspace tools"
-        metaEyebrow="local"
-        meta="widgets / external handoff"
-      />
-
       <WorkspaceStatusStrip
         source="local"
         status="open or focus workspace tools"

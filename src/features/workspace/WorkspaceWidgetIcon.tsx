@@ -77,10 +77,12 @@ const widgetIconDefinitions: Record<WidgetKind, WidgetIconDefinition> = {
   },
   browser: {
     paths: [
-      'M4 6h16v13H4z',
-      'M4 10h16',
-      'M7 8h.1',
-      'M10 8h.1',
+      'M4 5h16v14H4z',
+      'M4 9h16',
+      'M7 7h.1',
+      'M10 7h.1',
+      'M8 13h8',
+      'M8 16h5',
     ],
   },
   'watch-video': {
@@ -98,10 +100,11 @@ const widgetIconDefinitions: Record<WidgetKind, WidgetIconDefinition> = {
   },
   'native-app': {
     paths: [
-      'M8 5v5',
-      'M16 5v5',
-      'M7 10h10v3a5 5 0 0 1-10 0z',
+      'M5 6h14v12H5z',
+      'M8 10h8',
+      'M8 14h5',
       'M12 18v3',
+      'M9 21h6',
     ],
   },
   'window-manager': {
@@ -212,9 +215,9 @@ const widgetIconDefinitions: Record<WidgetKind, WidgetIconDefinition> = {
   },
   'command-inbox': {
     paths: [
-      'M5 5h14v14H5z',
+      'M4 7h16v12H4z',
+      'M4 12h4l2 3h4l2-3h4',
       'M8 9h8',
-      'M8 13h5',
       'M15 15l2 2 4-5',
     ],
   },
@@ -237,14 +240,13 @@ const widgetIconDefinitions: Record<WidgetKind, WidgetIconDefinition> = {
   },
   'agent-control': {
     paths: [
-      'M12 5a4 4 0 0 1 4 4v2a4 4 0 0 1-8 0V9a4 4 0 0 1 4-4z',
-      'M7 19a5 5 0 0 1 10 0',
-      'M4 8h2',
-      'M18 8h2',
+      'M12 4l6 3v5c0 4-2.5 6.5-6 8-3.5-1.5-6-4-6-8V7z',
       'M12 2v2',
-      'M9 11h.1',
-      'M15 11h.1',
-      'M10 15h4',
+      'M4 12h2',
+      'M18 12h2',
+      'M9 10h.1',
+      'M15 10h.1',
+      'M9 14h6',
     ],
   },
   'agent-console': {
@@ -252,8 +254,7 @@ const widgetIconDefinitions: Record<WidgetKind, WidgetIconDefinition> = {
       'M5 6h14v10H8l-3 3z',
       'M8 10h6',
       'M8 13h4',
-      'M16 9l3-3',
-      'M18 5l1 1-3 3-1-1z',
+      'M15 18l2 2 4-5',
     ],
   },
   'home-systems': {

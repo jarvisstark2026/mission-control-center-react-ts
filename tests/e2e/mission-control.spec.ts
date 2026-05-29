@@ -38,10 +38,10 @@ test('operational core widgets launch and use local live data', async ({ page })
   await page.reload();
 
   await openWidget(page, 'Command inbox');
-  await expect(page.getByText('primary approval queue').first()).toBeVisible();
+  await expect(page.locator('.workspace-widget.kind-command-inbox .workspace-status-strip').first()).toBeVisible();
 
   await openWidget(page, 'Agent console');
-  await expect(page.getByText('chat / proposals').first()).toBeVisible();
+  await expect(page.locator('.workspace-widget.kind-agent-console .workspace-status-strip').first()).toBeVisible();
   await page.getByRole('button', { name: 'Stage local proposal' }).click();
   await expect(page.getByText(/prepared a gated command proposal/i)).toBeVisible();
   await expect(page.getByText(/Review current mission state and propose/i).first()).toBeVisible();
@@ -53,20 +53,20 @@ test('operational core widgets launch and use local live data', async ({ page })
   await expect(page.getByText(/Local dry-run gateway completed/).first()).toBeVisible();
 
   await page.reload();
-  await expect(page.getByText('primary approval queue').first()).toBeVisible();
+  await expect(page.locator('.workspace-widget.kind-command-inbox .workspace-status-strip').first()).toBeVisible();
   await expect(page.getByText(/Local dry-run gateway completed/).first()).toBeVisible();
 
   await openWidget(page, 'Notifications');
-  await expect(page.getByText('live telemetry and alerts')).toBeVisible();
+  await expect(page.locator('.workspace-widget.kind-notifications .workspace-status-strip').first()).toBeVisible();
   await expect(page.getByText('local seed events').first()).toBeVisible();
 
   await openWidget(page, 'Integration registry');
-  await expect(page.getByText('devices, heartbeats, and permissions')).toBeVisible();
+  await expect(page.locator('.workspace-widget.kind-integration-registry .workspace-status-strip').first()).toBeVisible();
   await expect(page.getByText('Tailnet router')).toBeVisible();
 
   await openWidget(page, 'Agent control');
-  await expect(page.getByText('identity / jobs / permissions').first()).toBeVisible();
-  await expect(page.getByText('Hermes / OpenClaw connectors').first()).toBeVisible();
+  await expect(page.getByText('Mission Control bridge').first()).toBeVisible();
+  await expect(page.getByText('Hermes API').first()).toBeVisible();
   await expect(page.getByText(/connection cockpit/i)).toHaveCount(0);
   await expect(page.getByText(/Mission Control Center/i)).toHaveCount(0);
   await expect(page.getByText(/Ask Jarvis/i)).toHaveCount(0);
@@ -77,7 +77,6 @@ test('operational core widgets launch and use local live data', async ({ page })
   await expect(page.getByText('Workflow Agent').last()).toBeVisible();
 
   await openWidget(page, 'Home systems');
-  await expect(page.getByText('energy, safety, automation, and rooms').first()).toBeVisible();
   await expect(page.getByText(/home backend not connected/i).first()).toBeVisible();
   await expect(page.getByText('Live energy/device values appear only after a backend responds').first()).toBeVisible();
   const solarSurplusProposal = page
@@ -112,7 +111,7 @@ test('guest access can read command inbox but cannot approve commands', async ({
   await page.goto('/?role=guest');
 
   await openWidget(page, 'Command inbox');
-  await expect(page.getByText('primary approval queue').first()).toBeVisible();
+  await expect(page.locator('.workspace-widget.kind-command-inbox .workspace-status-strip').first()).toBeVisible();
   await expect(page.getByRole('button', { name: 'Approve' })).toHaveCount(0);
   await expect(page.getByText('Read-only for this access scope.').first()).toBeVisible();
 
@@ -127,6 +126,7 @@ test('guest access can read command inbox but cannot approve commands', async ({
 test('widgets prioritize primary work surfaces before secondary panels', async ({ page }) => {
   await page.goto('/?role=admin');
   await expect(page.locator('.widget-workflow-cue')).toHaveCount(0);
+  await expect(page.locator('.widget-body > .workspace-content-shell > .workspace-content-head')).toHaveCount(0);
 
   await openWidget(page, 'Live TV');
   const liveTvWidget = page.locator('.workspace-widget.kind-watch-video');
@@ -152,11 +152,64 @@ test('widgets prioritize primary work surfaces before secondary panels', async (
   await ensureWidgetOpen(commandInboxWidget);
   await expectAbove(commandInboxWidget.locator('.mission-control-card').first(), commandInboxWidget.locator('.workspace-evidence-attach-panel'));
 
+  await openWidget(page, 'Telemetry');
+  const telemetryWidget = page.locator('.workspace-widget.kind-graph');
+  await ensureWidgetOpen(telemetryWidget);
+  await expectAbove(telemetryWidget.locator('.graph-stage'), telemetryWidget.locator('.workspace-evidence-attach-panel'));
+
+  await openWidget(page, 'Integration registry');
+  const integrationWidget = page.locator('.workspace-widget.kind-integration-registry');
+  await ensureWidgetOpen(integrationWidget);
+  await expectAbove(integrationWidget.locator('.integration-registry-list-section'), integrationWidget.locator('.workspace-evidence-attach-panel'));
+  await expectAbove(integrationWidget.locator('.integration-registry-inventory-section'), integrationWidget.locator('.workspace-evidence-attach-panel'));
+
   await openWidget(page, 'Workflows');
   const workflowWidget = page.locator('.workspace-widget.kind-flow');
   await ensureWidgetOpen(workflowWidget);
   await workflowWidget.getByRole('button', { name: 'Start runbook' }).click();
   await expectAbove(workflowWidget.locator('.workflow-next-step-summary'), workflowWidget.locator('.workspace-evidence-attach-panel'));
+  await expect(page.locator('.widget-body > .workspace-content-shell > .workspace-content-head')).toHaveCount(0);
+});
+
+test('widget fill control toggles live workspace geometry and restore state', async ({ page }) => {
+  await page.goto('/?role=admin');
+
+  const commandInboxWidget = page.locator('.workspace-widget.kind-command-inbox').first();
+  await ensureWidgetOpen(commandInboxWidget);
+
+  const originalFrame = await commandInboxWidget.evaluate((element) => ({
+    height: (element as HTMLElement).style.height,
+    translate: (element as HTMLElement).style.translate,
+    width: (element as HTMLElement).style.width,
+  }));
+
+  const fillButton = commandInboxWidget.getByRole('button', { name: 'Fill workspace with Command inbox' });
+  await expect(fillButton).toHaveAttribute('aria-pressed', 'false');
+  await clickControl(fillButton);
+
+  const restoreButton = commandInboxWidget.getByRole('button', { name: 'Restore Command inbox size and position' });
+  await expect(restoreButton).toHaveAttribute('aria-pressed', 'true');
+  const filledFrame = await commandInboxWidget.evaluate((element) => ({
+    height: (element as HTMLElement).style.height,
+    translate: (element as HTMLElement).style.translate,
+    width: (element as HTMLElement).style.width,
+  }));
+  expect(filledFrame.translate).toBe('0px');
+  expect(filledFrame.width).not.toBe(originalFrame.width);
+  expect(filledFrame.height).not.toBe(originalFrame.height);
+
+  await clickControl(restoreButton);
+
+  await expect(commandInboxWidget.getByRole('button', { name: 'Fill workspace with Command inbox' })).toHaveAttribute(
+    'aria-pressed',
+    'false',
+  );
+  const restoredFrame = await commandInboxWidget.evaluate((element) => ({
+    height: (element as HTMLElement).style.height,
+    translate: (element as HTMLElement).style.translate,
+    width: (element as HTMLElement).style.width,
+  }));
+  expect(restoredFrame).toEqual(originalFrame);
 });
 
 test('local productivity widgets persist useful browser-only state', async ({ page }) => {

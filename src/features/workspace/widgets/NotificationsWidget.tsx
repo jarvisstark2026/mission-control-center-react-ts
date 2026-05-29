@@ -1,4 +1,4 @@
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { canAcknowledgeNotifications, type MissionControlRuntime } from '../../mission-control';
 import type { ShellRole } from '../../shell/roles';
 import type { OperationalOsRuntime } from '../../operational-os';
@@ -28,35 +28,18 @@ export function NotificationsWidget({
     label: sample.label,
     value: `${sample.value}${sample.unit}`,
   }));
-  const sourceMetrics = Array.from(new Set(notifications.map((notification) => notification.source))).slice(0, 6).map((source) => ({
+  const sourceMetrics = Array.from(new Set(notifications.map((notification) => notification.source))).sort().slice(0, 6).map((source) => ({
     label: source,
     value: notifications.filter((notification) => notification.source === source).length,
   }));
 
   return (
     <WorkspaceContentShell className="mission-control-surface notifications-surface">
-      <WorkspaceContentHeader
-        eyebrow="Notifications"
-        title="live telemetry and alerts"
-        metaEyebrow="transport"
-        meta={connection}
-      />
       <WorkspaceStatusStrip
         source={connection === 'connected' ? 'bridge' : 'local'}
         status={latestTelemetry ? `${latestTelemetry.label} ${latestTelemetry.value}${latestTelemetry.unit}` : 'Telemetry ready'}
         count={`${unreadNotifications.length} unread`}
         updatedAt={connection === 'connected' ? 'SSE stream' : 'local seed events'}
-      />
-      <WorkspaceEvidenceAttachPanel
-        role={role}
-        operationalOs={operationalOs}
-        evidence={createRuntimeSnapshotEvidenceInput(
-          'Notification feed snapshot',
-          connection === 'connected' ? 'notifications-bridge' : 'notifications-local',
-          `${notifications.length} notifications / ${unreadNotifications.length} unread / ${telemetry.length} telemetry samples`,
-        )}
-        disabled={!notifications.length && !telemetry.length}
-        disabledReason={!notifications.length && !telemetry.length ? 'Notifications or telemetry are required before attaching evidence.' : undefined}
       />
 
       <WorkspaceSectionFrame
@@ -125,6 +108,18 @@ export function NotificationsWidget({
           )}
         </div>
       </WorkspaceSectionFrame>
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={createRuntimeSnapshotEvidenceInput(
+          'Notification feed snapshot',
+          connection === 'connected' ? 'notifications-bridge' : 'notifications-local',
+          `${notifications.length} notifications / ${unreadNotifications.length} unread / ${telemetry.length} telemetry samples`,
+        )}
+        disabled={!notifications.length && !telemetry.length}
+        disabledReason={!notifications.length && !telemetry.length ? 'Notifications or telemetry are required before attaching evidence.' : undefined}
+      />
     </WorkspaceContentShell>
   );
 }

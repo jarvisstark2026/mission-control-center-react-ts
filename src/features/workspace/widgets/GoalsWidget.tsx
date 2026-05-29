@@ -2,16 +2,14 @@ import { useMemo, useState } from 'react';
 
 import { getAgentDescriptorById, getVisibleAgentDescriptors, type AgentControlState } from '../../agent-control';
 import type { CommandRisk, CommandScope, MissionControlEvent, MissionControlRuntime } from '../../mission-control';
-import {
-  canCreateGoal,
+import { canCreateGoal,
   canEditEvidence,
   type Goal,
   type GoalPriority,
-  type OperationalOsRuntime,
-} from '../../operational-os';
+  type OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
 import { AgentAttribution, AttentionCard, AuditList, EvidenceBlock } from '../operationalBlocks';
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import type { WorkspaceWidget } from '../workspaceTypes';
 
 const priorityOptions: GoalPriority[] = ['normal', 'high', 'critical', 'low'];
@@ -118,7 +116,6 @@ export function GoalsWidget({
   const canAttachEvidence = canEditEvidence(role);
   const selectedAgent = getAgentDescriptorById(agentControl, selectedAgentId);
   const waitingCount = goals.filter((goal) => goal.status === 'waiting-approval').length;
-  const blockedCount = goals.filter((goal) => goal.status === 'blocked' || goal.status === 'failed').length;
 
   const createNewGoal = () => {
     const goal = operationalOs.createGoal({
@@ -157,13 +154,6 @@ export function GoalsWidget({
 
   return (
     <WorkspaceContentShell className="mission-control-surface goals-surface">
-      <WorkspaceContentHeader
-        eyebrow="Goals"
-        title="operational objectives"
-        metaEyebrow="loop"
-        meta={`${waitingCount} waiting / ${blockedCount} blocked`}
-      />
-
       <WorkspaceStatusStrip
         source="local"
         status={activeGoal ? activeGoal.title : 'No active goal'}

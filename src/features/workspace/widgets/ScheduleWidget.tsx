@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import { WorkspaceButton, WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCompactList, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
@@ -115,12 +115,6 @@ export function ScheduleWidget({
 
   return (
     <WorkspaceContentShell className="schedule-surface">
-      <WorkspaceContentHeader
-        eyebrow="Schedule"
-        title="daily routine"
-        metaEyebrow={activeFilter}
-        meta={`${visibleBlocks.length} shown - ${openBlocks.length} open`}
-      />
       <WorkspaceStatusStrip
         source="local"
         status={nextBlock ? 'Next block ready' : 'No open blocks'}

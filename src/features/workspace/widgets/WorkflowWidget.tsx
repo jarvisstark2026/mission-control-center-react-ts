@@ -6,7 +6,7 @@ import type { MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
 import { WorkflowStepCard } from '../operationalBlocks';
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import { createWorkflowRunEvidenceInput } from '../workspaceEvidenceModel';
 import { createWorkflowDraft, getWorkflowSteps, getWorkflowTemplate, loadSavedWorkflows, openWorkflowHandout, saveSavedWorkflows, workflowSkills, workflowTemplates, type SavedWorkflow, type WorkflowDraft } from '../workflowStudioModel';
@@ -290,7 +290,7 @@ export function WorkflowWidget({
 
     return (
       <g key={`${step}-${index}`}>
-        {index > 0 ? <line x1={x - 60} y1={96} x2={x - 30} y2={96} stroke="rgba(255,255,255,0.46)" strokeWidth="2" strokeLinecap="round" /> : null}
+        {index > 0 ? <line x1={x - 60} y1={96} x2={x - 30} y2={96} stroke="var(--glass-muted)" strokeWidth="2" strokeLinecap="round" /> : null}
         <circle cx={x} cy={96} r="28" fill={fill} fillOpacity="0.22" stroke={fill} strokeOpacity="0.88" strokeWidth="2" />
         <text x={x} y={100} textAnchor="middle" fill="var(--color-text-strong)" fontSize="15" fontFamily="var(--font-family-ui)">
           {index + 1}
@@ -304,14 +304,6 @@ export function WorkflowWidget({
 
   return (
     <WorkspaceContentShell className="workflow-surface">
-      <WorkspaceContentHeader
-        className="workflow-head"
-        eyebrow="Workflow studio"
-        title={draft.name}
-        metaEyebrow={template.title}
-        meta={`${steps.length} steps - ${selectedSkills.length} skills`}
-      />
-
       <WorkspaceSectionFrame
         className="workflow-runbook-frame"
         eyebrow="runbook"
@@ -357,13 +349,6 @@ export function WorkflowWidget({
             updatedAt="goal context"
           />
         ) : null}
-        <WorkspaceEvidenceAttachPanel
-          role={role}
-          operationalOs={operationalOs}
-          evidence={runEvidenceInput}
-          disabled={!activeRun}
-          disabledReason={activeRun ? `${activeRun.status} / ${activeRun.steps.length} steps` : 'Start or select a runbook before attaching a workflow snapshot.'}
-        />
         {activeRun && selectedGoal && activeRun.goalId !== selectedGoal.id ? (
           <WorkspaceButton variant="secondary" className="workflow-action" onClick={linkActiveRunToSelectedGoal}>
             Link active run to selected goal
@@ -393,6 +378,13 @@ export function WorkflowWidget({
             updatedAt={nextActionableStep.expectedOutput ?? 'next step'}
           />
         ) : null}
+        <WorkspaceEvidenceAttachPanel
+          role={role}
+          operationalOs={operationalOs}
+          evidence={runEvidenceInput}
+          disabled={!activeRun}
+          disabledReason={activeRun ? `${activeRun.status} / ${activeRun.steps.length} steps` : 'Start or select a runbook before attaching a workflow snapshot.'}
+        />
         {workflowRuns.length ? (
           <label className="workflow-field">
             <span>Active run</span>

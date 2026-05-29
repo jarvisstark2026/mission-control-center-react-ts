@@ -5,7 +5,7 @@ import { canEditJsonSurface, detectJsonSurfaceSchema, type JsonSurfaceDocument, 
 import type { ShellRole } from '../../shell/roles';
 import { AttentionCard, EvidenceBlock } from '../operationalBlocks';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -206,7 +206,6 @@ export function JsonSurfaceWidget({
 
   return (
       <WorkspaceContentShell className="mission-control-surface json-surface">
-      <WorkspaceContentHeader eyebrow="JSON Surface" title="agent data renderer" metaEyebrow="schema" meta={selectedDocument?.schemaHint ?? 'none'} />
       <WorkspaceStatusStrip
         source={selectedDocument?.source === 'bridge' ? 'bridge' : selectedDocument ? 'local' : 'unavailable'}
         status={status}

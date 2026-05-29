@@ -3,15 +3,11 @@ import { useRef, useState } from 'react';
 import type { ShellRole } from '../../shell/roles';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import {
-  WorkspaceButton,
-  WorkspaceCompactList,
-  WorkspaceContentHeader,
-  WorkspaceContentShell,
+import { WorkspaceButton,
+  WorkspaceCompactList,  WorkspaceContentShell,
   WorkspaceEmptyState,
   WorkspaceSectionFrame,
-  WorkspaceStatusStrip,
-} from '../workspaceBlocks';
+  WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 import {
   createDiagramFromTitle,
@@ -118,12 +114,6 @@ export function DiagramWidget({ role, operationalOs }: { role: ShellRole; operat
 
   return (
     <WorkspaceContentShell className="diagram-widget-shell widget-feature-shell">
-      <WorkspaceContentHeader
-        eyebrow="Diagram"
-        title={selectedDiagram?.title ?? 'local topology documents'}
-        metaEyebrow="source"
-        meta={selectedDiagram?.source ?? 'local'}
-      />
       <WorkspaceStatusStrip
         source="local"
         status={selectedDiagram ? `${nodeCount} nodes / ${linkCount} links` : 'no diagram selected'}

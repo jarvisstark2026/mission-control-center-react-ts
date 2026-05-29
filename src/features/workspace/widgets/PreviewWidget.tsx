@@ -1,6 +1,6 @@
 ﻿import { useEffect, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createLocalFileObjectUrl, formatLocalFileSize, readLocalFileTextPreview, revokeLocalFileObjectUrl, type LocalFileRecord } from '../workspaceLocalFiles';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import type { CreateEvidenceInput, OperationalOsRuntime } from '../../operational-os';
@@ -82,12 +82,6 @@ export function PreviewWidget({
   if (!file) {
     return (
       <WorkspaceContentShell className="preview-surface">
-        <WorkspaceContentHeader
-          eyebrow="Preview"
-          title="local file inspector"
-          metaEyebrow="drop-ready"
-          meta="image / audio / video / pdf / text"
-        />
         <WorkspaceStatusStrip source="file" status="no file selected" count="image / audio / video / pdf / text" />
         <WorkspaceSectionFrame className="preview-empty-frame" eyebrow="preview stage" title="no file selected" meta="local only">
           <div className="preview-empty-state">
@@ -114,13 +108,6 @@ export function PreviewWidget({
 
   return (
     <WorkspaceContentShell className="preview-surface preview-file-surface">
-      <WorkspaceContentHeader
-        eyebrow="Preview"
-        title={file.path}
-        metaEyebrow={file.previewKind}
-        meta={`${file.file.type || 'unknown type'} - ${formatLocalFileSize(file.file.size)}`}
-      />
-
       <WorkspaceStatusStrip source="file" status={status} count={file.file.name} updatedAt={formatLocalFileSize(file.file.size)} />
       <WorkspaceEvidenceAttachPanel
         role={role}

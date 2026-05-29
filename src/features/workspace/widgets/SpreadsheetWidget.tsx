@@ -1,4 +1,4 @@
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { addSheetColumn, addSheetRow, loadLocalSheetState, saveLocalSheetState, summarizeSheetColumn, updateSheetCell } from '../workspaceEvidenceModel';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
@@ -13,12 +13,6 @@ export function SpreadsheetWidget({ role, operationalOs }: { role: ShellRole; op
 
   return (
     <WorkspaceContentShell className="sheet-surface">
-      <WorkspaceContentHeader
-        eyebrow="Spreadsheet"
-        title="local table / calculations"
-        metaEyebrow="saved"
-        meta={`${sheet.rows.length} rows - ${updatedTime}`}
-      />
       <WorkspaceStatusStrip source="local" status="editable evidence table" count={`${sheet.rows.length} rows`} updatedAt={`saved ${updatedTime}`} />
       <WorkspaceEvidenceAttachPanel
         role={role}

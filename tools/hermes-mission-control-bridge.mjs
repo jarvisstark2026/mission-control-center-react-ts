@@ -220,7 +220,7 @@ function createBridgeStatus() {
     currentTask: connected
       ? 'Connected to Hermes Agent and ready to stage Mission Control proposals.'
       : `Waiting for Hermes API at ${hermesApiBase}. ${lastHermesStatus.detail}`,
-    capabilities: ['status', 'events', 'tasks', 'mission-control-events', 'json-surface', 'hermes-chat-completions'],
+    capabilities: ['status', 'events', 'tasks', 'workspace-layout-control', 'mission-control-events', 'json-surface', 'hermes-chat-completions'],
     lastSeenAt: connected ? timestamp : lastHermesStatus.checkedAt || timestamp,
     agents: [
       {
@@ -466,6 +466,109 @@ async function createTaskResult(request) {
   };
 }
 
+function extractJsonFromText(text) {
+  const cleaned = String(text || '')
+    .trim()
+    .replace(/^```(?:json)?/iu, '')
+    .replace(/```$/u, '')
+    .trim();
+  const firstObject = cleaned.indexOf('{');
+  const firstArray = cleaned.indexOf('[');
+  const first = [firstObject, firstArray].filter((index) => index >= 0).sort((left, right) => left - right)[0] ?? -1;
+  if (first < 0) throw new BridgeTaskError('layout_unsupported_response', 'Hermes did not return JSON layout directives.');
+  const lastObject = cleaned.lastIndexOf('}');
+  const lastArray = cleaned.lastIndexOf(']');
+  const last = Math.max(lastObject, lastArray);
+  if (last < first) throw new BridgeTaskError('layout_unsupported_response', 'Hermes returned incomplete JSON layout directives.');
+  return JSON.parse(cleaned.slice(first, last + 1));
+}
+
+function normalizeLayoutPlanPayload(value) {
+  const directives = Array.isArray(value)
+    ? value
+    : value && typeof value === 'object' && Array.isArray(value.directives)
+      ? value.directives
+      : null;
+  if (!directives) {
+    throw new BridgeTaskError('layout_unsupported_response', 'Hermes layout response did not include a directives array.', {
+      payloadSummary: schemaSummary(value),
+    });
+  }
+  return {
+    directives,
+    provider: 'hermes',
+    generatedAt: nowIso(),
+  };
+}
+
+function createLayoutPrompt(snapshot) {
+  return [
+    {
+      role: 'system',
+      content:
+        'You are Hermes controlling only Mission Control widget layout geometry. Return JSON only, no prose. You may move, resize, move-resize, open, minimize, or focus non-pinned visible widgets. Do not propose commands. Do not claim external actions. Use this schema: {"directives":[{"id":"short-id","workspaceId":"...","widgetId":"...","action":"move|resize|move-resize|open|minimize|focus","target":{"x":0,"y":0,"width":390,"height":360},"path":[{"x":0,"y":0}],"durationMs":520,"easing":"ease-out","reason":"short reason"}]}. Keep durationMs between 120 and 1600.',
+    },
+    {
+      role: 'user',
+      content: `Arrange this Mission Control workspace in a helpful way for the user. Respect locks and pinned widgets:\n${JSON.stringify(snapshot, null, 2)}`,
+    },
+  ];
+}
+
+async function createLayoutPlanResult(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object' || typeof snapshot.workspaceId !== 'string' || !Array.isArray(snapshot.widgets)) {
+    throw new BridgeTaskError('invalid_layout_snapshot', 'Mission Control bridge received an invalid workspace layout snapshot.', {
+      httpStatus: 400,
+      payloadSummary: safePayloadPreview(JSON.stringify(snapshot ?? {})),
+    });
+  }
+
+  let response;
+  try {
+    response = await fetchWithTimeout(`${hermesApiBase}/chat/completions`, {
+      method: 'POST',
+      headers: createHeaders({ 'content-type': 'application/json' }),
+      body: JSON.stringify({
+        model: hermesModel,
+        stream: false,
+        messages: createLayoutPrompt(snapshot),
+        response_format: { type: 'json_object' },
+      }),
+    }, 30_000);
+  } catch (error) {
+    throw new BridgeTaskError('layout_http_error', `Hermes layout request failed before a response was received: ${error instanceof Error ? error.message : 'unknown error'}`);
+  }
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new BridgeTaskError(response.status === 401 || response.status === 403 ? 'layout_auth_failed' : 'layout_http_error', `Hermes layout request returned ${response.status}`, {
+      statusCode: response.status,
+      payloadSummary: safePayloadPreview(body),
+    });
+  }
+
+  const rawBody = await response.text();
+  let payload;
+  try {
+    payload = rawBody.trim() ? JSON.parse(rawBody) : null;
+  } catch (error) {
+    throw new BridgeTaskError('layout_invalid_json', `Hermes layout request returned non-JSON transport payload: ${error instanceof Error ? error.message : 'invalid JSON'}`, {
+      statusCode: response.status,
+      payloadSummary: safePayloadPreview(rawBody),
+    });
+  }
+  const content = extractHermesContent(payload);
+  try {
+    return normalizeLayoutPlanPayload(extractJsonFromText(content));
+  } catch (error) {
+    if (error instanceof BridgeTaskError) throw error;
+    throw new BridgeTaskError('layout_invalid_json', `Hermes layout response was not valid JSON: ${error instanceof Error ? error.message : 'invalid JSON'}`, {
+      statusCode: response.status,
+      payloadSummary: safePayloadPreview(content) || schemaSummary(payload),
+    });
+  }
+}
+
 function createSampleJson() {
   return {
     title: 'Hermes bridge snapshot',
@@ -596,6 +699,35 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/workspace/layout/plan') {
+    let body;
+    try {
+      body = await readJsonBody(request);
+    } catch (error) {
+      const taskError = new BridgeTaskError(
+        'invalid_layout_snapshot',
+        `Mission Control bridge received invalid layout JSON: ${error instanceof Error ? error.message : 'invalid JSON'}`,
+        { httpStatus: 400 },
+      );
+      sendJson(response, taskError.httpStatus, createTaskFailurePayload(taskError));
+      return;
+    }
+
+    try {
+      await checkHermes();
+      if (!lastHermesStatus.ok) {
+        throw new BridgeTaskError('layout_http_error', `Hermes API is offline: ${lastHermesStatus.detail}`);
+      }
+      sendJson(response, 200, await createLayoutPlanResult(body));
+    } catch (error) {
+      const taskError = error instanceof BridgeTaskError
+        ? error
+        : new BridgeTaskError('layout_failed', error instanceof Error ? error.message : 'Hermes layout request failed.');
+      sendJson(response, taskError.httpStatus, createTaskFailurePayload(taskError));
+    }
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/emit') {
     try {
       const body = await readJsonBody(request);
@@ -617,7 +749,7 @@ const server = http.createServer(async (request, response) => {
 
   sendJson(response, 404, {
     error: 'Not found',
-    endpoints: ['/status', '/events', '/tasks', '/emit', '/sample-json'],
+    endpoints: ['/status', '/events', '/tasks', '/workspace/layout/plan', '/emit', '/sample-json'],
   });
 });
 
@@ -626,7 +758,7 @@ server.listen(port, host, async () => {
   console.log(`Mission Control Hermes bridge listening at http://${host}:${port}`);
   console.log(`Hermes API: ${hermesApiBase}`);
   console.log(`Model: ${hermesModel}`);
-  console.log('Endpoints: GET /status, GET /events, POST /tasks, POST /emit, GET /sample-json');
+  console.log('Endpoints: GET /status, GET /events, POST /tasks, POST /workspace/layout/plan, POST /emit, GET /sample-json');
 });
 
 const heartbeat = setInterval(async () => {

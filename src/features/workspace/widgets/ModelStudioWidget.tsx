@@ -1,14 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { WebGLRenderer } from 'three';
 
-import {
-  WorkspaceCompactList,
-  WorkspaceContentHeader,
-  WorkspaceContentShell,
+import { WorkspaceCompactList,  WorkspaceContentShell,
   WorkspaceEmptyState,
   WorkspaceSectionFrame,
-  WorkspaceStatusStrip,
-} from '../workspaceBlocks';
+  WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createLocalFileObjectUrl, formatLocalFileSize, revokeLocalFileObjectUrl, type LocalFileRecord } from '../workspaceLocalFiles';
 import { loadModelStudioState, saveModelStudioState } from '../workspaceWidgetFeatureModels';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
@@ -184,13 +180,6 @@ export function ModelStudioWidget({ files = [], activeFileId = null, selectedFil
 
   return (
     <WorkspaceContentShell className="model-studio-surface widget-feature-shell">
-      <WorkspaceContentHeader
-        className="model-studio-head"
-        eyebrow="3D asset"
-        title={selectedModel?.file.name ?? modelState.lastModelName ?? 'model inspection'}
-        metaEyebrow="source"
-        meta={selectedModel ? 'file' : 'unavailable'}
-      />
       <WorkspaceStatusStrip
         source={selectedModel ? 'file' : 'unavailable'}
         status={selectedModel ? renderStatus : 'model source required'}

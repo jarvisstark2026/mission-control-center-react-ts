@@ -145,15 +145,15 @@ export const homeEnergySnapshot: HomeEnergySnapshot = {
 };
 
 export const homeEnergySeries: HomeEnergySeries[] = [
-  { id: 'gridImportKw', label: 'Grid import', shortLabel: 'Grid', group: 'supply', color: '#ffbc5c', defaultVisible: true },
-  { id: 'solarPvKw', label: 'Solar PV generation', shortLabel: 'Solar', group: 'supply', color: '#56ddff', defaultVisible: true },
-  { id: 'batteryChargeKw', label: 'Battery charge', shortLabel: 'Battery in', group: 'storage', color: '#7dffcf', defaultVisible: true },
-  { id: 'batteryDischargeKw', label: 'Battery discharge', shortLabel: 'Battery out', group: 'storage', color: '#9fb7ff', defaultVisible: false },
-  { id: 'evChargeKw', label: 'Electric car charging', shortLabel: 'EV', group: 'load', color: '#c8a6ff', defaultVisible: true },
-  { id: 'acKw', label: 'AC consumption', shortLabel: 'AC', group: 'load', color: '#ff8fa3', defaultVisible: true },
-  { id: 'powerSocketsKw', label: 'Power sockets', shortLabel: 'Sockets', group: 'load', color: '#d7e4ef', defaultVisible: true },
-  { id: 'appliancesKw', label: 'Appliances', shortLabel: 'Appliances', group: 'load', color: '#a7d06d', defaultVisible: false },
-  { id: 'poolKw', label: 'Pool system', shortLabel: 'Pool', group: 'load', color: '#5fc8d7', defaultVisible: false },
+  { id: 'gridImportKw', label: 'Grid import', shortLabel: 'Grid', group: 'supply', color: 'var(--jarvis-amber)', defaultVisible: true },
+  { id: 'solarPvKw', label: 'Solar PV generation', shortLabel: 'Solar', group: 'supply', color: 'var(--jarvis-cyan)', defaultVisible: true },
+  { id: 'batteryChargeKw', label: 'Battery charge', shortLabel: 'Battery in', group: 'storage', color: 'var(--jarvis-success)', defaultVisible: true },
+  { id: 'batteryDischargeKw', label: 'Battery discharge', shortLabel: 'Battery out', group: 'storage', color: 'var(--workspace-widget-accent-media)', defaultVisible: false },
+  { id: 'evChargeKw', label: 'Electric car charging', shortLabel: 'EV', group: 'load', color: 'var(--workspace-widget-accent-utility)', defaultVisible: true },
+  { id: 'acKw', label: 'AC consumption', shortLabel: 'AC', group: 'load', color: 'var(--theme-danger)', defaultVisible: true },
+  { id: 'powerSocketsKw', label: 'Power sockets', shortLabel: 'Sockets', group: 'load', color: 'var(--color-text-secondary)', defaultVisible: true },
+  { id: 'appliancesKw', label: 'Appliances', shortLabel: 'Appliances', group: 'load', color: 'var(--workspace-widget-accent-evidence)', defaultVisible: false },
+  { id: 'poolKw', label: 'Pool system', shortLabel: 'Pool', group: 'load', color: 'var(--workspace-widget-accent-ops)', defaultVisible: false },
 ];
 
 export const defaultVisibleHomeEnergySeriesIds = homeEnergySeries

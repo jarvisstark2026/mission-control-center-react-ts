@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createLocalFileObjectUrl, formatLocalFileSize, revokeLocalFileObjectUrl, type LocalFileRecord } from '../workspaceLocalFiles';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import type { OperationalOsRuntime } from '../../operational-os';
@@ -24,12 +24,6 @@ export function PdfWidget({ file, role, operationalOs }: { file?: LocalFileRecor
 
   return (
     <WorkspaceContentShell className="pdf-surface">
-      <WorkspaceContentHeader
-        eyebrow="PDF workspace"
-        title={pdfFile ? pdfFile.file.name : 'read / search / export'}
-        metaEyebrow="document"
-        meta={pdfFile ? formatLocalFileSize(pdfFile.file.size) : 'page preview'}
-      />
       <WorkspaceStatusStrip
         source={pdfFile ? 'file' : 'unavailable'}
         status={pdfFile ? 'active local PDF' : 'no PDF loaded'}

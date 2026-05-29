@@ -1,4 +1,4 @@
-import { WorkspaceButton, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { PermissionBadge } from '../operationalBlocks';
 import type { ShellRole } from '../../shell/roles';
 import type { OperationalOsRuntime } from '../../operational-os';
@@ -10,6 +10,7 @@ import {
   type IntegrationRecord,
   type MissionControlRuntime,
 } from '../../mission-control';
+import { getStableIntegrationGroups } from './stableWidgetSlots';
 
 const permissionOptions: IntegrationPermission[] = ['read', 'control', 'blocked'];
 
@@ -33,39 +34,19 @@ export function IntegrationRegistryWidget({
   const { devices, integrations } = missionControl.state;
   const summary = getIntegrationStatusCounts(integrations);
   const canEditPermissions = canEditIntegrationPermission(missionControl.role);
-  const integrationGroups = Array.from(new Set(integrations.map((integration) => integration.category))).map((category) => ({
-    category,
-    items: integrations.filter((integration) => integration.category === category),
-  }));
+  const integrationGroups = getStableIntegrationGroups(integrations);
 
   return (
     <WorkspaceContentShell className="mission-control-surface integration-registry-surface">
-      <WorkspaceContentHeader
-        eyebrow="Integration registry"
-        title="devices, heartbeats, and permissions"
-        metaEyebrow="scope"
-        meta={missionControl.role}
-      />
       <WorkspaceStatusStrip
         source={summary.online > 0 ? 'bridge' : integrations.length ? 'local' : 'unavailable'}
         status={`${summary.online} online / ${summary.degraded} degraded`}
         count={`${summary.offline} offline`}
         updatedAt={missionControl.role}
       />
-      <WorkspaceEvidenceAttachPanel
-        role={role}
-        operationalOs={operationalOs}
-        evidence={createRuntimeSnapshotEvidenceInput(
-          'Integration registry snapshot',
-          summary.online > 0 ? 'integrations-bridge' : integrations.length ? 'integrations-local' : 'integrations-unavailable',
-          `${integrations.length} integrations / ${summary.online} online / ${summary.degraded} degraded / ${devices.length} devices`,
-        )}
-        disabled={!integrations.length && !devices.length}
-        disabledReason={!integrations.length && !devices.length ? 'No integration or device records are available yet.' : undefined}
-      />
 
       <WorkspaceSectionFrame
-        className="mission-control-list-frame"
+        className="mission-control-list-frame integration-registry-list-section"
         eyebrow="integrations"
         title="connected systems"
         meta={`${integrations.length} tracked`}
@@ -114,7 +95,7 @@ export function IntegrationRegistryWidget({
       </WorkspaceSectionFrame>
 
       <WorkspaceSectionFrame
-        className="mission-control-list-frame"
+        className="mission-control-list-frame integration-registry-inventory-section"
         eyebrow="inventory"
         title="device heartbeat map"
         meta={`${devices.length} devices`}
@@ -129,6 +110,18 @@ export function IntegrationRegistryWidget({
           ))}
         </div>
       </WorkspaceSectionFrame>
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={createRuntimeSnapshotEvidenceInput(
+          'Integration registry snapshot',
+          summary.online > 0 ? 'integrations-bridge' : integrations.length ? 'integrations-local' : 'integrations-unavailable',
+          `${integrations.length} integrations / ${summary.online} online / ${summary.degraded} degraded / ${devices.length} devices`,
+        )}
+        disabled={!integrations.length && !devices.length}
+        disabledReason={!integrations.length && !devices.length ? 'No integration or device records are available yet.' : undefined}
+      />
     </WorkspaceContentShell>
   );
 }

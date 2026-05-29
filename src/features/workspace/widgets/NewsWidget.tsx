@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { ShellRole } from '../../shell/roles';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 import { getMarketGraph, marketCategories, type MarketGraph } from '../workspaceMarketData';
 import { getMarketLiveQuote, type MarketLiveState } from '../workspaceMarketLiveData';
@@ -47,12 +47,6 @@ export function NewsWidget({
 
   return (
     <WorkspaceContentShell className="news-surface">
-      <WorkspaceContentHeader
-        eyebrow="News feed"
-        title="market pulse / watchlist"
-        metaEyebrow={marketLiveData.sourceLabel}
-        meta={`${activeGraph.ticker} - ${watchlistIds.length} watched`}
-      />
       <WorkspaceStatusStrip
         source={activeSource}
         status={`${activeGraph.label} ${activeQuote.priceLabel}`}

@@ -18,6 +18,7 @@ export function WorkspaceWindow({
   onMaximize,
   onRecenter,
   onClose,
+  isFilled = false,
   showChrome = true,
   transferAnimation = null,
 }: {
@@ -31,11 +32,13 @@ export function WorkspaceWindow({
   onMaximize: (id: string) => void;
   onRecenter: (id: string) => void;
   onClose: (id: string) => void;
+  isFilled?: boolean;
   showChrome?: boolean;
   transferAnimation?: WorkspaceWidgetTransferAnimation | null;
 }) {
   const widgetSurfaceAlpha = Math.min(widget.surfaceAlpha * 0.42, 0.05);
   const widgetLineAlpha = Math.min(widget.lineAlpha * 0.6, 0.1);
+  const fillButtonLabel = isFilled ? `Restore ${widget.title} size and position` : `Fill workspace with ${widget.title}`;
 
   return (
     <article
@@ -97,15 +100,22 @@ export function WorkspaceWindow({
             </button>
             <button
               type="button"
-              className="widget-maximize"
+              className={classNames('widget-maximize', isFilled && 'is-active')}
               onClick={(event) => {
                 event.stopPropagation();
                 onMaximize(widget.id);
               }}
-              aria-label={`Fill workspace with ${widget.title}`}
-              title={`Fill workspace with ${widget.title}`}
+              aria-label={fillButtonLabel}
+              aria-pressed={isFilled}
+              title={fillButtonLabel}
             >
-              <span className="widget-control-icon widget-control-icon-fill" aria-hidden="true" />
+              <span
+                className={classNames(
+                  'widget-control-icon',
+                  isFilled ? 'widget-control-icon-restore-fill' : 'widget-control-icon-fill',
+                )}
+                aria-hidden="true"
+              />
             </button>
             <button
               type="button"

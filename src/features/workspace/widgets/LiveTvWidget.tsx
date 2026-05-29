@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { ShellRole } from '../../shell/roles';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createUrlEvidenceInput } from '../workspaceEvidenceModel';
 import {
   addLiveTvFavorite,
@@ -159,53 +159,12 @@ export function LiveTvWidget({ role, operationalOs }: { role: ShellRole; operati
 
   return (
     <WorkspaceContentShell className="live-tv-surface">
-      <WorkspaceContentHeader
-        eyebrow="Live TV"
-        title={activeSource.name}
-        metaEyebrow={isLoading ? 'tuning' : 'on air'}
-        meta={status}
-      />
-
       <WorkspaceStatusStrip
         source={activeSource.url ? 'browser' : 'unavailable'}
-        status={status}
+        status={isLoading ? 'Loading stream' : status}
         count={`${allSources.length} saved feeds`}
         updatedAt={activeSource.streamType.toUpperCase()}
       />
-
-      <WorkspaceEvidenceAttachPanel
-        role={role}
-        operationalOs={operationalOs}
-        evidence={
-          activeSource.url
-            ? createUrlEvidenceInput(activeSource.url, `${activeSource.name} stream`, 'live-tv-widget', `${activeSource.streamType.toUpperCase()} / ${status}`)
-            : { type: 'url', title: 'Live TV stream', source: 'live-tv-widget', summary: 'Stream URL required.' }
-        }
-        disabled={!activeSource.url}
-        disabledReason={!activeSource.url ? 'Tune or save an official stream URL before attaching evidence.' : undefined}
-      />
-
-      <WorkspaceSectionFrame className="live-tv-source-section" eyebrow="sources" title="channel presets" meta={`${allSources.length} feeds`}>
-        <WorkspaceCatalogGrid
-          className="live-tv-preset-list"
-          variant="live-tv"
-          ariaLabel="Live TV sources"
-          items={allSources.map((source) => ({
-            id: source.url,
-            label: source.name,
-            note: source.description,
-            badge: source.badge,
-            active: source.url === activeSource.url,
-            state: source.streamType,
-          }))}
-          onSelect={(item) => {
-            const source = allSources.find((candidate) => candidate.url === item.id) ?? defaultLiveTvSource;
-            setDraftUrl(source.url);
-            setDraftName(source.name);
-            setActiveSource(source);
-          }}
-        />
-      </WorkspaceSectionFrame>
 
       <WorkspaceSectionFrame className="live-tv-controls-section" eyebrow="stream" title="custom feed" meta="HLS / MP4">
         <label className="live-tv-input">
@@ -251,10 +210,44 @@ export function LiveTvWidget({ role, operationalOs }: { role: ShellRole; operati
         ) : (
           <>
             <video ref={videoRef} className="live-tv-frame" controls playsInline preload="metadata" aria-label="Live TV feed setup required" />
-            <WorkspaceEmptyState source="browser" title="Stream source required" detail="Paste an official HLS or MP4 URL, tune it, then save it as a favorite." />
+          <WorkspaceEmptyState source="browser" title="Stream source required" detail="Paste an official HLS or MP4 URL, tune it, then save it as a favorite." />
           </>
         )}
       </WorkspaceSectionFrame>
+
+      <WorkspaceSectionFrame className="live-tv-source-section" eyebrow="sources" title="channel presets" meta={`${allSources.length} feeds`}>
+        <WorkspaceCatalogGrid
+          className="live-tv-preset-list"
+          variant="live-tv"
+          ariaLabel="Live TV sources"
+          items={allSources.map((source) => ({
+            id: source.url,
+            label: source.name,
+            note: source.description,
+            badge: source.badge,
+            active: source.url === activeSource.url,
+            state: source.streamType,
+          }))}
+          onSelect={(item) => {
+            const source = allSources.find((candidate) => candidate.url === item.id) ?? defaultLiveTvSource;
+            setDraftUrl(source.url);
+            setDraftName(source.name);
+            setActiveSource(source);
+          }}
+        />
+      </WorkspaceSectionFrame>
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={
+          activeSource.url
+            ? createUrlEvidenceInput(activeSource.url, `${activeSource.name} stream`, 'live-tv-widget', `${activeSource.streamType.toUpperCase()} / ${status}`)
+            : { type: 'url', title: 'Live TV stream', source: 'live-tv-widget', summary: 'Stream URL required.' }
+        }
+        disabled={!activeSource.url}
+        disabledReason={!activeSource.url ? 'Tune or save an official stream URL before attaching evidence.' : undefined}
+      />
     </WorkspaceContentShell>
   );
 }

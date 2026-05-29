@@ -2,6 +2,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import App from '../../App';
+import { workspacePersistenceChangeEventName } from '../workspace/workspacePersistence';
 
 describe('Shell workspace tracking', () => {
   beforeEach(() => {
@@ -38,5 +39,41 @@ describe('Shell workspace tracking', () => {
 
     expect(within(rail).getByRole('button', { name: /workspace 1, saved, right/i })).toBeInTheDocument();
     expect(within(rail).queryByRole('button', { name: /close workspace 1/i })).not.toBeInTheDocument();
+  });
+
+  it('updates extension workspace theme from cross-window storage changes', () => {
+    render(<App />);
+
+    expect(document.documentElement).toHaveAttribute('data-theme', 'jarvis');
+    expect(screen.queryByRole('button', { name: /theme/i })).not.toBeInTheDocument();
+
+    act(() => {
+      window.localStorage.setItem('mission-control-center-theme', 'ember');
+      window.dispatchEvent(new StorageEvent('storage', { key: 'mission-control-center-theme', newValue: 'ember' }));
+    });
+
+    expect(document.documentElement).toHaveAttribute('data-theme', 'ember');
+
+    act(() => {
+      window.localStorage.setItem('mission-control-center-theme', 'not-a-theme');
+      window.dispatchEvent(new StorageEvent('storage', { key: 'mission-control-center-theme', newValue: 'not-a-theme' }));
+    });
+
+    expect(document.documentElement).toHaveAttribute('data-theme', 'ember');
+  });
+
+  it('updates extension workspace theme from desktop persistence changes without a payload value', () => {
+    render(<App />);
+
+    act(() => {
+      window.localStorage.setItem('mission-control-center-theme', 'arc');
+      window.dispatchEvent(
+        new CustomEvent(workspacePersistenceChangeEventName, {
+          detail: { key: 'mission-control-center-theme', action: 'write' },
+        }),
+      );
+    });
+
+    expect(document.documentElement).toHaveAttribute('data-theme', 'arc');
   });
 });

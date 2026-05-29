@@ -15,30 +15,30 @@ type GlassPanelProps = HTMLAttributes<HTMLDivElement> & {
 };
 
 const toneTokens: Record<GlassPanelTone, string> = {
-  ice: 'rgba(255, 255, 255, 0.14)',
-  cool: 'rgba(108, 157, 255, 0.16)',
-  neutral: 'rgba(97, 116, 148, 0.16)',
+  ice: 'var(--glass-panel-tone-ice)',
+  cool: 'var(--glass-panel-tone-cool)',
+  neutral: 'var(--glass-panel-tone-neutral)',
 };
 
 const depthTokens: Record<GlassPanelDepth, { blur: string; shadow: string }> = {
   shallow: {
     blur: '16px',
-    shadow: '0 16px 36px rgba(0, 0, 0, 0.26)',
+    shadow: '0 16px 36px var(--theme-shadow-color)',
   },
   mid: {
     blur: '22px',
-    shadow: '0 24px 58px rgba(0, 0, 0, 0.32)',
+    shadow: '0 24px 58px var(--theme-shadow-color)',
   },
   deep: {
     blur: '30px',
-    shadow: '0 34px 86px rgba(0, 0, 0, 0.4)',
+    shadow: '0 34px 86px var(--theme-shadow-color)',
   },
 };
 
 const borderTokens: Record<GlassPanelBorder, string> = {
-  soft: 'rgba(255, 255, 255, 0.08)',
-  balanced: 'rgba(255, 255, 255, 0.12)',
-  strong: 'rgba(255, 255, 255, 0.18)',
+  soft: 'var(--glass-panel-border-soft)',
+  balanced: 'var(--glass-panel-border-balanced)',
+  strong: 'var(--glass-panel-border-strong-token)',
 };
 
 export function GlassPanel({

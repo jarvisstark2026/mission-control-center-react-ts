@@ -27,7 +27,7 @@ function createBridgeStatus() {
     activeEngine: provider === 'openclaw' ? 'OpenClaw local bridge' : provider === 'custom' ? 'Custom local bridge' : 'Hermes local bridge',
     activeAgentId: `${provider}-coordinator`,
     currentTask: 'Ready to convert Mission Control goals into gated command proposals.',
-    capabilities: ['status', 'events', 'tasks', 'mission-control-events', 'json-surface'],
+    capabilities: ['status', 'events', 'tasks', 'workspace-layout-control', 'mission-control-events', 'json-surface'],
     lastSeenAt: timestamp,
     agents: [
       {
@@ -199,6 +199,41 @@ function createTaskResult(request) {
   };
 }
 
+function createLayoutPlan(snapshot) {
+  if (!snapshot || typeof snapshot !== 'object' || typeof snapshot.workspaceId !== 'string' || !Array.isArray(snapshot.widgets)) {
+    throw new Error('Invalid workspace layout snapshot.');
+  }
+  const movableWidgets = snapshot.widgets.filter((widget) => widget && !widget.hidden && !widget.pinned);
+  const firstWidget = movableWidgets[0];
+  if (!firstWidget) {
+    return { directives: [], provider, generatedAt: nowIso() };
+  }
+
+  const width = Math.max(firstWidget.minWidth || 320, Math.min(firstWidget.width || 390, Math.floor((snapshot.canvas?.width || 900) * 0.48)));
+  const height = Math.max(firstWidget.minHeight || 240, Math.min(firstWidget.height || 360, Math.floor((snapshot.canvas?.height || 700) * 0.52)));
+  return {
+    directives: [
+      {
+        id: `harness-layout-${Date.now().toString(36)}`,
+        workspaceId: snapshot.workspaceId,
+        widgetId: firstWidget.id,
+        action: 'move-resize',
+        target: {
+          x: 18,
+          y: 72,
+          width,
+          height,
+        },
+        durationMs: 520,
+        easing: 'ease-out',
+        reason: 'Harness live layout smoke movement.',
+      },
+    ],
+    provider,
+    generatedAt: nowIso(),
+  };
+}
+
 function createSampleJson() {
   return {
     title: 'Bridge system snapshot',
@@ -305,6 +340,16 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/workspace/layout/plan') {
+    try {
+      const body = await readJsonBody(request);
+      sendJson(response, 200, createLayoutPlan(body));
+    } catch (error) {
+      sendJson(response, 400, { error: error instanceof Error ? error.message : 'Invalid layout snapshot.' });
+    }
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/emit') {
     try {
       const body = await readJsonBody(request);
@@ -327,14 +372,14 @@ const server = http.createServer(async (request, response) => {
 
   sendJson(response, 404, {
     error: 'Not found',
-    endpoints: ['/status', '/events', '/tasks', '/emit', '/sample-json'],
+    endpoints: ['/status', '/events', '/tasks', '/workspace/layout/plan', '/emit', '/sample-json'],
   });
 });
 
 server.listen(port, host, () => {
   console.log(`Mission Control agent bridge harness listening at http://${host}:${port}`);
   console.log(`Provider: ${provider}`);
-  console.log('Endpoints: GET /status, GET /events, POST /tasks, POST /emit, GET /sample-json');
+  console.log('Endpoints: GET /status, GET /events, POST /tasks, POST /workspace/layout/plan, POST /emit, GET /sample-json');
 });
 
 const heartbeat = setInterval(() => {

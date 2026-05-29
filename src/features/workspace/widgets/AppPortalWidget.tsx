@@ -4,7 +4,7 @@ import { canUseAppProfile, type AppPortalProfile, type OperationalOsRuntime } fr
 import type { ShellRole } from '../../shell/roles';
 import { AttentionCard, EvidenceBlock } from '../operationalBlocks';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createRuntimeSnapshotEvidenceInput, createUrlEvidenceInput } from '../workspaceEvidenceModel';
 
 function formatTime(value?: string) {
@@ -59,7 +59,6 @@ export function AppPortalWidget({ role, operationalOs }: { role: ShellRole; oper
 
   return (
       <WorkspaceContentShell className="mission-control-surface app-portal-surface">
-      <WorkspaceContentHeader eyebrow="App Portal" title="embedded tools / launch profiles" metaEyebrow="mode" meta={activeProfile?.embedMode ?? 'empty'} />
       <WorkspaceStatusStrip
         source="local"
         status={status}

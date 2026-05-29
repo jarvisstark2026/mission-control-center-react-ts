@@ -22,7 +22,7 @@ import { DetachedShellWindow, ShellRail, ShellRoleMenu, ShellThemeMenu } from '.
 import { isShellPanelAccessible } from './nav';
 import type { ShellRole } from './roles';
 import { defaultShellRole, getPanelLabel, getRoleLabel, normalizePanelKind } from './shellCopy';
-import { applyShellTheme, persistShellTheme, readStoredShellTheme, type ShellThemeId } from './themes';
+import { applyShellTheme, persistShellTheme, readStoredShellTheme, subscribeShellTheme, type ShellThemeId } from './themes';
 import { useResponsiveRail } from './useResponsiveRail';
 import './shell.css';
 
@@ -147,6 +147,14 @@ export function Shell({ panelKind = null, role = defaultShellRole, onNavigate }:
     applyShellTheme(activeTheme);
     persistShellTheme(activeTheme);
   }, [activeTheme]);
+
+  useEffect(
+    () =>
+      subscribeShellTheme((nextTheme) => {
+        setActiveTheme((currentTheme) => (currentTheme === nextTheme ? currentTheme : nextTheme));
+      }),
+    [],
+  );
 
   const navigateToPanel = (target: WorkspaceWidget['kind'] | null) => {
     closeRailOnMobile();

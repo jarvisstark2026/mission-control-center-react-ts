@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import { WorkspaceButton, WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCompactList, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
@@ -61,7 +61,6 @@ export function TaskBoardWidget({
   const nextTask = tasks.find((task) => task.status === 'next') ?? tasks.find((task) => task.status === 'blocked') ?? tasks[0] ?? null;
   const selectedTask = selectedTaskId ? tasks.find((task) => task.id === selectedTaskId) ?? null : null;
   const evidenceInput = createTaskBoardEvidenceInput(tasks, selectedTask?.id ?? null, selectedLane);
-  const title = variant === 'project' ? 'local project board' : 'local task lanes';
   const laneRows = groups.map((group) => ({
     id: group.status,
     meta: group.status,
@@ -91,12 +90,6 @@ export function TaskBoardWidget({
 
   return (
     <WorkspaceContentShell className={`task-board-surface ${variant === 'project' ? 'project-surface' : 'list-surface'}`}>
-      <WorkspaceContentHeader
-        eyebrow={variant === 'project' ? 'Project list' : 'List'}
-        title={title}
-        metaEyebrow="local board"
-        meta={`${tasks.length} tasks - ${blockedCount} blocked`}
-      />
       <WorkspaceStatusStrip
         source="local"
         status={nextTask ? nextTask.title : 'No local tasks'}

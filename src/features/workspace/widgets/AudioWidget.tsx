@@ -4,15 +4,11 @@ import type { AgentControlState } from '../../agent-control';
 import type { ShellRole } from '../../shell/roles';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import {
-  WorkspaceButton,
-  WorkspaceCompactList,
-  WorkspaceContentHeader,
-  WorkspaceContentShell,
+import { WorkspaceButton,
+  WorkspaceCompactList,  WorkspaceContentShell,
   WorkspaceEmptyState,
   WorkspaceSectionFrame,
-  WorkspaceStatusStrip,
-} from '../workspaceBlocks';
+  WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createLocalFileEvidenceInput, createUrlEvidenceInput } from '../workspaceEvidenceModel';
 import { createLocalFileObjectUrl, formatLocalFileSize, revokeLocalFileObjectUrl, type LocalFileRecord } from '../workspaceLocalFiles';
 import {
@@ -174,12 +170,6 @@ export function AudioWidget({
 
   return (
     <WorkspaceContentShell className="audio-widget-shell widget-feature-shell">
-      <WorkspaceContentHeader
-        eyebrow="Audio"
-        title={activeSource?.title ?? 'local signal monitor'}
-        metaEyebrow="source"
-        meta={activeSource?.kind ?? (bridgeConnected ? 'bridge activity' : 'unavailable')}
-      />
       <WorkspaceStatusStrip
         source={activeSource?.kind === 'file' ? 'file' : activeSource?.kind === 'browser' ? 'browser' : bridgeConnected ? 'bridge' : 'unavailable'}
         status={activeSource ? playbackStatus : bridgeConnected ? 'agent activity available' : 'source required'}

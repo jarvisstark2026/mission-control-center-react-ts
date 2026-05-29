@@ -17,6 +17,7 @@ type WorkspaceWidgetCardProps = {
   onMaximize: (id: string) => void;
   onRecenter: (id: string) => void;
   onClose: (id: string) => void;
+  isFilled?: boolean;
   showChrome?: boolean;
   transferAnimation?: WorkspaceWidgetTransferAnimation | null;
 } & WorkspaceWidgetContentProps;
@@ -78,6 +79,7 @@ function isTransferAnimationEqual(
 
 function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: WorkspaceWidgetCardProps) {
   if (!isWidgetFrameEqual(left.widget, right.widget)) return false;
+  if (left.isFilled !== right.isFilled) return false;
   if (left.showChrome !== right.showChrome) return false;
   if (!isTransferAnimationEqual(left.transferAnimation, right.transferAnimation)) return false;
 
@@ -191,7 +193,13 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.agentBridgeSettings.hermesApiBaseUrl === right.agentBridgeSettings.hermesApiBaseUrl &&
         left.agentBridgeSettings.hermesModel === right.agentBridgeSettings.hermesModel &&
         left.agentBridgeSettings.preferredAgentId === right.agentBridgeSettings.preferredAgentId &&
-        left.agentBridgeSettings.lastSuccessfulUrl === right.agentBridgeSettings.lastSuccessfulUrl
+        left.agentBridgeSettings.lastSuccessfulUrl === right.agentBridgeSettings.lastSuccessfulUrl &&
+        left.agentLiveLayoutGlobal.updatedAt === right.agentLiveLayoutGlobal.updatedAt &&
+        left.agentLiveLayout.enabled === right.agentLiveLayout.enabled &&
+        left.agentLiveLayout.status === right.agentLiveLayout.status &&
+        left.agentLiveLayout.lastDirectiveAt === right.agentLiveLayout.lastDirectiveAt &&
+        left.agentLiveLayout.lastError === right.agentLiveLayout.lastError &&
+        left.agentLiveLayout.activeWidgetIds.join('|') === right.agentLiveLayout.activeWidgetIds.join('|')
       );
     case 'agent-console':
       return (
@@ -249,6 +257,7 @@ function WorkspaceWidgetCardComponent({
   onMaximize,
   onRecenter,
   onClose,
+  isFilled = false,
   showChrome = true,
   transferAnimation = null,
   ...contentProps
@@ -264,6 +273,7 @@ function WorkspaceWidgetCardComponent({
       onMaximize={onMaximize}
       onRecenter={onRecenter}
       onClose={onClose}
+      isFilled={isFilled}
       showChrome={showChrome}
       transferAnimation={transferAnimation}
     >

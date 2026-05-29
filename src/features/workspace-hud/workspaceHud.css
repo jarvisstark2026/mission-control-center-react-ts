@@ -1,9 +1,11 @@
 .workspace-hud {
-  --hud-primary: var(--theme-hud-primary, var(--jarvis-cyan));
-  --hud-secondary: var(--theme-hud-secondary, rgba(220, 96, 255, 0.9));
-  --hud-accent: var(--theme-hud-accent, var(--jarvis-amber));
+  --hud-primary: rgba(78, 231, 255, 0.92);
+  --hud-secondary: rgba(238, 92, 255, 0.9);
+  --hud-accent: rgba(255, 190, 104, 0.88);
   --hud-muted: rgba(226, 238, 248, 0.5);
-  --hud-surface: rgba(4, 13, 22, 0.42);
+  --hud-surface: rgba(4, 13, 22, 0.28);
+  --hud-primary-shadow: rgba(78, 231, 255, 0.14);
+  --hud-secondary-shadow: rgba(238, 92, 255, 0.08);
   position: absolute;
   inset: 58px 0 0;
   z-index: 0;
@@ -15,22 +17,31 @@
   overflow: hidden;
 }
 
+.workspace-hud.color-theme,
 .workspace-hud.color-cyan-magenta {
-  --hud-primary: rgba(78, 231, 255, 0.95);
-  --hud-secondary: rgba(240, 82, 255, 0.92);
-  --hud-accent: rgba(150, 190, 255, 0.84);
+  --hud-primary: rgba(78, 231, 255, 0.92);
+  --hud-secondary: rgba(238, 92, 255, 0.9);
+  --hud-accent: rgba(255, 190, 104, 0.88);
+  --hud-primary-shadow: rgba(78, 231, 255, 0.14);
+  --hud-secondary-shadow: rgba(238, 92, 255, 0.08);
 }
 
 .workspace-hud.color-cyan-amber {
-  --hud-primary: rgba(86, 221, 255, 0.94);
-  --hud-secondary: rgba(255, 188, 92, 0.88);
-  --hud-accent: rgba(255, 218, 151, 0.82);
+  --hud-primary: rgba(86, 221, 255, 0.92);
+  --hud-secondary: rgba(255, 188, 92, 0.9);
+  --hud-accent: rgba(255, 214, 138, 0.88);
+  --hud-primary-shadow: rgba(86, 221, 255, 0.13);
+  --hud-secondary-shadow: rgba(255, 188, 92, 0.08);
 }
 
 .workspace-hud.color-mono {
-  --hud-primary: rgba(210, 236, 255, 0.8);
-  --hud-secondary: rgba(210, 236, 255, 0.48);
-  --hud-accent: rgba(210, 236, 255, 0.66);
+  --hud-primary: rgba(224, 232, 240, 0.78);
+  --hud-secondary: rgba(224, 232, 240, 0.52);
+  --hud-accent: rgba(248, 252, 255, 0.9);
+  --hud-muted: rgba(224, 232, 240, 0.42);
+  --hud-surface: rgba(10, 14, 20, 0.26);
+  --hud-primary-shadow: rgba(224, 232, 240, 0.09);
+  --hud-secondary-shadow: rgba(224, 232, 240, 0.05);
 }
 
 .workspace-hud.design-signal-halo {
@@ -38,11 +49,11 @@
 }
 
 .workspace-hud.design-network-aperture {
-  --hud-surface: rgba(3, 15, 23, 0.38);
+  --hud-surface: color-mix(in srgb, var(--color-bg-deep) 38%, transparent);
 }
 
 .workspace-hud.design-diagnostic-compass {
-  --hud-muted: rgba(226, 238, 248, 0.42);
+  --hud-muted: color-mix(in srgb, var(--color-text-secondary) 42%, transparent);
 }
 
 .workspace-hud-canvas {
@@ -51,8 +62,8 @@
   height: 100%;
   opacity: 1;
   filter:
-    drop-shadow(0 0 10px rgba(78, 231, 255, 0.13))
-    drop-shadow(0 0 18px rgba(240, 82, 255, 0.06));
+    drop-shadow(0 0 10px var(--hud-primary-shadow))
+    drop-shadow(0 0 18px var(--hud-secondary-shadow));
 }
 
 .workspace-hud.is-interacting {
@@ -70,7 +81,7 @@
   }
 
   .workspace-hud-canvas {
-    filter: drop-shadow(0 0 10px rgba(78, 231, 255, 0.04));
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--hud-primary) 4%, transparent));
   }
 }
 

@@ -1,27 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import {
-  canSubmitAgentTask,
+import { canSubmitAgentTask,
   canViewAgentConsole,
   getAgentTaskScopesForRole,
   useAgentTasking,
   type AgentTaskGateway,
-  type AgentTaskScope,
-} from '../../agent-tasking';
+  type AgentTaskScope } from '../../agent-tasking';
 import { getActiveAgentConnector, getAgentDescriptorById, getVisibleAgentDescriptors, type AgentBridgeSettings, type AgentControlState } from '../../agent-control';
 import type { CommandRisk, MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
 import { AgentAttribution, AttentionCard, EvidenceBlock } from '../operationalBlocks';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import {
-  WorkspaceButton,
-  WorkspaceContentHeader,
-  WorkspaceContentShell,
+import { WorkspaceButton,  WorkspaceContentShell,
   WorkspaceEmptyState,
   WorkspaceSectionFrame,
-  WorkspaceStatusStrip,
-} from '../workspaceBlocks';
+  WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createAgentConversationEvidenceInput } from '../workspaceEvidenceModel';
 import { getAgentGatewayDisplay } from './agentWorkflowDisplay';
 
@@ -120,12 +114,6 @@ export function AgentConsoleWidget({
   if (!canView) {
     return (
       <WorkspaceContentShell className="mission-control-surface agent-console-surface">
-        <WorkspaceContentHeader
-          eyebrow="Agent console"
-          title="tasking / proposals"
-          metaEyebrow="access"
-          meta="guest"
-        />
         <WorkspaceEmptyState source="unavailable" title="No access for this scope" detail="Guest access can review allowed workspace surfaces, but agent tasking is disabled." />
       </WorkspaceContentShell>
     );
@@ -171,13 +159,6 @@ export function AgentConsoleWidget({
 
   return (
     <WorkspaceContentShell className="mission-control-surface agent-console-surface">
-      <WorkspaceContentHeader
-        eyebrow="Agent console"
-        title="chat / proposals"
-        metaEyebrow="gateway"
-        meta={gatewayDisplay.label}
-      />
-
       <WorkspaceStatusStrip
         source={gatewayDisplay.state === 'ready' ? 'bridge' : 'local'}
         status={gatewayDisplay.label}
@@ -291,14 +272,6 @@ export function AgentConsoleWidget({
         {tasking.state.error ? <p className="mission-control-muted">Last error: {tasking.state.error}</p> : null}
       </WorkspaceSectionFrame>
 
-      <WorkspaceEvidenceAttachPanel
-        role={role}
-        operationalOs={operationalOs}
-        evidence={conversationEvidenceInput}
-        disabled={tasking.state.messages.length === 0}
-        disabledReason={tasking.state.messages.length ? `${tasking.state.messages.length} messages / ${tasking.state.proposals.length} proposals` : 'Ask or stage a proposal before attaching the conversation.'}
-      />
-
       <WorkspaceSectionFrame
         className="mission-control-list-frame"
         eyebrow="conversation"
@@ -344,6 +317,14 @@ export function AgentConsoleWidget({
           ))}
         </div>
       </WorkspaceSectionFrame>
+
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={conversationEvidenceInput}
+        disabled={tasking.state.messages.length === 0}
+        disabledReason={tasking.state.messages.length ? `${tasking.state.messages.length} messages / ${tasking.state.proposals.length} proposals` : 'Ask or stage a proposal before attaching the conversation.'}
+      />
     </WorkspaceContentShell>
   );
 }

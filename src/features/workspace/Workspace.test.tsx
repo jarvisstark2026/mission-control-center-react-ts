@@ -2,7 +2,9 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Workspace } from './Workspace';
+import { workspaceHudSettingsStorageKey } from '../workspace-hud';
 import { closeWorkspaceInstance, registerWorkspaceExtensionInstance } from './workspaceInstances';
+import { workspacePersistenceChangeEventName } from './workspacePersistence';
 import { getWorkspaceWidgetStorageKey, saveStoredWidgetState, workspaceStorageKey } from './workspaceStorage';
 import { widgetPresets } from './workspaceWidgetCatalog';
 
@@ -131,10 +133,73 @@ describe('Workspace header controls', () => {
     expect(hud.querySelector('canvas.workspace-hud-canvas')).toBeInTheDocument();
 
     fireEvent.click(currentRender.getByRole('button', { name: 'HUD' }));
+    const centerHudToggle = currentRender.getByRole('checkbox', { name: /Center HUD/i });
+    expect(centerHudToggle).toBeChecked();
+    fireEvent.click(centerHudToggle);
+    expect(currentRender.queryByLabelText('Main workspace HUD')).not.toBeInTheDocument();
+    expect(window.localStorage.getItem('mission-control.workspace-hud-settings')).toContain('"centerHudVisible":false');
+    fireEvent.click(centerHudToggle);
+    expect(currentRender.getByLabelText('Main workspace HUD')).toHaveClass('design-signal-halo');
+
     fireEvent.click(currentRender.getByRole('menuitemradio', { name: /Orbital Core/i }));
 
     expect(currentRender.getByLabelText('Main workspace HUD')).toHaveClass('design-orbital-core');
     expect(window.localStorage.getItem('mission-control.workspace-hud-settings')).toContain('orbital-core');
+  });
+
+  it('syncs HUD settings from browser storage events without reload', () => {
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+    const nextSettings = JSON.stringify({
+      designId: 'network-aperture',
+      colorMode: 'mono',
+      centerHudVisible: true,
+      voiceReactionEnabled: true,
+      audioMeterEnabled: false,
+    });
+
+    expect(currentRender.getByLabelText('Main workspace HUD')).toHaveClass('design-signal-halo');
+
+    window.localStorage.setItem(workspaceHudSettingsStorageKey, nextSettings);
+    act(() => {
+      window.dispatchEvent(
+        new StorageEvent('storage', {
+          key: workspaceHudSettingsStorageKey,
+          newValue: nextSettings,
+        }),
+      );
+    });
+
+    expect(currentRender.getByLabelText('Main workspace HUD')).toHaveClass('design-network-aperture');
+    expect(currentRender.getByLabelText('Main workspace HUD')).toHaveClass('color-mono');
+  });
+
+  it('syncs HUD settings from desktop persistence events without reload', () => {
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+    const nextSettings = JSON.stringify({
+      designId: 'diagnostic-compass',
+      colorMode: 'cyan-amber',
+      centerHudVisible: false,
+      voiceReactionEnabled: true,
+      audioMeterEnabled: false,
+    });
+
+    expect(currentRender.getByLabelText('Main workspace HUD')).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent(workspacePersistenceChangeEventName, {
+          detail: {
+            key: workspaceHudSettingsStorageKey,
+            action: 'write',
+            value: nextSettings,
+          },
+        }),
+      );
+    });
+
+    expect(currentRender.queryByLabelText('Main workspace HUD')).not.toBeInTheDocument();
   });
 
   it('toggles HUD voice reaction from the agent menu', () => {
@@ -420,7 +485,6 @@ describe('Workspace header controls', () => {
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Command inbox' }));
-    expect(currentRender.getAllByText('primary approval queue').length).toBeGreaterThan(0);
     expect(currentRender.getAllByText(/Review current mission state and propose/i).length).toBeGreaterThan(0);
     const commandInboxWidget = getOpenWidget(container, 'command-inbox');
     fireEvent.click(within(commandInboxWidget).getByRole('button', { name: 'Attach evidence' }));
@@ -428,22 +492,24 @@ describe('Workspace header controls', () => {
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Notifications' }));
-    expect(currentRender.getByText('live telemetry and alerts')).toBeInTheDocument();
+    expect(getOpenWidget(container, 'notifications').querySelector('.workspace-status-strip')).toBeInTheDocument();
+    expect(currentRender.getAllByText('local seed events').length).toBeGreaterThan(0);
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Integration registry' }));
-    expect(currentRender.getByText('devices, heartbeats, and permissions')).toBeInTheDocument();
+    expect(getOpenWidget(container, 'integration-registry').querySelector('.workspace-status-strip')).toBeInTheDocument();
+    expect(currentRender.getByText('Tailnet router')).toBeInTheDocument();
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Agent control' }));
-    expect(currentRender.getAllByText('identity / jobs / permissions').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText('Mission Control bridge').length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText('Hermes API').length).toBeGreaterThan(0);
     fireEvent.click(currentRender.getByRole('button', { name: 'Agents' }));
     expect(currentRender.getAllByText('Mission Control Coordinator').length).toBeGreaterThan(0);
     expect(currentRender.getAllByText('Workflow Agent').length).toBeGreaterThan(0);
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Home systems' }));
-    expect(currentRender.getAllByText('energy, safety, automation, and rooms').length).toBeGreaterThan(0);
     expect(currentRender.getAllByText(/home backend not connected/i).length).toBeGreaterThan(0);
     expect(currentRender.getAllByText('Live energy/device values appear only after a backend responds').length).toBeGreaterThan(0);
     const solarActionCard = currentRender.getByText('Use solar surplus').closest('.operational-attention-card');
@@ -497,7 +563,21 @@ describe('Workspace header controls', () => {
     expect(adminRender.getAllByText('Mission Control bridge').length).toBeGreaterThan(0);
     expect(adminRender.getAllByText('Hermes API').length).toBeGreaterThan(0);
     expect(adminRender.getAllByText('Task gateway').length).toBeGreaterThan(0);
+    expect(adminRender.getAllByText('Live layout').length).toBeGreaterThan(0);
     expect(adminRender.getAllByText('Local proposal fallback').length).toBeGreaterThan(0);
+    expect(adminRender.getByText('Live layout by workspace')).toBeInTheDocument();
+    expect(adminRender.getByRole('group', { name: 'Hermes live layout workspace toggles' })).toBeInTheDocument();
+    expect(adminRender.getByRole('button', { name: /Main workspace/i })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(adminRender.getByRole('button', { name: /Main workspace/i }));
+    expect(adminRender.getByRole('button', { name: /Main workspace/i })).toHaveAttribute('aria-pressed', 'true');
+    expect(adminRender.getByRole('button', { name: /Top-left/i })).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(adminRender.getByRole('button', { name: 'Enable all' }));
+    expect(adminRender.getByRole('button', { name: /Top-left/i })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(adminRender.getByRole('button', { name: 'Pause all' }));
+    expect(adminRender.getByRole('button', { name: /Main workspace/i })).toHaveAttribute('aria-pressed', 'false');
+    expect(adminRender.getAllByText('paused').length).toBeGreaterThan(0);
+    fireEvent.click(adminRender.getByRole('button', { name: 'Stop all' }));
+    expect(adminRender.getByRole('button', { name: /Main workspace/i })).toHaveAttribute('aria-pressed', 'false');
     expect(adminRender.getByRole('button', { name: 'Probe now' })).toBeInTheDocument();
     expect(adminRender.getByRole('button', { name: 'Restart bridge and probe' })).toBeInTheDocument();
     fireEvent.click(adminRender.getByRole('button', { name: 'Bridge help' }));
@@ -807,15 +887,66 @@ describe('Workspace header controls', () => {
     const startWidth = (overviewWidget as HTMLElement).style.width;
     const startHeight = (overviewWidget as HTMLElement).style.height;
 
-    fireEvent.click(within(overviewWidget as HTMLElement).getByLabelText('Fill workspace with Command core'));
+    const fillButton = within(overviewWidget as HTMLElement).getByLabelText('Fill workspace with Command core');
+    expect(fillButton).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(fillButton);
 
     expectWidgetPosition(overviewWidget, 0, 0);
     expect(overviewWidget).toHaveStyle({ width: '900px', height: '620px' });
 
-    fireEvent.click(within(overviewWidget as HTMLElement).getByLabelText('Fill workspace with Command core'));
+    const restoreButton = within(overviewWidget as HTMLElement).getByLabelText('Restore Command core size and position');
+    expect(restoreButton).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(restoreButton);
 
     expectWidgetPosition(overviewWidget, startPosition.x, startPosition.y);
     expect(overviewWidget).toHaveStyle({ width: startWidth, height: startHeight });
+  }, 10000);
+
+  it('clears fill restore state after closing or resetting layout', () => {
+    const { container } = render(<Workspace />);
+    const currentRender = within(container);
+    const canvas = container.querySelector<HTMLElement>('.workspace-canvas');
+    let overviewWidget = container.querySelector<HTMLElement>('.workspace-widget.kind-overview');
+
+    expect(canvas).toBeInTheDocument();
+    expect(overviewWidget).toBeInTheDocument();
+
+    Object.defineProperty(canvas, 'getBoundingClientRect', {
+      configurable: true,
+      value: () => ({
+        bottom: 620,
+        height: 620,
+        left: 0,
+        right: 900,
+        top: 0,
+        width: 900,
+        x: 0,
+        y: 0,
+        toJSON: () => undefined,
+      }),
+    });
+
+    fireEvent.click(within(overviewWidget as HTMLElement).getByLabelText('Fill workspace with Command core'));
+    expect(within(overviewWidget as HTMLElement).getByLabelText('Restore Command core size and position')).toHaveAttribute('aria-pressed', 'true');
+
+    unpinCommandCore(overviewWidget as HTMLElement);
+    fireEvent.click(within(overviewWidget as HTMLElement).getByLabelText('Close Command core'));
+    expect(container.querySelector<HTMLElement>('.workspace-widget.kind-overview')).not.toBeInTheDocument();
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
+    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Command core' }));
+    overviewWidget = container.querySelector<HTMLElement>('.workspace-widget.kind-overview');
+    expect(overviewWidget).toBeInTheDocument();
+    expect(within(overviewWidget as HTMLElement).queryByLabelText('Restore Command core size and position')).not.toBeInTheDocument();
+    expect(within(overviewWidget as HTMLElement).getByLabelText('Fill workspace with Command core')).toHaveAttribute('aria-pressed', 'false');
+
+    fireEvent.click(within(overviewWidget as HTMLElement).getByLabelText('Fill workspace with Command core'));
+    expect(within(overviewWidget as HTMLElement).getByLabelText('Restore Command core size and position')).toBeInTheDocument();
+    fireEvent.click(currentRender.getByRole('button', { name: 'Reset layout' }));
+    overviewWidget = container.querySelector<HTMLElement>('.workspace-widget.kind-overview');
+    expect(overviewWidget).toBeInTheDocument();
+    expect(within(overviewWidget as HTMLElement).queryByLabelText('Restore Command core size and position')).not.toBeInTheDocument();
+    expect(within(overviewWidget as HTMLElement).getByLabelText('Fill workspace with Command core')).toHaveAttribute('aria-pressed', 'false');
   }, 10000);
 
   it('pins visible widgets from Manager rows', () => {

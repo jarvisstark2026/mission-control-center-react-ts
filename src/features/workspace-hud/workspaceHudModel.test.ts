@@ -7,6 +7,7 @@ import { getWorkspaceHudMessage } from './workspaceHudI18n';
 import {
   defaultWorkspaceHudSettings,
   normalizeWorkspaceHudSettings,
+  workspaceHudColorOptions,
 } from './workspaceHudStorage';
 import {
   getAudioBandLevels,
@@ -65,8 +66,12 @@ describe('workspace HUD model', () => {
     expect(normalizeWorkspaceHudSettings({ designId: 'signal-halo', colorMode: 'mono', voiceReactionEnabled: false })).toEqual({
       designId: 'signal-halo',
       colorMode: 'mono',
+      centerHudVisible: true,
       voiceReactionEnabled: false,
       audioMeterEnabled: false,
+    });
+    expect(normalizeWorkspaceHudSettings({ centerHudVisible: false })).toMatchObject({
+      centerHudVisible: false,
     });
     expect(normalizeWorkspaceHudSettings({ designId: 'unknown' as never, colorMode: 'bad' as never })).toEqual(
       defaultWorkspaceHudSettings,
@@ -77,6 +82,13 @@ describe('workspace HUD model', () => {
     expect(normalizeVoiceSpectrum([0.2, 2, -1], 3)).toEqual([0.2, 1, 0]);
     expect(normalizeVoiceWaveform([0.2, 2, -2], 3)).toEqual([0.2, 1, -1]);
     expect(getWavelengthMeters(343)).toBe(1);
+  });
+
+  it('keeps HUD color control independent from app theme naming', () => {
+    expect(workspaceHudColorOptions.find((option) => option.id === 'theme')).toMatchObject({
+      label: 'HUD default',
+    });
+    expect(workspaceHudColorOptions.map((option) => option.label)).not.toContain('Theme linked');
   });
 
   it('derives audio bands and spectral centroid from analyzer bins', () => {

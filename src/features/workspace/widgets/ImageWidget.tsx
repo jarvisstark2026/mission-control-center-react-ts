@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createLocalFileObjectUrl, formatLocalFileSize, revokeLocalFileObjectUrl, type LocalFileRecord } from '../workspaceLocalFiles';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import type { OperationalOsRuntime } from '../../operational-os';
@@ -24,12 +24,6 @@ export function ImageWidget({ file, role, operationalOs }: { file?: LocalFileRec
 
   return (
     <WorkspaceContentShell className="image-surface">
-      <WorkspaceContentHeader
-        eyebrow="Image workspace"
-        title={imageFile ? imageFile.file.name : 'preview / annotate / crop'}
-        metaEyebrow="asset"
-        meta={imageFile ? formatLocalFileSize(imageFile.file.size) : 'drop-ready'}
-      />
       <WorkspaceStatusStrip
         source={imageFile ? 'file' : 'unavailable'}
         status={imageFile ? 'active local image' : 'no image loaded'}

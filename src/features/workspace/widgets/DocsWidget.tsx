@@ -1,4 +1,4 @@
-import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { loadLocalDocumentState, saveLocalDocumentState } from '../workspaceEvidenceModel';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
@@ -12,12 +12,6 @@ export function DocsWidget({ role, operationalOs }: { role: ShellRole; operation
 
   return (
     <WorkspaceContentShell className="docs-surface">
-      <WorkspaceContentHeader
-        eyebrow="Docs"
-        title="local evidence note"
-        metaEyebrow="saved"
-        meta={`${wordCount} words - ${updatedTime}`}
-      />
       <WorkspaceStatusStrip source="local" status={documentState.title} count={`${wordCount} words`} updatedAt={`saved ${updatedTime}`} />
       <WorkspaceEvidenceAttachPanel
         role={role}

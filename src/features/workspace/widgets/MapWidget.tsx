@@ -3,15 +3,11 @@ import { useMemo, useState } from 'react';
 import type { ShellRole } from '../../shell/roles';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import {
-  WorkspaceButton,
-  WorkspaceCompactList,
-  WorkspaceContentHeader,
-  WorkspaceContentShell,
+import { WorkspaceButton,
+  WorkspaceCompactList,  WorkspaceContentShell,
   WorkspaceEmptyState,
   WorkspaceSectionFrame,
-  WorkspaceStatusStrip,
-} from '../workspaceBlocks';
+  WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 import {
   addMapPlace,
@@ -69,12 +65,6 @@ export function MapWidget({ role, operationalOs }: { role: ShellRole; operationa
 
   return (
     <WorkspaceContentShell className="map-widget-shell widget-feature-shell">
-      <WorkspaceContentHeader
-        eyebrow="Map"
-        title={selectedPlace?.title ?? selectedRoute?.title ?? 'local places and routes'}
-        metaEyebrow="source"
-        meta="local"
-      />
       <WorkspaceStatusStrip
         source="local"
         status={mapCount ? `${mapCount} saved map records` : 'location record required'}

@@ -13,6 +13,7 @@ export type WorkspaceHudColorMode = 'theme' | 'cyan-magenta' | 'cyan-amber' | 'm
 export type WorkspaceHudSettings = {
   designId: WorkspaceHudDesignId;
   colorMode: WorkspaceHudColorMode;
+  centerHudVisible: boolean;
   voiceReactionEnabled: boolean;
   audioMeterEnabled: boolean;
 };

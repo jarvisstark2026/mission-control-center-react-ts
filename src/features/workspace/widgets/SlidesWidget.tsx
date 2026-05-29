@@ -1,4 +1,4 @@
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { addSlideFrame, loadLocalSlidesState, removeSlideFrame, saveLocalSlidesState, selectSlideFrame, updateSlideFrame } from '../workspaceEvidenceModel';
 import { usePersistentWorkspaceState } from '../usePersistentWorkspaceState';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
@@ -20,12 +20,6 @@ export function SlidesWidget({ role, operationalOs }: { role: ShellRole; operati
 
   return (
     <WorkspaceContentShell className="slides-surface">
-      <WorkspaceContentHeader
-        eyebrow="Slides"
-        title="local presentation draft"
-        metaEyebrow="saved"
-        meta={`${slides.frames.length} frames - ${updatedTime}`}
-      />
       <WorkspaceStatusStrip source="local" status={activeSlide.title} count={`${slides.frames.length} local frames`} updatedAt={`saved ${updatedTime}`} />
       <WorkspaceEvidenceAttachPanel
         role={role}

@@ -4,7 +4,7 @@ import type { ShellRole } from '../../shell/roles';
 import type { MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { AttentionCard, EvidenceBlock, PermissionBadge, RiskBadge } from '../operationalBlocks';
-import { WorkspaceButton, WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCompactList, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
 import { createHomeSystemActionEvents, getHomeSystemActionPlansForRole, type HomeSystemActionId } from '../homeSystemsActions';
 import { useHomeSystemsData } from '../homeSystemsAdapter';
@@ -142,12 +142,6 @@ export function HomeSystemsWidget({
 
     return (
       <WorkspaceContentShell className="mission-control-surface home-systems-surface">
-        <WorkspaceContentHeader
-          eyebrow="Home systems"
-          title="energy, safety, automation, and rooms"
-          metaEyebrow={sourceLabel}
-          meta={role}
-        />
         <WorkspaceStatusStrip
           source={sourceStatus === 'offline' ? 'unavailable' : 'local'}
           status={homeSystems.error ?? 'home backend not connected'}
@@ -211,13 +205,6 @@ export function HomeSystemsWidget({
 
   return (
     <WorkspaceContentShell className="mission-control-surface home-systems-surface">
-      <WorkspaceContentHeader
-          eyebrow="Home systems"
-          title="energy, safety, automation, and rooms"
-          metaEyebrow={sourceLabel}
-          meta={role}
-      />
-
       <WorkspaceStatusStrip
         source={sourceStatus === 'backend-ready' ? 'live' : sourceStatus === 'offline' ? 'unavailable' : 'local'}
         status={`${formatKw(snapshot.generationKw)} generating / ${formatKw(snapshot.consumptionKw)} consuming`}
@@ -304,8 +291,8 @@ export function HomeSystemsWidget({
             <svg className="home-energy-chart" viewBox="0 0 100 100" role="img" aria-label="Daily home energy graph">
               <defs>
                 <linearGradient id="homeEnergyGridFade" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
-                  <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
+                  <stop offset="0%" stopColor="var(--home-energy-grid-start)" />
+                  <stop offset="100%" stopColor="var(--home-energy-grid-end)" />
                 </linearGradient>
               </defs>
               {[25, 50, 75].map((position) => (

@@ -15,7 +15,7 @@ import {
   type AgentBridgeProbeResult,
 } from './agentBridgeRuntime';
 import { createInitialAgentControlState, defaultAgentLocalBridgeUrl, type AgentConnectorRuntimeOptions } from './agentControlModel';
-import type { AgentConnectorRecord, AgentConnectorStatus, AgentControlState } from './agentControlTypes';
+import type { AgentBridgeDiagnosticLevel, AgentBridgeDiagnosticSource, AgentConnectorRecord, AgentConnectorStatus, AgentControlState } from './agentControlTypes';
 
 export type AgentBridgeRuntimeOptions = AgentConnectorRuntimeOptions &
   AgentBridgeTransportOptions & {
@@ -30,6 +30,12 @@ export type AgentBridgeRuntime = {
   taskGateway: AgentTaskGateway;
   probeNow: () => Promise<AgentBridgeProbeResult[]>;
   testUrl: (url: string) => Promise<AgentBridgeProbeResult>;
+  recordDiagnostic: (
+    message: string,
+    source?: AgentBridgeDiagnosticSource,
+    level?: AgentBridgeDiagnosticLevel,
+    payload?: unknown,
+  ) => void;
 };
 
 function isRuntimeTestMode() {
@@ -197,6 +203,30 @@ export function useAgentBridgeRuntime(options: AgentBridgeRuntimeOptions): Agent
     return results;
   }, []);
 
+  const recordDiagnostic = useCallback(
+    (
+      message: string,
+      source: AgentBridgeDiagnosticSource = 'runtime',
+      level: AgentBridgeDiagnosticLevel = 'warning',
+      payload?: unknown,
+    ) => {
+      const connector = selectAgentBridgeConnector(stateRef.current);
+      setState((current) =>
+        appendAgentBridgeDiagnostic(
+          current,
+          createAgentBridgeDiagnostic({
+            connectorId: connector.id,
+            level,
+            message,
+            source,
+            payload,
+          }),
+        ),
+      );
+    },
+    [],
+  );
+
   useEffect(() => {
     if (bridgeRuntimeDisabled) return undefined;
 
@@ -349,7 +379,8 @@ export function useAgentBridgeRuntime(options: AgentBridgeRuntimeOptions): Agent
       taskGateway,
       probeNow,
       testUrl,
+      recordDiagnostic,
     }),
-    [activeConnector, probeNow, state, taskGateway, testUrl],
+    [activeConnector, probeNow, recordDiagnostic, state, taskGateway, testUrl],
   );
 }

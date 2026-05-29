@@ -3,7 +3,7 @@ import type { ChangeEvent } from 'react';
 import type { ShellRole } from '../../shell/roles';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceButton, WorkspaceCatalogGrid, WorkspaceContentShell, WorkspaceEmptyState, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createLocalFileEvidenceInput } from '../workspaceEvidenceModel';
 import { createLocalFileRecord, formatLocalFileSize, generalUseFolderLabel, type LocalFileRecord, type LocalFolderEntry } from '../workspaceLocalFiles';
 
@@ -65,12 +65,6 @@ export function FileExplorerWidget({
         ];
   const visibleFolderPath = folderPath ?? generalUseFolderLabel;
   const loadedEntryCount = hasRealFolderEntries ? folderEntries.length : files.length;
-  const selectedCountLabel = `${files.length} ${files.length === 1 ? 'item' : 'items'} loaded`;
-  const explorerStatusLabel = activeFile
-    ? `Previewing ${activeFile.path}`
-    : folderEntries.length
-      ? `Folder: ${visibleFolderPath}`
-      : 'General use folder ready';
   const getFolderEntrySelectionId = (entry: LocalFolderEntry) => (entry.file ? createLocalFileRecord(entry.file).id : entry.id);
 
   const folderCatalogItems = folderTreeEntries.map((entry) => {
@@ -139,14 +133,6 @@ export function FileExplorerWidget({
 
   return (
     <WorkspaceContentShell className="file-explorer-surface">
-      <WorkspaceContentHeader
-        className="file-explorer-head"
-        eyebrow="Local file browser"
-        title="Choose files or folders from this PC."
-        metaEyebrow={selectedCountLabel}
-        meta={explorerStatusLabel}
-      />
-
       <WorkspaceStatusStrip
         source="file"
         status={loadedEntryCount ? `${loadedEntryCount} ${loadedEntryCount === 1 ? 'entry' : 'entries'} loaded` : 'no entries loaded'}

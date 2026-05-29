@@ -1,7 +1,7 @@
 import type { OperationalOsRuntime } from '../../operational-os';
 import type { ShellRole } from '../../shell/roles';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import { WorkspaceActionRowList, WorkspaceCompactList, WorkspaceContentHeader, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceActionRowList, WorkspaceCompactList, WorkspaceContentShell, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createWindowStateEvidenceInput } from '../workspaceEvidenceModel';
 import {
   getManagedWidgetRows,
@@ -39,11 +39,6 @@ export function WindowManagerWidget({
 
   return (
     <WorkspaceContentShell className="window-manager-surface">
-      <WorkspaceContentHeader
-        eyebrow="Manager"
-        title="Workspace widgets and pinned surfaces"
-        meta={`${summary.open} open - ${summary.visible} visible - ${summary.total} total`}
-      />
       <WorkspaceStatusStrip
         source="local"
         status={`${summary.visible} visible widgets`}

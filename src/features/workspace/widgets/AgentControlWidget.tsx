@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ShellRole } from '../../shell/roles';
-import {
-  canEditAgentSettings,
+import { canEditAgentSettings,
   canViewAgentControl,
   createAgentPermissionChangeProposal,
   createAgentProfileChangeProposal,
@@ -36,18 +35,16 @@ import {
   type AgentPermissionLevel,
   type AgentScheduledJob,
   type HermesApiScheme,
-  type LocalAgentBridgeProcessState,
-} from '../../agent-control';
+  type LocalAgentBridgeProcessState } from '../../agent-control';
 import { createBridgeAgentTaskGateway, type AgentTaskGateway, type AgentTaskScope } from '../../agent-tasking';
 import type { MissionControlRuntime } from '../../mission-control';
 import { AgentAttribution, PermissionBadge } from '../operationalBlocks';
-import {
-  WorkspaceButton,
-  WorkspaceContentHeader,
-  WorkspaceContentShell,
+import { agentLiveLayoutPlacementLabels } from '../workspaceAgentLayout';
+import { workspacePlacements, type WorkspacePlacement } from '../workspaceInstances';
+import type { AgentLiveLayoutControlState, AgentLiveLayoutGlobalState } from '../workspaceAgentLayout';
+import { WorkspaceButton,  WorkspaceContentShell,
   WorkspaceEmptyState,
-  WorkspaceSectionFrame,
-} from '../workspaceBlocks';
+  WorkspaceSectionFrame } from '../workspaceBlocks';
 import { getAgentGatewayDisplay } from './agentWorkflowDisplay';
 
 function formatDateTime(value: string | null) {
@@ -326,6 +323,11 @@ export function AgentControlWidget({
   onProbeBridge,
   onTestBridgeUrl,
   taskGateway,
+  liveLayout,
+  liveLayoutGlobal,
+  onSetLiveLayoutEnabled,
+  onSetAllLiveLayoutEnabled,
+  onPauseAllLiveLayout,
 }: {
   state: AgentControlState;
   role: ShellRole;
@@ -335,6 +337,11 @@ export function AgentControlWidget({
   onProbeBridge: () => Promise<AgentBridgeProbeResult[]>;
   onTestBridgeUrl: (url: string) => Promise<AgentBridgeProbeResult>;
   taskGateway: AgentTaskGateway;
+  liveLayout: AgentLiveLayoutControlState;
+  liveLayoutGlobal: AgentLiveLayoutGlobalState;
+  onSetLiveLayoutEnabled: (placement: WorkspacePlacement, enabled: boolean) => void;
+  onSetAllLiveLayoutEnabled: (enabled: boolean) => void;
+  onPauseAllLiveLayout: () => void;
 }) {
   const initialBridgeMode = bridgeSettings.bridgeMode ?? 'same-pc';
   const [bridgeMode, setBridgeMode] = useState<AgentBridgeMode>(initialBridgeMode);
@@ -377,12 +384,6 @@ export function AgentControlWidget({
   if (!canViewAgentControl(role)) {
     return (
       <WorkspaceContentShell className="mission-control-surface agent-control-surface">
-        <WorkspaceContentHeader
-          eyebrow="Agent control"
-          title="identity / jobs / permissions"
-          metaEyebrow="access"
-          meta="guest"
-        />
         <WorkspaceEmptyState source="unavailable" title="No access for this scope" detail="Agent identity, scheduled jobs, and permission details are hidden from guest access." />
       </WorkspaceContentShell>
     );
@@ -402,9 +403,6 @@ export function AgentControlWidget({
   const visibleConnectorCount = visibleConnectors.filter((connector) => connector.status !== 'not-configured').length;
   const activeConnector = getActiveAgentConnector(state);
   const gatewayDisplay = getAgentGatewayDisplay(taskGateway.mode, activeConnector);
-  const activeConnectorMeta = activeConnector.kind === 'mock'
-    ? `${gatewayDisplay.label} / ${state.identity.model}`
-    : `${activeConnector.kind} / ${activeConnector.status} / ${activeConnector.activeEngine ?? state.identity.model}`;
   const localHermesConnector = connectors.find((connector) => connector.id === 'hermes-local-bridge');
   const bridgeTutorialSteps = getAgentBridgeTutorialSteps(state, bridgeSettings);
   const reachableUrl = getAgentBridgeReachableUrl(state);
@@ -456,6 +454,18 @@ export function AgentControlWidget({
     : localBridgeProcess?.running
       ? `running${localBridgeProcess.pid ? ` / pid ${localBridgeProcess.pid}` : ''}`
       : 'stopped';
+  const liveLayoutWorkspaces = workspacePlacements.map((placement) => liveLayoutGlobal.workspaces[placement]);
+  const liveLayoutEnabledCount = liveLayoutWorkspaces.filter((workspace) => workspace.enabled).length;
+  const liveLayoutMovingCount = liveLayoutWorkspaces.reduce((count, workspace) => count + workspace.activeWidgetIds.length, 0);
+  const liveLayoutErrorCount = liveLayoutWorkspaces.filter((workspace) => Boolean(workspace.lastError)).length;
+  const liveLayoutSummary =
+    liveLayoutMovingCount > 0
+      ? `moving ${liveLayoutMovingCount} widget${liveLayoutMovingCount === 1 ? '' : 's'}`
+      : liveLayoutEnabledCount > 0
+        ? `${liveLayoutEnabledCount} workspace${liveLayoutEnabledCount === 1 ? '' : 's'} listening`
+        : liveLayoutErrorCount > 0
+          ? `${liveLayoutErrorCount} workspace${liveLayoutErrorCount === 1 ? '' : 's'} need attention`
+          : 'off';
   const groupedPermissions = (['read', 'suggest', 'execute', 'blocked'] as AgentPermissionLevel[])
     .map((level) => ({
       level,
@@ -701,13 +711,6 @@ export function AgentControlWidget({
 
   return (
     <WorkspaceContentShell className="mission-control-surface agent-control-surface">
-      <WorkspaceContentHeader
-        eyebrow="Agent control"
-        title="identity / jobs / permissions"
-        metaEyebrow="connection"
-        meta={activeConnectorMeta}
-      />
-
       <section className="agent-control-health-strip" aria-label="Agent bridge health">
         <div data-state={localBridgeReachable || localBridgeProcess?.running ? 'ready' : 'offline'}>
           <span>Mission Control bridge</span>
@@ -728,6 +731,11 @@ export function AgentControlWidget({
           <span>Last event</span>
           <strong>{formatDateTime(state.lastBridgeEventAt)}</strong>
           <small>{state.eventStreamStatus}</small>
+        </div>
+        <div data-state={liveLayoutMovingCount || liveLayoutEnabledCount ? 'ready' : liveLayoutErrorCount ? 'failed' : 'pending'}>
+          <span>Live layout</span>
+          <strong>{liveLayoutSummary}</strong>
+          <small>{liveLayout.enabled ? `${agentLiveLayoutPlacementLabels[liveLayout.placement]} active` : 'workspace toggles'}</small>
         </div>
       </section>
 
@@ -866,6 +874,14 @@ export function AgentControlWidget({
             <span>saved endpoint</span>
             <strong>{bridgeSettings.localBridgeUrl || 'not saved'}</strong>
           </div>
+          <div>
+            <span>Hermes live layout</span>
+            <strong>{liveLayoutSummary}</strong>
+          </div>
+          <div>
+            <span>moving widgets</span>
+            <strong>{liveLayoutMovingCount ? String(liveLayoutMovingCount) : 'none'}</strong>
+          </div>
         </div>
         {bridgeInputWarning ? <p className="mission-control-muted">{bridgeInputWarning}</p> : null}
         {localBridgeProcess?.lastError ? <p className="mission-control-muted">{localBridgeProcess.lastError}</p> : null}
@@ -916,6 +932,49 @@ export function AgentControlWidget({
         </div>
         <p className="mission-control-muted">{testProposalStatus}</p>
         <p className="mission-control-muted">{bridgeSetupStatus}</p>
+        <div className="agent-control-live-layout-panel">
+          <div>
+            <span>Live layout by workspace</span>
+            <strong>{liveLayoutSummary}</strong>
+            <small>
+              Mouse drag wins in each workspace. Layout changes stay session-only until Save Layout.
+            </small>
+          </div>
+          <div className="agent-control-live-layout-actions">
+            <WorkspaceButton variant="secondary" disabled={!editable} onClick={() => onSetAllLiveLayoutEnabled(true)}>
+              Enable all
+            </WorkspaceButton>
+            <WorkspaceButton variant="secondary" disabled={!editable} onClick={onPauseAllLiveLayout}>
+              Pause all
+            </WorkspaceButton>
+            <WorkspaceButton variant="secondary" disabled={!editable} onClick={() => onSetAllLiveLayoutEnabled(false)}>
+              Stop all
+            </WorkspaceButton>
+          </div>
+        </div>
+        <div className="agent-control-live-layout-grid" role="group" aria-label="Hermes live layout workspace toggles">
+          {workspacePlacements.map((placement) => {
+            const workspaceState = liveLayoutGlobal.workspaces[placement];
+            const movingCount = workspaceState.activeWidgetIds.length;
+            return (
+              <button
+                key={placement}
+                type="button"
+                className="agent-control-live-layout-tile"
+                data-state={workspaceState.enabled ? workspaceState.status : workspaceState.status === 'paused by user' ? 'paused by user' : 'off'}
+                aria-pressed={workspaceState.enabled}
+                disabled={!editable}
+                onClick={() => onSetLiveLayoutEnabled(placement, !workspaceState.enabled)}
+              >
+                <span>{agentLiveLayoutPlacementLabels[placement]}</span>
+                <strong>{workspaceState.enabled ? workspaceState.status : workspaceState.status === 'paused by user' ? 'paused' : 'off'}</strong>
+                <small>
+                  {movingCount ? `${movingCount} moving` : workspaceState.lastError ? workspaceState.lastError : workspaceState.workspaceId}
+                </small>
+              </button>
+            );
+          })}
+        </div>
       </WorkspaceSectionFrame>
         </>
       ) : null}

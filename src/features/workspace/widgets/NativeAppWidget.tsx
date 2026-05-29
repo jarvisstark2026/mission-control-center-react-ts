@@ -4,15 +4,11 @@ import type { ShellRole } from '../../shell/roles';
 import type { MissionControlEvent, MissionControlRuntime } from '../../mission-control';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import {
-  WorkspaceButton,
-  WorkspaceCompactList,
-  WorkspaceContentHeader,
-  WorkspaceContentShell,
+import { WorkspaceButton,
+  WorkspaceCompactList,  WorkspaceContentShell,
   WorkspaceEmptyState,
   WorkspaceSectionFrame,
-  WorkspaceStatusStrip,
-} from '../workspaceBlocks';
+  WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createRuntimeSnapshotEvidenceInput, createUrlEvidenceInput } from '../workspaceEvidenceModel';
 import {
   addNativeAppProfile,
@@ -111,13 +107,6 @@ export function NativeAppWidget({ role, missionControl, operationalOs }: { role:
 
   return (
     <WorkspaceContentShell className="native-app-surface widget-feature-shell">
-      <WorkspaceContentHeader
-        eyebrow="Native app"
-        title={selectedProfile?.name ?? 'external app profiles'}
-        metaEyebrow="source"
-        meta="local"
-      />
-
       <WorkspaceStatusStrip
         source="local"
         status={selectedProfile ? status : 'profile required'}

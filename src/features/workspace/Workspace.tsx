@@ -10,9 +10,11 @@ import { useMissionControl } from '../mission-control';
 import { useOperationalOs } from '../operational-os';
 import {
   WorkspaceHud,
+  areWorkspaceHudSettingsEqual,
   createWorkspaceHudSignals,
   getWorkspaceHudMessage,
   readWorkspaceHudSettings,
+  subscribeWorkspaceHudSettings,
   useAgentVoiceRuntime,
   workspaceHudColorOptions,
   workspaceHudDesignOptions,
@@ -75,10 +77,25 @@ import {
   replaceWorkspaceActiveModeId,
   subscribeWorkspaceInstances,
   updateWorkspaceActiveModeId,
+  type WorkspacePlacement,
   type WorkspaceTransferDirection,
 } from './workspaceInstances';
 import { playWidgetAddedSound } from './workspaceSound';
 import { publishWidgetTransfer, subscribeWidgetTransfer, type WorkspaceWidgetTransferAnimation } from './workspaceWidgetTransfer';
+import {
+  createWorkspaceLayoutSnapshot,
+  getAgentLiveLayoutWorkspaceState,
+  pauseAllAgentLiveLayoutWorkspaces,
+  readAgentLiveLayoutGlobalState,
+  reportAgentLiveLayoutWorkspaceStatus,
+  requestWorkspaceLayoutPlan,
+  setAgentLiveLayoutWorkspaceEnabled,
+  setAllAgentLiveLayoutWorkspacesEnabled,
+  subscribeAgentLiveLayoutGlobalState,
+  validateWorkspaceLayoutDirectives,
+  type AgentLiveLayoutWorkspaceState,
+  type ValidatedWorkspaceLayoutDirective,
+} from './workspaceAgentLayout';
 import {
   editableWorkspacePermissionRoles,
   getDefaultWorkspaceWidgetPermission,
@@ -222,6 +239,11 @@ type InteractionState = {
   startTop: number;
   startWidth: number;
   startHeight: number;
+};
+
+type AgentLayoutAnimation = {
+  frameId: number;
+  widgetId: string;
 };
 
 type WorkspaceProps = {
@@ -537,6 +559,7 @@ export function Workspace({
     onMissionEvents: missionControl.ingestEvents,
   });
   const agentControl = agentBridge.state;
+  const recordAgentBridgeDiagnostic = agentBridge.recordDiagnostic;
   const operationalOs = useOperationalOs(missionControl.state.commands);
   const marketLiveData = useMarketLiveData();
   const isWorkspaceExtension = isWorkspaceExtensionUrl();
@@ -555,12 +578,18 @@ export function Workspace({
   const transferCommitTimeoutsRef = useRef<Array<{ id: number; widgetId: string }>>([]);
   const compactLayoutAppliedRef = useRef(hasStoredWidgets || isWorkspaceExtension);
   const [widgets, setWidgets] = useState(initialWidgets);
+  const [filledWidgetIds, setFilledWidgetIds] = useState<Set<string>>(() => new Set());
   const [workspaceInteractionActive, setWorkspaceInteractionActive] = useState(false);
   const [widgetTransferAnimation, setWidgetTransferAnimation] = useState<ActiveWidgetTransferAnimation | null>(null);
   const pendingWidgetSaveRef = useRef<number | null>(null);
   const pendingWidgetFrameRef = useRef<number | null>(null);
   const pendingWidgetFrameWidgetsRef = useRef<WorkspaceWidget[] | null>(null);
+  const agentLayoutAnimationsRef = useRef<Map<string, AgentLayoutAnimation>>(new Map());
+  const agentLayoutAnimatingWidgetIdsRef = useRef<Set<string>>(new Set());
+  const agentLayoutLoopInFlightRef = useRef(false);
+  const agentLayoutMutationRef = useRef(false);
   const skipNextWidgetSaveRef = useRef(false);
+  const [agentLiveLayoutGlobal, setAgentLiveLayoutGlobal] = useState(readAgentLiveLayoutGlobalState);
   const [bounds, setBounds] = useState({ width: 0, height: 0 });
   const [localFiles, setLocalFiles] = useState<LocalFileRecord[]>([]);
   const [selectedLocalFileId, setSelectedLocalFileId] = useState<string | null>(null);
@@ -614,6 +643,9 @@ export function Workspace({
     : 0;
   const extensionWorkspaceLabel = extensionWorkspaceNumber > 0 ? `Workspace ${extensionWorkspaceNumber}` : 'Workspace';
   const currentWorkspaceLabel = isWorkspaceExtension ? extensionWorkspaceLabel : 'Main workspace';
+  const currentWorkspacePlacement: WorkspacePlacement =
+    workspaceInstances.find((instance) => instance.id === currentWorkspaceId)?.placement ?? 'center';
+  const agentLiveLayout = getAgentLiveLayoutWorkspaceState(agentLiveLayoutGlobal, currentWorkspacePlacement, currentWorkspaceId);
   const workspaceShortcutKindsForRole = useMemo(
     () => getWorkspaceShortcutKindsForRole(activeRole, widgetPermissions),
     [activeRole, widgetPermissions],
@@ -641,11 +673,42 @@ export function Workspace({
     });
   };
 
+  useEffect(
+    () =>
+      subscribeWorkspaceHudSettings((nextSettings) => {
+        setHudSettings((current) => (areWorkspaceHudSettingsEqual(current, nextSettings) ? current : nextSettings));
+      }),
+    [],
+  );
+
   const clearPendingWidgetSave = () => {
     if (pendingWidgetSaveRef.current === null) return;
     window.clearTimeout(pendingWidgetSaveRef.current);
     pendingWidgetSaveRef.current = null;
   };
+  const clearFilledWidgetSnapshots = useCallback((ids?: Iterable<string>) => {
+    if (!ids) {
+      maximizedWidgetSnapshotsRef.current = {};
+      setFilledWidgetIds((current) => (current.size ? new Set() : current));
+      return;
+    }
+
+    const idsToClear = Array.from(ids);
+    if (!idsToClear.length) return;
+
+    for (const id of idsToClear) {
+      delete maximizedWidgetSnapshotsRef.current[id];
+    }
+
+    setFilledWidgetIds((current) => {
+      let changed = false;
+      const next = new Set(current);
+      for (const id of idsToClear) {
+        changed = next.delete(id) || changed;
+      }
+      return changed ? next : current;
+    });
+  }, []);
   const flushPendingWidgetFrame = () => {
     if (pendingWidgetFrameRef.current !== null) {
       window.cancelAnimationFrame(pendingWidgetFrameRef.current);
@@ -667,6 +730,141 @@ export function Workspace({
     widgetElement.style.height = `${widget.open ? widget.height : 58}px`;
     widgetElement.style.zIndex = `${widget.zIndex}`;
   };
+  const getAgentLayoutBridgeUrl = useEventCallback(() => {
+    const connector = agentBridge.activeConnector;
+    if (connector.kind === 'mock' || connector.status !== 'connected' || !connector.url) return null;
+    return connector.url;
+  });
+  const setAgentLayoutStatus = useEventCallback((patch: Partial<AgentLiveLayoutWorkspaceState>) => {
+    reportAgentLiveLayoutWorkspaceStatus(currentWorkspacePlacement, currentWorkspaceId, {
+      ...patch,
+      bridgeUrl: patch.bridgeUrl === undefined ? getAgentLayoutBridgeUrl() : patch.bridgeUrl,
+    });
+  });
+  const refreshAgentLayoutAnimatingIds = useEventCallback(() => {
+    reportAgentLiveLayoutWorkspaceStatus(currentWorkspacePlacement, currentWorkspaceId, {
+      workspaceId: currentWorkspaceId,
+      bridgeUrl: getAgentLayoutBridgeUrl(),
+      activeWidgetIds: Array.from(agentLayoutAnimatingWidgetIdsRef.current),
+    });
+  });
+  const cancelAgentLayoutAnimations = useEventCallback((ids?: Iterable<string>) => {
+    const idsToCancel = ids ? new Set(ids) : null;
+    let cancelled = false;
+
+    for (const [widgetId, animation] of agentLayoutAnimationsRef.current) {
+      if (idsToCancel && !idsToCancel.has(widgetId)) continue;
+      window.cancelAnimationFrame(animation.frameId);
+      agentLayoutAnimationsRef.current.delete(widgetId);
+      agentLayoutAnimatingWidgetIdsRef.current.delete(widgetId);
+      cancelled = true;
+    }
+
+    if (cancelled) {
+      refreshAgentLayoutAnimatingIds();
+    }
+  });
+  const commitAgentLayoutWidgets = useEventCallback((nextWidgets: WorkspaceWidget[]) => {
+    agentLayoutMutationRef.current = true;
+    skipNextWidgetSaveRef.current = true;
+    widgetsRef.current = nextWidgets;
+    setWidgets(nextWidgets);
+  });
+  const updateAgentWidgetFrame = useEventCallback((widgetId: string, patch: Partial<Pick<WorkspaceWidget, 'x' | 'y' | 'width' | 'height' | 'zIndex' | 'open'>>) => {
+    widgetsRef.current = widgetsRef.current.map((widget) => (widget.id === widgetId ? { ...widget, ...patch } : widget));
+    const nextWidget = widgetsRef.current.find((widget) => widget.id === widgetId);
+    if (nextWidget) applyWidgetElementFrame(nextWidget);
+  });
+  const getEasedProgress = (progress: number, easing: ValidatedWorkspaceLayoutDirective['easing']) => {
+    if (easing === 'linear') return progress;
+    if (easing === 'ease-in-out') return progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+    return 1 - Math.pow(1 - progress, 3);
+  };
+  const animateAgentLayoutDirective = useEventCallback((directive: ValidatedWorkspaceLayoutDirective) => {
+    const currentWidget = widgetsRef.current.find((widget) => widget.id === directive.widgetId);
+    if (!currentWidget) return;
+
+    cancelAgentLayoutAnimations([directive.widgetId]);
+
+    const highest = widgetsRef.current.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
+    const start = {
+      x: currentWidget.x,
+      y: currentWidget.y,
+      width: currentWidget.width,
+      height: currentWidget.height,
+      zIndex: directive.action === 'focus' ? highest + 1 : currentWidget.zIndex,
+    };
+    const target = {
+      x: directive.target.x,
+      y: directive.target.y,
+      width: directive.target.width,
+      height: directive.target.height,
+      zIndex: directive.action === 'focus' ? highest + 1 : currentWidget.zIndex,
+    };
+
+    if (directive.action === 'focus' || directive.action === 'open' || directive.action === 'minimize') {
+      const nextWidgets = widgetsRef.current.map((widget) =>
+        widget.id === directive.widgetId
+          ? {
+              ...widget,
+              open: directive.action === 'open' ? true : directive.action === 'minimize' ? false : widget.open,
+              hidden: false,
+              zIndex: highest + 1,
+            }
+          : widget,
+      );
+      commitAgentLayoutWidgets(nextWidgets);
+      return;
+    }
+
+    const startedAt = performance.now();
+    agentLayoutAnimatingWidgetIdsRef.current.add(directive.widgetId);
+    setAgentLayoutStatus({
+      status: 'moving',
+      activeWidgetIds: Array.from(agentLayoutAnimatingWidgetIdsRef.current),
+      lastDirectiveAt: new Date().toISOString(),
+      lastError: null,
+    });
+
+    const step = (timestamp: number) => {
+      if (!agentLayoutAnimationsRef.current.has(directive.widgetId)) return;
+      if (interactionRef.current?.id === directive.widgetId) {
+        cancelAgentLayoutAnimations([directive.widgetId]);
+        setAgentLayoutStatus({ status: 'paused by user' });
+        return;
+      }
+
+      const progress = Math.min(1, (timestamp - startedAt) / directive.durationMs);
+      const eased = getEasedProgress(progress, directive.easing);
+      updateAgentWidgetFrame(directive.widgetId, {
+        x: Math.round(start.x + (target.x - start.x) * eased),
+        y: Math.round(start.y + (target.y - start.y) * eased),
+        width: Math.round(start.width + (target.width - start.width) * eased),
+        height: Math.round(start.height + (target.height - start.height) * eased),
+        zIndex: target.zIndex,
+        open: true,
+      });
+
+      if (progress < 1) {
+        const frameId = window.requestAnimationFrame(step);
+        agentLayoutAnimationsRef.current.set(directive.widgetId, { frameId, widgetId: directive.widgetId });
+        return;
+      }
+
+      agentLayoutAnimationsRef.current.delete(directive.widgetId);
+      agentLayoutAnimatingWidgetIdsRef.current.delete(directive.widgetId);
+      clearFilledWidgetSnapshots([directive.widgetId]);
+      commitAgentLayoutWidgets(widgetsRef.current);
+      setAgentLayoutStatus({
+        status: agentLayoutAnimatingWidgetIdsRef.current.size ? 'moving' : 'listening',
+        activeWidgetIds: Array.from(agentLayoutAnimatingWidgetIdsRef.current),
+        lastDirectiveAt: new Date().toISOString(),
+      });
+    };
+
+    const frameId = window.requestAnimationFrame(step);
+    agentLayoutAnimationsRef.current.set(directive.widgetId, { frameId, widgetId: directive.widgetId });
+  });
   const commitCurrentWorkspaceWidgets = (nextWidgets: WorkspaceWidget[], immediate = false) => {
     widgetsRef.current = nextWidgets;
 
@@ -757,10 +955,22 @@ export function Workspace({
   }, [widgets]);
 
   useEffect(() => {
+    const visibleWidgetIds = new Set(widgets.map((widget) => widget.id));
+    const staleSnapshotIds = Object.keys(maximizedWidgetSnapshotsRef.current).filter((id) => !visibleWidgetIds.has(id));
+    clearFilledWidgetSnapshots(staleSnapshotIds);
+  }, [clearFilledWidgetSnapshots, widgets]);
+
+  useEffect(() => {
     if (!canPersistWidgetState) return;
 
     if (skipNextWidgetSaveRef.current) {
       skipNextWidgetSaveRef.current = false;
+      agentLayoutMutationRef.current = false;
+      return;
+    }
+
+    if (agentLayoutMutationRef.current) {
+      agentLayoutMutationRef.current = false;
       return;
     }
 
@@ -777,12 +987,17 @@ export function Workspace({
   useEffect(() =>
     subscribeStoredWidgetState(currentWorkspaceId, () => {
       const nextWidgets = loadWidgetStateForWorkspace(currentWorkspaceId);
+      clearFilledWidgetSnapshots();
       widgetsRef.current = nextWidgets;
       setWidgets(nextWidgets);
     }),
-  [currentWorkspaceId]);
+  [clearFilledWidgetSnapshots, currentWorkspaceId]);
 
   useEffect(() => subscribeWorkspaceInstances(bumpWorkspaceCatalogVersion), [bumpWorkspaceCatalogVersion]);
+  useEffect(
+    () => subscribeAgentLiveLayoutGlobalState(() => setAgentLiveLayoutGlobal(readAgentLiveLayoutGlobalState())),
+    [],
+  );
 
   useEffect(() => {
     setActiveWorkspaceModeId(getWorkspaceActiveModeId(currentWorkspaceId));
@@ -875,8 +1090,116 @@ export function Workspace({
     if (compactLayoutAppliedRef.current || interactionRef.current) return;
 
     compactLayoutAppliedRef.current = true;
+    cancelAgentLayoutAnimations();
+    clearFilledWidgetSnapshots();
     setWidgets(createCompactLayout(bounds.width, bounds.height));
-  }, [bounds.height, bounds.width, isWorkspaceExtension]);
+  }, [bounds.height, bounds.width, cancelAgentLayoutAnimations, clearFilledWidgetSnapshots, isWorkspaceExtension]);
+
+  useEffect(() => {
+    reportAgentLiveLayoutWorkspaceStatus(currentWorkspacePlacement, currentWorkspaceId, {
+      workspaceId: currentWorkspaceId,
+      bridgeUrl: getAgentLayoutBridgeUrl(),
+    });
+    cancelAgentLayoutAnimations();
+  }, [cancelAgentLayoutAnimations, currentWorkspaceId, currentWorkspacePlacement, getAgentLayoutBridgeUrl]);
+
+  useEffect(() => {
+    if (!agentLiveLayout.enabled) {
+      cancelAgentLayoutAnimations();
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    const requestLayoutPlan = async () => {
+      if (cancelled || agentLayoutLoopInFlightRef.current || agentLayoutAnimatingWidgetIdsRef.current.size) return;
+
+      const bridgeUrl = getAgentLayoutBridgeUrl();
+      if (!bridgeUrl) {
+        setAgentLayoutStatus({
+          status: 'bridge unavailable',
+          bridgeUrl: null,
+          lastError: 'Hermes live layout needs a connected local bridge.',
+          activeWidgetIds: [],
+        });
+        return;
+      }
+
+      const activeInteraction = interactionRef.current;
+      if (activeInteraction) {
+        setAgentLayoutStatus({
+          status: 'paused by user',
+          bridgeUrl,
+          activeWidgetIds: [],
+          lastError: null,
+        });
+        return;
+      }
+
+      agentLayoutLoopInFlightRef.current = true;
+      setAgentLayoutStatus({ status: 'listening', bridgeUrl, lastError: null });
+
+      try {
+        const canvasSize = getEffectiveCanvasSize(canvasRef.current, { width: bounds.width, height: bounds.height });
+        const snapshot = createWorkspaceLayoutSnapshot({
+          workspaceId: currentWorkspaceId,
+          canvas: canvasSize,
+          widgets: widgetsRef.current,
+          locks: {
+            agentAnimatingWidgetIds: Array.from(agentLayoutAnimatingWidgetIdsRef.current),
+          },
+        });
+        const directives = await requestWorkspaceLayoutPlan(bridgeUrl, snapshot);
+        if (cancelled) return;
+        const { accepted, rejected } = validateWorkspaceLayoutDirectives(directives, snapshot);
+        if (rejected.length) {
+          recordAgentBridgeDiagnostic(`Hermes live layout rejected ${rejected.length} directive(s).`, 'runtime', 'warning', {
+            rejected,
+          });
+          setAgentLayoutStatus({ lastError: rejected[0] ?? 'Hermes live layout directive rejected.' });
+        }
+        if (!accepted.length) {
+          setAgentLayoutStatus({ status: 'listening', activeWidgetIds: [] });
+          return;
+        }
+        accepted.forEach(animateAgentLayoutDirective);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Hermes live layout request failed.';
+        recordAgentBridgeDiagnostic(message, 'runtime', 'warning');
+        setAgentLayoutStatus({
+          status: 'bridge unavailable',
+          lastError: message,
+          activeWidgetIds: [],
+        });
+      } finally {
+        agentLayoutLoopInFlightRef.current = false;
+      }
+    };
+
+    void requestLayoutPlan();
+    const interval = window.setInterval(() => {
+      void requestLayoutPlan();
+    }, 2_800);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [
+    agentBridge.activeConnector.id,
+    agentBridge.activeConnector.kind,
+    agentBridge.activeConnector.status,
+    agentBridge.activeConnector.url,
+    agentLiveLayout.enabled,
+    animateAgentLayoutDirective,
+    bounds.height,
+    bounds.width,
+    cancelAgentLayoutAnimations,
+    currentWorkspaceId,
+    getAgentLayoutBridgeUrl,
+    recordAgentBridgeDiagnostic,
+    setAgentLayoutStatus,
+  ]);
 
   useEffect(() => {
     window.addEventListener('pointerup', finishInteraction);
@@ -1104,6 +1427,8 @@ export function Workspace({
   const resetWorkspaceLayout = () => {
     interactionRef.current = null;
     closeTopMenus();
+    cancelAgentLayoutAnimations();
+    clearFilledWidgetSnapshots();
     const resetWidgets = loadModeLayoutForWorkspace(activeWorkspaceModeId);
     widgetsRef.current = resetWidgets;
     void saveStoredWidgetState(resetWidgets, currentWorkspaceId);
@@ -1118,6 +1443,8 @@ export function Workspace({
   const applyWorkspaceModePreset = (presetId: WorkspaceModePresetId) => {
     interactionRef.current = null;
     closeTopMenus();
+    cancelAgentLayoutAnimations();
+    clearFilledWidgetSnapshots();
     const preset = workspaceModePresets.find((item) => item.id === presetId);
     const nextModeId = commitActiveWorkspaceMode(presetId);
     const nextWidgets = loadModeLayoutForWorkspace(nextModeId);
@@ -1130,6 +1457,8 @@ export function Workspace({
   const applyWorkspaceCustomPreset = (preset: WorkspaceCustomPreset) => {
     interactionRef.current = null;
     closeTopMenus();
+    cancelAgentLayoutAnimations();
+    clearFilledWidgetSnapshots();
     const nextModeId = commitActiveWorkspaceMode(preset.id);
     const nextWidgets = loadModeLayoutForWorkspace(nextModeId);
     widgetsRef.current = nextWidgets;
@@ -1220,6 +1549,10 @@ export function Workspace({
     event.preventDefault();
     event.currentTarget.setPointerCapture?.(event.pointerId);
     flushPendingWidgetFrame();
+    cancelAgentLayoutAnimations([id]);
+    if (agentLiveLayout.enabled) {
+      setAgentLayoutStatus({ status: 'paused by user', activeWidgetIds: [] });
+    }
     setWorkspaceInteractionActive(true);
     raiseWidget(id);
 
@@ -1248,6 +1581,10 @@ export function Workspace({
     event.stopPropagation();
     event.currentTarget.setPointerCapture?.(event.pointerId);
     flushPendingWidgetFrame();
+    cancelAgentLayoutAnimations([id]);
+    if (agentLiveLayout.enabled) {
+      setAgentLayoutStatus({ status: 'paused by user', activeWidgetIds: [] });
+    }
     setWorkspaceInteractionActive(true);
     raiseWidget(id);
 
@@ -1308,6 +1645,9 @@ export function Workspace({
     targetWorkspaceId: string;
     direction: WorkspaceTransferDirection;
   }) => {
+    cancelAgentLayoutAnimations([widget.id]);
+    clearFilledWidgetSnapshots([widget.id]);
+
     if (sourceWorkspaceId === currentWorkspaceId) {
       startWidgetTransferAnimation({
         widgetId: widget.id,
@@ -1575,30 +1915,50 @@ export function Workspace({
 
   const maximizeWidget = (id: string) => {
     const canvasSize = getEffectiveCanvasSize(canvasRef.current, bounds);
+    const currentWidget = widgetsRef.current.find((widget) => widget.id === id);
+    if (!currentWidget) return;
+
+    const existingSnapshot = maximizedWidgetSnapshotsRef.current[id];
+    const restoreSnapshot = existingSnapshot ? { ...existingSnapshot } : null;
+
+    if (restoreSnapshot) {
+      delete maximizedWidgetSnapshotsRef.current[id];
+      setFilledWidgetIds((currentFilledIds) => {
+        if (!currentFilledIds.has(id)) return currentFilledIds;
+        const nextFilledIds = new Set(currentFilledIds);
+        nextFilledIds.delete(id);
+        return nextFilledIds;
+      });
+    } else {
+      maximizedWidgetSnapshotsRef.current[id] = {
+        x: currentWidget.x,
+        y: currentWidget.y,
+        width: currentWidget.width,
+        height: currentWidget.height,
+      };
+      setFilledWidgetIds((currentFilledIds) => {
+        if (currentFilledIds.has(id)) return currentFilledIds;
+        return new Set(currentFilledIds).add(id);
+      });
+    }
 
     setWidgets((current) => {
+      if (!current.some((widget) => widget.id === id)) return current;
+
       const highest = current.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
-      const existingSnapshot = maximizedWidgetSnapshotsRef.current[id];
 
       const next = current.map((widget) => {
         if (widget.id !== id) return widget;
 
-        if (existingSnapshot) {
+        if (restoreSnapshot) {
           return {
             ...widget,
-            ...existingSnapshot,
+            ...restoreSnapshot,
             open: true,
             hidden: false,
             zIndex: highest + 1,
           };
         }
-
-        maximizedWidgetSnapshotsRef.current[id] = {
-          x: widget.x,
-          y: widget.y,
-          width: widget.width,
-          height: widget.height,
-        };
 
         return {
           ...widget,
@@ -1612,17 +1972,14 @@ export function Workspace({
         };
       });
 
-      if (existingSnapshot) {
-        delete maximizedWidgetSnapshotsRef.current[id];
-      }
-
       widgetsRef.current = next;
       return next;
     });
   };
 
   const closeWidget = (id: string) => {
-    delete maximizedWidgetSnapshotsRef.current[id];
+    cancelAgentLayoutAnimations([id]);
+    clearFilledWidgetSnapshots([id]);
     setWidgets((current) => {
       const next = current.map((widget) =>
         widget.id === id
@@ -2033,6 +2390,25 @@ export function Workspace({
     onProbeAgentBridge: agentBridge.probeNow,
     onTestAgentBridgeUrl: agentBridge.testUrl,
     agentTaskGateway: agentBridge.taskGateway,
+    agentLiveLayout,
+    agentLiveLayoutGlobal,
+    onSetAgentLiveLayoutEnabled: (placement: WorkspacePlacement, enabled: boolean) => {
+      const workspaceState = agentLiveLayoutGlobal.workspaces[placement];
+      setAgentLiveLayoutWorkspaceEnabled(placement, workspaceState?.workspaceId ?? (placement === 'center' ? 'main' : `placement:${placement}`), enabled, getAgentLayoutBridgeUrl());
+      if (!enabled) {
+        if (placement === currentWorkspacePlacement) {
+          cancelAgentLayoutAnimations();
+        }
+      }
+    },
+    onSetAllAgentLiveLayoutEnabled: (enabled: boolean) => {
+      setAllAgentLiveLayoutWorkspacesEnabled(enabled, getAgentLayoutBridgeUrl());
+      if (!enabled) cancelAgentLayoutAnimations();
+    },
+    onPauseAllAgentLiveLayout: () => {
+      pauseAllAgentLiveLayoutWorkspaces(getAgentLayoutBridgeUrl());
+      cancelAgentLayoutAnimations();
+    },
     operationalOs,
     activeRole,
     widgetPermissions,
@@ -2079,7 +2455,7 @@ export function Workspace({
     <section className={`workspace-shell${workspaceInteractionActive ? ' is-interacting' : ''}`}>
       <WorkspaceAtmosphere />
 
-      {!isWorkspaceExtension ? (
+      {!isWorkspaceExtension && hudSettings.centerHudVisible ? (
         <WorkspaceHud
           settings={hudSettings}
           signals={workspaceHudSignals}
@@ -2383,6 +2759,17 @@ export function Workspace({
                     <strong>{getWorkspaceHudMessage('hud.design', hudLocale)}</strong>
                     <small>{workspaceHudSignals.sourceLabel} / {workspaceHudSignals.connection}</small>
                   </div>
+                  <label className="workspace-hud-toggle-row">
+                    <span>
+                      <strong>Center HUD</strong>
+                      <small>Show animated HUD in workspace background</small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={hudSettings.centerHudVisible}
+                      onChange={(event) => updateHudSettings({ centerHudVisible: event.target.checked })}
+                    />
+                  </label>
                   <div className="workspace-menu-section-label">{getWorkspaceHudMessage('hud.design', hudLocale)}</div>
                   {workspaceHudDesignOptions.map((design) => (
                     <button
@@ -2504,6 +2891,7 @@ export function Workspace({
           <WorkspaceWidgetCard
             key={widget.id}
             widget={widget}
+            isFilled={filledWidgetIds.has(widget.id)}
             transferAnimation={widgetTransferAnimation?.widgetId === widget.id ? widgetTransferAnimation : null}
             {...widgetRuntimeProps}
           />

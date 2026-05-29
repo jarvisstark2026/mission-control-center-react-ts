@@ -1,7 +1,8 @@
 import { readLocalStorageJson, writeLocalStorageJson } from '../workspace/browserStorage';
+import { workspacePersistenceChangeEventName, type WorkspacePersistenceChangeDetail } from '../workspace/workspacePersistence';
 import type { WorkspaceHudColorMode, WorkspaceHudDesignId, WorkspaceHudSettings } from './workspaceHudTypes';
 
-const workspaceHudSettingsStorageKey = 'mission-control.workspace-hud-settings';
+export const workspaceHudSettingsStorageKey = 'mission-control.workspace-hud-settings';
 
 export const workspaceHudDesignOptions = [
   {
@@ -33,8 +34,8 @@ export const workspaceHudDesignOptions = [
 export const workspaceHudColorOptions = [
   {
     id: 'theme',
-    label: 'Theme linked',
-    description: 'Use the active app theme accents.',
+    label: 'HUD default',
+    description: 'Independent Mission Control HUD cyan with violet signal accents.',
   },
   {
     id: 'cyan-magenta',
@@ -60,6 +61,7 @@ export const workspaceHudColorOptions = [
 export const defaultWorkspaceHudSettings: WorkspaceHudSettings = {
   designId: 'signal-halo',
   colorMode: 'theme',
+  centerHudVisible: true,
   voiceReactionEnabled: true,
   audioMeterEnabled: false,
 };
@@ -76,6 +78,10 @@ export function normalizeWorkspaceHudSettings(settings: Partial<WorkspaceHudSett
   return {
     designId: isWorkspaceHudDesignId(settings?.designId) ? settings.designId : defaultWorkspaceHudSettings.designId,
     colorMode: isWorkspaceHudColorMode(settings?.colorMode) ? settings.colorMode : defaultWorkspaceHudSettings.colorMode,
+    centerHudVisible:
+      typeof settings?.centerHudVisible === 'boolean'
+        ? settings.centerHudVisible
+        : defaultWorkspaceHudSettings.centerHudVisible,
     voiceReactionEnabled:
       typeof settings?.voiceReactionEnabled === 'boolean'
         ? settings.voiceReactionEnabled
@@ -93,4 +99,52 @@ export function readWorkspaceHudSettings(): WorkspaceHudSettings {
 
 export function writeWorkspaceHudSettings(settings: WorkspaceHudSettings) {
   return writeLocalStorageJson(workspaceHudSettingsStorageKey, normalizeWorkspaceHudSettings(settings));
+}
+
+export function areWorkspaceHudSettingsEqual(left: WorkspaceHudSettings, right: WorkspaceHudSettings) {
+  return (
+    left.designId === right.designId &&
+    left.colorMode === right.colorMode &&
+    left.centerHudVisible === right.centerHudVisible &&
+    left.voiceReactionEnabled === right.voiceReactionEnabled &&
+    left.audioMeterEnabled === right.audioMeterEnabled
+  );
+}
+
+export function subscribeWorkspaceHudSettings(onSettingsChange: (settings: WorkspaceHudSettings) => void) {
+  if (typeof window === 'undefined') return () => undefined;
+
+  const resolveSettings = (value: unknown, allowStoredFallback: boolean) => {
+    if (typeof value === 'string') {
+      try {
+        onSettingsChange(normalizeWorkspaceHudSettings(JSON.parse(value) as Partial<WorkspaceHudSettings>));
+        return;
+      } catch {
+        // Fall through to the stored value when the event did not include parseable settings.
+      }
+    }
+
+    if (allowStoredFallback) {
+      onSettingsChange(readWorkspaceHudSettings());
+    }
+  };
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key !== workspaceHudSettingsStorageKey) return;
+    resolveSettings(event.newValue, event.newValue === null);
+  };
+
+  const handlePersistenceChange = (event: Event) => {
+    const detail = (event as CustomEvent<WorkspacePersistenceChangeDetail>).detail;
+    if (detail?.key !== workspaceHudSettingsStorageKey) return;
+    resolveSettings(detail.value, detail.value === undefined);
+  };
+
+  window.addEventListener('storage', handleStorage);
+  window.addEventListener(workspacePersistenceChangeEventName, handlePersistenceChange);
+
+  return () => {
+    window.removeEventListener('storage', handleStorage);
+    window.removeEventListener(workspacePersistenceChangeEventName, handlePersistenceChange);
+  };
 }

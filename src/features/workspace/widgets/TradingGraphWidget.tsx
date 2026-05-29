@@ -1,7 +1,7 @@
 import type { ShellRole } from '../../shell/roles';
 import type { OperationalOsRuntime } from '../../operational-os';
 import { WorkspaceEvidenceAttachPanel } from '../WorkspaceEvidenceAttachPanel';
-import { WorkspaceContentHeader, WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
+import { WorkspaceContentShell, WorkspaceMetricGrid, WorkspaceSectionFrame, WorkspaceStatusStrip } from '../workspaceBlocks';
 import { createRuntimeSnapshotEvidenceInput } from '../workspaceEvidenceModel';
 import { type MarketGraph } from '../workspaceMarketData';
 import { getMarketLiveQuote, type MarketLiveState } from '../workspaceMarketLiveData';
@@ -55,27 +55,11 @@ export function TradingGraphWidget({
 
   return (
     <WorkspaceContentShell className="trading-graph-surface">
-      <WorkspaceContentHeader
-        className="trading-graph-header"
-        eyebrow="market graph"
-        title={graph.label}
-        metaEyebrow={graph.ticker}
-        meta={quote.status}
-      />
       <WorkspaceStatusStrip
         source={quoteSource}
         status={`${quote.priceLabel} / ${quote.changeLabel}`}
         count={quote.sourceLabel}
         updatedAt={formatUpdatedAt(quote.updatedAt)}
-      />
-      <WorkspaceEvidenceAttachPanel
-        role={role}
-        operationalOs={operationalOs}
-        evidence={createRuntimeSnapshotEvidenceInput(
-          `${graph.label} quote snapshot`,
-          `market-${quote.status}`,
-          `${graph.ticker} / ${quote.priceLabel} / ${quote.changeLabel} / ${quote.sourceLabel}. ${quote.detail}`,
-        )}
       />
       {marketLiveData.errors.length ? (
         <WorkspaceStatusStrip
@@ -96,6 +80,15 @@ export function TradingGraphWidget({
           <div className="trading-graph-volume" />
         </div>
       </WorkspaceSectionFrame>
+      <WorkspaceEvidenceAttachPanel
+        role={role}
+        operationalOs={operationalOs}
+        evidence={createRuntimeSnapshotEvidenceInput(
+          `${graph.label} quote snapshot`,
+          `market-${quote.status}`,
+          `${graph.ticker} / ${quote.priceLabel} / ${quote.changeLabel} / ${quote.sourceLabel}. ${quote.detail}`,
+        )}
+      />
     </WorkspaceContentShell>
   );
 }

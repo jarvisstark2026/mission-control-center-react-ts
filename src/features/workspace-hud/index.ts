@@ -1,8 +1,11 @@
 export { WorkspaceHud } from './WorkspaceHud';
 export {
   defaultWorkspaceHudSettings,
+  areWorkspaceHudSettingsEqual,
   normalizeWorkspaceHudSettings,
   readWorkspaceHudSettings,
+  subscribeWorkspaceHudSettings,
+  workspaceHudSettingsStorageKey,
   workspaceHudColorOptions,
   workspaceHudDesignOptions,
   writeWorkspaceHudSettings,

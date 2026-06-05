@@ -9,6 +9,7 @@ playwright-report/
 !.env.example
 .env.local
 .env.*.local
+.codex/environments/environment.toml
 .DS_Store
 .vscode/
 .idea/

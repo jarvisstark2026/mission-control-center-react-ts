@@ -42,7 +42,7 @@ Use this checklist for every Windows desktop release candidate. Run the installe
 
 - [ ] Installer branding shows Mission Control and the current app icon.
 - [ ] Installed app opens without requiring the repo, Vite, or a terminal.
-- [ ] Browser preview still works through `npm run dev`.
+- [ ] Browser preview still works through `.\tools\run-browser-dev.ps1` or `npm run dev`.
 - [ ] Agent Control can start the local bridge from the desktop app, save a Hermes key, test `/status`, and send a proposal to Command Inbox.
 - [ ] Native App web/protocol launch requests stage Command Inbox proposals instead of launching directly.
 - [ ] Home Systems shows local baseline/offline/live source truth and stages device actions only as proposals.

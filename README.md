@@ -12,7 +12,7 @@ Mission Control Center is a spatial, HUD-like control surface built with React +
 - Planned verification stack: Vitest + React Testing Library, Playwright, and ESLint
 - 3D preview lane: React Three Fiber or Three.js, limited to the asset preview surface rather than the shell
 - MVP boundary: prove the desktop shell, persistence, visual language, navigation, role gating, and preview lane before expanding live backend wiring
-- Preview: `npm run dev` or `npm run preview`
+- Preview: `.\tools\run-browser-dev.ps1` or `npm run preview`
 
 ## Development
 
@@ -21,6 +21,14 @@ Requires Node `^20.19.0`, `^22.13.0`, or `>=24`. The Vite 8 toolchain will not b
 ```bash
 npm ci
 npm run dev
+```
+
+On Windows, if global `npm` is unavailable or moved, use the repo-owned
+PowerShell launchers instead. They call the bundled Codex Node runtime when it
+is available and do not depend on `C:\Program Files\nodejs\node_modules\npm`.
+
+```powershell
+.\tools\run-browser-dev.ps1
 ```
 
 ## Quality checks
@@ -51,6 +59,12 @@ Prerequisites:
 ```bash
 npm run desktop:dev
 npm run desktop:build
+```
+
+If global `npm` is unavailable on Windows, start the desktop app with:
+
+```powershell
+.\tools\run-desktop-dev.ps1
 ```
 
 `npm run desktop:build` produces the Windows installer under `src-tauri/target/release/bundle/nsis/` after the Rust/Windows prerequisites are installed.

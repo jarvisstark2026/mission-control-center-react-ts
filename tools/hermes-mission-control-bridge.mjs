@@ -799,7 +799,7 @@ function createSampleJson() {
     schemaHint: 'metrics',
     payload: {
       provider: 'hermes',
-      mission-controlBridge: `http://${host}:${port}`,
+      missionControlBridge: `http://${host}:${port}`,
       hermesApiBase,
       model: hermesModel,
       status: lastHermesStatus.ok ? 'connected' : 'offline',

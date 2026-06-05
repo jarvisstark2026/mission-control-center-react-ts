@@ -97,7 +97,6 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.activeRole === right.activeRole &&
         left.operationalOs.state.version === right.operationalOs.state.version
       );
-    case 'browser':
     case 'map':
     case 'diagram':
     case 'watch-video':
@@ -192,6 +191,10 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.agentBridgeSettings.hermesApiKey === right.agentBridgeSettings.hermesApiKey &&
         left.agentBridgeSettings.hermesApiBaseUrl === right.agentBridgeSettings.hermesApiBaseUrl &&
         left.agentBridgeSettings.hermesModel === right.agentBridgeSettings.hermesModel &&
+        left.agentBridgeSettings.voiceTranscriptionUrl === right.agentBridgeSettings.voiceTranscriptionUrl &&
+        left.agentBridgeSettings.voiceTranscriptionModel === right.agentBridgeSettings.voiceTranscriptionModel &&
+        left.agentBridgeSettings.voiceTranscriptionApiKey === right.agentBridgeSettings.voiceTranscriptionApiKey &&
+        left.agentBridgeSettings.hasVoiceTranscriptionApiKey === right.agentBridgeSettings.hasVoiceTranscriptionApiKey &&
         left.agentBridgeSettings.preferredAgentId === right.agentBridgeSettings.preferredAgentId &&
         left.agentBridgeSettings.lastSuccessfulUrl === right.agentBridgeSettings.lastSuccessfulUrl &&
         left.agentLiveLayoutGlobal.updatedAt === right.agentLiveLayoutGlobal.updatedAt &&
@@ -210,6 +213,22 @@ function isWorkspaceWidgetCardEqual(left: WorkspaceWidgetCardProps, right: Works
         left.missionControl.state.version === right.missionControl.state.version &&
         left.operationalOs.state.version === right.operationalOs.state.version &&
         left.focusedCommandId === right.focusedCommandId
+      );
+    case 'hermes-hud':
+      return (
+        left.activeRole === right.activeRole &&
+        left.hermesHudRuntime.status === right.hermesHudRuntime.status &&
+        left.hermesHudRuntime.listening === right.hermesHudRuntime.listening &&
+        left.hermesHudRuntime.bridgeUrl === right.hermesHudRuntime.bridgeUrl &&
+        left.hermesHudRuntime.messages === right.hermesHudRuntime.messages &&
+        left.hudSettings.designId === right.hudSettings.designId &&
+        left.hudSettings.colorMode === right.hudSettings.colorMode &&
+        left.hudSettings.voiceReactionEnabled === right.hudSettings.voiceReactionEnabled &&
+        left.voiceState.status === right.voiceState.status &&
+        left.voiceState.source === right.voiceState.source &&
+        left.voiceState.level === right.voiceState.level &&
+        left.missionControl.state.version === right.missionControl.state.version &&
+        left.agentControl.version === right.agentControl.version
       );
     case 'flow':
       return (

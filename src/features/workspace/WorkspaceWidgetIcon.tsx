@@ -75,16 +75,6 @@ const widgetIconDefinitions: Record<WidgetKind, WidgetIconDefinition> = {
       'M14 14h5v5h-5z',
     ],
   },
-  browser: {
-    paths: [
-      'M4 5h16v14H4z',
-      'M4 9h16',
-      'M7 7h.1',
-      'M10 7h.1',
-      'M8 13h8',
-      'M8 16h5',
-    ],
-  },
   'watch-video': {
     paths: [
       'M4 7h16v11H4z',
@@ -255,6 +245,18 @@ const widgetIconDefinitions: Record<WidgetKind, WidgetIconDefinition> = {
       'M8 10h6',
       'M8 13h4',
       'M15 18l2 2 4-5',
+    ],
+  },
+  'hermes-hud': {
+    paths: [
+      'M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 0 0 0-17z',
+      'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z',
+      'M4 12h4',
+      'M16 12h4',
+      'M12 4v4',
+      'M12 16v4',
+      'M8 18l-3 3',
+      'M16 18l3 3',
     ],
   },
   'home-systems': {

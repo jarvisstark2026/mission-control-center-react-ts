@@ -27,7 +27,14 @@ function createBridgeStatus() {
     activeEngine: provider === 'openclaw' ? 'OpenClaw local bridge' : provider === 'custom' ? 'Custom local bridge' : 'Hermes local bridge',
     activeAgentId: `${provider}-coordinator`,
     currentTask: 'Ready to convert Mission Control goals into gated command proposals.',
-    capabilities: ['status', 'events', 'tasks', 'workspace-layout-control', 'mission-control-events', 'json-surface'],
+    capabilities: ['status', 'events', 'tasks', 'chat', 'voice-transcription', 'workspace-layout-control', 'mission-control-events', 'json-surface'],
+    endpointStatus: {
+      status: 'reachable',
+      chat: 'ready',
+      voice: 'ready',
+      tasks: 'ready',
+      layout: 'ready',
+    },
     lastSeenAt: timestamp,
     agents: [
       {
@@ -234,6 +241,42 @@ function createLayoutPlan(snapshot) {
   };
 }
 
+function createChatResult(request) {
+  const messages = Array.isArray(request?.messages) ? request.messages : [];
+  const lastMessage = messages
+    .slice()
+    .reverse()
+    .find((message) => message && typeof message === 'object' && typeof message.content === 'string');
+  const text = typeof request?.message === 'string' && request.message.trim()
+    ? request.message.trim()
+    : lastMessage?.content?.trim() || 'Check the Mission Control workspace.';
+
+  return {
+    message: {
+      id: `harness-chat-${Date.now().toString(36)}`,
+      role: 'assistant',
+      body: `${createAgentName()} heard: "${text}". Direct actions are available in the real Hermes bridge; the harness only echoes chat.`,
+      timestamp: nowIso(),
+    },
+    directActions: [],
+  };
+}
+
+function createVoiceTranscriptionResult(request) {
+  if (typeof request?.transcript === 'string' || typeof request?.text === 'string') {
+    return {
+      transcript: String(request.transcript || request.text).trim(),
+      confidence: 1,
+      language: 'local',
+    };
+  }
+  return {
+    transcript: 'Open the Hermes HUD and check workspace status.',
+    confidence: 0.72,
+    language: 'en',
+  };
+}
+
 function createSampleJson() {
   return {
     title: 'Bridge system snapshot',
@@ -350,6 +393,26 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/chat') {
+    try {
+      const body = await readJsonBody(request);
+      sendJson(response, 200, createChatResult(body));
+    } catch (error) {
+      sendJson(response, 400, { error: error instanceof Error ? error.message : 'Invalid chat request.' });
+    }
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/voice/transcribe') {
+    try {
+      const body = await readJsonBody(request);
+      sendJson(response, 200, createVoiceTranscriptionResult(body));
+    } catch (error) {
+      sendJson(response, 400, { error: error instanceof Error ? error.message : 'Invalid voice request.' });
+    }
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/emit') {
     try {
       const body = await readJsonBody(request);
@@ -372,14 +435,14 @@ const server = http.createServer(async (request, response) => {
 
   sendJson(response, 404, {
     error: 'Not found',
-    endpoints: ['/status', '/events', '/tasks', '/workspace/layout/plan', '/emit', '/sample-json'],
+    endpoints: ['/status', '/events', '/tasks', '/chat', '/voice/transcribe', '/workspace/layout/plan', '/emit', '/sample-json'],
   });
 });
 
 server.listen(port, host, () => {
   console.log(`Mission Control agent bridge harness listening at http://${host}:${port}`);
   console.log(`Provider: ${provider}`);
-  console.log('Endpoints: GET /status, GET /events, POST /tasks, POST /workspace/layout/plan, POST /emit, GET /sample-json');
+  console.log('Endpoints: GET /status, GET /events, POST /tasks, POST /chat, POST /voice/transcribe, POST /workspace/layout/plan, POST /emit, GET /sample-json');
 });
 
 const heartbeat = setInterval(() => {

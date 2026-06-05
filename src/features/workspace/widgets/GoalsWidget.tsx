@@ -159,7 +159,7 @@ export function GoalsWidget({
         status={activeGoal ? activeGoal.title : 'No active goal'}
         count={`${goals.length} stored / ${waitingCount} waiting`}
         updatedAt={activeGoal?.status ?? 'empty'}
-        action={{ label: 'Agent Console', onClick: () => onLaunchWorkspaceWidget('agent-console') }}
+        action={{ label: 'Agent proposals', onClick: () => onLaunchWorkspaceWidget('agent-console') }}
       />
 
       {activeGoal ? (
@@ -173,7 +173,7 @@ export function GoalsWidget({
                 Stage agent plan
               </WorkspaceButton>
               <WorkspaceButton variant="secondary" onClick={() => onLaunchWorkspaceWidget('agent-console')}>
-                Open Agent Console
+                Open Agent proposals
               </WorkspaceButton>
               <WorkspaceButton variant="secondary" onClick={() => onLaunchWorkspaceWidget('flow')}>
                 Open Workflow

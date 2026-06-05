@@ -110,7 +110,7 @@ describe('agentBridgeRuntime', () => {
           id: 'hermes-bridge-status',
           kind: 'connection',
           title: 'Hermes API connected',
-          detail: 'Forwarding Mission Control tasks to http://192.0.2.64:8642/v1.',
+          detail: 'Forwarding Mission Control tasks to http://192.168.1.20:8642/v1.',
           timestamp: '2026-05-26T12:00:00.000Z',
           source: 'mission-control-local-agent-bridge',
           status: 'succeeded',

@@ -1,6 +1,5 @@
 export {
   AudioWidget,
-  BrowserWidget,
   DiagramWidget,
   DocsWidget,
   FileExplorerWidget,

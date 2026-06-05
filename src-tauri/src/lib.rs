@@ -42,6 +42,12 @@ struct StartAgentBridgeRequest {
     hermes_model: String,
     hermes_api_key: Option<String>,
     hermes_api_key_ref: Option<String>,
+    voice_transcription_url: Option<String>,
+    voice_transcription_model: Option<String>,
+    voice_transcription_api_key: Option<String>,
+    voice_transcription_api_key_ref: Option<String>,
+    voice_transcription_timeout_ms: Option<u64>,
+    voice_transcription_mime_types: Option<Vec<String>>,
 }
 
 #[derive(Clone, serde::Serialize)]
@@ -59,6 +65,11 @@ struct LocalBridgeRuntime {
     hermes_api_base_url: String,
     hermes_model: String,
     hermes_api_key: String,
+    voice_transcription_url: String,
+    voice_transcription_model: String,
+    voice_transcription_api_key: String,
+    voice_transcription_timeout_ms: u64,
+    voice_transcription_mime_types: Vec<String>,
     last_started_at: Option<String>,
     last_error: Option<String>,
 }
@@ -76,6 +87,16 @@ impl LocalBridgeManager {
                 hermes_api_base_url: "http://127.0.0.1:8642/v1".to_string(),
                 hermes_model: "hermes-agent".to_string(),
                 hermes_api_key: String::new(),
+                voice_transcription_url: String::new(),
+                voice_transcription_model: String::new(),
+                voice_transcription_api_key: String::new(),
+                voice_transcription_timeout_ms: 20000,
+                voice_transcription_mime_types: vec![
+                    "audio/webm".to_string(),
+                    "audio/wav".to_string(),
+                    "audio/mpeg".to_string(),
+                    "audio/mp4".to_string(),
+                ],
                 last_started_at: None,
                 last_error: None,
             }),
@@ -296,6 +317,52 @@ fn resolve_hermes_api_key(app: &AppHandle, request: &StartAgentBridgeRequest) ->
     read_agent_bridge_secret_value(app, key_ref).map(|value| value.unwrap_or_default())
 }
 
+fn normalize_voice_transcription_url(value: Option<&String>) -> String {
+    value.map(|item| item.trim().trim_end_matches('/').to_string()).unwrap_or_default()
+}
+
+fn normalize_voice_transcription_model(value: Option<&String>) -> String {
+    value.map(|item| item.trim().to_string()).filter(|item| !item.is_empty()).unwrap_or_default()
+}
+
+fn normalize_voice_transcription_timeout_ms(value: Option<u64>) -> u64 {
+    value.unwrap_or(20_000).clamp(1_000, 120_000)
+}
+
+fn normalize_voice_transcription_mime_types(value: Option<&Vec<String>>) -> Vec<String> {
+    let normalized = value
+        .map(|items| {
+            items
+                .iter()
+                .map(|item| item.trim().to_string())
+                .filter(|item| !item.is_empty())
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+    if normalized.is_empty() {
+        vec![
+            "audio/webm".to_string(),
+            "audio/wav".to_string(),
+            "audio/mpeg".to_string(),
+            "audio/mp4".to_string(),
+        ]
+    } else {
+        normalized
+    }
+}
+
+fn resolve_voice_transcription_api_key(app: &AppHandle, request: &StartAgentBridgeRequest) -> Result<String, String> {
+    let direct_key = normalize_hermes_api_key(request.voice_transcription_api_key.as_ref());
+    if !direct_key.is_empty() {
+        return Ok(direct_key);
+    }
+
+    let Some(key_ref) = request.voice_transcription_api_key_ref.as_ref().map(|value| value.trim()).filter(|value| !value.is_empty()) else {
+        return Ok(String::new());
+    };
+    read_agent_bridge_secret_value(app, key_ref).map(|value| value.unwrap_or_default())
+}
+
 fn http_response(status: &str, content_type: &str, body: &str) -> Vec<u8> {
     let headers = format!(
         "HTTP/1.1 {status}\r\nContent-Type: {content_type}\r\nContent-Length: {}\r\nConnection: close\r\nAccess-Control-Allow-Origin: *\r\nAccess-Control-Allow-Methods: GET,POST,OPTIONS\r\nAccess-Control-Allow-Headers: Content-Type, Accept\r\n\r\n",
@@ -427,6 +494,7 @@ impl BridgeTaskError {
             "provider": "hermes",
             "hermesApiBaseUrl": hermes_api_base_url,
             "hermesStatusCode": self.status_code,
+            "providerStatusCode": self.status_code,
             "payloadSummary": self.payload_summary
         })
     }
@@ -538,6 +606,7 @@ fn create_bridge_status(
     hermes_api_base_url: &str,
     hermes_model: &str,
     hermes_api_key: &str,
+    voice_transcription_url: &str,
     request_count: u64,
     last_started_at: &str,
     last_task_failure: Option<BridgeTaskDiagnostic>,
@@ -545,6 +614,7 @@ fn create_bridge_status(
     let (connected, detail) = check_hermes_api(hermes_api_base_url, hermes_api_key);
     let auth_failed = detail.contains("auth failed");
     let timestamp = now_iso();
+    let task_loop_failing = last_task_failure.is_some();
     let mut activity = vec![serde_json::json!({
         "id": "hermes-bridge-status",
         "kind": "connection",
@@ -580,11 +650,18 @@ fn create_bridge_status(
         "activeEngine": format!("Hermes Agent API {hermes_model}"),
         "activeAgentId": "hermes-coordinator",
         "currentTask": if connected {
-            "Connected to Hermes Agent and ready to stage Mission Control proposals.".to_string()
+            "Connected to Hermes Agent for HUD chat, direct controls, layout planning, and gated proposal workflows.".to_string()
         } else {
             format!("Waiting for Hermes API at {hermes_api_base_url}. {detail}")
         },
-        "capabilities": ["status", "events", "tasks", "workspace-layout-control", "mission-control-events", "json-surface", "hermes-chat-completions"],
+        "capabilities": ["status", "events", "tasks", "chat", "voice-transcription", "workspace-layout-control", "mission-control-events", "json-surface", "hermes-chat-completions"],
+        "endpointStatus": {
+            "status": "reachable",
+            "chat": if connected { "ready" } else { "offline" },
+            "voice": if voice_transcription_url.trim().is_empty() { "not-configured" } else { "configured" },
+            "tasks": if task_loop_failing { "failing" } else if connected { "ready" } else { "offline" },
+            "layout": if connected { "ready" } else { "offline" }
+        },
         "lastSeenAt": timestamp.clone(),
         "agents": [{
             "id": "hermes-coordinator",
@@ -627,7 +704,7 @@ fn create_bridge_status(
                 "category": "commands",
                 "level": "suggest",
                 "risk": "medium",
-                "description": "Can create pending Command Inbox proposals, but cannot execute actions directly.",
+                "description": "Can create pending Command Inbox proposals through /tasks. Hermes HUD direct UI actions use the separate audited /chat lane.",
                 "visibleTo": ["admin", "support", "home"]
             }
         ],
@@ -904,6 +981,288 @@ fn create_task_result(
     }))
 }
 
+fn normalize_chat_messages(request: &serde_json::Value) -> Vec<serde_json::Value> {
+    let mut messages = request
+        .get("messages")
+        .and_then(|value| value.as_array())
+        .map(|items| {
+            items
+                .iter()
+                .filter_map(|item| {
+                    let role = if item.get("role").and_then(|value| value.as_str()) == Some("assistant") {
+                        "assistant"
+                    } else {
+                        "user"
+                    };
+                    let content = item
+                        .get("content")
+                        .and_then(|value| value.as_str())
+                        .or_else(|| item.get("body").and_then(|value| value.as_str()))
+                        .unwrap_or_default()
+                        .trim()
+                        .to_string();
+                    if content.is_empty() {
+                        None
+                    } else {
+                        Some(serde_json::json!({ "role": role, "content": content }))
+                    }
+                })
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default();
+
+    if let Some(message) = request.get("message").and_then(|value| value.as_str()).filter(|value| !value.trim().is_empty()) {
+        messages.push(serde_json::json!({ "role": "user", "content": message.trim() }));
+    }
+
+    if messages.len() > 12 {
+        messages[messages.len().saturating_sub(12)..].to_vec()
+    } else {
+        messages
+    }
+}
+
+fn normalize_direct_actions(value: Option<&serde_json::Value>) -> Vec<serde_json::Value> {
+    let allowed = [
+        "widget.open",
+        "widget.focus",
+        "widget.minimize",
+        "widget.close",
+        "widget.updateState",
+        "hud.update",
+        "liveLayout.set",
+        "home.action",
+    ];
+    value
+        .and_then(|item| item.as_array())
+        .map(|items| {
+            items
+                .iter()
+                .filter(|item| {
+                    item
+                        .get("type")
+                        .and_then(|value| value.as_str())
+                        .map(|action_type| allowed.contains(&action_type))
+                        .unwrap_or(false)
+                })
+                .take(8)
+                .cloned()
+                .collect::<Vec<_>>()
+        })
+        .unwrap_or_default()
+}
+
+fn normalize_chat_output(content: &str) -> (String, Vec<serde_json::Value>) {
+    if let Ok(value) = extract_json_from_text(content) {
+        if let Some(object) = value.as_object() {
+            let body = object
+                .get("reply")
+                .and_then(|value| value.as_str())
+                .or_else(|| object.get("message").and_then(|value| value.as_str()))
+                .unwrap_or(content)
+                .trim()
+                .to_string();
+            let actions = normalize_direct_actions(object.get("directActions").or_else(|| object.get("actions")));
+            return (if body.is_empty() { "Hermes completed the request.".to_string() } else { body }, actions);
+        }
+    }
+
+    (content.trim().to_string(), Vec::new())
+}
+
+fn create_chat_result(
+    request: serde_json::Value,
+    hermes_api_base_url: &str,
+    hermes_model: &str,
+    hermes_api_key: &str,
+) -> Result<serde_json::Value, BridgeTaskError> {
+    let messages = normalize_chat_messages(&request);
+    if messages.is_empty() {
+        return Err(BridgeTaskError::bad_request(
+            "invalid_chat_request",
+            "Mission Control bridge received an empty Hermes chat request.".to_string(),
+            safe_payload_preview(&serde_json::to_string(&request).unwrap_or_default()),
+        ));
+    }
+
+    let mut prompt = vec![serde_json::json!({
+        "role": "system",
+        "content": "You are Hermes inside Mission Control HUD. You may chat normally and may request direct Mission Control UI actions. Return JSON only with this schema: {\"reply\":\"short helpful response\",\"directActions\":[{\"type\":\"widget.open|widget.focus|widget.minimize|widget.close\",\"widgetKind\":\"goals\"},{\"type\":\"widget.updateState\",\"widgetKind\":\"goals\",\"patch\":{\"open\":true,\"pinned\":false,\"title\":\"Short title\"}},{\"type\":\"hud.update\",\"settings\":{\"colorMode\":\"cyan-amber\"}},{\"type\":\"liveLayout.set\",\"placement\":\"center\",\"enabled\":true},{\"type\":\"home.action\",\"actionId\":\"...\",\"targetId\":\"...\",\"payload\":{}}]}. Do not request shell commands, arbitrary native executable launches, or actions outside this schema."
+    })];
+    prompt.extend(messages);
+    let hermes_body = serde_json::json!({
+        "model": hermes_model,
+        "stream": false,
+        "messages": prompt,
+        "response_format": { "type": "json_object" }
+    });
+    let chat_url = format!("{}/chat/completions", hermes_api_base_url.trim_end_matches('/'));
+    let body = serde_json::to_string(&hermes_body).map_err(|error| {
+        BridgeTaskError::bad_gateway(
+            "bridge_request_build_failed",
+            format!("Mission Control bridge could not build the Hermes chat request: {error}"),
+            None,
+            None,
+        )
+    })?;
+    let response = http_request("POST", &chat_url, Some(&body), Some("application/json"), hermes_api_key, 60).map_err(|error| {
+        BridgeTaskError::bad_gateway(
+            "hermes_chat_http_error",
+            format!("Hermes chat failed before a response was received: {error}"),
+            None,
+            None,
+        )
+    })?;
+    if !(200..300).contains(&response.status_code) {
+        return Err(BridgeTaskError::bad_gateway(
+            if response.status_code == 401 || response.status_code == 403 { "hermes_auth_failed" } else { "hermes_chat_http_error" },
+            format!("Hermes chat returned {}", response.status_code),
+            Some(response.status_code),
+            safe_payload_preview(&response.body),
+        ));
+    }
+    let payload: serde_json::Value = serde_json::from_str(&response.body).map_err(|error| {
+        BridgeTaskError::bad_gateway(
+            "hermes_invalid_json",
+            format!("Hermes chat returned non-JSON transport payload: {error}"),
+            Some(response.status_code),
+            safe_payload_preview(&response.body),
+        )
+    })?;
+    let content = extract_hermes_content(&payload);
+    if content.is_empty() {
+        return Err(BridgeTaskError::bad_gateway(
+            "hermes_unsupported_response",
+            "Hermes chat response did not include assistant text.".to_string(),
+            Some(response.status_code),
+            Some(schema_summary(&payload)),
+        ));
+    }
+    let (body, direct_actions) = normalize_chat_output(&content);
+    let timestamp = now_iso();
+    Ok(serde_json::json!({
+        "message": {
+            "id": format!("hermes-chat-{}", OffsetDateTime::now_utc().unix_timestamp()),
+            "role": "assistant",
+            "body": if body.is_empty() { "Hermes completed the request.".to_string() } else { body },
+            "timestamp": timestamp
+        },
+        "directActions": direct_actions
+    }))
+}
+
+fn create_voice_transcription_result(
+    request: serde_json::Value,
+    voice_transcription_url: &str,
+    voice_transcription_model: &str,
+    voice_transcription_api_key: &str,
+    voice_transcription_timeout_ms: u64,
+    voice_transcription_mime_types: &[String],
+) -> Result<serde_json::Value, BridgeTaskError> {
+    if let Some(transcript) = request
+        .get("transcript")
+        .and_then(|value| value.as_str())
+        .or_else(|| request.get("text").and_then(|value| value.as_str()))
+        .filter(|value| !value.trim().is_empty())
+    {
+        return Ok(serde_json::json!({
+            "transcript": transcript.trim(),
+            "confidence": 1,
+            "language": "local"
+        }));
+    }
+
+    let url = voice_transcription_url.trim();
+    if url.is_empty() {
+        return Err(BridgeTaskError::bad_gateway(
+            "voice_not_configured",
+            "Hermes voice transcription is not configured on the Mission Control bridge. Typed chat remains available.".to_string(),
+            None,
+            None,
+        ));
+    }
+
+    let audio_base64 = request
+        .get("audioBase64")
+        .and_then(|value| value.as_str())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| BridgeTaskError::bad_request(
+            "invalid_voice_request",
+            "Mission Control bridge received a voice request without audioBase64.".to_string(),
+            safe_payload_preview(&serde_json::to_string(&request).unwrap_or_default()),
+        ))?;
+    let mime_type = request
+        .get("mimeType")
+        .and_then(|value| value.as_str())
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or("audio/webm");
+    if !voice_transcription_mime_types.is_empty() && !voice_transcription_mime_types.iter().any(|item| item == mime_type) {
+        return Err(BridgeTaskError::bad_request(
+            "voice_unsupported_mime_type",
+            format!("Voice transcription does not accept {mime_type}."),
+            Some(format!("supported: {}", voice_transcription_mime_types.join(", "))),
+        ));
+    }
+
+    let body = serde_json::to_string(&serde_json::json!({
+        "audioBase64": audio_base64,
+        "mimeType": mime_type,
+        "model": if voice_transcription_model.trim().is_empty() { serde_json::Value::Null } else { serde_json::Value::String(voice_transcription_model.trim().to_string()) },
+        "recordedAt": request.get("recordedAt").and_then(|value| value.as_str()).unwrap_or(""),
+        "source": "mission-control-hermes-hud"
+    }))
+    .map_err(|error| BridgeTaskError::bad_gateway(
+        "bridge_request_build_failed",
+        format!("Mission Control bridge could not build the voice transcription request: {error}"),
+        None,
+        None,
+    ))?;
+    let timeout_secs = (voice_transcription_timeout_ms / 1000).max(1);
+    let response = http_request("POST", url, Some(&body), Some("application/json"), voice_transcription_api_key, timeout_secs).map_err(|error| {
+        BridgeTaskError::bad_gateway(
+            "voice_http_error",
+            format!("Voice transcription failed before a response was received: {error}"),
+            None,
+            None,
+        )
+    })?;
+    let payload: serde_json::Value = serde_json::from_str(&response.body).map_err(|error| {
+        BridgeTaskError::bad_gateway(
+            "voice_invalid_json",
+            format!("Voice transcription returned non-JSON: {error}"),
+            Some(response.status_code),
+            safe_payload_preview(&response.body),
+        )
+    })?;
+    if !(200..300).contains(&response.status_code) {
+        return Err(BridgeTaskError::bad_gateway(
+            if response.status_code == 401 || response.status_code == 403 { "voice_auth_failed" } else { "voice_http_error" },
+            format!("Voice transcription returned {}", response.status_code),
+            Some(response.status_code),
+            safe_payload_preview(&response.body),
+        ));
+    }
+    let transcript = payload
+        .get("transcript")
+        .and_then(|value| value.as_str())
+        .or_else(|| payload.get("text").and_then(|value| value.as_str()))
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| BridgeTaskError::bad_gateway(
+            "voice_empty_transcript",
+            "Voice transcription returned no transcript.".to_string(),
+            Some(response.status_code),
+            Some(schema_summary(&payload)),
+        ))?;
+    Ok(serde_json::json!({
+        "transcript": transcript,
+        "confidence": payload.get("confidence").and_then(|value| value.as_f64()),
+        "language": payload.get("language").and_then(|value| value.as_str())
+    }))
+}
+
 fn extract_json_from_text(text: &str) -> Result<serde_json::Value, BridgeTaskError> {
     let cleaned = text
         .trim()
@@ -1050,6 +1409,11 @@ fn handle_bridge_connection(
     hermes_api_base_url: String,
     hermes_model: String,
     hermes_api_key: String,
+    voice_transcription_url: String,
+    voice_transcription_model: String,
+    voice_transcription_api_key: String,
+    voice_transcription_timeout_ms: u64,
+    voice_transcription_mime_types: Vec<String>,
     request_count: Arc<AtomicU64>,
     running: Arc<AtomicBool>,
     last_task_failure: Arc<Mutex<Option<BridgeTaskDiagnostic>>>,
@@ -1071,6 +1435,7 @@ fn handle_bridge_connection(
             &hermes_api_base_url,
             &hermes_model,
             &hermes_api_key,
+            &voice_transcription_url,
             request_count.load(Ordering::SeqCst),
             &last_started_at,
             task_failure,
@@ -1092,7 +1457,7 @@ fn handle_bridge_connection(
                     "mission-controlBridge": LOCAL_AGENT_BRIDGE_URL,
                     "hermesApiBaseUrl": hermes_api_base_url,
                     "model": hermes_model,
-                    "commandGate": "Command Inbox required",
+                    "commandGate": "Proposal workflows use Command Inbox; Hermes HUD direct actions are audited direct controls.",
                     "generatedAt": now_iso()
                 }
             }),
@@ -1107,7 +1472,7 @@ fn handle_bridge_connection(
             let task_failure = last_task_failure.lock().ok().and_then(|failure| failure.clone());
             let payload = serde_json::json!({
                 "type": "status",
-                "status": create_bridge_status(&hermes_api_base_url, &hermes_model, &hermes_api_key, request_count.load(Ordering::SeqCst), &last_started_at, task_failure)
+                "status": create_bridge_status(&hermes_api_base_url, &hermes_model, &hermes_api_key, &voice_transcription_url, request_count.load(Ordering::SeqCst), &last_started_at, task_failure)
             });
             let line = format!("data: {}\n\n", serde_json::to_string(&payload).unwrap_or_else(|_| "{}".to_string()));
             if stream.write_all(line.as_bytes()).is_err() {
@@ -1149,6 +1514,56 @@ fn handle_bridge_connection(
         return;
     }
 
+    if method == "POST" && path == "/chat" {
+        request_count.fetch_add(1, Ordering::SeqCst);
+        let request = serde_json::from_str::<serde_json::Value>(&body).map_err(|error| {
+            BridgeTaskError::bad_request(
+                "invalid_chat_request",
+                format!("Mission Control bridge received invalid chat JSON: {error}"),
+                safe_payload_preview(&body),
+            )
+        });
+
+        match request.and_then(|request| create_chat_result(request, &hermes_api_base_url, &hermes_model, &hermes_api_key)) {
+            Ok(result) => send_json(&mut stream, "200 OK", result),
+            Err(error) => send_json(
+                &mut stream,
+                error.http_status,
+                error.to_payload(&hermes_api_base_url),
+            ),
+        }
+        return;
+    }
+
+    if method == "POST" && path == "/voice/transcribe" {
+        let request = serde_json::from_str::<serde_json::Value>(&body).map_err(|error| {
+            BridgeTaskError::bad_request(
+                "invalid_voice_request",
+                format!("Mission Control bridge received invalid voice JSON: {error}"),
+                safe_payload_preview(&body),
+            )
+        });
+
+        match request.and_then(|request| {
+            create_voice_transcription_result(
+                request,
+                &voice_transcription_url,
+                &voice_transcription_model,
+                &voice_transcription_api_key,
+                voice_transcription_timeout_ms,
+                &voice_transcription_mime_types,
+            )
+        }) {
+            Ok(result) => send_json(&mut stream, "200 OK", result),
+            Err(error) => send_json(
+                &mut stream,
+                error.http_status,
+                error.to_payload(&hermes_api_base_url),
+            ),
+        }
+        return;
+    }
+
     if method == "POST" && path == "/workspace/layout/plan" {
         let request = serde_json::from_str::<serde_json::Value>(&body).map_err(|error| {
             BridgeTaskError::bad_request(
@@ -1174,12 +1589,23 @@ fn handle_bridge_connection(
         "404 Not Found",
         serde_json::json!({
             "error": "Not found",
-            "endpoints": ["/status", "/events", "/tasks", "/workspace/layout/plan", "/sample-json"]
+            "endpoints": ["/status", "/events", "/tasks", "/chat", "/voice/transcribe", "/workspace/layout/plan", "/sample-json"]
         }),
     );
 }
 
-fn start_local_bridge_thread(hermes_api_base_url: String, hermes_model: String, hermes_api_key: String, running: Arc<AtomicBool>, last_started_at: String) -> Result<(), String> {
+fn start_local_bridge_thread(
+    hermes_api_base_url: String,
+    hermes_model: String,
+    hermes_api_key: String,
+    voice_transcription_url: String,
+    voice_transcription_model: String,
+    voice_transcription_api_key: String,
+    voice_transcription_timeout_ms: u64,
+    voice_transcription_mime_types: Vec<String>,
+    running: Arc<AtomicBool>,
+    last_started_at: String,
+) -> Result<(), String> {
     let bind_addr: SocketAddr = LOCAL_AGENT_BRIDGE_BIND.parse::<SocketAddr>().map_err(|error| error.to_string())?;
     let listener = TcpListener::bind(bind_addr).map_err(|error| error.to_string())?;
     listener.set_nonblocking(true).map_err(|error| error.to_string())?;
@@ -1193,12 +1619,31 @@ fn start_local_bridge_thread(hermes_api_base_url: String, hermes_model: String, 
                     let base_url = hermes_api_base_url.clone();
                     let model = hermes_model.clone();
                     let api_key = hermes_api_key.clone();
+                    let voice_url = voice_transcription_url.clone();
+                    let voice_model = voice_transcription_model.clone();
+                    let voice_key = voice_transcription_api_key.clone();
+                    let voice_timeout = voice_transcription_timeout_ms;
+                    let voice_mime_types = voice_transcription_mime_types.clone();
                     let counter = Arc::clone(&request_count);
                     let running_for_client = Arc::clone(&running);
                     let task_failure = Arc::clone(&last_task_failure);
                     let started_at = last_started_at.clone();
                     thread::spawn(move || {
-                        handle_bridge_connection(stream, base_url, model, api_key, counter, running_for_client, task_failure, started_at);
+                        handle_bridge_connection(
+                            stream,
+                            base_url,
+                            model,
+                            api_key,
+                            voice_url,
+                            voice_model,
+                            voice_key,
+                            voice_timeout,
+                            voice_mime_types,
+                            counter,
+                            running_for_client,
+                            task_failure,
+                            started_at,
+                        );
                     });
                 }
                 Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
@@ -1231,12 +1676,22 @@ fn start_agent_bridge(
         runtime.hermes_api_base_url = normalize_hermes_api_base_url(&request.hermes_api_base_url);
         runtime.hermes_model = normalize_hermes_model(&request.hermes_model);
         runtime.hermes_api_key = resolve_hermes_api_key(&app, &request)?;
+        runtime.voice_transcription_url = normalize_voice_transcription_url(request.voice_transcription_url.as_ref());
+        runtime.voice_transcription_model = normalize_voice_transcription_model(request.voice_transcription_model.as_ref());
+        runtime.voice_transcription_api_key = resolve_voice_transcription_api_key(&app, &request)?;
+        runtime.voice_transcription_timeout_ms = normalize_voice_transcription_timeout_ms(request.voice_transcription_timeout_ms);
+        runtime.voice_transcription_mime_types = normalize_voice_transcription_mime_types(request.voice_transcription_mime_types.as_ref());
         return Ok(process_state(&runtime));
     }
 
     let hermes_api_base_url = normalize_hermes_api_base_url(&request.hermes_api_base_url);
     let hermes_model = normalize_hermes_model(&request.hermes_model);
     let hermes_api_key = resolve_hermes_api_key(&app, &request)?;
+    let voice_transcription_url = normalize_voice_transcription_url(request.voice_transcription_url.as_ref());
+    let voice_transcription_model = normalize_voice_transcription_model(request.voice_transcription_model.as_ref());
+    let voice_transcription_api_key = resolve_voice_transcription_api_key(&app, &request)?;
+    let voice_transcription_timeout_ms = normalize_voice_transcription_timeout_ms(request.voice_transcription_timeout_ms);
+    let voice_transcription_mime_types = normalize_voice_transcription_mime_types(request.voice_transcription_mime_types.as_ref());
     let running = Arc::new(AtomicBool::new(true));
     let started_at = now_iso();
 
@@ -1244,6 +1699,11 @@ fn start_agent_bridge(
         hermes_api_base_url.clone(),
         hermes_model.clone(),
         hermes_api_key.clone(),
+        voice_transcription_url.clone(),
+        voice_transcription_model.clone(),
+        voice_transcription_api_key.clone(),
+        voice_transcription_timeout_ms,
+        voice_transcription_mime_types.clone(),
         Arc::clone(&running),
         started_at.clone(),
     ) {
@@ -1253,6 +1713,11 @@ fn start_agent_bridge(
             runtime.hermes_api_base_url = hermes_api_base_url;
             runtime.hermes_model = hermes_model;
             runtime.hermes_api_key = hermes_api_key;
+            runtime.voice_transcription_url = voice_transcription_url;
+            runtime.voice_transcription_model = voice_transcription_model;
+            runtime.voice_transcription_api_key = voice_transcription_api_key;
+            runtime.voice_transcription_timeout_ms = voice_transcription_timeout_ms;
+            runtime.voice_transcription_mime_types = voice_transcription_mime_types;
             runtime.last_started_at = Some(started_at);
             runtime.last_error = None;
         }

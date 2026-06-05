@@ -42,6 +42,7 @@ export {
 } from './agentBridgeSettings';
 export {
   hermesApiKeySecretRef,
+  hermesVoiceApiKeySecretRef,
   isDesktopAgentSecretStoreAvailable,
   writeAgentBridgeSecret,
   readAgentBridgeSecret,

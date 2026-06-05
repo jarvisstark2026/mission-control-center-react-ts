@@ -192,7 +192,7 @@ export function createHomeSystemActionEvents(
         requestedAt: timestamp,
         execution: {
           status: 'not-started',
-          result: 'Waiting in Command Inbox. Home Systems never executes device actions directly.',
+          result: 'Waiting in Command Inbox. Home Systems widget proposals do not execute device actions directly.',
           rollbackAvailable: plan.risk === 'safe',
         },
         auditTrail: [

@@ -127,8 +127,8 @@ export function HomeSystemsWidget({
       {
         id: 'safety',
         meta: 'gate',
-        title: 'Home actions remain Command Inbox proposals',
-        detail: getControlMode(role),
+        title: 'Widget actions remain Command Inbox proposals',
+        detail: `${getControlMode(role)} / Hermes HUD direct actions are audited separately`,
         state: actionPlans.length ? 'ready' : 'offline',
       },
       {
@@ -339,7 +339,7 @@ export function HomeSystemsWidget({
               Flexible loads account for {formatKwh(dailySummary.flexibleLoadKwh)} today. Stage proposals below to move them into solar surplus.
             </EvidenceBlock>
             <EvidenceBlock label="Evidence for decisions" title="source / trend / impact">
-              These readings are monitoring evidence only. Control proposals still require Command Inbox approval.
+              These readings are monitoring evidence only. Widget control proposals still require Command Inbox approval.
             </EvidenceBlock>
           </div>
         </div>

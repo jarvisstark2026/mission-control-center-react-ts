@@ -519,10 +519,12 @@
   width: min(330px, calc(100vw - 28px));
 }
 
-.workspace-head .workspace-permission-menu-panel,
-.workspace-head .workspace-hud-menu-panel,
-.workspace-head .workspace-agent-menu-panel {
+.workspace-head .workspace-permission-menu-panel {
   width: min(420px, calc(100vw - 28px));
+}
+
+.workspace-head .workspace-hud-menu-panel {
+  width: min(400px, calc(100vw - 28px));
 }
 
 .workspace-extension-identity {
@@ -1593,8 +1595,7 @@
 .workspace-widget.kind-window-manager,
 .workspace-widget.kind-schedule,
 .workspace-widget.kind-project,
-.workspace-widget.kind-list,
-.workspace-widget.kind-browser {
+.workspace-widget.kind-list {
   --widget-accent: rgba(179, 231, 255, 0.9);
   --widget-accent-soft: rgba(179, 231, 255, 0.15);
 }
@@ -2198,7 +2199,6 @@
 }
 
 .launcher-grid,
-.browser-bookmarks,
 .live-tv-preset-list,
 .market-graph-list,
 .launcher-desktop-list {
@@ -2209,7 +2209,6 @@
 .widget-scroll-pane::-webkit-scrollbar,
 .preview-media-text::-webkit-scrollbar,
 .launcher-grid::-webkit-scrollbar,
-.browser-bookmarks::-webkit-scrollbar,
 .live-tv-preset-list::-webkit-scrollbar,
 .markets-categories::-webkit-scrollbar,
 .market-graph-list::-webkit-scrollbar,
@@ -2230,7 +2229,6 @@
 .widget-scroll-pane::-webkit-scrollbar-track,
 .preview-media-text::-webkit-scrollbar-track,
 .launcher-grid::-webkit-scrollbar-track,
-.browser-bookmarks::-webkit-scrollbar-track,
 .live-tv-preset-list::-webkit-scrollbar-track,
 .markets-categories::-webkit-scrollbar-track,
 .market-graph-list::-webkit-scrollbar-track,
@@ -2250,7 +2248,6 @@
 .widget-scroll-pane::-webkit-scrollbar-thumb,
 .preview-media-text::-webkit-scrollbar-thumb,
 .launcher-grid::-webkit-scrollbar-thumb,
-.browser-bookmarks::-webkit-scrollbar-thumb,
 .live-tv-preset-list::-webkit-scrollbar-thumb,
 .markets-categories::-webkit-scrollbar-thumb,
 .market-graph-list::-webkit-scrollbar-thumb,
@@ -2273,7 +2270,6 @@
 .widget-scroll-pane:hover::-webkit-scrollbar-thumb,
 .preview-media-text:hover::-webkit-scrollbar-thumb,
 .launcher-grid:hover::-webkit-scrollbar-thumb,
-.browser-bookmarks:hover::-webkit-scrollbar-thumb,
 .live-tv-preset-list:hover::-webkit-scrollbar-thumb,
 .markets-categories:hover::-webkit-scrollbar-thumb,
 .market-graph-list:hover::-webkit-scrollbar-thumb,
@@ -2658,10 +2654,9 @@
   width: min(440px, calc(100vw - 32px));
 }
 
-.workspace-hud-menu-panel,
-.workspace-agent-menu-panel {
+.workspace-hud-menu-panel {
   grid-template-columns: minmax(0, 1fr);
-  width: min(360px, calc(100vw - 32px));
+  width: min(400px, calc(100vw - 28px));
 }
 
 .workspace-hud-menu-item {
@@ -4461,7 +4456,6 @@
 }
 
 .launcher-surface,
-.browser-surface,
 .live-tv-surface,
 .file-explorer-surface,
 .native-app-surface,
@@ -4482,13 +4476,6 @@
   grid-template-rows: auto auto minmax(0, 1fr);
   align-content: stretch;
   min-height: 0;
-}
-
-.browser-surface {
-  display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
-  align-content: stretch;
-  min-height: 100%;
 }
 
 .file-explorer-surface {
@@ -4653,10 +4640,7 @@
 .schedule-content span,
 .file-explorer-folder-head span,
 .file-explorer-folder li span,
-.launcher-app span,
-.browser-bookmarks button,
-.browser-bar input,
-.browser-bar button {
+.launcher-app span {
   text-transform: uppercase;
   letter-spacing: 0.12em;
   font-size: 0.62rem;
@@ -4717,10 +4701,7 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-.launcher-app,
-.browser-bar input,
-.browser-bar button,
-.browser-bookmarks button {
+.launcher-app {
   border-radius: 4px;
 }
 
@@ -4731,65 +4712,6 @@
   letter-spacing: 0.1em;
   font-size: 0.56rem;
   line-height: 1.5;
-}
-
-.browser-address-section {
-  display: grid;
-  gap: 8px;
-  min-height: 0;
-}
-
-.browser-bar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-}
-
-.browser-bar input,
-.browser-bar button,
-.browser-bookmarks button {
-  min-height: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.browser-bar input {
-  width: 100%;
-  padding: 0 12px;
-}
-
-.browser-bar button,
-.browser-bookmarks button {
-  padding: 0 10px;
-  cursor: pointer;
-}
-
-.browser-bar button:hover,
-.browser-bookmarks button:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.browser-bookmarks {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: 6px;
-  max-width: 100%;
-}
-
-.browser-frame-section {
-  min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
-  align-content: stretch;
-  overflow: hidden;
-}
-
-.browser-frame {
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.02);
 }
 
 .file-explorer-folder {
@@ -5400,19 +5322,16 @@
   order: 70;
 }
 
-.browser-address-section,
 .live-tv-controls-section,
 .agent-console-compose,
 .workflow-runbook-frame {
   order: 10;
 }
 
-.browser-frame-section,
 .live-tv-player-section {
   order: 20;
 }
 
-.browser-history-section,
 .live-tv-source-section {
   order: 30;
 }
@@ -6168,6 +6087,120 @@
 .agent-console-submit {
   justify-self: start;
   min-height: 30px;
+}
+
+.hermes-hud-surface {
+  gap: 12px;
+}
+
+.hermes-hud-primary {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.9fr) minmax(0, 1.1fr);
+  gap: 10px;
+  min-width: 0;
+}
+
+.hermes-hud-mini-stage {
+  position: relative;
+  min-height: 206px;
+  overflow: hidden;
+  border: 1px solid rgba(86, 221, 255, 0.16);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(86, 221, 255, 0.08), transparent 62%),
+    rgba(5, 13, 22, 0.34);
+}
+
+.hermes-hud-mini-stage .workspace-hud {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  min-height: 206px;
+  opacity: 0.94;
+}
+
+.hermes-hud-chat {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hermes-hud-thread {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  min-height: 150px;
+  max-height: 206px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.hermes-hud-message {
+  display: grid;
+  gap: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  padding: 7px 8px;
+  background: rgba(255, 255, 255, 0.032);
+}
+
+.hermes-hud-message[data-role='assistant'] {
+  border-color: rgba(86, 221, 255, 0.18);
+  background: rgba(86, 221, 255, 0.055);
+}
+
+.hermes-hud-message[data-status='failed'] {
+  border-color: rgba(255, 112, 112, 0.24);
+}
+
+.hermes-hud-message span {
+  color: var(--glass-muted);
+  font-size: 0.5rem;
+  font-weight: 850;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hermes-hud-message p {
+  margin: 0;
+  color: rgba(239, 247, 255, 0.78);
+  font-size: 0.62rem;
+  line-height: 1.38;
+  white-space: pre-line;
+}
+
+.hermes-hud-composer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.hermes-hud-composer textarea {
+  width: 100%;
+  min-height: 52px;
+  resize: vertical;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 7px;
+  padding: 8px 9px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.018)),
+    rgba(5, 13, 22, 0.36);
+  color: rgba(239, 247, 255, 0.9);
+  font: inherit;
+  font-size: 0.66rem;
+  line-height: 1.42;
+  outline: none;
+}
+
+.hermes-hud-composer textarea:focus {
+  border-color: rgba(86, 221, 255, 0.38);
+  box-shadow: 0 0 0 1px rgba(86, 221, 255, 0.12);
+}
+
+.hermes-hud-state-frame {
+  border-color: rgba(86, 221, 255, 0.13);
 }
 
 .home-systems-surface {
@@ -8118,8 +8151,7 @@
 }
 
 .schedule-empty-state,
-.task-empty-state,
-.browser-empty-state {
+.task-empty-state {
   padding: 12px;
   border: 1px dashed rgba(255, 255, 255, 0.12);
   border-radius: 5px;
@@ -8203,24 +8235,6 @@
 .image-preview-media {
   object-fit: contain;
   background: rgba(0, 0, 0, 0.16);
-}
-
-.browser-surface {
-  grid-template-rows: auto auto auto auto minmax(0, 1fr);
-}
-
-.browser-bar {
-  grid-template-columns: minmax(0, 1fr) auto auto;
-}
-
-.browser-history-section {
-  min-height: 0;
-}
-
-.browser-history-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
-  gap: 6px;
 }
 
 .news-watchlist-section {
@@ -9713,8 +9727,7 @@
 .workspace-widget.kind-window-manager,
 .workspace-widget.kind-schedule,
 .workspace-widget.kind-project,
-.workspace-widget.kind-list,
-.workspace-widget.kind-browser {
+.workspace-widget.kind-list {
   --widget-accent: var(--workspace-widget-accent-utility);
   --widget-accent-soft: var(--workspace-widget-accent-utility-soft);
 }
@@ -9770,7 +9783,6 @@
 .widget-scroll-pane::-webkit-scrollbar-thumb,
 .preview-media-text::-webkit-scrollbar-thumb,
 .launcher-grid::-webkit-scrollbar-thumb,
-.browser-bookmarks::-webkit-scrollbar-thumb,
 .live-tv-preset-list::-webkit-scrollbar-thumb,
 .markets-categories::-webkit-scrollbar-thumb,
 .market-graph-list::-webkit-scrollbar-thumb,
@@ -9790,7 +9802,6 @@
 .widget-scroll-pane:hover::-webkit-scrollbar-thumb,
 .preview-media-text:hover::-webkit-scrollbar-thumb,
 .launcher-grid:hover::-webkit-scrollbar-thumb,
-.browser-bookmarks:hover::-webkit-scrollbar-thumb,
 .live-tv-preset-list:hover::-webkit-scrollbar-thumb,
 .markets-categories:hover::-webkit-scrollbar-thumb,
 .market-graph-list:hover::-webkit-scrollbar-thumb,

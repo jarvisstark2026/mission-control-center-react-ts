@@ -36,7 +36,7 @@ function getCommandOriginLabel(command: CommandRequest) {
   }
 
   if (command.source.startsWith('agent-console')) {
-    return 'Agent Console';
+    return 'Agent proposals';
   }
 
   return command.source;

@@ -6,6 +6,7 @@ import { createId } from '../../lib/createId';
 import { useDismissibleMenu } from '../../lib/useDismissibleMenu';
 import { shellScopes, type ShellRole } from '../shell/roles';
 import { readAgentBridgeSettings, useAgentBridgeRuntime, writeAgentBridgeSettings, type AgentBridgeSettings } from '../agent-control';
+import { useHermesHudRuntime, type HermesHudDirectAction, type HermesHudDirectActionResult } from '../hermes-hud';
 import { useMissionControl } from '../mission-control';
 import { useOperationalOs } from '../operational-os';
 import {
@@ -33,7 +34,7 @@ import {
   subscribeFullscreenState,
 } from './workspaceFullscreen';
 import type { ResizeEdge } from './WorkspaceResizeHandles';
-import type { WorkspaceWidget } from './workspaceTypes';
+import { isWorkspaceWidgetKind, type WorkspaceWidget } from './workspaceTypes';
 import { calculateCenteredWidgetPosition, calculatePartiallyOffscreenDragPosition } from './workspaceGeometry';
 import { createLocalFileRecord, clearPersistedLocalFiles, generalUseFolderLabel, measureImageDimensions, readFolderEntries, readPersistedLocalFiles, writePersistedLocalFiles, type LocalFileRecord, type LocalFolderEntry, type LocalImageDimensions, type ShowDirectoryPickerFn } from './workspaceLocalFiles';
 import {
@@ -82,6 +83,7 @@ import {
 } from './workspaceInstances';
 import { playWidgetAddedSound } from './workspaceSound';
 import { publishWidgetTransfer, subscribeWidgetTransfer, type WorkspaceWidgetTransferAnimation } from './workspaceWidgetTransfer';
+import { homeSystemActionPlans } from './homeSystemsActions';
 import {
   createWorkspaceLayoutSnapshot,
   getAgentLiveLayoutWorkspaceState,
@@ -115,7 +117,6 @@ const defaultOpenKinds = new Set<WorkspaceWidget['kind']>([
   'overview',
   'graph',
   'trading-graph',
-  'browser',
   'schedule',
   'launcher',
   'file-explorer',
@@ -602,14 +603,12 @@ export function Workspace({
   const [presetMenuOpen, setPresetMenuOpen] = useState(false);
   const [permissionMenuOpen, setPermissionMenuOpen] = useState(false);
   const [hudMenuOpen, setHudMenuOpen] = useState(false);
-  const [agentMenuOpen, setAgentMenuOpen] = useState(false);
   const [hudSettings, setHudSettings] = useState(readWorkspaceHudSettings);
   const widgetMenuRef = useRef<HTMLDivElement | null>(null);
   const presetMenuRef = useRef<HTMLDivElement | null>(null);
   const permissionMenuRef = useRef<HTMLDivElement | null>(null);
   const hudMenuRef = useRef<HTMLDivElement | null>(null);
-  const agentMenuRef = useRef<HTMLDivElement | null>(null);
-  const topMenuRefs = useMemo(() => [widgetMenuRef, presetMenuRef, permissionMenuRef, hudMenuRef, agentMenuRef] as const, []);
+  const topMenuRefs = useMemo(() => [widgetMenuRef, presetMenuRef, permissionMenuRef, hudMenuRef] as const, []);
   const { voiceState } = useAgentVoiceRuntime(hudSettings.voiceReactionEnabled, hudSettings.audioMeterEnabled);
   const [permissionRole, setPermissionRole] = useState<ShellRole>('home');
   const [layoutSaveStatus, setLayoutSaveStatus] = useState('');
@@ -657,10 +656,9 @@ export function Workspace({
     setPresetMenuOpen(false);
     setPermissionMenuOpen(false);
     setHudMenuOpen(false);
-    setAgentMenuOpen(false);
   }, []);
 
-  useDismissibleMenu(widgetMenuOpen || presetMenuOpen || permissionMenuOpen || hudMenuOpen || agentMenuOpen, topMenuRefs, closeTopMenus);
+  useDismissibleMenu(widgetMenuOpen || presetMenuOpen || permissionMenuOpen || hudMenuOpen, topMenuRefs, closeTopMenus);
 
   const updateHudSettings = (patch: Partial<WorkspaceHudSettings>) => {
     setHudSettings((current) => {
@@ -2297,6 +2295,239 @@ export function Workspace({
   const onUpdateAgentBridgeSettings = useEventCallback((settings: Partial<AgentBridgeSettings>) => {
     setAgentBridgeSettings(writeAgentBridgeSettings(settings));
   });
+  const executeHermesDirectActions = useEventCallback(async (actions: HermesHudDirectAction[]): Promise<HermesHudDirectActionResult[]> => {
+    const timestamp = new Date().toISOString();
+    const createResult = (action: HermesHudDirectAction, ok: boolean, message: string): HermesHudDirectActionResult => {
+      recordAgentBridgeDiagnostic(message, 'runtime', ok ? 'info' : 'warning', { source: 'hermes-hud', actionType: action.type });
+      return {
+        id: createId('hermes-action-result'),
+        type: action.type,
+        ok,
+        message,
+        timestamp,
+      };
+    };
+    const findTargetWidget = (
+      action: Extract<HermesHudDirectAction, {
+        type: 'widget.open' | 'widget.focus' | 'widget.minimize' | 'widget.close' | 'widget.updateState';
+      }>,
+    ) => {
+      if (action.widgetId) {
+        return widgetsRef.current.find((widget) => widget.id === action.widgetId) ?? null;
+      }
+      if (action.widgetKind && isWorkspaceWidgetKind(action.widgetKind)) {
+        return widgetsRef.current.find((widget) => widget.kind === action.widgetKind) ?? null;
+      }
+      return null;
+    };
+
+    const results: HermesHudDirectActionResult[] = [];
+
+    for (const action of actions.slice(0, 8)) {
+      if (!action || typeof action.type !== 'string') {
+        continue;
+      }
+
+      if (activeRole === 'guest') {
+        results.push(createResult(action, false, 'Guest access cannot run Hermes direct actions.'));
+        continue;
+      }
+
+      if (action.type === 'widget.open') {
+        if (!action.widgetKind || !isWorkspaceWidgetKind(action.widgetKind)) {
+          results.push(createResult(action, false, 'Hermes asked to open an unknown widget.'));
+          continue;
+        }
+        if (!isWorkspaceWidgetAllowedForRole(action.widgetKind, activeRole, widgetPermissions)) {
+          results.push(createResult(action, false, `${getWidgetLabel(action.widgetKind)} is not available to ${activeRole}.`));
+          continue;
+        }
+        openWorkspaceWidget(action.widgetKind);
+        results.push(createResult(action, true, `Opened ${getWidgetLabel(action.widgetKind)}.`));
+        continue;
+      }
+
+      if (action.type === 'widget.focus') {
+        const target = findTargetWidget(action);
+        if (!target) {
+          results.push(createResult(action, false, 'Hermes asked to focus a widget that is not in this workspace.'));
+          continue;
+        }
+        focusWidget(target.id, true);
+        results.push(createResult(action, true, `Focused ${target.title}.`));
+        continue;
+      }
+
+      if (action.type === 'widget.minimize') {
+        const target = findTargetWidget(action);
+        if (!target) {
+          results.push(createResult(action, false, 'Hermes asked to minimize a widget that is not in this workspace.'));
+          continue;
+        }
+        setWidgets((current) => {
+          const next = current.map((widget) => (widget.id === target.id ? { ...widget, open: false, hidden: false } : widget));
+          widgetsRef.current = next;
+          return next;
+        });
+        results.push(createResult(action, true, `Minimized ${target.title}.`));
+        continue;
+      }
+
+      if (action.type === 'widget.close') {
+        const target = findTargetWidget(action);
+        if (!target) {
+          results.push(createResult(action, false, 'Hermes asked to close a widget that is not in this workspace.'));
+          continue;
+        }
+        closeWidget(target.id);
+        results.push(createResult(action, true, `Closed ${target.title}.`));
+        continue;
+      }
+
+      if (action.type === 'widget.updateState') {
+        const target = findTargetWidget(action);
+        if (!target) {
+          results.push(createResult(action, false, 'Hermes asked to update a widget that is not in this workspace.'));
+          continue;
+        }
+        const patch = action.patch ?? {};
+        const hasGeometryPatch = [patch.x, patch.y, patch.width, patch.height].some((value) => value !== undefined);
+        if (target.pinned && hasGeometryPatch) {
+          results.push(createResult(action, false, 'Hermes cannot change pinned widget geometry.'));
+          continue;
+        }
+        const canvasSize = getEffectiveCanvasSize(canvasRef.current, bounds);
+        let changed = false;
+        setWidgets((current) => {
+          const highest = current.reduce((max, widget) => Math.max(max, widget.zIndex), 0);
+          const next = current.map((widget) => {
+            if (widget.id !== target.id) return widget;
+
+            const nextWidth = Number.isFinite(patch.width)
+              ? clampNumber(Number(patch.width), widget.width, widget.minWidth, Math.max(widget.minWidth, canvasSize.width))
+              : widget.width;
+            const nextHeight = Number.isFinite(patch.height)
+              ? clampNumber(Number(patch.height), widget.height, widget.minHeight, Math.max(widget.minHeight, canvasSize.height))
+              : widget.height;
+            const nextX = Number.isFinite(patch.x)
+              ? clampNumber(Number(patch.x), widget.x, 0, Math.max(0, canvasSize.width - nextWidth))
+              : widget.x;
+            const nextY = Number.isFinite(patch.y)
+              ? clampNumber(Number(patch.y), widget.y, 0, Math.max(0, canvasSize.height - nextHeight))
+              : widget.y;
+            const nextTitle = typeof patch.title === 'string' && patch.title.trim()
+              ? patch.title.trim().slice(0, 48)
+              : widget.title;
+            const nextSubtitle = typeof patch.subtitle === 'string' && patch.subtitle.trim()
+              ? patch.subtitle.trim().slice(0, 42)
+              : widget.subtitle;
+            const nextWidget = {
+              ...widget,
+              x: nextX,
+              y: nextY,
+              width: nextWidth,
+              height: nextHeight,
+              title: nextTitle,
+              subtitle: nextSubtitle,
+              open: typeof patch.open === 'boolean' ? patch.open : widget.open,
+              pinned: typeof patch.pinned === 'boolean' ? patch.pinned : widget.pinned,
+              hidden: typeof patch.open === 'boolean' && patch.open ? false : widget.hidden,
+              zIndex: typeof patch.open === 'boolean' && patch.open ? highest + 1 : widget.zIndex,
+            };
+            changed = JSON.stringify(nextWidget) !== JSON.stringify(widget);
+            return nextWidget;
+          });
+          widgetsRef.current = next;
+          return next;
+        });
+        results.push(createResult(action, changed, changed ? `Updated ${target.title}.` : `No supported update was needed for ${target.title}.`));
+        continue;
+      }
+
+      if (action.type === 'hud.update') {
+        const settings = action.settings ?? {};
+        const patch: Partial<WorkspaceHudSettings> = {};
+        const nextDesignId = settings.designId;
+        const nextColorMode = settings.colorMode;
+        if (settings.centerHudVisible !== undefined) patch.centerHudVisible = Boolean(settings.centerHudVisible);
+        if (settings.voiceReactionEnabled !== undefined) patch.voiceReactionEnabled = Boolean(settings.voiceReactionEnabled);
+        if (settings.audioMeterEnabled !== undefined) patch.audioMeterEnabled = Boolean(settings.audioMeterEnabled);
+        if (nextDesignId && workspaceHudDesignOptions.some((design) => design.id === nextDesignId)) patch.designId = nextDesignId;
+        if (nextColorMode && workspaceHudColorOptions.some((color) => color.id === nextColorMode)) patch.colorMode = nextColorMode;
+        if (!Object.keys(patch).length) {
+          results.push(createResult(action, false, 'Hermes HUD settings action had no supported fields.'));
+          continue;
+        }
+        updateHudSettings(patch);
+        results.push(createResult(action, true, 'Updated HUD settings.'));
+        continue;
+      }
+
+      if (action.type === 'liveLayout.set') {
+        const placement = action.placement;
+        if (!placement || !workspaceInstances.some((workspace) => workspace.placement === placement)) {
+          results.push(createResult(action, false, 'Hermes live layout action used an unknown workspace placement.'));
+          continue;
+        }
+        const workspaceState = agentLiveLayoutGlobal.workspaces[placement];
+        setAgentLiveLayoutWorkspaceEnabled(
+          placement,
+          workspaceState?.workspaceId ?? (placement === 'center' ? 'main' : `placement:${placement}`),
+          Boolean(action.enabled),
+          getAgentLayoutBridgeUrl(),
+        );
+        results.push(createResult(action, true, `${Boolean(action.enabled) ? 'Enabled' : 'Stopped'} live layout for ${placement}.`));
+        continue;
+      }
+
+      if (action.type === 'home.action') {
+        const homeApiUrl = (import.meta.env as ImportMetaEnv & { readonly VITE_HOME_SYSTEMS_API_URL?: string }).VITE_HOME_SYSTEMS_API_URL;
+        const actionPlan = homeSystemActionPlans.find((plan) => plan.id === action.actionId);
+        if (!action.actionId || !actionPlan) {
+          results.push(createResult(action, false, 'Hermes requested an unknown Home Systems action.'));
+          continue;
+        }
+        if (!actionPlan.roles.includes(activeRole)) {
+          results.push(createResult(action, false, `${actionPlan.title} is not available to ${activeRole}.`));
+          continue;
+        }
+        if (!homeApiUrl) {
+          results.push(createResult(action, false, 'Home Systems backend is not configured.'));
+          continue;
+        }
+        try {
+          const response = await fetch(`${homeApiUrl.replace(/\/+$/u, '')}/actions`, {
+            method: 'POST',
+            headers: {
+              accept: 'application/json',
+              'content-type': 'application/json',
+            },
+            body: JSON.stringify({
+              actionId: action.actionId,
+              targetId: action.targetId,
+              payload: action.payload ?? null,
+              title: actionPlan.title,
+              risk: actionPlan.risk,
+              source: 'hermes-hud',
+              requestedAt: timestamp,
+            }),
+          });
+          if (!response.ok) {
+            results.push(createResult(action, false, `Home Systems action failed: ${response.status}`));
+            continue;
+          }
+          results.push(createResult(action, true, `Sent Home Systems action ${action.actionId ?? 'request'}.`));
+        } catch (error) {
+          results.push(createResult(action, false, error instanceof Error ? error.message : 'Home Systems action failed.'));
+        }
+        continue;
+      }
+
+      results.push(createResult(action, false, `Hermes action "${action.type}" is not supported.`));
+    }
+
+    return results;
+  });
 
   const activeMarketGraph = useMemo(() => getMarketGraph(activeMarketGraphId), [activeMarketGraphId]);
   const workspacePlaneSize = useMemo(() => getWorkspacePlaneSize(bounds), [bounds]);
@@ -2352,6 +2583,20 @@ export function Workspace({
       }),
     [activeRole, activeWorkspaceModeId, agentControl, getModeLabel, hudLocale, missionControl.state, workspaceWidgetGroups],
   );
+  const hermesHudBridgeUrl =
+    agentBridge.activeConnector.kind !== 'mock' && agentBridge.activeConnector.status === 'connected'
+      ? agentBridge.activeConnector.url ?? agentBridgeSettings.localBridgeUrl
+      : null;
+  const hermesHudRuntime = useHermesHudRuntime({
+    bridgeUrl: hermesHudBridgeUrl,
+    role: activeRole,
+    onDirectActions: executeHermesDirectActions,
+    onVoiceListeningChange: (listening) => {
+      if (listening) {
+        updateHudSettings({ voiceReactionEnabled: true, audioMeterEnabled: true });
+      }
+    },
+  });
   const widgetRuntimeProps: WorkspaceWidgetRuntimeProps = {
     onStartDrag,
     onStartResize,
@@ -2409,6 +2654,11 @@ export function Workspace({
       pauseAllAgentLiveLayoutWorkspaces(getAgentLayoutBridgeUrl());
       cancelAgentLayoutAnimations();
     },
+    hermesHudRuntime,
+    hudSettings,
+    hudSignals: workspaceHudSignals,
+    voiceState,
+    hudLocale,
     operationalOs,
     activeRole,
     widgetPermissions,
@@ -2443,7 +2693,6 @@ export function Workspace({
         <div className="workspace-panel-stage">
           <WorkspaceWidgetCard
             widget={focusedWidget}
-            showChrome={panelKind === 'browser'}
             {...widgetRuntimeProps}
           />
         </div>
@@ -2524,7 +2773,6 @@ export function Workspace({
                 setPresetMenuOpen(false);
                 setPermissionMenuOpen(false);
                 setHudMenuOpen(false);
-                setAgentMenuOpen(false);
                 setWidgetMenuOpen((open) => !open);
               }}
             />
@@ -2557,7 +2805,6 @@ export function Workspace({
                 setWidgetMenuOpen(false);
                 setPermissionMenuOpen(false);
                 setHudMenuOpen(false);
-                setAgentMenuOpen(false);
                 setPresetMenuOpen((open) => !open);
               }}
             />
@@ -2673,7 +2920,6 @@ export function Workspace({
                   setWidgetMenuOpen(false);
                   setPresetMenuOpen(false);
                   setHudMenuOpen(false);
-                  setAgentMenuOpen(false);
                   setPermissionMenuOpen((open) => !open);
                 }}
               />
@@ -2737,10 +2983,11 @@ export function Workspace({
             </WorkspaceTopBarGroup>
           ) : null}
           {!isWorkspaceExtension ? (
-            <WorkspaceTopBarGroup id="visuals" label="Visual controls">
+            <WorkspaceTopBarGroup id="hermes-hud" label="Hermes HUD controls">
             <div className="workspace-widget-menu workspace-hud-menu" ref={hudMenuRef}>
               <WorkspaceTopBarButton
-                label="HUD"
+                label="Hermes HUD"
+                active={hermesHudRuntime.listening}
                 className="workspace-widget-menu-trigger"
                 icon={<WorkspaceTopBarGlyph name="hud" />}
                 aria-expanded={hudMenuOpen}
@@ -2749,16 +2996,51 @@ export function Workspace({
                   setWidgetMenuOpen(false);
                   setPresetMenuOpen(false);
                   setPermissionMenuOpen(false);
-                  setAgentMenuOpen(false);
                   setHudMenuOpen((open) => !open);
                 }}
               />
               {hudMenuOpen ? (
-                <div className="workspace-widget-menu-panel workspace-hud-menu-panel" role="menu" aria-label="HUD menu">
+                <div className="workspace-widget-menu-panel workspace-hud-menu-panel" role="menu" aria-label="Hermes HUD menu">
                   <div className="workspace-permission-head">
-                    <strong>{getWorkspaceHudMessage('hud.design', hudLocale)}</strong>
-                    <small>{workspaceHudSignals.sourceLabel} / {workspaceHudSignals.connection}</small>
+                    <strong>Hermes HUD</strong>
+                    <small>{workspaceHudSignals.agent.model} / {workspaceHudSignals.agent.connection}</small>
                   </div>
+                  <div className="workspace-hud-menu-actions">
+                    <WorkspaceButton
+                      variant="compact"
+                      className="workspace-launch-button workspace-head-action"
+                      onClick={() => {
+                        setHudMenuOpen(false);
+                        openWorkspaceWidget('hermes-hud');
+                      }}
+                    >
+                      Open Hermes HUD
+                    </WorkspaceButton>
+                    <WorkspaceButton
+                      variant="compact"
+                      className="workspace-launch-button workspace-head-action"
+                      onClick={() => {
+                        setHudMenuOpen(false);
+                        openWorkspaceWidget('agent-control');
+                      }}
+                    >
+                      Open Agent Control
+                    </WorkspaceButton>
+                  </div>
+                  <div className="workspace-menu-section-label">Hermes voice</div>
+                  <label className="workspace-hud-toggle-row">
+                    <span>
+                      <strong>Hermes listening</strong>
+                      <small>{hermesHudRuntime.listening ? 'voice capture active' : hermesHudRuntime.status}</small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={hermesHudRuntime.listening}
+                      disabled={activeRole === 'guest'}
+                      onChange={hermesHudRuntime.toggleListening}
+                    />
+                  </label>
+                  <div className="workspace-menu-section-label">HUD behavior</div>
                   <label className="workspace-hud-toggle-row">
                     <span>
                       <strong>Center HUD</strong>
@@ -2768,6 +3050,28 @@ export function Workspace({
                       type="checkbox"
                       checked={hudSettings.centerHudVisible}
                       onChange={(event) => updateHudSettings({ centerHudVisible: event.target.checked })}
+                    />
+                  </label>
+                  <label className="workspace-hud-toggle-row">
+                    <span>
+                      <strong>{getWorkspaceHudMessage('hud.voiceReaction', hudLocale)}</strong>
+                      <small>{voiceState.source} / {voiceState.status}</small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={hudSettings.voiceReactionEnabled}
+                      onChange={(event) => updateHudSettings({ voiceReactionEnabled: event.target.checked })}
+                    />
+                  </label>
+                  <label className="workspace-hud-toggle-row">
+                    <span>
+                      <strong>{getWorkspaceHudMessage('hud.audioMeter', hudLocale)}</strong>
+                      <small>{voiceState.source === 'microphone' ? `${voiceState.status}` : 'requires microphone permission'}</small>
+                    </span>
+                    <input
+                      type="checkbox"
+                      checked={hudSettings.audioMeterEnabled}
+                      onChange={(event) => updateHudSettings({ audioMeterEnabled: event.target.checked })}
                     />
                   </label>
                   <div className="workspace-menu-section-label">{getWorkspaceHudMessage('hud.design', hudLocale)}</div>
@@ -2802,68 +3106,6 @@ export function Workspace({
               ) : null}
             </div>
             {topBarVisualSlot}
-            </WorkspaceTopBarGroup>
-          ) : null}
-          {!isWorkspaceExtension ? (
-            <WorkspaceTopBarGroup id="operator" label="Agent controls">
-            <div className="workspace-widget-menu workspace-agent-menu" ref={agentMenuRef}>
-              <WorkspaceTopBarButton
-                label="Agent"
-                className="workspace-widget-menu-trigger"
-                icon={<WorkspaceTopBarGlyph name="agent" />}
-                aria-expanded={agentMenuOpen}
-                aria-haspopup="menu"
-                onClick={() => {
-                  setWidgetMenuOpen(false);
-                  setPresetMenuOpen(false);
-                  setPermissionMenuOpen(false);
-                  setHudMenuOpen(false);
-                  setAgentMenuOpen((open) => !open);
-                }}
-              />
-              {agentMenuOpen ? (
-                <div className="workspace-widget-menu-panel workspace-agent-menu-panel" role="menu" aria-label="Agent menu">
-                  <div className="workspace-permission-head">
-                    <strong>{workspaceHudSignals.agent.name}</strong>
-                    <small>{workspaceHudSignals.agent.model} / {workspaceHudSignals.agent.connection}</small>
-                  </div>
-                  <label className="workspace-hud-toggle-row">
-                    <span>
-                      <strong>{getWorkspaceHudMessage('hud.voiceReaction', hudLocale)}</strong>
-                      <small>{voiceState.source} / {voiceState.status}</small>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={hudSettings.voiceReactionEnabled}
-                      onChange={(event) => updateHudSettings({ voiceReactionEnabled: event.target.checked })}
-                    />
-                  </label>
-                  <label className="workspace-hud-toggle-row">
-                    <span>
-                      <strong>{getWorkspaceHudMessage('hud.audioMeter', hudLocale)}</strong>
-                      <small>{voiceState.source === 'microphone' ? `${voiceState.status}` : 'requires microphone permission'}</small>
-                    </span>
-                    <input
-                      type="checkbox"
-                      checked={hudSettings.audioMeterEnabled}
-                      onChange={(event) => updateHudSettings({ audioMeterEnabled: event.target.checked })}
-                    />
-                  </label>
-                  <div className="workspace-hud-menu-actions">
-                    <WorkspaceButton
-                      variant="compact"
-                      className="workspace-launch-button workspace-head-action"
-                      onClick={() => {
-                        setAgentMenuOpen(false);
-                        openWorkspaceWidget('agent-control');
-                      }}
-                    >
-                      {getWorkspaceHudMessage('hud.agentControl', hudLocale)}
-                    </WorkspaceButton>
-                  </div>
-                </div>
-              ) : null}
-            </div>
             {topBarOperatorSlot ?? topBarSlot}
             </WorkspaceTopBarGroup>
           ) : (

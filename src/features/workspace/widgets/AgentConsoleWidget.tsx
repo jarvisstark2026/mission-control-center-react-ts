@@ -33,9 +33,9 @@ const riskLabels: Record<CommandRisk, string> = {
 };
 
 function getDefaultObjective(role: ShellRole) {
-  if (role === 'support') return 'Check the media and network status, then propose a safe diagnostic action.';
-  if (role === 'home') return 'Prepare the evening home routine and explain what will happen before approval.';
-  return 'Review current mission state and propose the next useful action.';
+  if (role === 'support') return 'Check the media and network status, then stage a safe diagnostic proposal.';
+  if (role === 'home') return 'Prepare the evening home routine as a proposal with expected result and risk.';
+  return 'Review current mission state and stage the next useful proposal.';
 }
 
 function getDefaultScope(role: ShellRole): AgentTaskScope {
@@ -90,14 +90,14 @@ export function AgentConsoleWidget({
   const canSubmit = canSubmitAgentTask(role, { scope, risk });
   const canRetryLastRequest = tasking.state.lastRequest ? canSubmitAgentTask(role, tasking.state.lastRequest) : false;
   const gatewayDisplay = getAgentGatewayDisplay(tasking.gatewayMode, activeConnector);
-  const primarySubmitLabel = gatewayDisplay.state === 'ready' ? 'Ask agent' : 'Stage local proposal';
+  const primarySubmitLabel = gatewayDisplay.state === 'ready' ? 'Stage bridge proposal' : 'Stage local proposal';
   const commandById = new Map(missionControl.state.commands.map((command) => [command.id, command]));
   const proposalByCommandId = new Map(tasking.state.proposals.map((proposal) => [proposal.commandId, proposal]));
   const conversationEvidenceInput = createAgentConversationEvidenceInput(
-    selectedGoal ? `Agent conversation: ${selectedGoal.title}` : 'Agent conversation snapshot',
+    selectedGoal ? `Agent proposals: ${selectedGoal.title}` : 'Agent proposal snapshot',
     'agent-console-widget',
     [
-      `${tasking.state.messages.length} messages`,
+      `${tasking.state.messages.length} proposal records`,
       `${tasking.state.proposals.length} proposals`,
       `${targetAgent.name} / ${gatewayDisplay.label}`,
       selectedGoal ? `goal ${selectedGoal.title}` : 'unlinked',
@@ -168,8 +168,8 @@ export function AgentConsoleWidget({
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame agent-console-compose"
-        eyebrow="conversation"
-        title="operator thread"
+        eyebrow="proposal request"
+        title="stage task proposal"
         meta={tasking.state.status}
       >
         <div className="agent-console-gateway-strip" data-state={gatewayDisplay.state}>
@@ -214,12 +214,12 @@ export function AgentConsoleWidget({
           </EvidenceBlock>
         ) : null}
         <label className="agent-console-field">
-          <span>message / task</span>
+          <span>proposal request</span>
           <textarea
             value={objective}
             rows={4}
             onChange={(event) => setObjective(event.currentTarget.value)}
-            aria-label="Agent message or task"
+            aria-label="Agent proposal request"
           />
         </label>
         <div className="agent-console-selector-row" role="group" aria-label="Agent task scope">
@@ -274,11 +274,11 @@ export function AgentConsoleWidget({
 
       <WorkspaceSectionFrame
         className="mission-control-list-frame"
-        eyebrow="conversation"
-        title="thread and command cards"
-        meta={`${tasking.state.messages.length} messages`}
+        eyebrow="proposal history"
+        title="task records and command cards"
+        meta={`${tasking.state.messages.length} records`}
       >
-        <div className="mission-control-compact-list" role="list" aria-label="Agent console conversation">
+        <div className="mission-control-compact-list" role="list" aria-label="Agent proposal history">
           {tasking.state.messages.slice(0, 7).map((message) => (
             <div className="mission-control-row" key={message.id} role="listitem" data-state={message.author}>
               <span>{message.author}</span>
@@ -323,7 +323,7 @@ export function AgentConsoleWidget({
         operationalOs={operationalOs}
         evidence={conversationEvidenceInput}
         disabled={tasking.state.messages.length === 0}
-        disabledReason={tasking.state.messages.length ? `${tasking.state.messages.length} messages / ${tasking.state.proposals.length} proposals` : 'Ask or stage a proposal before attaching the conversation.'}
+        disabledReason={tasking.state.messages.length ? `${tasking.state.messages.length} records / ${tasking.state.proposals.length} proposals` : 'Stage a proposal before attaching the record.'}
       />
     </WorkspaceContentShell>
   );

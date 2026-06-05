@@ -4,6 +4,9 @@ param(
   [string]$HermesApiBaseUrl = "http://127.0.0.1:8642/v1",
   [string]$HermesModel = "hermes-agent",
   [string]$HermesApiKey = "",
+  [string]$VoiceTranscriptionUrl = "",
+  [string]$VoiceTranscriptionModel = "",
+  [string]$VoiceTranscriptionApiKey = "",
   [switch]$OpenFirewall,
   [string]$NodePath = ""
 )
@@ -60,12 +63,22 @@ $env:HERMES_MODEL = $HermesModel
 if ($HermesApiKey) {
   $env:HERMES_API_KEY = $HermesApiKey
 }
+if ($VoiceTranscriptionUrl) {
+  $env:HERMES_VOICE_TRANSCRIPTION_URL = $VoiceTranscriptionUrl
+}
+if ($VoiceTranscriptionModel) {
+  $env:HERMES_VOICE_TRANSCRIPTION_MODEL = $VoiceTranscriptionModel
+}
+if ($VoiceTranscriptionApiKey) {
+  $env:HERMES_VOICE_TRANSCRIPTION_API_KEY = $VoiceTranscriptionApiKey
+}
 
 Write-Host "Mission Control real Hermes bridge starting"
 Write-Host "Bind:       $BindHost`:$BridgePort"
 Write-Host "Hermes API: $HermesApiBaseUrl"
 Write-Host "Model:      $HermesModel"
 Write-Host "API key:    $(if ($HermesApiKey) { 'configured' } else { 'not configured' })"
+Write-Host "Voice:      $(if ($VoiceTranscriptionUrl) { $VoiceTranscriptionUrl } else { 'not configured' })"
 Write-Host "Node:       $nodeVersion ($node)"
 Write-Host ""
 Write-Host "Mission Control status: http://127.0.0.1:$BridgePort/status"

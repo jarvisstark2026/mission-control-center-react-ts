@@ -56,14 +56,14 @@ The default port is `8642`. Change the port in Agent Control if Hermes is listen
 For another PC, verify from the Mission Control PC:
 
 ```powershell
-Invoke-RestMethod http://192.0.2.64:8642/v1/models
-Invoke-RestMethod http://198.51.100.119:8642/v1/models
+Invoke-RestMethod http://<lan-host-or-ip>:8642/v1/models
+Invoke-RestMethod http://<tailscale-host-or-ip>:8642/v1/models
 ```
 
 If `API_SERVER_KEY` is set, include the bearer token:
 
 ```powershell
-Invoke-RestMethod http://192.0.2.64:8642/v1/models -Headers @{ Authorization = "Bearer <user-secret>" }
+Invoke-RestMethod http://<lan-host-or-ip>:8642/v1/models -Headers @{ Authorization = "Bearer <user-secret>" }
 ```
 
 Use the LAN address if it works. Use Tailscale if LAN routing or firewall rules are harder.
@@ -73,7 +73,7 @@ Use the LAN address if it works. Use Tailscale if LAN routing or firewall rules 
 1. Open `Agent Control`.
 2. Open `Bridge setup`.
 3. Choose `Same PC`, `LAN PC`, or `Tailscale`.
-4. For LAN/Tailscale, enter only the host or IP, for example `192.0.2.64` or `198.51.100.119`.
+4. For LAN/Tailscale, enter only the host or IP, for example `<lan-host-or-ip>` or `<tailscale-host-or-ip>`.
 5. Set `Hermes API scheme` and `Hermes API port`; keep `HTTP` and `8642` unless Hermes is listening elsewhere.
 6. Paste the `Hermes API key` if Hermes requires bearer auth. The installed desktop app stores it through the desktop secret adapter; browser preview stores it locally for development only.
 7. Click `Save settings`.

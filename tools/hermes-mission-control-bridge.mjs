@@ -7,6 +7,14 @@ const hermesApiBase = (process.env.HERMES_API_BASE_URL || 'http://127.0.0.1:8642
 const hermesApiKey = process.env.HERMES_API_KEY || '';
 const hermesModel = process.env.HERMES_MODEL || 'hermes-agent';
 const hermesTimeoutMs = Number.parseInt(process.env.HERMES_TIMEOUT_MS || '120000', 10);
+const voiceTranscriptionUrl = (process.env.HERMES_VOICE_TRANSCRIPTION_URL || process.env.VOICE_TRANSCRIPTION_URL || '').trim();
+const voiceTranscriptionModel = (process.env.HERMES_VOICE_TRANSCRIPTION_MODEL || process.env.VOICE_TRANSCRIPTION_MODEL || '').trim();
+const voiceTranscriptionApiKey = process.env.HERMES_VOICE_TRANSCRIPTION_API_KEY || process.env.VOICE_TRANSCRIPTION_API_KEY || '';
+const voiceTranscriptionTimeoutMs = Number.parseInt(process.env.HERMES_VOICE_TRANSCRIPTION_TIMEOUT_MS || process.env.VOICE_TRANSCRIPTION_TIMEOUT_MS || '20000', 10);
+const voiceTranscriptionMimeTypes = (process.env.HERMES_VOICE_TRANSCRIPTION_MIME_TYPES || process.env.VOICE_TRANSCRIPTION_MIME_TYPES || 'audio/webm,audio/wav,audio/mpeg,audio/mp4')
+  .split(',')
+  .map((item) => item.trim())
+  .filter(Boolean);
 const clients = new Set();
 let requestCount = 0;
 let windowStartedAt = new Date().toISOString();
@@ -90,6 +98,7 @@ function createTaskFailurePayload(error) {
     provider: 'hermes',
     hermesApiBaseUrl: hermesApiBase,
     hermesStatusCode: taskError.statusCode ?? null,
+    providerStatusCode: taskError.statusCode ?? null,
     payloadSummary: taskError.payloadSummary ?? null,
   };
 }
@@ -218,9 +227,16 @@ function createBridgeStatus() {
     activeEngine: `Hermes Agent API ${hermesModel}`,
     activeAgentId: 'hermes-coordinator',
     currentTask: connected
-      ? 'Connected to Hermes Agent and ready to stage Mission Control proposals.'
+      ? 'Connected to Hermes Agent for HUD chat, direct controls, layout planning, and gated proposal workflows.'
       : `Waiting for Hermes API at ${hermesApiBase}. ${lastHermesStatus.detail}`,
-    capabilities: ['status', 'events', 'tasks', 'workspace-layout-control', 'mission-control-events', 'json-surface', 'hermes-chat-completions'],
+    capabilities: ['status', 'events', 'tasks', 'chat', 'voice-transcription', 'workspace-layout-control', 'mission-control-events', 'json-surface', 'hermes-chat-completions'],
+    endpointStatus: {
+      status: 'reachable',
+      chat: connected ? 'ready' : 'offline',
+      voice: voiceTranscriptionUrl ? 'configured' : 'not-configured',
+      tasks: lastTaskFailure ? 'failing' : connected ? 'ready' : 'offline',
+      layout: connected ? 'ready' : 'offline',
+    },
     lastSeenAt: connected ? timestamp : lastHermesStatus.checkedAt || timestamp,
     agents: [
       {
@@ -267,7 +283,7 @@ function createBridgeStatus() {
         category: 'commands',
         level: 'suggest',
         risk: 'medium',
-        description: 'Can create pending Command Inbox proposals, but cannot execute actions directly.',
+        description: 'Can create pending Command Inbox proposals through /tasks. Hermes HUD direct UI actions use the separate audited /chat lane.',
         visibleTo: ['admin', 'support', 'home'],
       },
     ],
@@ -325,6 +341,213 @@ function extractHermesContent(payload) {
     }
   }
   return '';
+}
+
+function normalizeChatMessages(request) {
+  const records = Array.isArray(request?.messages) ? request.messages : [];
+  const messages = records
+    .map((message) => {
+      if (!message || typeof message !== 'object') return null;
+      const role = message.role === 'assistant' ? 'assistant' : 'user';
+      const content = typeof message.content === 'string'
+        ? message.content.trim()
+        : typeof message.body === 'string'
+          ? message.body.trim()
+          : '';
+      return content ? { role, content } : null;
+    })
+    .filter(Boolean)
+    .slice(-12);
+
+  if (typeof request?.message === 'string' && request.message.trim()) {
+    messages.push({ role: 'user', content: request.message.trim() });
+  }
+
+  return messages;
+}
+
+function normalizeDirectActions(value) {
+  if (!Array.isArray(value)) return [];
+  const allowedTypes = new Set(['widget.open', 'widget.focus', 'widget.minimize', 'widget.close', 'widget.updateState', 'hud.update', 'liveLayout.set', 'home.action']);
+  return value
+    .filter((action) => action && typeof action === 'object' && allowedTypes.has(action.type))
+    .slice(0, 8);
+}
+
+function normalizeHermesChatOutput(content) {
+  try {
+    const parsed = extractJsonFromText(content);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return {
+        body: typeof parsed.reply === 'string'
+          ? parsed.reply.trim()
+          : typeof parsed.message === 'string'
+            ? parsed.message.trim()
+            : content.trim(),
+        directActions: normalizeDirectActions(parsed.directActions || parsed.actions),
+      };
+    }
+  } catch {
+    // Plain prose is valid chat output.
+  }
+  return { body: content.trim(), directActions: [] };
+}
+
+function createDirectChatPrompt(request) {
+  const messages = normalizeChatMessages(request);
+  if (!messages.length) {
+    throw new BridgeTaskError('invalid_chat_request', 'Mission Control bridge received an empty Hermes chat request.', { httpStatus: 400 });
+  }
+
+  return [
+    {
+      role: 'system',
+      content:
+        'You are Hermes inside Mission Control HUD. You may chat normally and may request direct Mission Control UI actions. Return JSON only with this schema: {"reply":"short helpful response","directActions":[{"type":"widget.open|widget.focus|widget.minimize|widget.close","widgetKind":"goals"},{"type":"widget.updateState","widgetKind":"goals","patch":{"open":true,"pinned":false,"title":"Short title"}},{"type":"hud.update","settings":{"colorMode":"cyan-amber"}},{"type":"liveLayout.set","placement":"center","enabled":true},{"type":"home.action","actionId":"...","targetId":"...","payload":{}}]}. Do not request shell commands, arbitrary native executable launches, or actions outside this schema.',
+    },
+    ...messages,
+  ];
+}
+
+async function createChatResult(request) {
+  let response;
+  try {
+    response = await fetchWithTimeout(`${hermesApiBase}/chat/completions`, {
+      method: 'POST',
+      headers: createHeaders({ 'content-type': 'application/json' }),
+      body: JSON.stringify({
+        model: hermesModel,
+        stream: false,
+        messages: createDirectChatPrompt(request),
+        response_format: { type: 'json_object' },
+      }),
+    }, 60_000);
+  } catch (error) {
+    throw new BridgeTaskError('hermes_chat_http_error', `Hermes chat failed before a response was received: ${error instanceof Error ? error.message : 'unknown error'}`);
+  }
+
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new BridgeTaskError(response.status === 401 || response.status === 403 ? 'hermes_auth_failed' : 'hermes_chat_http_error', `Hermes chat returned ${response.status}`, {
+      statusCode: response.status,
+      payloadSummary: safePayloadPreview(body),
+    });
+  }
+
+  const rawBody = await response.text();
+  let payload;
+  try {
+    payload = rawBody.trim() ? JSON.parse(rawBody) : null;
+  } catch (error) {
+    throw new BridgeTaskError('hermes_invalid_json', `Hermes chat returned non-JSON transport payload: ${error instanceof Error ? error.message : 'invalid JSON'}`, {
+      statusCode: response.status,
+      payloadSummary: safePayloadPreview(rawBody),
+    });
+  }
+
+  const content = extractHermesContent(payload);
+  if (!content) {
+    throw new BridgeTaskError('hermes_unsupported_response', 'Hermes chat response did not include assistant text.', {
+      statusCode: response.status,
+      payloadSummary: schemaSummary(payload),
+    });
+  }
+
+  const output = normalizeHermesChatOutput(content);
+  const timestamp = nowIso();
+  return {
+    message: {
+      id: `hermes-chat-${Date.now().toString(36)}`,
+      role: 'assistant',
+      body: output.body || 'Hermes completed the request.',
+      timestamp,
+    },
+    directActions: output.directActions,
+  };
+}
+
+async function createVoiceTranscriptionResult(request) {
+  if (typeof request?.transcript === 'string' || typeof request?.text === 'string') {
+    return {
+      transcript: String(request.transcript || request.text).trim(),
+      confidence: 1,
+      language: 'local',
+    };
+  }
+  if (!voiceTranscriptionUrl) {
+    throw new BridgeTaskError(
+      'voice_not_configured',
+      'Hermes voice transcription is not configured on the Mission Control bridge. Typed chat remains available.',
+      { httpStatus: 503 },
+    );
+  }
+  const audioBase64 = typeof request?.audioBase64 === 'string' ? request.audioBase64.trim() : '';
+  const mimeType = typeof request?.mimeType === 'string' && request.mimeType.trim() ? request.mimeType.trim() : 'audio/webm';
+  if (!audioBase64) {
+    throw new BridgeTaskError('invalid_voice_request', 'Mission Control bridge received a voice request without audioBase64.', { httpStatus: 400 });
+  }
+  if (voiceTranscriptionMimeTypes.length && !voiceTranscriptionMimeTypes.includes(mimeType)) {
+    throw new BridgeTaskError(
+      'voice_unsupported_mime_type',
+      `Voice transcription does not accept ${mimeType}.`,
+      { httpStatus: 400, payloadSummary: `supported: ${voiceTranscriptionMimeTypes.join(', ')}` },
+    );
+  }
+
+  let response;
+  try {
+    response = await fetchWithTimeout(voiceTranscriptionUrl, {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        ...(voiceTranscriptionApiKey ? { authorization: `Bearer ${voiceTranscriptionApiKey}` } : {}),
+      },
+      body: JSON.stringify({
+        audioBase64,
+        mimeType,
+        model: voiceTranscriptionModel || undefined,
+        recordedAt: request?.recordedAt || nowIso(),
+        source: 'mission-control-hermes-hud',
+      }),
+    }, voiceTranscriptionTimeoutMs);
+  } catch (error) {
+    throw new BridgeTaskError('voice_http_error', `Voice transcription failed before a response was received: ${error instanceof Error ? error.message : 'unknown error'}`);
+  }
+
+  const rawBody = await response.text().catch(() => '');
+  let payload = null;
+  try {
+    payload = rawBody.trim() ? JSON.parse(rawBody) : null;
+  } catch {
+    throw new BridgeTaskError('voice_invalid_json', 'Voice transcription returned non-JSON.', {
+      statusCode: response.status,
+      payloadSummary: safePayloadPreview(rawBody),
+    });
+  }
+  if (!response.ok) {
+    throw new BridgeTaskError(response.status === 401 || response.status === 403 ? 'voice_auth_failed' : 'voice_http_error', `Voice transcription returned ${response.status}`, {
+      statusCode: response.status,
+      payloadSummary: safePayloadPreview(rawBody),
+    });
+  }
+
+  const transcript = typeof payload?.transcript === 'string'
+    ? payload.transcript.trim()
+    : typeof payload?.text === 'string'
+      ? payload.text.trim()
+      : '';
+  if (!transcript) {
+    throw new BridgeTaskError('voice_empty_transcript', 'Voice transcription returned no transcript.', {
+      statusCode: response.status,
+      payloadSummary: schemaSummary(payload),
+    });
+  }
+  return {
+    transcript,
+    confidence: typeof payload?.confidence === 'number' ? payload.confidence : undefined,
+    language: typeof payload?.language === 'string' ? payload.language : undefined,
+  };
 }
 
 async function askHermes(request) {
@@ -580,7 +803,7 @@ function createSampleJson() {
       hermesApiBase,
       model: hermesModel,
       status: lastHermesStatus.ok ? 'connected' : 'offline',
-      commandGate: 'Command Inbox required',
+      commandGate: 'Proposal workflows use Command Inbox; Hermes HUD direct actions are audited direct controls.',
       generatedAt: nowIso(),
     },
   };
@@ -699,6 +922,47 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/chat') {
+    requestCount += 1;
+    let body;
+    try {
+      body = await readJsonBody(request);
+    } catch (error) {
+      const taskError = new BridgeTaskError(
+        'invalid_chat_request',
+        `Mission Control bridge received invalid chat JSON: ${error instanceof Error ? error.message : 'invalid JSON'}`,
+        { httpStatus: 400 },
+      );
+      sendJson(response, taskError.httpStatus, createTaskFailurePayload(taskError));
+      return;
+    }
+
+    try {
+      await checkHermes();
+      if (!lastHermesStatus.ok) {
+        throw new BridgeTaskError('hermes_chat_http_error', `Hermes API is offline: ${lastHermesStatus.detail}`);
+      }
+      sendJson(response, 200, await createChatResult(body));
+    } catch (error) {
+      const taskError = rememberTaskFailure(error);
+      sendJson(response, taskError.httpStatus, createTaskFailurePayload(taskError));
+    }
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/voice/transcribe') {
+    try {
+      const body = await readJsonBody(request);
+      sendJson(response, 200, await createVoiceTranscriptionResult(body));
+    } catch (error) {
+      const taskError = error instanceof BridgeTaskError
+        ? error
+        : new BridgeTaskError('voice_unavailable', error instanceof Error ? error.message : 'Voice transcription failed.', { httpStatus: 503 });
+      sendJson(response, taskError.httpStatus, createTaskFailurePayload(taskError));
+    }
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/workspace/layout/plan') {
     let body;
     try {
@@ -749,7 +1013,7 @@ const server = http.createServer(async (request, response) => {
 
   sendJson(response, 404, {
     error: 'Not found',
-    endpoints: ['/status', '/events', '/tasks', '/workspace/layout/plan', '/emit', '/sample-json'],
+    endpoints: ['/status', '/events', '/tasks', '/chat', '/voice/transcribe', '/workspace/layout/plan', '/emit', '/sample-json'],
   });
 });
 
@@ -758,7 +1022,7 @@ server.listen(port, host, async () => {
   console.log(`Mission Control Hermes bridge listening at http://${host}:${port}`);
   console.log(`Hermes API: ${hermesApiBase}`);
   console.log(`Model: ${hermesModel}`);
-  console.log('Endpoints: GET /status, GET /events, POST /tasks, POST /workspace/layout/plan, POST /emit, GET /sample-json');
+  console.log('Endpoints: GET /status, GET /events, POST /tasks, POST /chat, POST /voice/transcribe, POST /workspace/layout/plan, POST /emit, GET /sample-json');
 });
 
 const heartbeat = setInterval(async () => {

@@ -298,7 +298,7 @@ function transitionCommand(state: MissionControlState, commandId: string, action
         'queued',
         'command-gateway',
         decidedAt,
-        'Command accepted by the browser gateway queue.',
+        'Command accepted by the local gateway queue.',
       ),
     );
   }

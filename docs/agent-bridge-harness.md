@@ -76,8 +76,8 @@ For a real installed-app Hermes setup, prefer the built-in Agent Control modes i
 
 ```text
 Same PC:   http://127.0.0.1:8642/v1
-LAN PC:    http://192.0.2.64:8642/v1
-Tailscale: http://198.51.100.119:8642/v1
+LAN PC:    http://<lan-host-or-ip>:8642/v1
+Tailscale: http://<tailscale-host-or-ip>:8642/v1
 ```
 
 Use the Agent Control port and API key fields if Hermes is listening on a different HTTP port or requires `API_SERVER_KEY`.

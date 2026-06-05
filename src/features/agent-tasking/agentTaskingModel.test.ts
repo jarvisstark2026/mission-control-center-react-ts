@@ -175,7 +175,7 @@ describe('agentTaskingModel', () => {
         error: 'Hermes API returned JSON, but Mission Control could not find assistant text in an OpenAI-compatible field.',
         errorCode: 'hermes_unsupported_response',
         provider: 'hermes',
-        hermesApiBaseUrl: 'http://192.0.2.64:8642/v1',
+        hermesApiBaseUrl: 'http://192.168.1.20:8642/v1',
         hermesStatusCode: 200,
         payloadSummary: 'top-level keys: status, result',
       }), {

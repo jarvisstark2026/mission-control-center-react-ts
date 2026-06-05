@@ -40,11 +40,11 @@ test('operational core widgets launch and use local live data', async ({ page })
   await openWidget(page, 'Command inbox');
   await expect(page.locator('.workspace-widget.kind-command-inbox .workspace-status-strip').first()).toBeVisible();
 
-  await openWidget(page, 'Agent console');
+  await openWidget(page, 'Agent proposals');
   await expect(page.locator('.workspace-widget.kind-agent-console .workspace-status-strip').first()).toBeVisible();
   await page.getByRole('button', { name: 'Stage local proposal' }).click();
   await expect(page.getByText(/prepared a gated command proposal/i)).toBeVisible();
-  await expect(page.getByText(/Review current mission state and propose/i).first()).toBeVisible();
+  await expect(page.getByText(/Review current mission state and stage/i).first()).toBeVisible();
   await clickControl(page.locator('.workspace-widget.kind-agent-console').getByRole('button', { name: 'Attach evidence' }));
 
   await openWidget(page, 'Command inbox');
@@ -67,6 +67,8 @@ test('operational core widgets launch and use local live data', async ({ page })
   await openWidget(page, 'Agent control');
   await expect(page.getByText('Mission Control bridge').first()).toBeVisible();
   await expect(page.getByText('Hermes API').first()).toBeVisible();
+  await expect(page.getByText('/voice/transcribe').first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Run live Hermes validation' })).toBeVisible();
   await expect(page.getByText(/connection cockpit/i)).toHaveCount(0);
   await expect(page.getByText(/Mission Control Center/i)).toHaveCount(0);
   await expect(page.getByText(/Ask Jarvis/i)).toHaveCount(0);
@@ -75,6 +77,10 @@ test('operational core widgets launch and use local live data', async ({ page })
   await page.getByRole('button', { name: 'Agents' }).click();
   await expect(page.getByText('Mission Control Coordinator').last()).toBeVisible();
   await expect(page.getByText('Workflow Agent').last()).toBeVisible();
+
+  await openWidget(page, 'Hermes HUD');
+  await expect(page.locator('.workspace-widget.kind-hermes-hud .workspace-status-strip').first()).toBeVisible();
+  await expect(page.getByLabel('Hermes quick chat')).toBeVisible();
 
   await openWidget(page, 'Home systems');
   await expect(page.getByText(/home backend not connected/i).first()).toBeVisible();
@@ -117,7 +123,8 @@ test('guest access can read command inbox but cannot approve commands', async ({
 
   await openWidgetMenu(page);
   await expect(page.getByRole('menuitem', { name: 'Agent control' })).toHaveCount(0);
-  await expect(page.getByRole('menuitem', { name: 'Agent console' })).toHaveCount(0);
+  await expect(page.getByRole('menuitem', { name: 'Agent proposals' })).toHaveCount(0);
+  await expect(page.getByRole('menuitem', { name: 'Hermes HUD' })).toHaveCount(0);
   await expect(page.getByRole('menuitem', { name: 'Home systems' })).toBeVisible();
   await page.getByRole('menuitem', { name: 'Home systems' }).click();
   await expect(page.getByText('This access scope can monitor Home Systems but cannot stage home actions.')).toBeVisible();
@@ -134,14 +141,7 @@ test('widgets prioritize primary work surfaces before secondary panels', async (
   await expectAbove(liveTvWidget.locator('.live-tv-controls-section'), liveTvWidget.locator('.workspace-evidence-attach-panel'));
   await expectAbove(liveTvWidget.locator('.live-tv-player-section'), liveTvWidget.locator('.live-tv-source-section'));
 
-  await openWidget(page, 'Browser');
-  const browserWidget = page.locator('.workspace-widget.kind-browser');
-  await ensureWidgetOpen(browserWidget);
-  await expectAbove(browserWidget.locator('.browser-address-section'), browserWidget.locator('.browser-frame-section'));
-  await expectAbove(browserWidget.locator('.browser-frame-section'), browserWidget.locator('.browser-history-section'));
-  await expectAbove(browserWidget.locator('.browser-frame-section'), browserWidget.locator('.workspace-evidence-attach-panel'));
-
-  await openWidget(page, 'Agent console');
+  await openWidget(page, 'Agent proposals');
   const agentConsoleWidget = page.locator('.workspace-widget.kind-agent-console');
   await ensureWidgetOpen(agentConsoleWidget);
   await expectAbove(agentConsoleWidget.locator('.agent-console-compose'), agentConsoleWidget.locator('.workspace-evidence-attach-panel'));
@@ -212,7 +212,7 @@ test('widget fill control toggles live workspace geometry and restore state', as
   expect(restoredFrame).toEqual(originalFrame);
 });
 
-test('local productivity widgets persist useful browser-only state', async ({ page }) => {
+test('local productivity widgets persist useful local state', async ({ page }) => {
   await page.goto('/?role=admin');
 
   const scheduleWidget = page.locator('.workspace-widget.kind-schedule');
@@ -257,14 +257,6 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
 
   await openWidget(page, 'Goals');
   await expect(page.locator('.workspace-widget.kind-goals').getByText(/evidence/i).first()).toBeVisible();
-
-  const browserWidget = page.locator('.workspace-widget.kind-browser');
-  await ensureWidgetOpen(browserWidget);
-  await browserWidget.getByLabel('Browser URL').fill('openai.com');
-  await clickControl(browserWidget.getByRole('button', { name: 'Go' }));
-  await clickControl(browserWidget.getByRole('button', { name: 'Save bookmark' }));
-  await expect(browserWidget.getByText('openai.com').first()).toBeVisible();
-  await clickControl(browserWidget.getByRole('button', { name: 'Attach evidence' }));
 
   const tradingWidget = page.locator('.workspace-widget.kind-trading-graph');
   await ensureWidgetOpen(tradingWidget);
@@ -364,8 +356,6 @@ test('local productivity widgets persist useful browser-only state', async ({ pa
   await expect(page.locator('.workspace-widget.kind-sheet').getByLabel('Q1 row 1')).toHaveValue('42.5');
   await ensureWidgetOpen(page.locator('.workspace-widget.kind-slides'));
   await expect(page.locator('.workspace-widget.kind-slides').getByLabel('Slide title')).toHaveValue('E2E slide');
-  await ensureWidgetOpen(page.locator('.workspace-widget.kind-browser'));
-  await expect(page.locator('.workspace-widget.kind-browser').getByText('openai.com').first()).toBeVisible();
   await ensureWidgetOpen(page.locator('.workspace-widget.kind-watch-video'));
   await expect(page.locator('.workspace-widget.kind-watch-video').getByText('E2E MP4').first()).toBeVisible();
   await ensureWidgetOpen(page.locator('.workspace-widget.kind-map'));
@@ -415,7 +405,7 @@ test('layout admin saves modes per workspace and filters guest widgets', async (
   await expect(page.locator('.workspace-widget.kind-home-systems')).toHaveCount(0);
 });
 
-test('browser workspace extension opens as a loaded workspace window', async ({ page }) => {
+test('workspace extension opens as a loaded workspace window', async ({ page }) => {
   await page.goto('/?role=admin');
 
   const [extensionPage] = await Promise.all([

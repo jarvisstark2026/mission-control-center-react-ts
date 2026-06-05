@@ -65,8 +65,9 @@ describe('App', () => {
     expect(screen.getByRole('group', { name: /layout controls/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /widget launch controls/i })).toBeInTheDocument();
     expect(screen.getByRole('group', { name: /mode controls/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /visual controls/i })).toBeInTheDocument();
-    expect(screen.getByRole('group', { name: /agent controls/i })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /hermes hud controls/i })).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /visual controls/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /agent controls/i })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /save layout/i })).toHaveAttribute('title', 'Save layout');
     expect(screen.getByRole('button', { name: /reset layout/i })).toHaveAttribute('title', 'Reset layout');
     expect(screen.getByRole('button', { name: /fullscreen/i })).toHaveAttribute('title', 'Fullscreen');

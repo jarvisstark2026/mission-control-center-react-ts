@@ -81,10 +81,10 @@ describe('workspaceEvidenceModel', () => {
       title: 'panel.png',
       source: 'file-explorer',
     });
-    expect(createUrlEvidenceInput('https://example.com', 'Example', 'browser')).toEqual({
+    expect(createUrlEvidenceInput('https://example.com', 'Example', 'url-widget')).toEqual({
       type: 'url',
       title: 'Example',
-      source: 'browser',
+      source: 'url-widget',
       summary: 'https://example.com',
     });
     expect(createRuntimeSnapshotEvidenceInput('Snapshot', 'overview', 'local status')).toEqual({

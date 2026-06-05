@@ -1,6 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 
 export const hermesApiKeySecretRef = 'desktop-secret:hermes-api-key';
+export const hermesVoiceApiKeySecretRef = 'desktop-secret:hermes-voice-api-key';
 
 type TauriWindow = Window & {
   __TAURI_INTERNALS__?: unknown;

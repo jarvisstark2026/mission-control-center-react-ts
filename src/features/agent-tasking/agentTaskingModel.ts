@@ -68,7 +68,7 @@ export function createInitialAgentTaskingState(): AgentTaskingState {
       {
         id: 'agent-console-welcome',
         author: 'system',
-        body: 'Agent Console is ready. Describe an objective and the active agent will prepare a proposal for Command Inbox.',
+        body: 'Agent proposals are ready. Describe an objective and the active agent will prepare a proposal for Command Inbox.',
         timestamp,
       },
     ],

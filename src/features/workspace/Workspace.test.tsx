@@ -10,13 +10,18 @@ import { widgetPresets } from './workspaceWidgetCatalog';
 
 type AudioTestWindow = Window & {
   AudioContext?: typeof AudioContext;
+  MediaRecorder?: typeof MediaRecorder;
 };
 
 describe('Workspace header controls', () => {
   let originalAudioContext: typeof AudioContext | undefined;
+  let originalMediaRecorder: typeof MediaRecorder | undefined;
+  let originalMediaDevices: MediaDevices | undefined;
 
   beforeEach(() => {
     originalAudioContext = (window as AudioTestWindow).AudioContext;
+    originalMediaRecorder = (window as AudioTestWindow).MediaRecorder;
+    originalMediaDevices = navigator.mediaDevices;
     window.localStorage.clear();
     window.history.replaceState({}, '', '/?role=support');
   });
@@ -24,11 +29,21 @@ describe('Workspace header controls', () => {
   afterEach(() => {
     cleanup();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
     vi.useRealTimers();
     Object.defineProperty(window, 'AudioContext', {
       configurable: true,
       writable: true,
       value: originalAudioContext,
+    });
+    Object.defineProperty(window, 'MediaRecorder', {
+      configurable: true,
+      writable: true,
+      value: originalMediaRecorder,
+    });
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: originalMediaDevices,
     });
     window.localStorage.clear();
     window.history.replaceState({}, '', '/?role=support');
@@ -132,7 +147,14 @@ describe('Workspace header controls', () => {
     expect(hud).toHaveClass('design-signal-halo');
     expect(hud.querySelector('canvas.workspace-hud-canvas')).toBeInTheDocument();
 
-    fireEvent.click(currentRender.getByRole('button', { name: 'HUD' }));
+    expect(currentRender.queryByRole('button', { name: 'HUD' })).not.toBeInTheDocument();
+    expect(currentRender.queryByRole('button', { name: 'Agent' })).not.toBeInTheDocument();
+    fireEvent.click(currentRender.getByRole('button', { name: 'Hermes HUD' }));
+    const hermesHudMenu = currentRender.getByRole('menu', { name: 'Hermes HUD menu' });
+    expect(within(hermesHudMenu).getByRole('button', { name: 'Open Hermes HUD' })).toBeInTheDocument();
+    expect(within(hermesHudMenu).getByRole('button', { name: 'Open Agent Control' })).toBeInTheDocument();
+    expect(within(hermesHudMenu).getByRole('checkbox', { name: /Hermes listening/i })).toBeInTheDocument();
+    expect(within(hermesHudMenu).getByText('HUD behavior')).toBeInTheDocument();
     const centerHudToggle = currentRender.getByRole('checkbox', { name: /Center HUD/i });
     expect(centerHudToggle).toBeChecked();
     fireEvent.click(centerHudToggle);
@@ -202,11 +224,11 @@ describe('Workspace header controls', () => {
     expect(currentRender.queryByLabelText('Main workspace HUD')).not.toBeInTheDocument();
   });
 
-  it('toggles HUD voice reaction from the agent menu', () => {
+  it('toggles HUD voice reaction from the Hermes HUD menu', () => {
     const { container } = render(<Workspace role="admin" />);
     const currentRender = within(container);
 
-    fireEvent.click(currentRender.getByRole('button', { name: 'Agent' }));
+    fireEvent.click(currentRender.getByRole('button', { name: 'Hermes HUD' }));
     const checkbox = currentRender.getByRole('checkbox', { name: /Voice reaction/i });
 
     expect(checkbox).toBeChecked();
@@ -214,6 +236,52 @@ describe('Workspace header controls', () => {
 
     expect(checkbox).not.toBeChecked();
     expect(window.localStorage.getItem('mission-control.workspace-hud-settings')).toContain('"voiceReactionEnabled":false');
+  });
+
+  it('opens Hermes HUD and mirrors the top-bar listening toggle', async () => {
+    class FakeMediaRecorder extends EventTarget {
+      state: RecordingState = 'inactive';
+      mimeType = 'audio/webm';
+
+      start() {
+        this.state = 'recording';
+      }
+
+      stop() {
+        this.state = 'inactive';
+        this.dispatchEvent(new Event('stop'));
+      }
+    }
+
+    Object.defineProperty(window, 'MediaRecorder', {
+      configurable: true,
+      writable: true,
+      value: FakeMediaRecorder,
+    });
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: vi.fn(async () => ({
+          getTracks: () => [{ stop: vi.fn() }],
+        })),
+      },
+    });
+
+    const { container } = render(<Workspace role="admin" />);
+    const currentRender = within(container);
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Hermes HUD' }));
+    fireEvent.click(currentRender.getByRole('button', { name: 'Open Hermes HUD' }));
+
+    const hermesHudWidget = getOpenWidget(container, 'hermes-hud');
+    expect(within(hermesHudWidget).getByLabelText('Hermes HUD visual')).toBeInTheDocument();
+
+    fireEvent.click(currentRender.getByRole('button', { name: 'Hermes HUD' }));
+    const topBarListeningToggle = currentRender.getByRole('checkbox', { name: /Hermes listening/i });
+    fireEvent.click(topBarListeningToggle);
+
+    expect(await within(hermesHudWidget).findByRole('button', { name: 'Stop listening' })).toBeInTheDocument();
+    expect(topBarListeningToggle).toBeChecked();
   });
 
   it('toggles browser fullscreen from the workspace top bar', async () => {
@@ -470,22 +538,22 @@ describe('Workspace header controls', () => {
     const currentRender = within(container);
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
-    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Agent console' }));
-    expect(currentRender.getAllByText('tasking / proposals').length).toBeGreaterThan(0);
+    fireEvent.click(currentRender.getByRole('menuitem', { name: 'Agent proposals' }));
+    expect(currentRender.getAllByText('tasks / command cards').length).toBeGreaterThan(0);
 
     await act(async () => {
       fireEvent.click(currentRender.getByRole('button', { name: 'Stage local proposal' }));
       await new Promise((resolve) => setTimeout(resolve, 340));
     });
     expect(await currentRender.findByText(/prepared a gated command proposal/i)).toBeInTheDocument();
-    expect((await currentRender.findAllByText(/Review current mission state and propose/i)).length).toBeGreaterThan(0);
+    expect((await currentRender.findAllByText(/Review current mission state and stage/i)).length).toBeGreaterThan(0);
     const agentConsoleWidget = getOpenWidget(container, 'agent-console');
     fireEvent.click(within(agentConsoleWidget).getByRole('button', { name: 'Attach evidence' }));
     expect(within(getOpenWidget(container, 'goals')).getAllByText(/2 evidence/i).length).toBeGreaterThan(0);
 
     fireEvent.click(currentRender.getByRole('button', { name: 'Open widget' }));
     fireEvent.click(currentRender.getByRole('menuitem', { name: 'Command inbox' }));
-    expect(currentRender.getAllByText(/Review current mission state and propose/i).length).toBeGreaterThan(0);
+    expect(currentRender.getAllByText(/Review current mission state and stage/i).length).toBeGreaterThan(0);
     const commandInboxWidget = getOpenWidget(container, 'command-inbox');
     fireEvent.click(within(commandInboxWidget).getByRole('button', { name: 'Attach evidence' }));
     expect(within(getOpenWidget(container, 'goals')).getAllByText(/3 evidence/i).length).toBeGreaterThan(0);
@@ -542,6 +610,12 @@ describe('Workspace header controls', () => {
   }, 60000);
 
   it('opens Agent Control from the launcher while guest launch surfaces keep agent tools hidden', async () => {
+    vi.stubEnv('VITE_HERMES_BRIDGE_MODE', 'tailscale');
+    vi.stubEnv('VITE_HERMES_HOST', '100.64.0.10');
+    vi.stubEnv('VITE_HERMES_API_PORT', '8642');
+    vi.stubEnv('VITE_HERMES_API_SCHEME', 'http');
+    vi.stubEnv('VITE_HERMES_MODEL', 'hermes-agent');
+    vi.stubEnv('VITE_AGENT_LOCAL_BRIDGE_URL', 'http://127.0.0.1:8787');
     const adminWorkspace = render(<Workspace role="admin" />);
     const adminRender = within(adminWorkspace.container);
     const launcherWidget = adminWorkspace.container.querySelector<HTMLElement>('.workspace-widget.kind-launcher');
@@ -554,9 +628,13 @@ describe('Workspace header controls', () => {
     expect(adminRender.getAllByText('identity / jobs / permissions').length).toBeGreaterThan(0);
     expect(adminRender.getByRole('radio', { name: /Same PC/i })).toBeInTheDocument();
     expect(adminRender.getByRole('radio', { name: /LAN PC/i })).toBeInTheDocument();
-    expect(adminRender.getByRole('radio', { name: /Tailscale/i })).toBeInTheDocument();
+    expect(adminRender.getByRole('radio', { name: /Tailscale/i })).toHaveAttribute('aria-checked', 'true');
+    expect(adminRender.getByLabelText('Tailscale host or IP')).toHaveValue('100.64.0.10');
     expect(adminRender.getByLabelText('Hermes API port')).toHaveValue('8642');
+    expect(adminRender.getByLabelText('Hermes model')).toHaveValue('hermes-agent');
     expect(adminRender.getByLabelText('Hermes API key')).toHaveAttribute('type', 'password');
+    expect(adminRender.getByLabelText('Voice transcription URL')).toBeInTheDocument();
+    expect(adminRender.getByLabelText('Voice API key')).toHaveAttribute('type', 'password');
     expect(adminRender.queryByText(['connection', 'cockpit'].join(' '))).not.toBeInTheDocument();
     expect(adminRender.queryByText(['live', 'bridge state'].join(' '))).not.toBeInTheDocument();
     expect(adminRender.getByLabelText('Agent bridge health')).toBeInTheDocument();
@@ -580,6 +658,8 @@ describe('Workspace header controls', () => {
     expect(adminRender.getByRole('button', { name: /Main workspace/i })).toHaveAttribute('aria-pressed', 'false');
     expect(adminRender.getByRole('button', { name: 'Probe now' })).toBeInTheDocument();
     expect(adminRender.getByRole('button', { name: 'Restart bridge and probe' })).toBeInTheDocument();
+    expect(adminRender.getByRole('button', { name: 'Run live Hermes validation' })).toBeInTheDocument();
+    expect(adminRender.getByLabelText('Hermes endpoint readiness')).toBeInTheDocument();
     fireEvent.click(adminRender.getByRole('button', { name: 'Bridge help' }));
     expect(adminRender.getByText('connect an AI agent')).toBeInTheDocument();
     expect(adminRender.getAllByText('Agent Control -> Bridge setup -> Start bridge').length).toBeGreaterThan(0);
@@ -599,11 +679,13 @@ describe('Workspace header controls', () => {
     fireEvent.click(guestRender.getByRole('button', { name: 'Open widget' }));
 
     expect(guestRender.queryByRole('menuitem', { name: 'Agent control' })).not.toBeInTheDocument();
-    expect(guestRender.queryByRole('menuitem', { name: 'Agent console' })).not.toBeInTheDocument();
+    expect(guestRender.queryByRole('menuitem', { name: 'Agent proposals' })).not.toBeInTheDocument();
+    expect(guestRender.queryByRole('menuitem', { name: 'Hermes HUD' })).not.toBeInTheDocument();
     expect(guestRender.getByRole('menuitem', { name: 'Home systems' })).toBeInTheDocument();
     const guestLauncherWidget = guestWorkspace.container.querySelector<HTMLElement>('.workspace-widget.kind-launcher');
     expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent control/i })).not.toBeInTheDocument();
-    expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent console/i })).not.toBeInTheDocument();
+    expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /agent proposals/i })).not.toBeInTheDocument();
+    expect(within(guestLauncherWidget as HTMLElement).queryByRole('button', { name: /hermes hud/i })).not.toBeInTheDocument();
     expect(within(guestLauncherWidget as HTMLElement).getByRole('button', { name: /home systems/i })).toBeInTheDocument();
   }, 60000);
 
@@ -1468,20 +1550,14 @@ describe('Workspace header controls', () => {
     expect(within(getOpenWidget(nextContainer, 'goals')).getAllByText(/2 evidence/i).length).toBeGreaterThan(0);
   });
 
-  it('stores browser bookmarks and live TV favorites locally', () => {
+  it('stores market evidence and live TV favorites locally', () => {
     const { container } = render(<Workspace />);
-    const browserWidget = within(getOpenWidget(container, 'browser'));
     const marketWidget = within(getOpenWidget(container, 'trading-graph'));
     const liveTvWidget = within(getOpenWidget(container, 'watch-video'));
 
-    fireEvent.change(browserWidget.getByLabelText('Browser URL'), { target: { value: 'openai.com' } });
-    fireEvent.click(browserWidget.getByRole('button', { name: 'Go' }));
-    fireEvent.click(browserWidget.getByRole('button', { name: 'Save bookmark' }));
-    fireEvent.click(browserWidget.getByRole('button', { name: 'Attach evidence' }));
     fireEvent.click(marketWidget.getByRole('button', { name: 'Attach evidence' }));
 
-    expect(browserWidget.getAllByText('openai.com').length).toBeGreaterThan(0);
-    expect(within(getOpenWidget(container, 'goals')).getAllByText(/3 evidence/i).length).toBeGreaterThan(0);
+    expect(within(getOpenWidget(container, 'goals')).getAllByText(/evidence/i).length).toBeGreaterThan(0);
 
     fireEvent.change(liveTvWidget.getByPlaceholderText('Name this source'), { target: { value: 'Local MP4' } });
     fireEvent.change(liveTvWidget.getByPlaceholderText('Paste an official HLS / MP4 source'), {

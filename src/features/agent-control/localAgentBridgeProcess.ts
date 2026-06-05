@@ -21,6 +21,12 @@ export type StartLocalAgentBridgeInput = {
   hermesModel: string;
   hermesApiKey?: string;
   hermesApiKeyRef?: string;
+  voiceTranscriptionUrl?: string;
+  voiceTranscriptionModel?: string;
+  voiceTranscriptionApiKey?: string;
+  voiceTranscriptionApiKeyRef?: string;
+  voiceTranscriptionTimeoutMs?: number;
+  voiceTranscriptionMimeTypes?: string[];
 };
 
 function isTauriRuntime() {

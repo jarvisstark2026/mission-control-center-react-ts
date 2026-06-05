@@ -23,13 +23,13 @@ describe('localAgentBridgeProcess', () => {
   });
 
   it('reports the bundled bridge as unavailable in browser preview', async () => {
-    const status = await getLocalAgentBridgeStatus('http://192.0.2.64:8642/v1');
+    const status = await getLocalAgentBridgeStatus('http://192.168.1.20:8642/v1');
 
     expect(status).toMatchObject({
       available: false,
       running: false,
       bridgeUrl: 'http://127.0.0.1:8787',
-      hermesApiBaseUrl: 'http://192.0.2.64:8642/v1',
+      hermesApiBaseUrl: 'http://192.168.1.20:8642/v1',
     });
     expect(status.lastError).toContain('Desktop app required');
     expect(invokeMock).not.toHaveBeenCalled();
@@ -47,12 +47,26 @@ describe('localAgentBridgeProcess', () => {
       hermesApiBaseUrl: 'http://127.0.0.1:8642/v1',
     });
 
-    await startLocalAgentBridge({ hermesApiBaseUrl: 'http://127.0.0.1:8642/v1', hermesModel: 'hermes-agent', hermesApiKey: 'test-key' });
+    await startLocalAgentBridge({
+      hermesApiBaseUrl: 'http://127.0.0.1:8642/v1',
+      hermesModel: 'hermes-agent',
+      hermesApiKey: 'test-key',
+      voiceTranscriptionUrl: 'http://127.0.0.1:8788/transcribe',
+      voiceTranscriptionModel: 'voice-model',
+      voiceTranscriptionApiKey: 'voice-key',
+    });
     await restartLocalAgentBridge({ hermesApiBaseUrl: 'http://127.0.0.1:8642/v1', hermesModel: 'hermes-agent', hermesApiKey: 'test-key' });
     await stopLocalAgentBridge('http://127.0.0.1:8642/v1');
 
     expect(invokeMock).toHaveBeenNthCalledWith(1, 'start_agent_bridge', {
-      request: { hermesApiBaseUrl: 'http://127.0.0.1:8642/v1', hermesModel: 'hermes-agent', hermesApiKey: 'test-key' },
+      request: {
+        hermesApiBaseUrl: 'http://127.0.0.1:8642/v1',
+        hermesModel: 'hermes-agent',
+        hermesApiKey: 'test-key',
+        voiceTranscriptionUrl: 'http://127.0.0.1:8788/transcribe',
+        voiceTranscriptionModel: 'voice-model',
+        voiceTranscriptionApiKey: 'voice-key',
+      },
     });
     expect(invokeMock).toHaveBeenNthCalledWith(2, 'restart_agent_bridge', {
       request: { hermesApiBaseUrl: 'http://127.0.0.1:8642/v1', hermesModel: 'hermes-agent', hermesApiKey: 'test-key' },

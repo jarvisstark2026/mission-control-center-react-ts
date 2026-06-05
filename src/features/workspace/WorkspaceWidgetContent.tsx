@@ -5,8 +5,10 @@ import type { ShellRole } from '../shell/roles';
 import type { AgentBridgeProbeResult, AgentControlState } from '../agent-control';
 import type { AgentBridgeSettings } from '../agent-control';
 import type { AgentTaskGateway } from '../agent-tasking';
+import type { useHermesHudRuntime } from '../hermes-hud';
 import type { MissionControlRuntime } from '../mission-control';
 import type { OperationalOsRuntime } from '../operational-os';
+import type { AgentVoiceState, WorkspaceHudSettings, WorkspaceHudSignals } from '../workspace-hud';
 import type { WorkspaceWidgetGroup } from './workspaceManagerModel';
 import type { MarketGraph } from './workspaceMarketData';
 import type { MarketLiveState } from './workspaceMarketLiveData';
@@ -20,7 +22,6 @@ import {
   AgentConsoleWidget,
   AgentControlWidget,
   AppPortalWidget,
-  BrowserWidget,
   CommandInboxWidget,
   DiagramWidget,
   DocsWidget,
@@ -28,6 +29,7 @@ import {
   GraphWidget,
   GoalsWidget,
   HomeSystemsWidget,
+  HermesHudWidget,
   ImageWidget,
   IntegrationRegistryWidget,
   JsonSurfaceWidget,
@@ -88,6 +90,11 @@ export type WorkspaceWidgetContentProps = {
   onSetAgentLiveLayoutEnabled: (placement: WorkspacePlacement, enabled: boolean) => void;
   onSetAllAgentLiveLayoutEnabled: (enabled: boolean) => void;
   onPauseAllAgentLiveLayout: () => void;
+  hermesHudRuntime: ReturnType<typeof useHermesHudRuntime>;
+  hudSettings: WorkspaceHudSettings;
+  hudSignals: WorkspaceHudSignals;
+  voiceState: AgentVoiceState;
+  hudLocale?: string;
   operationalOs: OperationalOsRuntime;
   activeRole: ShellRole;
   widgetPermissions: WorkspaceWidgetPermissionMatrix;
@@ -119,7 +126,6 @@ const staticWidgetRenderers: Partial<Record<WorkspaceWidget['kind'], (props: Wor
   ),
   map: ({ activeRole, operationalOs }) => <MapWidget role={activeRole} operationalOs={operationalOs} />,
   diagram: ({ activeRole, operationalOs }) => <DiagramWidget role={activeRole} operationalOs={operationalOs} />,
-  browser: ({ activeRole, operationalOs }) => <BrowserWidget role={activeRole} operationalOs={operationalOs} />,
   'watch-video': ({ activeRole, operationalOs }) => <LiveTvWidget role={activeRole} operationalOs={operationalOs} />,
   'native-app': ({ activeRole, missionControl, operationalOs }) => <NativeAppWidget role={activeRole} missionControl={missionControl} operationalOs={operationalOs} />,
   video: ({ localFiles, activeLocalFileId, selectedLocalFileId, onBrowseFiles, onOpenPreview, activeRole, operationalOs }) => (
@@ -183,6 +189,11 @@ function renderWorkspaceWidgetContent({
   onSetAgentLiveLayoutEnabled,
   onSetAllAgentLiveLayoutEnabled,
   onPauseAllAgentLiveLayout,
+  hermesHudRuntime,
+  hudSettings,
+  hudSignals,
+  voiceState,
+  hudLocale,
   operationalOs,
   activeRole,
   widgetPermissions,
@@ -295,6 +306,17 @@ function renderWorkspaceWidgetContent({
           onOpenCommandInbox={onOpenCommandInbox}
         />
       );
+    case 'hermes-hud':
+      return (
+        <HermesHudWidget
+          role={activeRole}
+          runtime={hermesHudRuntime}
+          hudSettings={hudSettings}
+          hudSignals={hudSignals}
+          voiceState={voiceState}
+          locale={hudLocale}
+        />
+      );
     case 'home-systems':
       return <HomeSystemsWidget role={activeRole} missionControl={missionControl} operationalOs={operationalOs} />;
     case 'flow':
@@ -364,6 +386,11 @@ function renderWorkspaceWidgetContent({
         onSetAgentLiveLayoutEnabled,
         onSetAllAgentLiveLayoutEnabled,
         onPauseAllAgentLiveLayout,
+        hermesHudRuntime,
+        hudSettings,
+        hudSignals,
+        voiceState,
+        hudLocale,
         operationalOs,
         activeRole,
         widgetPermissions,

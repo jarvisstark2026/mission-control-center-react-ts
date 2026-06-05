@@ -241,7 +241,7 @@ export function createLocalFileEvidenceInput(record: LocalFileRecord, source = '
 export function createUrlEvidenceInput(
   url: string,
   title: string,
-  source = 'browser-widget',
+  source = 'url-widget',
   summary?: string,
 ): Pick<CreateEvidenceInput, 'type' | 'title' | 'source' | 'summary'> {
   return {

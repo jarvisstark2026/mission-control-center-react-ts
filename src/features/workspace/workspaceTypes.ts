@@ -8,7 +8,6 @@ export type WidgetKind =
   | 'news'
   | 'schedule'
   | 'launcher'
-  | 'browser'
   | 'watch-video'
   | 'file-explorer'
   | 'native-app'
@@ -29,6 +28,7 @@ export type WidgetKind =
   | 'integration-registry'
   | 'agent-control'
   | 'agent-console'
+  | 'hermes-hud'
   | 'home-systems'
   | 'goals'
   | 'app-portal'
@@ -64,7 +64,6 @@ export const workspaceWidgetKinds: WidgetKind[] = [
   'news',
   'schedule',
   'launcher',
-  'browser',
   'watch-video',
   'file-explorer',
   'native-app',
@@ -85,6 +84,7 @@ export const workspaceWidgetKinds: WidgetKind[] = [
   'integration-registry',
   'agent-control',
   'agent-console',
+  'hermes-hud',
   'home-systems',
   'goals',
   'app-portal',

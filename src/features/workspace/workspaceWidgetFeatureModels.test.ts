@@ -30,10 +30,10 @@ describe('workspaceWidgetFeatureModels', () => {
   it('normalizes and updates local map places and route notes', () => {
     const now = '2026-05-26T10:00:00.000Z';
     const state = createDefaultMapSurfaceState(now);
-    const withPlace = addMapPlace(state, { title: 'Hermes PC', detail: 'agent host', handoffUrl: '192.0.2.64' }, now);
+    const withPlace = addMapPlace(state, { title: 'Hermes PC', detail: 'agent host', handoffUrl: '192.168.1.20' }, now);
     const withRoute = addMapRoute(withPlace, { title: 'Workshop route', detail: 'manual handoff' }, now);
 
-    expect(withRoute.places[0]).toMatchObject({ title: 'Hermes PC', handoffUrl: 'https://192.0.2.64' });
+    expect(withRoute.places[0]).toMatchObject({ title: 'Hermes PC', handoffUrl: 'https://192.168.1.20' });
     expect(withRoute.routes[0]).toMatchObject({ title: 'Workshop route' });
     expect(normalizeMapSurfaceState(withRoute, now).selectedPlaceId).toBe(withRoute.places[0].id);
   });

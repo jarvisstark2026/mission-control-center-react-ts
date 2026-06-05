@@ -113,7 +113,7 @@ function createMockTaskResult(request: AgentTaskRequest): AgentTaskGatewayResult
           type: 'proposed',
           actor: commandSource,
           timestamp,
-          detail: `${agent.name} proposed "${title}" from ${taskSource === 'workflow' ? 'Workflow' : taskSource === 'agent-control' ? 'Agent Control' : 'Agent Console'}.`,
+          detail: `${agent.name} proposed "${title}" from ${taskSource === 'workflow' ? 'Workflow' : taskSource === 'agent-control' ? 'Agent Control' : 'Agent proposals'}.`,
         },
         ...(request.goalId
           ? [

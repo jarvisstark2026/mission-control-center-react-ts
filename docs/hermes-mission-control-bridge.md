@@ -19,10 +19,27 @@ http(s)://<selected-host>:<port>/v1
 The selected host comes from one of three Agent Control modes:
 
 - `Same PC`: `127.0.0.1`
-- `LAN PC`: a local network host/IP such as `192.0.2.64`
-- `Tailscale`: a Tailscale host/IP such as `198.51.100.119`
+- `LAN PC`: a local network host/IP such as `<lan-host-or-ip>`
+- `Tailscale`: a Tailscale host/IP such as `<tailscale-host-or-ip>`
 
 The selected port defaults to `8642`, but Agent Control can point at another port if Hermes is configured differently. HTTPS endpoints are supported with normal certificate validation; invalid or self-signed certificates fail closed.
+
+## Local Defaults
+
+Mission Control can seed Agent Control from local Vite env defaults when no saved Agent Control settings exist. Keep these values non-secret:
+
+```env
+VITE_HERMES_BRIDGE_MODE=tailscale
+VITE_HERMES_HOST=<tailscale-host-or-ip>
+VITE_HERMES_API_PORT=8642
+VITE_HERMES_API_SCHEME=http
+VITE_HERMES_MODEL=hermes-agent
+VITE_AGENT_LOCAL_BRIDGE_URL=http://127.0.0.1:8787
+```
+
+Put machine-specific values in `.env.local`, which stays uncommitted. Do not put `API_SERVER_KEY` or voice transcription bearer keys in env files; paste and save those through Agent Control so the desktop credential adapter can protect them. Voice transcription URL/model defaults can be added later with the same non-secret pattern, while the voice key stays in credential storage.
+
+For public installers or public CI builds, build without a machine-specific `.env.local`; Vite can inline `VITE_*` values into generated app assets even though the file itself is ignored by Git.
 
 ## Hermes Requirement
 

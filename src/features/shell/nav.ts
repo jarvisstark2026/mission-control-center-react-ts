@@ -75,8 +75,14 @@ export const shellNavItems: ShellNavItem[] = [
   },
   {
     id: 'agent-console',
-    label: 'Agent console',
-    hint: 'ask agents and stage proposals',
+    label: 'Agent proposals',
+    hint: 'task and proposal history',
+    allowedRoles: ['admin', 'home', 'support'],
+  },
+  {
+    id: 'hermes-hud',
+    label: 'Hermes HUD',
+    hint: 'live chat and voice control',
     allowedRoles: ['admin', 'home', 'support'],
   },
   {
@@ -89,12 +95,6 @@ export const shellNavItems: ShellNavItem[] = [
     id: 'launcher',
     label: 'App launcher',
     hint: 'spawn desktop windows',
-    allowedRoles: ['admin', 'home', 'support'],
-  },
-  {
-    id: 'browser',
-    label: 'Browser',
-    hint: 'pages and tabs',
     allowedRoles: ['admin', 'home', 'support'],
   },
   {

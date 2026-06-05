@@ -18,6 +18,7 @@ import { canEditAgentSettings,
   getHermesApiBaseUrlForModeAndScheme,
   getLocalAgentBridgeStatus,
   hermesApiKeySecretRef,
+  hermesVoiceApiKeySecretRef,
   isDesktopAgentSecretStoreAvailable,
   restartLocalAgentBridge,
   startLocalAgentBridge,
@@ -192,13 +193,13 @@ const bridgeModeOptions: Array<{ id: AgentBridgeMode; label: string; detail: str
     id: 'lan',
     label: 'LAN PC',
     detail: 'Hermes runs on another machine in the local network.',
-    placeholder: '192.0.2.64',
+    placeholder: '192.168.1.20',
   },
   {
     id: 'tailscale',
     label: 'Tailscale',
     detail: 'Hermes is reached through a Tailscale address.',
-    placeholder: '198.51.100.119',
+    placeholder: '100.64.0.10',
   },
 ];
 
@@ -215,6 +216,31 @@ const agentControlPanels: Array<{ id: AgentControlPanel; label: string }> = [
 function getStatusUrl(url: string | null | undefined) {
   const trimmedUrl = url?.trim().replace(/\/+$/u, '');
   return trimmedUrl ? `${trimmedUrl}/status` : null;
+}
+
+async function postBridgeJson(baseUrl: string, path: string, payload: unknown) {
+  const response = await fetch(`${baseUrl.replace(/\/+$/u, '')}${path}`, {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  const raw = await response.text();
+  let body: unknown = {};
+  try {
+    body = raw.trim() ? JSON.parse(raw) : {};
+  } catch {
+    body = raw;
+  }
+  if (!response.ok) {
+    const record = body && typeof body === 'object' ? body as Record<string, unknown> : {};
+    const errorCode = typeof record.errorCode === 'string' ? `${record.errorCode}: ` : '';
+    const error = typeof record.error === 'string' ? record.error : `${response.status} ${response.statusText}`.trim();
+    throw new Error(`${errorCode}${error}`.trim());
+  }
+  return body;
 }
 
 function getPortFromEndpointInput(value: string) {
@@ -351,6 +377,10 @@ export function AgentControlWidget({
   const [hermesApiKey, setHermesApiKey] = useState(bridgeSettings.hermesApiKey ?? '');
   const [hasSavedHermesApiKey, setHasSavedHermesApiKey] = useState(Boolean(bridgeSettings.hasHermesApiKey));
   const [hermesModel, setHermesModel] = useState(bridgeSettings.hermesModel ?? 'hermes-agent');
+  const [voiceTranscriptionUrl, setVoiceTranscriptionUrl] = useState(bridgeSettings.voiceTranscriptionUrl ?? '');
+  const [voiceTranscriptionModel, setVoiceTranscriptionModel] = useState(bridgeSettings.voiceTranscriptionModel ?? '');
+  const [voiceTranscriptionApiKey, setVoiceTranscriptionApiKey] = useState(bridgeSettings.voiceTranscriptionApiKey ?? '');
+  const [hasSavedVoiceTranscriptionApiKey, setHasSavedVoiceTranscriptionApiKey] = useState(Boolean(bridgeSettings.hasVoiceTranscriptionApiKey));
   const [localBridgeUrl, setLocalBridgeUrl] = useState(bridgeSettings.localBridgeUrl);
   const [localBridgeProcess, setLocalBridgeProcess] = useState<LocalAgentBridgeProcessState | null>(null);
   const [bridgeSetupStatus, setBridgeSetupStatus] = useState('Choose where Hermes runs, then start the desktop local bridge.');
@@ -366,8 +396,12 @@ export function AgentControlWidget({
     setHermesApiKey(bridgeSettings.hermesApiKey ?? '');
     setHasSavedHermesApiKey(Boolean(bridgeSettings.hasHermesApiKey));
     setHermesModel(bridgeSettings.hermesModel ?? 'hermes-agent');
+    setVoiceTranscriptionUrl(bridgeSettings.voiceTranscriptionUrl ?? '');
+    setVoiceTranscriptionModel(bridgeSettings.voiceTranscriptionModel ?? '');
+    setVoiceTranscriptionApiKey(bridgeSettings.voiceTranscriptionApiKey ?? '');
+    setHasSavedVoiceTranscriptionApiKey(Boolean(bridgeSettings.hasVoiceTranscriptionApiKey));
     setLocalBridgeUrl(bridgeSettings.localBridgeUrl);
-  }, [bridgeSettings.bridgeMode, bridgeSettings.hermesHost, bridgeSettings.hermesApiScheme, bridgeSettings.hermesApiPort, bridgeSettings.hermesApiKey, bridgeSettings.hasHermesApiKey, bridgeSettings.hermesModel, bridgeSettings.localBridgeUrl]);
+  }, [bridgeSettings.bridgeMode, bridgeSettings.hermesHost, bridgeSettings.hermesApiScheme, bridgeSettings.hermesApiPort, bridgeSettings.hermesApiKey, bridgeSettings.hasHermesApiKey, bridgeSettings.hermesModel, bridgeSettings.voiceTranscriptionUrl, bridgeSettings.voiceTranscriptionModel, bridgeSettings.voiceTranscriptionApiKey, bridgeSettings.hasVoiceTranscriptionApiKey, bridgeSettings.localBridgeUrl]);
 
   const hermesApiBaseUrl = getHermesApiBaseUrlForModeAndScheme(bridgeMode, hermesHost, hermesApiPort, hermesApiScheme);
 
@@ -478,6 +512,10 @@ export function AgentControlWidget({
     let hermesApiKeyRef = bridgeSettings.hermesApiKeyRef;
     let rawHermesApiKey = bridgeSettings.hermesApiKey;
     let keyPresent = Boolean(bridgeSettings.hasHermesApiKey);
+    const voiceKeyInput = voiceTranscriptionApiKey.trim();
+    let voiceTranscriptionApiKeyRef = bridgeSettings.voiceTranscriptionApiKeyRef;
+    let rawVoiceTranscriptionApiKey = bridgeSettings.voiceTranscriptionApiKey;
+    let voiceKeyPresent = Boolean(bridgeSettings.hasVoiceTranscriptionApiKey);
     if (keyInput) {
       const secretResult = await writeAgentBridgeSecret(keyInput, hermesApiKeySecretRef);
       if (secretResult.available) {
@@ -492,6 +530,20 @@ export function AgentControlWidget({
         setHasSavedHermesApiKey(true);
       }
     }
+    if (voiceKeyInput) {
+      const secretResult = await writeAgentBridgeSecret(voiceKeyInput, hermesVoiceApiKeySecretRef);
+      if (secretResult.available) {
+        voiceTranscriptionApiKeyRef = secretResult.keyRef;
+        rawVoiceTranscriptionApiKey = undefined;
+        voiceKeyPresent = true;
+        setVoiceTranscriptionApiKey('');
+        setHasSavedVoiceTranscriptionApiKey(true);
+      } else {
+        rawVoiceTranscriptionApiKey = voiceKeyInput;
+        voiceKeyPresent = true;
+        setHasSavedVoiceTranscriptionApiKey(true);
+      }
+    }
     onUpdateBridgeSettings({
       bridgeMode,
       hermesHost: savedHermesHost,
@@ -502,6 +554,13 @@ export function AgentControlWidget({
       hasHermesApiKey: keyPresent,
       hermesApiBaseUrl,
       hermesModel,
+      voiceTranscriptionUrl: voiceTranscriptionUrl.trim(),
+      voiceTranscriptionModel: voiceTranscriptionModel.trim(),
+      voiceTranscriptionApiKey: rawVoiceTranscriptionApiKey,
+      voiceTranscriptionApiKeyRef,
+      hasVoiceTranscriptionApiKey: voiceKeyPresent,
+      voiceTranscriptionTimeoutMs: bridgeSettings.voiceTranscriptionTimeoutMs ?? 20000,
+      voiceTranscriptionMimeTypes: bridgeSettings.voiceTranscriptionMimeTypes,
       localBridgeUrl: 'http://127.0.0.1:8787',
       remoteApiUrl: '',
       preferredAgentId: selectedAgent.id,
@@ -514,13 +573,29 @@ export function AgentControlWidget({
           ? 'Bridge mode saved. Browser preview stores the API key locally; use the installed app for desktop credential storage.'
           : 'Bridge mode saved. Mission Control will use the local desktop bridge at http://127.0.0.1:8787.',
     );
-    return { hermesApiKey: rawHermesApiKey, hermesApiKeyRef };
+    return {
+      hermesApiKey: rawHermesApiKey,
+      hermesApiKeyRef,
+      voiceTranscriptionApiKey: rawVoiceTranscriptionApiKey,
+      voiceTranscriptionApiKeyRef,
+    };
   };
-  const getBridgeStartInput = (secret: { hermesApiKey?: string; hermesApiKeyRef?: string } = {}) => ({
+  const getBridgeStartInput = (secret: {
+    hermesApiKey?: string;
+    hermesApiKeyRef?: string;
+    voiceTranscriptionApiKey?: string;
+    voiceTranscriptionApiKeyRef?: string;
+  } = {}) => ({
     hermesApiBaseUrl,
     hermesModel,
     hermesApiKey: secret.hermesApiKey ?? (hermesApiKey.trim() || bridgeSettings.hermesApiKey),
     hermesApiKeyRef: secret.hermesApiKeyRef ?? bridgeSettings.hermesApiKeyRef,
+    voiceTranscriptionUrl: voiceTranscriptionUrl.trim() || bridgeSettings.voiceTranscriptionUrl,
+    voiceTranscriptionModel: voiceTranscriptionModel.trim() || bridgeSettings.voiceTranscriptionModel,
+    voiceTranscriptionApiKey: secret.voiceTranscriptionApiKey ?? (voiceTranscriptionApiKey.trim() || bridgeSettings.voiceTranscriptionApiKey),
+    voiceTranscriptionApiKeyRef: secret.voiceTranscriptionApiKeyRef ?? bridgeSettings.voiceTranscriptionApiKeyRef,
+    voiceTranscriptionTimeoutMs: bridgeSettings.voiceTranscriptionTimeoutMs ?? 20000,
+    voiceTranscriptionMimeTypes: bridgeSettings.voiceTranscriptionMimeTypes,
   });
   const probeBridgeNow = async () => {
     setBridgeSetupStatus('Probing configured bridge endpoints...');
@@ -644,6 +719,76 @@ export function AgentControlWidget({
       setTestProposalStatus(error instanceof Error ? `Task loop failed: ${error.message}` : 'Task loop failed.');
     }
   };
+  const runLiveValidation = async () => {
+    const secret = await saveBridgeSettings();
+    setBridgeSetupStatus('Running live Hermes validation across status, chat, voice, tasks, and layout...');
+    setTestProposalStatus('Live validation started.');
+    try {
+      const processState = await restartLocalAgentBridge(getBridgeStartInput(secret));
+      setLocalBridgeProcess(processState);
+      onUpdateBridgeSettings({
+        localBridgeUrl: processState.bridgeUrl,
+        lastSuccessfulUrl: processState.running ? processState.bridgeUrl : bridgeSettings.lastSuccessfulUrl,
+      });
+      if (!processState.available || !processState.running) {
+        const message = processState.lastError ?? 'Local bridge is unavailable.';
+        setBridgeSetupStatus(message);
+        setTestProposalStatus(message);
+        return;
+      }
+
+      const statusResult = await onTestBridgeUrl(processState.bridgeUrl);
+      if (!statusResult.ok) {
+        const message = statusResult.error ?? 'Bridge /status failed.';
+        setBridgeSetupStatus(message);
+        setTestProposalStatus(message);
+        return;
+      }
+
+      await postBridgeJson(processState.bridgeUrl, '/chat', {
+        message: 'Live validation: reply with a short Mission Control status check and no direct actions.',
+        source: 'agent-control-validation',
+      });
+
+      let voiceSummary = 'voice not configured';
+      if (voiceTranscriptionUrl.trim()) {
+        await postBridgeJson(processState.bridgeUrl, '/voice/transcribe', {
+          audioBase64: 'UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=',
+          mimeType: 'audio/wav',
+          recordedAt: new Date().toISOString(),
+        });
+        voiceSummary = 'voice endpoint responded';
+      }
+
+      const timestamp = new Date().toISOString();
+      const directGateway = createBridgeAgentTaskGateway(processState.bridgeUrl);
+      const result = await directGateway.submitTask({
+        id: `agent-control-live-validation-${Date.parse(timestamp).toString(36)}`,
+        objective: 'Live validation: create one safe Mission Control proposal for Command Inbox.',
+        scope: getTestTaskScope(role),
+        risk: 'safe',
+        role,
+        targetAgentId: selectedAgent.id,
+        source: 'agent-control',
+        requestedAt: timestamp,
+      });
+      missionControl.ingestEvents(result.missionControlEvents);
+
+      await postBridgeJson(processState.bridgeUrl, '/workspace/layout/plan', {
+        workspaceId: 'agent-control-validation',
+        canvas: { width: 800, height: 600 },
+        widgets: [],
+        locks: { agentAnimatingWidgetIds: [] },
+      });
+
+      setBridgeSetupStatus(`Live validation passed: /status, /chat, /tasks, and layout ready; ${voiceSummary}.`);
+      setTestProposalStatus(`${result.proposals.length || 1} validation proposal sent to Command Inbox.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Live validation failed.';
+      setBridgeSetupStatus(`Live validation failed: ${message}`);
+      setTestProposalStatus(`Live validation failed: ${message}`);
+    }
+  };
   const testHermesApi = async () => {
     setBridgeSetupStatus(`Testing Hermes API through ${hermesApiBaseUrl}...`);
     try {
@@ -678,7 +823,7 @@ export function AgentControlWidget({
   };
   const selectPreferredAgent = (agentId: string) => {
     onUpdateBridgeSettings({ preferredAgentId: agentId });
-    setBridgeSetupStatus('Default agent saved for Agent Console.');
+    setBridgeSetupStatus('Default agent saved for Agent proposals.');
   };
   const requestPermissionChange = (permission: AgentPermission) => {
     missionControl.ingestEvents(createAgentPermissionChangeProposal(selectedAgent, permission));
@@ -857,6 +1002,35 @@ export function AgentControlWidget({
             placeholder={hasSavedHermesApiKey ? 'saved in desktop credential store' : 'optional bearer token'}
           />
         </label>
+        <label className="agent-control-bridge-field">
+          <span>Voice transcription URL</span>
+          <input
+            value={voiceTranscriptionUrl}
+            disabled={!editable}
+            onChange={(event) => setVoiceTranscriptionUrl(event.currentTarget.value)}
+            placeholder="optional bridge-backed transcription endpoint"
+          />
+        </label>
+        <label className="agent-control-bridge-field">
+          <span>Voice model</span>
+          <input
+            value={voiceTranscriptionModel}
+            disabled={!editable}
+            onChange={(event) => setVoiceTranscriptionModel(event.currentTarget.value)}
+            placeholder="optional transcription model"
+          />
+        </label>
+        <label className="agent-control-bridge-field">
+          <span>Voice API key{hasSavedVoiceTranscriptionApiKey ? ' saved' : ''}</span>
+          <input
+            value={voiceTranscriptionApiKey}
+            disabled={!editable}
+            type="password"
+            autoComplete="off"
+            onChange={(event) => setVoiceTranscriptionApiKey(event.currentTarget.value)}
+            placeholder={hasSavedVoiceTranscriptionApiKey ? 'saved in desktop credential store' : 'optional bearer token'}
+          />
+        </label>
         <div className="agent-control-bridge-status-grid">
           <div>
             <span>Mission Control bridge</span>
@@ -883,6 +1057,28 @@ export function AgentControlWidget({
             <strong>{liveLayoutMovingCount ? String(liveLayoutMovingCount) : 'none'}</strong>
           </div>
         </div>
+        <div className="agent-control-bridge-status-grid" aria-label="Hermes endpoint readiness">
+          <div>
+            <span>/status</span>
+            <strong>{localBridgeReachable || localBridgeProcess?.running ? 'reachable' : 'not reachable'}</strong>
+          </div>
+          <div>
+            <span>/chat</span>
+            <strong>{localHermesConnector?.status === 'connected' && localHermesConnector.capabilities.includes('chat') ? 'ready' : hermesApiLabel}</strong>
+          </div>
+          <div>
+            <span>/voice/transcribe</span>
+            <strong>{voiceTranscriptionUrl.trim() ? (localHermesConnector?.capabilities.includes('voice-transcription') ? 'configured' : 'not tested') : 'not configured'}</strong>
+          </div>
+          <div>
+            <span>/tasks</span>
+            <strong>{taskLoopStatus}</strong>
+          </div>
+          <div>
+            <span>/workspace/layout/plan</span>
+            <strong>{localHermesConnector?.capabilities.includes('workspace-layout-control') ? liveLayoutSummary : 'not tested'}</strong>
+          </div>
+        </div>
         {bridgeInputWarning ? <p className="mission-control-muted">{bridgeInputWarning}</p> : null}
         {localBridgeProcess?.lastError ? <p className="mission-control-muted">{localBridgeProcess.lastError}</p> : null}
         <div className="mission-control-actions agent-control-bridge-actions">
@@ -900,6 +1096,9 @@ export function AgentControlWidget({
           </WorkspaceButton>
           <WorkspaceButton variant="secondary" disabled={!editable} onClick={startBridgeAndTestTaskLoop}>
             Start bridge and test task loop
+          </WorkspaceButton>
+          <WorkspaceButton variant="primary" disabled={!editable || !hermesApiBaseUrl} onClick={runLiveValidation}>
+            Run live Hermes validation
           </WorkspaceButton>
           <WorkspaceButton
             variant="secondary"

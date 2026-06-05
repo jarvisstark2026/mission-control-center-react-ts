@@ -85,7 +85,7 @@ export function WorkspaceSectionFrame({
 
 type WorkspaceButtonVariant = 'primary' | 'secondary' | 'destructive' | 'compact' | 'icon';
 
-export type TopBarGroupId = 'viewport' | 'layout' | 'visuals' | 'operator' | 'launch';
+export type TopBarGroupId = 'viewport' | 'layout' | 'visuals' | 'operator' | 'launch' | 'hermes-hud';
 
 export function WorkspaceButton({
   variant = 'primary',

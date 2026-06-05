@@ -243,7 +243,7 @@ export function getAgentBridgeTutorialSteps(
     {
       id: 'task-proposal-tested',
       title: 'Task proposal tested',
-      body: 'Send one task from Agent Console and confirm the proposal appears in Command Inbox.',
+      body: 'Send one task from Agent proposals and confirm the proposal appears in Command Inbox.',
       status: getStepStatus(taskEvidence, taskFailure),
     },
   ];

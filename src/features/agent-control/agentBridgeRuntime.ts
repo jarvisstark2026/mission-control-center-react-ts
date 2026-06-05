@@ -21,6 +21,13 @@ export type AgentBridgeStatusResponse = {
   activeEngine?: string | null;
   activeAgentId?: string | null;
   currentTask?: string | null;
+  endpointStatus?: {
+    status?: string;
+    chat?: string;
+    voice?: string;
+    tasks?: string;
+    layout?: string;
+  };
   agents?: AgentDescriptor[];
   jobs?: AgentScheduledJob[];
   permissions?: AgentPermission[];

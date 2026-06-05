@@ -10,6 +10,7 @@ const workspaceWidgetPermissionsStorageKey = 'mission-control-center.workspace.w
 const defaultDeniedWidgetRoles: Partial<Record<WorkspaceWidget['kind'], ShellRole[]>> = {
   'agent-control': ['guest'],
   'agent-console': ['guest'],
+  'hermes-hud': ['guest'],
   'json-surface': ['guest'],
 };
 

@@ -53,7 +53,7 @@ export const widgetWorkflowGuidance: Record<WidgetKind, WidgetWorkflowGuidance> 
   schedule: {
     intent: 'Plan the current day',
     value: 'Track time context: active blocks, routines, and upcoming shifts.',
-    next: 'Stage routine changes through Agent Console or Command Inbox.',
+    next: 'Stage routine changes through Agent proposals or Command Inbox.',
     evidence: 'agenda',
   },
   launcher: {
@@ -61,12 +61,6 @@ export const widgetWorkflowGuidance: Record<WidgetKind, WidgetWorkflowGuidance> 
     value: 'Open the widget catalog when the top menu is too small or launch status matters.',
     next: 'Double-click a card to open or focus that widget in the workspace.',
     evidence: 'widget registry',
-  },
-  browser: {
-    intent: 'Preview web pages',
-    value: 'Keep embedded references beside the operational workspace.',
-    next: 'Open an external browser only when the page needs full browser capability.',
-    evidence: 'URL preview',
   },
   'watch-video': {
     intent: 'Monitor video feeds',
@@ -82,7 +76,7 @@ export const widgetWorkflowGuidance: Record<WidgetKind, WidgetWorkflowGuidance> 
   },
   'native-app': {
     intent: 'Bridge desktop apps',
-    value: 'Remember and launch native tools that sit outside the browser workspace.',
+    value: 'Remember and launch native tools that sit outside Mission Control.',
     next: 'Keep launched apps paired with their related workspace widgets.',
     evidence: 'desktop hooks',
   },
@@ -183,10 +177,16 @@ export const widgetWorkflowGuidance: Record<WidgetKind, WidgetWorkflowGuidance> 
     evidence: 'agent audit',
   },
   'agent-console': {
-    intent: 'Ask an agent for help',
-    value: 'Turn an objective into explained proposals. It never executes directly.',
-    next: 'Send the proposal, then approve or stop it in Command Inbox.',
+    intent: 'Review agent proposals',
+    value: 'Turn an objective into explained proposal records without direct execution.',
+    next: 'Stage the proposal, then review the resulting command record in Command Inbox.',
     evidence: 'proposal history',
+  },
+  'hermes-hud': {
+    intent: 'Talk to Hermes live',
+    value: 'Use quick chat or voice to let Hermes operate Mission Control workspace UI directly.',
+    next: 'Toggle listening from the widget or the top-bar Hermes HUD menu.',
+    evidence: 'chat and action audit',
   },
   'home-systems': {
     intent: 'Operate the home',
